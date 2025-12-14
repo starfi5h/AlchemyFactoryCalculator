@@ -3,16 +3,17 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Alchemy Factory Planner v23</title>
+    <title>Alchemy Factory Planner v25</title>
     <script src="alchemy_db.js"></script> 
     
     <style>
-        :root { --bg: #1a1a1a; --text: #e0e0e0; --accent: #4caf50; --panel: #2d2d2d; --border: #444; --warn: #ff9800; --gold: #ffd700; --info: #2196f3; --profit: #00e676; --bio: #76ff03; --fuel: #ff5722; }
+        :root { --bg: #1a1a1a; --text: #e0e0e0; --accent: #4caf50; --panel: #2d2d2d; --border: #444; --warn: #ff9800; --gold: #ffd700; --info: #2196f3; --profit: #00e676; --bio: #76ff03; --fuel: #ff5722; --danger: #f44336; }
         body { font-family: 'Segoe UI', sans-serif; background: var(--bg); color: var(--text); padding: 0; margin: 0; height: 100vh; display: flex; flex-direction: column; }
         
         header { background: #111; padding: 10px 20px; border-bottom: 1px solid var(--border); display: flex; align-items: center; justify-content: space-between; }
         h1 { color: var(--accent); margin: 0; font-size: 1.2em; }
-        .subtitle { color: #888; font-size: 0.8em; margin-left: 10px; }
+        .subtitle { color: #888; font-size: 0.8em; margin-left: 10px; cursor: pointer; text-decoration: underline; }
+        .subtitle:hover { color: #fff; }
         
         .tabs { display: flex; gap: 5px; }
         .tab-btn { background: #222; border: 1px solid var(--border); color: #888; padding: 8px 16px; cursor: pointer; border-radius: 4px; }
@@ -81,6 +82,21 @@
         button.info { background: var(--info); }
         button.save-btn { width: 100%; margin-top: 10px; background: #333; border: 1px solid var(--accent); color: var(--accent); }
         button.save-btn:hover { background: var(--accent); color: white; }
+        button.reset-btn { width: 100%; margin-top: 20px; background: transparent; border: 1px solid var(--danger); color: var(--danger); font-size:0.8em; padding: 5px;}
+        button.reset-btn:hover { background: var(--danger); color: white; }
+
+        /* CHANGELOG MODAL */
+        #changelog-modal { position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.8); display: none; justify-content: center; align-items: center; z-index: 1000; }
+        .modal-content { background: var(--panel); border: 1px solid var(--border); width: 600px; max-width: 90%; max-height: 80vh; overflow-y: auto; padding: 20px; border-radius: 8px; box-shadow: 0 10px 30px rgba(0,0,0,0.5); }
+        .modal-header { display: flex; justify-content: space-between; align-items: center; border-bottom: 1px solid #444; padding-bottom: 15px; margin-bottom: 15px; }
+        .modal-header h2 { margin: 0; color: var(--accent); }
+        .close-modal { background: none; border: none; color: #888; font-size: 1.5em; cursor: pointer; }
+        .close-modal:hover { color: #fff; }
+        .log-entry { margin-bottom: 20px; padding-bottom: 15px; border-bottom: 1px dashed #444; }
+        .log-ver { font-weight: bold; color: var(--info); display: block; margin-bottom: 5px; }
+        .log-date { color: #666; font-size: 0.8em; margin-left: 10px; }
+        .log-list { margin: 5px 0 0 20px; padding: 0; color: #ccc; font-size: 0.9em; }
+        .log-list li { margin-bottom: 4px; }
     </style>
 </head>
 <body>
@@ -88,7 +104,7 @@
     <header>
         <div style="display:flex; align-items:baseline;">
             <h1>Alchemy Factory Planner</h1>
-            <span class="subtitle">v23 | Default Config</span>
+            <span class="subtitle" onclick="showChangelog()">v25 | View Changelog</span>
         </div>
         <div class="tabs">
             <div class="tab-btn active" onclick="switchTab('calc')">Calculator</div>
@@ -97,6 +113,78 @@
     </header>
 
     <main>
+        <div id="changelog-modal">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h2>Changelog</h2>
+                    <button class="close-modal" onclick="closeChangelog()">&times;</button>
+                </div>
+                
+                <div class="log-entry">
+                    <span class="log-ver">v25 - Changelog & Polish</span>
+                    <ul class="log-list">
+                        <li>Added clickable Changelog modal.</li>
+                        <li>Cleaned up export button text.</li>
+                        <li>Verified recipes against Codex.</li>
+                    </ul>
+                </div>
+                <div class="log-entry">
+                    <span class="log-ver">v24 - Persistent Saves</span>
+                    <ul class="log-list">
+                        <li>Settings now save to Browser LocalStorage automatically.</li>
+                        <li>Added Factory Reset option.</li>
+                    </ul>
+                </div>
+                <div class="log-entry">
+                    <span class="log-ver">v23 - Default Config</span>
+                    <ul class="log-list">
+                        <li>Added "Default Logistics" panel to set preferred Fuel/Fertilizer globally.</li>
+                    </ul>
+                </div>
+                <div class="log-entry">
+                    <span class="log-ver">v22 - 3-Column Layout</span>
+                    <ul class="log-list">
+                        <li>Moved Upgrades to right column.</li>
+                        <li>Added tiered upgrade logic (diminishing returns).</li>
+                        <li>Added specific machine boosts (Alchemy Skill).</li>
+                    </ul>
+                </div>
+                <div class="log-entry">
+                    <span class="log-ver">v21 - Belt Presets</span>
+                    <ul class="log-list">
+                        <li>Added Belt Load selector (Full, 1/2, 1/4, etc).</li>
+                        <li>Target Rate now auto-calculates based on Belt Upgrade level.</li>
+                    </ul>
+                </div>
+                <div class="log-entry">
+                    <span class="log-ver">v20 - Display Fix</span>
+                    <ul class="log-list">
+                        <li>Fixed rendering bug where internal support nodes were hidden.</li>
+                    </ul>
+                </div>
+                <div class="log-entry">
+                    <span class="log-ver">v19 - Net Logistics</span>
+                    <ul class="log-list">
+                        <li>Fixed infinite recursion crash for self-eating loops (Fertilizer).</li>
+                        <li>Added "Net Value" math for fuel/fertilizer costs.</li>
+                    </ul>
+                </div>
+                <div class="log-entry">
+                    <span class="log-ver">v18 - In-Line Injection</span>
+                    <ul class="log-list">
+                        <li>Support chains now inject directly into the main tree under the machine using them.</li>
+                    </ul>
+                </div>
+                <div class="log-entry">
+                    <span class="log-ver">v17 - Construction List</span>
+                    <ul class="log-list">
+                        <li>Added sidebar list summing total machines required.</li>
+                        <li>Calculates parent furnaces needed automatically.</li>
+                    </ul>
+                </div>
+            </div>
+        </div>
+
         <div id="view-calc" class="view active">
             <div class="app-grid">
                 <div>
@@ -202,7 +290,12 @@
                             <label>Default Fertilizer</label>
                             <select id="defaultFertSelect"></select>
                         </div>
-                        <button class="save-btn" onclick="saveSettings()">Save Settings to DB</button>
+                        <button class="save-btn" onclick="saveSettings()">Save Settings (Local)</button>
+                        
+                        <div style="text-align:center; margin-top:20px; border-top:1px solid #444; padding-top:10px;">
+                            <span style="font-size:0.75em; color:#666;">Data Storage</span>
+                            <button class="reset-btn" onclick="resetToDefault()">Factory Reset (Delete Local)</button>
+                        </div>
                     </div>
                 </div>
             </div>
@@ -211,8 +304,8 @@
         <div id="view-db" class="view">
             <div class="editor-container">
                 <div class="editor-toolbar">
-                    <button onclick="applyChanges()">Apply Changes</button>
-                    <button class="info" onclick="exportData()">Export to File (Save)</button>
+                    <button onclick="applyChanges()">Apply Changes (Save Local)</button>
+                    <button class="info" onclick="exportData()">Export to File</button>
                 </div>
                 <textarea id="json-editor"></textarea>
             </div>
@@ -221,35 +314,43 @@
 
 <script>
 let DB = null;
+const STORAGE_KEY = "alchemy_factory_save_v1";
 
 function init() {
-    if (window.ALCHEMY_DB) {
-        DB = window.ALCHEMY_DB;
-        if(!DB.items) DB.items = {};
+    const localData = localStorage.getItem(STORAGE_KEY);
+    
+    if (localData) {
+        try {
+            DB = JSON.parse(localData);
+        } catch(e) {
+            DB = window.ALCHEMY_DB;
+        }
     } else {
-        alert("Error: alchemy_db.js not found!");
-        DB = { items: {}, recipes: [], machines: {}, settings: {} }; 
+        if (window.ALCHEMY_DB) {
+            DB = window.ALCHEMY_DB;
+            if(!DB.items) DB.items = {};
+        } else {
+            alert("Error: alchemy_db.js not found!");
+            DB = { items: {}, recipes: [], machines: {}, settings: {} }; 
+        }
     }
     
-    populateSelects(); // Populates Main & Default Selects
+    populateSelects();
 
-    // LOAD SETTINGS FROM DB
     if (DB.settings) {
-        // Levels
         if(DB.settings.beltLevel !== undefined) document.getElementById('lvlBelt').value = DB.settings.beltLevel;
         if(DB.settings.speedLevel !== undefined) document.getElementById('lvlSpeed').value = DB.settings.speedLevel;
         if(DB.settings.alchemyLevel !== undefined) document.getElementById('lvlAlchemy').value = DB.settings.alchemyLevel;
         if(DB.settings.fuelLevel !== undefined) document.getElementById('lvlFuel').value = DB.settings.fuelLevel;
         if(DB.settings.fertLevel !== undefined) document.getElementById('lvlFert').value = DB.settings.fertLevel;
         
-        // Defaults
         if(DB.settings.defaultFuel) {
             document.getElementById('defaultFuelSelect').value = DB.settings.defaultFuel;
-            document.getElementById('fuelSelect').value = DB.settings.defaultFuel; // Apply to current
+            document.getElementById('fuelSelect').value = DB.settings.defaultFuel; 
         }
         if(DB.settings.defaultFert) {
             document.getElementById('defaultFertSelect').value = DB.settings.defaultFert;
-            document.getElementById('fertSelect').value = DB.settings.defaultFert; // Apply to current
+            document.getElementById('fertSelect').value = DB.settings.defaultFert; 
         }
     }
 
@@ -257,22 +358,40 @@ function init() {
     applyPreset(); 
 }
 
+function persist() {
+    localStorage.setItem(STORAGE_KEY, JSON.stringify(DB));
+}
+
 function saveSettings() {
     if (!DB.settings) DB.settings = {};
     
-    // Save Levels
     DB.settings.beltLevel = parseInt(document.getElementById('lvlBelt').value) || 0;
     DB.settings.speedLevel = parseInt(document.getElementById('lvlSpeed').value) || 0;
     DB.settings.alchemyLevel = parseInt(document.getElementById('lvlAlchemy').value) || 0;
     DB.settings.fuelLevel = parseInt(document.getElementById('lvlFuel').value) || 0;
     DB.settings.fertLevel = parseInt(document.getElementById('lvlFert').value) || 0;
 
-    // Save Defaults
     DB.settings.defaultFuel = document.getElementById('defaultFuelSelect').value;
     DB.settings.defaultFert = document.getElementById('defaultFertSelect').value;
 
     document.getElementById('json-editor').value = JSON.stringify(DB, null, 4);
-    alert("Settings saved! Click 'Export to File' in the Database tab to save permanently.");
+    persist(); 
+    alert("Settings saved to your browser! They will persist when you refresh.");
+}
+
+function resetToDefault() {
+    if(confirm("This will wipe your local saves/upgrades and reload the default database from GitHub. Are you sure?")) {
+        localStorage.removeItem(STORAGE_KEY);
+        location.reload();
+    }
+}
+
+// --- MODAL FUNCTIONS ---
+function showChangelog() {
+    document.getElementById('changelog-modal').style.display = 'flex';
+}
+function closeChangelog() {
+    document.getElementById('changelog-modal').style.display = 'none';
 }
 
 function switchTab(tabName) {
@@ -286,8 +405,9 @@ function switchTab(tabName) {
 function applyChanges() {
     try {
         DB = JSON.parse(document.getElementById('json-editor').value);
+        persist(); 
         init(); 
-        alert("Changes applied!");
+        alert("Changes applied and saved locally!");
     } catch(e) { alert("Invalid JSON"); }
 }
 
@@ -312,7 +432,6 @@ function populateSelects() {
     const defFuelSel = document.getElementById('defaultFuelSelect');
     const defFertSel = document.getElementById('defaultFertSelect');
     
-    // Clear
     targetSel.innerHTML = '';
     fuelSel.innerHTML = '';
     fertSel.innerHTML = '';
@@ -336,7 +455,6 @@ function populateSelects() {
         if(itemDef.nutrientValue) ferts.push({ name: itemName, val: itemDef.nutrientValue });
     });
 
-    // Populate Targets
     Object.keys(itemsByCat).sort().forEach(cat => {
         const grp = document.createElement('optgroup');
         grp.label = cat;
@@ -349,14 +467,12 @@ function populateSelects() {
         targetSel.appendChild(grp);
     });
 
-    // Populate Fuels (Both Main and Default)
     fuels.sort((a,b) => b.heat - a.heat).forEach(f => {
         const txt = `${f.name} (${f.heat} P)`;
         fuelSel.appendChild(new Option(txt, f.name));
         defFuelSel.appendChild(new Option(txt, f.name));
     });
 
-    // Populate Ferts (Both Main and Default)
     ferts.sort((a,b) => b.val - a.val).forEach(f => {
         const txt = `${f.name} (${f.val} V)`;
         fertSel.appendChild(new Option(txt, f.name));
@@ -364,7 +480,6 @@ function populateSelects() {
     });
 }
 
-// --- UPGRADE MATH ---
 function getBeltSpeed(lvl) {
     if(lvl <= 0) return 60;
     let speed = 60;
@@ -480,7 +595,6 @@ function calculate() {
     const treeContainer = document.getElementById('tree');
     treeContainer.innerHTML = '';
     
-    // --- PRE-CALC NET VALUES ---
     const fuelDef = DB.items[selectedFuel] || {};
     const fuelBaseEnergy = fuelDef.heat || 10;
     const fuelGrossEnergy = fuelBaseEnergy * fuelMult;
@@ -510,7 +624,6 @@ function calculate() {
         totalMachineCounts[name] += count;
     }
 
-    // --- MAIN TREE CALCULATOR ---
     let grossRate = targetRate;
     if (selfFeed && targetItem === selectedFuel) {
         grossRate = targetRate * (fuelGrossEnergy / netFuelEnergy);
@@ -519,7 +632,6 @@ function calculate() {
         grossRate = targetRate * (fertVal / netFertVal);
     }
 
-    // --- RECURSIVE BUILDER ---
     function buildNode(item, rate, isSupportChain, isInjection) {
         const div = document.createElement('div');
         div.className = 'node';
@@ -636,7 +748,6 @@ function calculate() {
         return div;
     }
 
-    // 1. BUILD MAIN TREE
     if(targetItem) {
         const header = document.createElement('div');
         header.className = 'section-header';
@@ -646,7 +757,6 @@ function calculate() {
         treeContainer.appendChild(tree);
     }
 
-    // 2. EXTERNAL CHAINS
     document.getElementById('showFuel').disabled = (selfFeed || (globalHeatDemand <= 0));
     document.getElementById('showFert').disabled = (selfFert || (globalFertDemand <= 0));
 
@@ -667,7 +777,6 @@ function calculate() {
         treeContainer.appendChild(buildNode(selectedFert, globalFertDemand, true, false));
     }
 
-    // 3. CONSTRUCTION LIST
     const buildList = document.getElementById('construction-list');
     buildList.innerHTML = '';
     const sortedMachines = Object.keys(totalMachineCounts).sort();
@@ -698,7 +807,6 @@ function calculate() {
         buildList.appendChild(li);
     });
 
-    // 4. SUMMARY
     let netOutputRate = targetRate;
     let deductionText = [];
 
