@@ -1,0 +1,761 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Alchemy Factory Planner v23</title>
+    <script src="alchemy_db.js"></script> 
+    
+    <style>
+        :root { --bg: #1a1a1a; --text: #e0e0e0; --accent: #4caf50; --panel: #2d2d2d; --border: #444; --warn: #ff9800; --gold: #ffd700; --info: #2196f3; --profit: #00e676; --bio: #76ff03; --fuel: #ff5722; }
+        body { font-family: 'Segoe UI', sans-serif; background: var(--bg); color: var(--text); padding: 0; margin: 0; height: 100vh; display: flex; flex-direction: column; }
+        
+        header { background: #111; padding: 10px 20px; border-bottom: 1px solid var(--border); display: flex; align-items: center; justify-content: space-between; }
+        h1 { color: var(--accent); margin: 0; font-size: 1.2em; }
+        .subtitle { color: #888; font-size: 0.8em; margin-left: 10px; }
+        
+        .tabs { display: flex; gap: 5px; }
+        .tab-btn { background: #222; border: 1px solid var(--border); color: #888; padding: 8px 16px; cursor: pointer; border-radius: 4px; }
+        .tab-btn:hover { background: #333; color: #fff; }
+        .tab-btn.active { background: var(--accent); color: white; border-color: var(--accent); font-weight: bold; }
+
+        main { flex: 1; overflow: hidden; position: relative; }
+        .view { position: absolute; top: 0; left: 0; width: 100%; height: 100%; overflow-y: auto; padding: 20px; box-sizing: border-box; display: none; }
+        .view.active { display: block; }
+
+        /* 3-COLUMN LAYOUT */
+        .app-grid { 
+            display: grid; 
+            grid-template-columns: 320px 1fr 280px; 
+            gap: 20px; 
+            max-width: 1800px; 
+            margin: 0 auto; 
+            height: 100%;
+        }
+        
+        .panel { background: var(--panel); padding: 15px; border-radius: 8px; border: 1px solid var(--border); margin-bottom: 20px; }
+        .panel h3 { margin-top: 0; color: #fff; border-bottom: 1px solid #444; padding-bottom: 10px; font-size: 1.1em; }
+
+        .input-group { margin-bottom: 15px; }
+        label { display: block; font-size: 0.85em; color: #aaa; margin-bottom: 5px; }
+        input[type="number"], select { width: 100%; padding: 8px; background: #333; border: 1px solid #555; color: white; border-radius: 4px; box-sizing: border-box; }
+        input:disabled { opacity: 0.5; cursor: not-allowed; background: #2a2a2a; }
+
+        .toggle-row { display: flex; justify-content: space-between; align-items: center; margin-top: 8px; background: #222; padding: 8px; border-radius: 4px; }
+        .toggle-label { font-size: 0.85em; color: #ccc; }
+        input[type="checkbox"] { width: 16px; height: 16px; cursor: pointer; accent-color: var(--accent); }
+        input[type="checkbox"]:disabled { opacity: 0.3; cursor: not-allowed; }
+
+        .build-list { list-style: none; padding: 0; margin: 0; }
+        .build-item { display: flex; justify-content: space-between; padding: 5px 0; border-bottom: 1px solid #333; font-size: 0.9em; }
+        .build-item:last-child { border-bottom: none; }
+        .build-name { color: #ccc; }
+        .build-count { font-weight: bold; color: var(--accent); }
+        
+        .summary-box { background: #252525; border-left: 4px solid var(--accent); padding: 15px; margin-bottom: 20px; display: grid; grid-template-columns: repeat(4, 1fr); gap: 15px; }
+        .stat-block { display: flex; flex-direction: column; padding-right: 15px; border-right: 1px solid #444; }
+        .stat-block:last-child { border-right: none; }
+        .stat-label { font-size: 0.75em; color: #aaa; text-transform: uppercase; letter-spacing: 1px; }
+        .stat-value { font-size: 1.3em; font-weight: bold; color: #fff; margin-top: 5px; }
+        .stat-sub { font-size: 0.85em; color: var(--warn); margin-top: 2px; }
+        .net-positive { color: #69f0ae; }
+        .gold-cost { color: #ef5350; } 
+        .gold-profit { color: var(--profit); } 
+
+        .node { margin-left: 20px; padding: 6px 0; border-left: 2px solid #555; position: relative; }
+        .node-content { display: flex; align-items: center; gap: 10px; background: #222; padding: 8px 12px; border-radius: 4px; border: 1px solid #333; }
+        .qty { color: var(--accent); font-weight: bold; min-width: 80px; }
+        .machine-tag { background: #333; padding: 2px 6px; border-radius: 3px; font-size: 0.85em; border: 1px solid #444; color: #fff; font-weight: bold; }
+        .heat-tag { color: var(--warn); font-size: 0.85em; margin-left: 5px; }
+        .bio-tag { color: var(--bio); font-size: 0.85em; margin-left: 5px; }
+        .cost-tag { color: var(--gold); font-size: 0.85em; margin-left: 10px; font-weight: bold; }
+        .details { font-size: 0.9em; color: #ccc; }
+        .support-label { color: #888; font-size: 0.8em; margin-left: 10px; font-style: italic; }
+        
+        .section-header { margin-top: 30px; margin-bottom: 10px; padding-bottom: 5px; border-bottom: 1px dashed #555; color: #888; text-transform: uppercase; letter-spacing: 1px; font-size: 0.9em; }
+
+        .editor-container { max-width: 1200px; margin: 0 auto; height: 100%; display: flex; flex-direction: column; }
+        .editor-toolbar { margin-bottom: 10px; display: flex; gap: 10px; align-items: center; background: var(--panel); padding: 10px; border-radius: 8px; border: 1px solid var(--border); }
+        #json-editor { flex: 1; background: #151515; color: #a5d6a7; font-family: 'Consolas', monospace; border: 1px solid var(--border); padding: 15px; resize: none; font-size: 14px; line-height: 1.5; outline: none; border-radius: 4px; }
+        button { background: var(--accent); border: none; padding: 10px; width: auto; font-weight: bold; cursor: pointer; color: white; border-radius: 4px; transition: 0.2s; }
+        button.info { background: var(--info); }
+        button.save-btn { width: 100%; margin-top: 10px; background: #333; border: 1px solid var(--accent); color: var(--accent); }
+        button.save-btn:hover { background: var(--accent); color: white; }
+    </style>
+</head>
+<body>
+
+    <header>
+        <div style="display:flex; align-items:baseline;">
+            <h1>Alchemy Factory Planner</h1>
+            <span class="subtitle">v23 | Default Config</span>
+        </div>
+        <div class="tabs">
+            <div class="tab-btn active" onclick="switchTab('calc')">Calculator</div>
+            <div class="tab-btn" onclick="switchTab('db')">Database Editor</div>
+        </div>
+    </header>
+
+    <main>
+        <div id="view-calc" class="view active">
+            <div class="app-grid">
+                <div>
+                    <div class="panel">
+                        <h3>Production Goal</h3>
+                        <div class="input-group">
+                            <label>Target Item</label>
+                            <select id="targetItem" onchange="calculate()"></select>
+                        </div>
+                        
+                        <div class="input-group">
+                            <label>Target Throughput (Belt Load)</label>
+                            <select id="ratePreset" onchange="applyPreset()">
+                                <option value="1" selected>Full Belt (100%)</option>
+                                <option value="0.6666666">2/3 Belt (~66%)</option>
+                                <option value="0.5">1/2 Belt (50%)</option>
+                                <option value="0.25">1/4 Belt (25%)</option>
+                                <option value="0.125">1/8 Belt (12.5%)</option>
+                                <option value="0.0625">1/16 Belt (6.25%)</option>
+                                <option value="0.03125">1/32 Belt (3.125%)</option>
+                                <option value="custom">Custom Rate</option>
+                            </select>
+                        </div>
+
+                        <div class="input-group">
+                            <label>Actual Rate (Items/Min)</label>
+                            <input type="number" id="targetRate" value="60" oninput="calculate()" disabled>
+                        </div>
+                    </div>
+
+                    <div class="panel">
+                        <h3>Logistics (Current)</h3>
+                        <div class="input-group">
+                            <label>Heat Source</label>
+                            <select id="fuelSelect" onchange="calculate()"></select>
+                            <div class="toggle-row">
+                                <span class="toggle-label">Self-Feed (Internal)</span>
+                                <input type="checkbox" id="selfFeed" onchange="calculate()">
+                            </div>
+                            <div class="toggle-row">
+                                <span class="toggle-label" style="opacity:0.7">Show External Chain</span>
+                                <input type="checkbox" id="showFuel" checked onchange="calculate()">
+                            </div>
+                        </div>
+                        <div class="input-group" style="border-top:1px solid #444; padding-top:15px;">
+                            <label>Fertilizer Source</label>
+                            <select id="fertSelect" onchange="calculate()"></select>
+                            <div class="toggle-row">
+                                <span class="toggle-label">Self-Fertilize (Internal)</span>
+                                <input type="checkbox" id="selfFert" onchange="calculate()">
+                            </div>
+                            <div class="toggle-row">
+                                <span class="toggle-label" style="opacity:0.7">Show External Chain</span>
+                                <input type="checkbox" id="showFert" checked onchange="calculate()">
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="panel">
+                        <h3>Construction List</h3>
+                        <div style="font-size:0.8em; color:#888; margin-bottom:10px;">Total machines for all active chains.</div>
+                        <ul id="construction-list" class="build-list"></ul>
+                    </div>
+                </div>
+
+                <div id="results-area">
+                    <div id="summary-container"></div>
+                    <div id="tree"></div>
+                </div>
+
+                <div>
+                    <div class="panel">
+                        <h3>Upgrades (Levels)</h3>
+                        <div class="input-group">
+                            <label>Belt Speed (Logistics)</label>
+                            <input type="number" id="lvlBelt" value="0" min="0" max="99" oninput="applyPreset()">
+                        </div>
+                        <div class="input-group">
+                            <label>Factory Efficiency (Speed)</label>
+                            <input type="number" id="lvlSpeed" value="0" min="0" max="99" oninput="calculate()">
+                        </div>
+                        <div class="input-group">
+                            <label>Alchemy Skill (Extract/Alembic)</label>
+                            <input type="number" id="lvlAlchemy" value="0" min="0" max="99" oninput="calculate()">
+                        </div>
+                        <div class="input-group">
+                            <label>Fuel Efficiency</label>
+                            <input type="number" id="lvlFuel" value="0" min="0" max="99" oninput="calculate()">
+                        </div>
+                        <div class="input-group">
+                            <label>Fertilizer Efficiency</label>
+                            <input type="number" id="lvlFert" value="0" min="0" max="99" oninput="calculate()">
+                        </div>
+                    </div>
+
+                    <div class="panel">
+                        <h3>Default Logistics</h3>
+                        <div class="input-group">
+                            <label>Default Fuel</label>
+                            <select id="defaultFuelSelect"></select>
+                        </div>
+                        <div class="input-group">
+                            <label>Default Fertilizer</label>
+                            <select id="defaultFertSelect"></select>
+                        </div>
+                        <button class="save-btn" onclick="saveSettings()">Save Settings to DB</button>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <div id="view-db" class="view">
+            <div class="editor-container">
+                <div class="editor-toolbar">
+                    <button onclick="applyChanges()">Apply Changes</button>
+                    <button class="info" onclick="exportData()">Export to File (Save)</button>
+                </div>
+                <textarea id="json-editor"></textarea>
+            </div>
+        </div>
+    </main>
+
+<script>
+let DB = null;
+
+function init() {
+    if (window.ALCHEMY_DB) {
+        DB = window.ALCHEMY_DB;
+        if(!DB.items) DB.items = {};
+    } else {
+        alert("Error: alchemy_db.js not found!");
+        DB = { items: {}, recipes: [], machines: {}, settings: {} }; 
+    }
+    
+    populateSelects(); // Populates Main & Default Selects
+
+    // LOAD SETTINGS FROM DB
+    if (DB.settings) {
+        // Levels
+        if(DB.settings.beltLevel !== undefined) document.getElementById('lvlBelt').value = DB.settings.beltLevel;
+        if(DB.settings.speedLevel !== undefined) document.getElementById('lvlSpeed').value = DB.settings.speedLevel;
+        if(DB.settings.alchemyLevel !== undefined) document.getElementById('lvlAlchemy').value = DB.settings.alchemyLevel;
+        if(DB.settings.fuelLevel !== undefined) document.getElementById('lvlFuel').value = DB.settings.fuelLevel;
+        if(DB.settings.fertLevel !== undefined) document.getElementById('lvlFert').value = DB.settings.fertLevel;
+        
+        // Defaults
+        if(DB.settings.defaultFuel) {
+            document.getElementById('defaultFuelSelect').value = DB.settings.defaultFuel;
+            document.getElementById('fuelSelect').value = DB.settings.defaultFuel; // Apply to current
+        }
+        if(DB.settings.defaultFert) {
+            document.getElementById('defaultFertSelect').value = DB.settings.defaultFert;
+            document.getElementById('fertSelect').value = DB.settings.defaultFert; // Apply to current
+        }
+    }
+
+    document.getElementById('json-editor').value = JSON.stringify(DB, null, 4);
+    applyPreset(); 
+}
+
+function saveSettings() {
+    if (!DB.settings) DB.settings = {};
+    
+    // Save Levels
+    DB.settings.beltLevel = parseInt(document.getElementById('lvlBelt').value) || 0;
+    DB.settings.speedLevel = parseInt(document.getElementById('lvlSpeed').value) || 0;
+    DB.settings.alchemyLevel = parseInt(document.getElementById('lvlAlchemy').value) || 0;
+    DB.settings.fuelLevel = parseInt(document.getElementById('lvlFuel').value) || 0;
+    DB.settings.fertLevel = parseInt(document.getElementById('lvlFert').value) || 0;
+
+    // Save Defaults
+    DB.settings.defaultFuel = document.getElementById('defaultFuelSelect').value;
+    DB.settings.defaultFert = document.getElementById('defaultFertSelect').value;
+
+    document.getElementById('json-editor').value = JSON.stringify(DB, null, 4);
+    alert("Settings saved! Click 'Export to File' in the Database tab to save permanently.");
+}
+
+function switchTab(tabName) {
+    document.querySelectorAll('.view').forEach(el => el.classList.remove('active'));
+    document.querySelectorAll('.tab-btn').forEach(el => el.classList.remove('active'));
+    document.getElementById('view-' + tabName).classList.add('active');
+    const btnIndex = tabName === 'calc' ? 0 : 1;
+    document.querySelectorAll('.tab-btn')[btnIndex].classList.add('active');
+}
+
+function applyChanges() {
+    try {
+        DB = JSON.parse(document.getElementById('json-editor').value);
+        init(); 
+        alert("Changes applied!");
+    } catch(e) { alert("Invalid JSON"); }
+}
+
+function exportData() {
+    if(!DB) return;
+    const jsonStr = JSON.stringify(DB, null, 4);
+    const blob = new Blob([`window.ALCHEMY_DB = ${jsonStr};`], { type: "text/javascript" });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = url;
+    a.download = "alchemy_db.js";
+    document.body.appendChild(a);
+    a.click();
+    document.body.removeChild(a);
+    URL.revokeObjectURL(url);
+}
+
+function populateSelects() {
+    const targetSel = document.getElementById('targetItem');
+    const fuelSel = document.getElementById('fuelSelect');
+    const fertSel = document.getElementById('fertSelect');
+    const defFuelSel = document.getElementById('defaultFuelSelect');
+    const defFertSel = document.getElementById('defaultFertSelect');
+    
+    // Clear
+    targetSel.innerHTML = '';
+    fuelSel.innerHTML = '';
+    fertSel.innerHTML = '';
+    defFuelSel.innerHTML = '';
+    defFertSel.innerHTML = '';
+
+    const itemsByCat = {};
+    const fuels = [];
+    const ferts = [];
+
+    const allItems = new Set(Object.keys(DB.items || {}));
+    if(DB.recipes) DB.recipes.forEach(r => Object.keys(r.outputs).forEach(k => allItems.add(k)));
+
+    allItems.forEach(itemName => {
+        const itemDef = DB.items[itemName] || {};
+        const cat = itemDef.category || "Uncategorized";
+        if(!itemsByCat[cat]) itemsByCat[cat] = [];
+        itemsByCat[cat].push(itemName);
+
+        if(itemDef.heat) fuels.push({ name: itemName, heat: itemDef.heat });
+        if(itemDef.nutrientValue) ferts.push({ name: itemName, val: itemDef.nutrientValue });
+    });
+
+    // Populate Targets
+    Object.keys(itemsByCat).sort().forEach(cat => {
+        const grp = document.createElement('optgroup');
+        grp.label = cat;
+        itemsByCat[cat].sort().forEach(i => {
+            const opt = document.createElement('option');
+            opt.value = i;
+            opt.innerText = i;
+            grp.appendChild(opt);
+        });
+        targetSel.appendChild(grp);
+    });
+
+    // Populate Fuels (Both Main and Default)
+    fuels.sort((a,b) => b.heat - a.heat).forEach(f => {
+        const txt = `${f.name} (${f.heat} P)`;
+        fuelSel.appendChild(new Option(txt, f.name));
+        defFuelSel.appendChild(new Option(txt, f.name));
+    });
+
+    // Populate Ferts (Both Main and Default)
+    ferts.sort((a,b) => b.val - a.val).forEach(f => {
+        const txt = `${f.name} (${f.val} V)`;
+        fertSel.appendChild(new Option(txt, f.name));
+        defFertSel.appendChild(new Option(txt, f.name));
+    });
+}
+
+// --- UPGRADE MATH ---
+function getBeltSpeed(lvl) {
+    if(lvl <= 0) return 60;
+    let speed = 60;
+    speed += Math.min(lvl, 12) * 15;
+    if(lvl > 12) speed += (lvl - 12) * 3;
+    return speed;
+}
+
+function getSpeedMult(lvl) {
+    let mult = 1.0;
+    mult += Math.min(lvl, 12) * 0.25;
+    if(lvl > 12) mult += (lvl - 12) * 0.05;
+    return mult;
+}
+
+function getAlchemyMult(lvl) {
+    if(lvl <= 0) return 1.0;
+    let percent = 0;
+    for(let i=1; i<=lvl; i++) {
+        if(i <= 2) percent += 6;
+        else if(i <= 8) percent += 8;
+        else percent += 10;
+    }
+    return 1.0 + (percent / 100);
+}
+
+function applyPreset() {
+    const presetVal = document.getElementById('ratePreset').value;
+    const rateInput = document.getElementById('targetRate');
+    
+    if (presetVal === 'custom') {
+        rateInput.disabled = false;
+    } else {
+        rateInput.disabled = true;
+        const lvlBelt = parseInt(document.getElementById('lvlBelt').value) || 0;
+        const beltSpeed = getBeltSpeed(lvlBelt);
+        const fraction = parseFloat(presetVal);
+        rateInput.value = (beltSpeed * fraction).toFixed(2);
+    }
+    calculate();
+}
+
+function getProductionHeatCost(item, speedMult, alchemyMult) {
+    let cost = 0;
+    const recipe = DB.recipes.find(r => r.outputs[item]);
+    if (recipe) {
+        let outQty = recipe.outputs[item];
+        if (recipe.machine === "Extractor" || recipe.machine === "Alembic") {
+            outQty = outQty * alchemyMult;
+        }
+        if (DB.machines[recipe.machine] && DB.machines[recipe.machine].heatCost) {
+            const mach = DB.machines[recipe.machine];
+            const parent = DB.machines[mach.parent];
+            const pSlots = mach.parentSlots || parent.slots || 3;
+            const heatPs = (mach.heatCost * speedMult) + (parent.heatSelf / pSlots); 
+            const timePerItem = (recipe.baseTime / speedMult) / outQty;
+            cost += heatPs * timePerItem;
+        }
+        Object.keys(recipe.inputs).forEach(k => {
+            const inQty = recipe.inputs[k];
+            cost += getProductionHeatCost(k, speedMult, alchemyMult) * (inQty/outQty);
+        });
+    }
+    return cost;
+}
+
+function getProductionFertCost(item, fertVal, fertSpeed, speedMult, alchemyMult) {
+    let cost = 0;
+    const itemDef = DB.items[item] || {};
+    if (itemDef.category === "Herbs" && itemDef.nutrientCost) {
+        cost += itemDef.nutrientCost;
+    }
+    const recipe = DB.recipes.find(r => r.outputs[item]);
+    if (recipe) {
+        let outQty = recipe.outputs[item];
+        if (recipe.machine === "Extractor" || recipe.machine === "Alembic") {
+            outQty = outQty * alchemyMult;
+        }
+        Object.keys(recipe.inputs).forEach(k => {
+            const inQty = recipe.inputs[k];
+            cost += getProductionFertCost(k, fertVal, fertSpeed, speedMult, alchemyMult) * (inQty/outQty);
+        });
+    }
+    return cost;
+}
+
+function calculate() {
+    if(!DB || !DB.recipes) return;
+
+    const targetItem = document.getElementById('targetItem').value;
+    const targetRate = parseFloat(document.getElementById('targetRate').value) || 0;
+    
+    const selectedFuel = document.getElementById('fuelSelect').value;
+    const showFuel = document.getElementById('showFuel').checked;
+    const selfFeed = document.getElementById('selfFeed').checked;
+    
+    const selectedFert = document.getElementById('fertSelect').value;
+    const showFert = document.getElementById('showFert').checked;
+    const selfFert = document.getElementById('selfFert').checked;
+
+    const lvlSpeed = parseInt(document.getElementById('lvlSpeed').value) || 0;
+    const lvlBelt = parseInt(document.getElementById('lvlBelt').value) || 0;
+    const lvlFuel = parseInt(document.getElementById('lvlFuel').value) || 0;
+    const lvlAlchemy = parseInt(document.getElementById('lvlAlchemy').value) || 0;
+    const lvlFert = parseInt(document.getElementById('lvlFert').value) || 0;
+
+    const speedMult = getSpeedMult(lvlSpeed);
+    const alchemyMult = getAlchemyMult(lvlAlchemy);
+    const fuelMult = 1 + (lvlFuel * 0.10); 
+    const fertMult = 1 + (lvlFert * 0.10); 
+    const beltSpeed = getBeltSpeed(lvlBelt);
+
+    const treeContainer = document.getElementById('tree');
+    treeContainer.innerHTML = '';
+    
+    // --- PRE-CALC NET VALUES ---
+    const fuelDef = DB.items[selectedFuel] || {};
+    const fuelBaseEnergy = fuelDef.heat || 10;
+    const fuelGrossEnergy = fuelBaseEnergy * fuelMult;
+    let netFuelEnergy = fuelGrossEnergy;
+    if (selfFeed) {
+        const prodCost = getProductionHeatCost(selectedFuel, speedMult, alchemyMult);
+        netFuelEnergy = fuelGrossEnergy - prodCost;
+        if(netFuelEnergy <= 0) netFuelEnergy = 1; 
+    }
+
+    const fertDef = DB.items[selectedFert] || { nutrientValue: 144, maxFertility: 12 };
+    const fertVal = fertDef.nutrientValue * fertMult; 
+    let netFertVal = fertVal;
+    if (selfFert) {
+        const prodNutrientCost = getProductionFertCost(selectedFert, fertVal, fertDef.maxFertility, speedMult, alchemyMult);
+        netFertVal = fertVal - prodNutrientCost;
+        if (netFertVal <= 0) netFertVal = 1;
+    }
+
+    let globalHeatDemand = 0; 
+    let globalFertDemand = 0;
+    let globalCostPerMin = 0;
+    let totalMachineCounts = {}; 
+
+    function addMachineCount(name, count) {
+        if(!totalMachineCounts[name]) totalMachineCounts[name] = 0;
+        totalMachineCounts[name] += count;
+    }
+
+    // --- MAIN TREE CALCULATOR ---
+    let grossRate = targetRate;
+    if (selfFeed && targetItem === selectedFuel) {
+        grossRate = targetRate * (fuelGrossEnergy / netFuelEnergy);
+    }
+    if (selfFert && targetItem === selectedFert) {
+        grossRate = targetRate * (fertVal / netFertVal);
+    }
+
+    // --- RECURSIVE BUILDER ---
+    function buildNode(item, rate, isSupportChain, isInjection) {
+        const div = document.createElement('div');
+        div.className = 'node';
+        const itemDef = DB.items[item] || {};
+        
+        let innerHTML = '';
+        let childrenToAppend = []; 
+
+        if (itemDef.category === "Herbs" && itemDef.nutrientCost) {
+            const fertilitySpeed = (fertDef.maxFertility || 12); 
+            const timePerItem = itemDef.nutrientCost / fertilitySpeed; 
+            const itemsPerMinPerMachine = (60 / timePerItem) * speedMult; 
+            const machinesNeeded = rate / itemsPerMinPerMachine;
+            addMachineCount("Nursery", machinesNeeded);
+
+            const totalNutrientsNeeded = rate * itemDef.nutrientCost;
+            const fertNeededRate = totalNutrientsNeeded / fertVal; 
+            
+            if(!isSupportChain && !selfFert && !isInjection) globalFertDemand += fertNeededRate;
+
+            let injectionHtml = "";
+            const isSelfEating = (targetItem === selectedFert);
+            
+            if (selfFert && !isSupportChain && !isInjection && !isSelfEating) {
+                const netRate = (totalNutrientsNeeded / netFertVal); 
+                childrenToAppend.push({ type: 'inject', item: selectedFert, rate: netRate });
+            } else {
+                injectionHtml = `<span class="bio-tag">Needs ${fertNeededRate.toFixed(1)} ${selectedFert}/m</span>`;
+            }
+
+            innerHTML = `<div class="node-content">
+                <span class="qty">${rate.toFixed(1)}/m</span>
+                <strong>${item}</strong>
+                <span class="machine-tag">${Math.ceil(machinesNeeded)} Nursery</span>
+                ${injectionHtml}
+                ${isInjection ? '<span class="support-label">(Self-Fertilize)</span>' : ''}
+                ${(isSelfEating && selfFert) ? '<span class="support-label">(Internal Loop)</span>' : ''}
+            </div>`;
+        } 
+        else {
+            const recipe = DB.recipes.find(r => r.outputs[item]);
+            if (!recipe) {
+                let costHtml = "";
+                if(itemDef.buyPrice) {
+                    const costPerMin = rate * itemDef.buyPrice;
+                    if (!isSupportChain) globalCostPerMin += costPerMin;
+                    costHtml = `<span class="cost-tag">-${Math.ceil(costPerMin).toLocaleString()} G/m</span>`;
+                }
+                innerHTML = `<div class="node-content">
+                    <span class="qty">${rate.toFixed(1)}/m</span>
+                    <strong>${item}</strong>
+                    <span class="details">(Raw Input)</span>
+                    ${costHtml}
+                    ${isInjection ? '<span class="support-label">(Internal Supply)</span>' : ''}
+                </div>`;
+            } else {
+                let outputQty = recipe.outputs[item];
+                if (recipe.machine === "Extractor" || recipe.machine === "Alembic") {
+                    outputQty = outputQty * alchemyMult;
+                }
+
+                const itemsPerMinPerMachine = (60 / recipe.baseTime * outputQty) * speedMult;
+                const machinesNeeded = rate / itemsPerMinPerMachine;
+                
+                addMachineCount(recipe.machine, machinesNeeded);
+
+                let heatHtml = "";
+                if (DB.machines[recipe.machine] && DB.machines[recipe.machine].heatCost) {
+                    const machineDef = DB.machines[recipe.machine];
+                    const parentDef = DB.machines[machineDef.parent];
+                    const slotsReq = machineDef.slotsRequired || 1; 
+                    const pSlots = machineDef.parentSlots || parentDef.slots || 3;
+                    
+                    const activeHeatPerMachine = machineDef.heatCost * speedMult;
+                    const parentsNeeded = Math.ceil(machinesNeeded / (pSlots / slotsReq));
+                    const totalHeatPs = (parentsNeeded * parentDef.heatSelf) + (machinesNeeded * activeHeatPerMachine);
+                    
+                    if (!isSupportChain && !selfFeed && !isInjection) {
+                        globalHeatDemand += totalHeatPs;
+                    }
+
+                    const isSelfEating = (targetItem === selectedFuel);
+
+                    if (selfFeed && !isSupportChain && !isInjection && !isSelfEating) {
+                        const fuelRate = (totalHeatPs * 60) / netFuelEnergy;
+                        childrenToAppend.push({ type: 'inject', item: selectedFuel, rate: fuelRate });
+                    } else {
+                        heatHtml = `<span class="heat-tag">Heat: ${totalHeatPs.toFixed(1)} P/s (${parentsNeeded} ${machineDef.parent}s)</span>`;
+                    }
+                }
+
+                innerHTML = `<div class="node-content">
+                    <span class="qty">${rate.toFixed(1)}/m</span>
+                    <strong>${item}</strong>
+                    <span class="machine-tag">${Math.ceil(machinesNeeded)} ${recipe.machine}s</span>
+                    ${heatHtml}
+                    ${isInjection ? '<span class="support-label">(Self-Feed)</span>' : ''}
+                    ${(selfFeed && targetItem === selectedFuel && item === selectedFuel) ? '<span class="support-label">(Internal Loop)</span>' : ''}
+                </div>`;
+
+                Object.keys(recipe.inputs).forEach(inputName => {
+                    const inputQty = recipe.inputs[inputName];
+                    const requiredInputRate = (rate / outputQty) * inputQty;
+                    childrenToAppend.push({ type: 'input', item: inputName, rate: requiredInputRate });
+                });
+            }
+        }
+
+        div.innerHTML = innerHTML;
+        childrenToAppend.forEach(child => {
+            const isInj = (child.type === 'inject');
+            div.appendChild(buildNode(child.item, child.rate, isSupportChain, isInjection || isInj));
+        });
+        return div;
+    }
+
+    // 1. BUILD MAIN TREE
+    if(targetItem) {
+        const header = document.createElement('div');
+        header.className = 'section-header';
+        header.innerText = `--- Primary Production Chain (${targetItem}) ---`;
+        treeContainer.appendChild(header);
+        const tree = buildNode(targetItem, grossRate, false, false);
+        treeContainer.appendChild(tree);
+    }
+
+    // 2. EXTERNAL CHAINS
+    document.getElementById('showFuel').disabled = (selfFeed || (globalHeatDemand <= 0));
+    document.getElementById('showFert').disabled = (selfFert || (globalFertDemand <= 0));
+
+    if (!selfFeed && globalHeatDemand > 0 && showFuel) {
+        const fuelNeededRate = (globalHeatDemand * 60) / fuelGrossEnergy;
+        const header = document.createElement('div');
+        header.className = 'section-header';
+        header.innerText = `--- External Fuel Chain (${selectedFuel}) ---`;
+        treeContainer.appendChild(header);
+        treeContainer.appendChild(buildNode(selectedFuel, fuelNeededRate, true, false));
+    }
+
+    if (!selfFert && globalFertDemand > 0 && showFert) {
+        const header = document.createElement('div');
+        header.className = 'section-header';
+        header.innerText = `--- External Fertilizer Chain (${selectedFert}) ---`;
+        treeContainer.appendChild(header);
+        treeContainer.appendChild(buildNode(selectedFert, globalFertDemand, true, false));
+    }
+
+    // 3. CONSTRUCTION LIST
+    const buildList = document.getElementById('construction-list');
+    buildList.innerHTML = '';
+    const sortedMachines = Object.keys(totalMachineCounts).sort();
+    let parentCounts = {}; 
+
+    sortedMachines.forEach(m => {
+        const count = totalMachineCounts[m];
+        if(count <= 0.01) return;
+        const li = document.createElement('li');
+        li.className = 'build-item';
+        li.innerHTML = `<span class="build-name">${m}</span> <span class="build-count">${Math.ceil(count)}</span>`;
+        buildList.appendChild(li);
+
+        const def = DB.machines[m];
+        if(def && def.parent) {
+            if(!parentCounts[def.parent]) parentCounts[def.parent] = 0;
+            const slotsReq = def.slotsRequired || 1;
+            const pSlots = def.parentSlots || DB.machines[def.parent].slots || 3;
+            parentCounts[def.parent] += Math.ceil(count / (pSlots / slotsReq));
+        }
+    });
+
+    Object.keys(parentCounts).forEach(p => {
+        const li = document.createElement('li');
+        li.className = 'build-item';
+        li.style.borderTop = "1px dashed #555";
+        li.innerHTML = `<span class="build-name">${p}</span> <span class="build-count" style="color:#ff9800">${parentCounts[p]}</span>`;
+        buildList.appendChild(li);
+    });
+
+    // 4. SUMMARY
+    let netOutputRate = targetRate;
+    let deductionText = [];
+
+    if (selfFeed && targetItem === selectedFuel) {
+        deductionText.push(`Gross Prod: ${grossRate.toFixed(1)}`);
+        deductionText.push(`Internal Use: ${(grossRate - targetRate).toFixed(1)}`);
+    }
+    if (selfFert && targetItem === selectedFert) {
+        deductionText.push(`Gross Prod: ${grossRate.toFixed(1)}`);
+        deductionText.push(`Internal Use: ${(grossRate - targetRate).toFixed(1)}`);
+    }
+
+    const targetItemDef = DB.items[targetItem] || {};
+    let profitHtml = "";
+    if (targetItemDef.sellPrice) {
+        const revenuePerMin = netOutputRate * targetItemDef.sellPrice;
+        const profit = revenuePerMin - globalCostPerMin;
+        profitHtml = `<div class="stat-block">
+            <span class="stat-label">Projected Profit</span>
+            <span class="stat-value ${profit >= 0 ? 'gold-profit' : 'gold-cost'}">
+                ${Math.floor(profit).toLocaleString()} G/m
+            </span>
+            <span class="stat-sub">Rev: ${Math.floor(revenuePerMin).toLocaleString()} | Cost: ${Math.ceil(globalCostPerMin).toLocaleString()}</span>
+        </div>`;
+    } else {
+         profitHtml = `<div class="stat-block">
+            <span class="stat-label">Total Raw Cost</span>
+            <span class="stat-value gold-cost">-${Math.ceil(globalCostPerMin).toLocaleString()} G/m</span>
+        </div>`;
+    }
+
+    const outputBlock = `<div class="stat-block">
+            <span class="stat-label">Net Output</span>
+            <span class="stat-value ${netOutputRate >= 0 ? 'net-positive' : 'net-warning'}">
+                ${netOutputRate.toFixed(1)} / min
+            </span>
+            ${deductionText.length > 0 ? `<span class="stat-sub" style="font-size:0.75em">${deductionText.join('<br>')}</span>` : ''}
+       </div>`;
+
+    const heatBlock = `<div class="stat-block">
+            <span class="stat-label">External Load</span>
+            <span class="stat-value" style="font-size:0.9em; color:var(--fuel);">Heat: ${globalHeatDemand.toFixed(1)} P/s</span>
+            <span class="stat-value" style="font-size:0.9em; color:var(--bio);">Bio: ${globalFertDemand.toFixed(1)} /m</span>
+       </div>`;
+
+    const beltStatus = `<div class="stat-block">
+        <span class="stat-label">Belt Usage (Net)</span>
+        <span class="stat-value" style="font-size:1.1em; color:${netOutputRate > beltSpeed ? '#ff5252' : '#aaa'};">
+            ${(netOutputRate/beltSpeed * 100).toFixed(0)}%
+        </span>
+        <span class="stat-sub">Cap: ${beltSpeed}/m</span>
+    </div>`;
+
+    document.getElementById('summary-container').innerHTML = `<div class="summary-box">${outputBlock}${heatBlock}${profitHtml}${beltStatus}</div>`;
+}
+
+init();
+</script>
+</body>
+</html>
