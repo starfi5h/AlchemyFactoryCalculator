@@ -361,6 +361,7 @@ window.ALCHEMY_DB = {
         { "id": "Basic Fertilizer", "machine": "Assembler", "inputs": { "Plant Ash": 1, "Quicklime Powder": 1 }, "outputs": { "Basic Fertilizer": 1 }, "baseTime": 4.0 },
         { "id": "Advanced Fertilizer", "machine": "Assembler", "inputs": { "Basic Fertilizer": 1, "Gloom Fungus": 1 }, "outputs": { "Advanced Fertilizer": 1 }, "baseTime": 4.0 },
         { "id": "Fertile Catalyst", "machine": "Advanced Assembler", "inputs": { "Chamomile Powder": 1, "Gloom Spores": 1, "Sulfur Powder": 1 }, "outputs": { "Unstable Catalyst": 1 }, "baseTime": 4.0 },
+        { "id": "Oblivion Essence", "machine": "Paradox Crucible", "inputs": { "Sage Seed": 1 }, "outputs": { "Oblivion Essence": 1 }, "baseTime": 8.7 },
         { "id": "Vitality Essence", "machine": "Paradox Crucible", "inputs": { "Oblivion Essence": 1 }, "outputs": { "Vitality Essence": 1 }, "baseTime": 5.0 },
         { "id": "Resonant Catalyst", "machine": "Advanced Blender", "inputs": { "Fertile Catalyst": 1, "Volcanic Ash": 1, "Aqua Vitae": 12 }, "outputs": { "Resonant Catalyst": 1 }, "baseTime": 8.0 },
         { "id": "Eternal Catalyst", "machine": "Arcane Processor", "inputs": { "Resonant Catalyst": 15, "Philosopher's Stone": 1 }, "outputs": { "Eternal Catalyst": 1 }, "baseTime": 60.0 },
@@ -424,13 +425,18 @@ window.ALCHEMY_DB = {
 
         // --- 15. ALTERNATE RECIPES ---
         { 
+            "id": "Salt_Alt", "machine": "Stone Crusher", 
+            "inputs": { "Rock Salt": 2 }, "outputs": { "Salt": 1, "Sand": 1 }, 
+            "baseTime": 6.0 
+        },
+        { 
             "id": "Coke_Alt", "machine": "Crucible", 
             "inputs": { "Coal": 1 }, "outputs": { "Coke": 1 }, 
             "baseTime": 6.0 
         },
         { 
             "id": "CopperPowder2_Alt", "machine": "Athanor", 
-            "inputs": { "Copper Powder": 2 }, "outputs": { "Copper Powder": 1 }, 
+            "inputs": { "Impure Copper Powder": 2 }, "outputs": { "Copper Powder": 1 }, 
             "baseTime": 6.0 
         },
         { 
@@ -461,39 +467,9 @@ window.ALCHEMY_DB = {
         },
         // --- Recycling & Other Alts ---
         { 
-            "id": "IronIngot_Alt", "machine": "Crucible", 
-            "inputs": { "Iron Sand": 1 }, "outputs": { "Iron Ingot": 1 }, 
-            "baseTime": 6.0 
-        },
-        { 
-            "id": "CopperPowder2_Alt2", "machine": "Grinder", 
-            "inputs": { "Copper Ingot": 1 }, "outputs": { "Copper Powder": 1 }, 
-            "baseTime": 12.0 
-        },
-        { 
-            "id": "SilverPowder3_Alt3", "machine": "Grinder", 
-            "inputs": { "Silver Ingot": 1 }, "outputs": { "Silver Powder": 1 }, 
-            "baseTime": 16.0 
-        },
-        { 
-            "id": "GoldDust5_Alt", "machine": "Grinder", 
-            "inputs": { "Gold Ingot": 1 }, "outputs": { "Gold Dust": 1 }, 
-            "baseTime": 40.0 
-        },
-        { 
             "id": "Shard1_Alt", "machine": "Stone Crusher", 
             "inputs": { "Quartz Ore": 1 }, "outputs": { "Crude Shard": 80 }, 
             "baseTime": 6.0 
-        },
-        { 
-            "id": "Mors_Alt", "machine": "Paradox Crucible", 
-            "inputs": { "Vitality Essence": 1 }, "outputs": { "Oblivion Essence": 1 }, 
-            "baseTime": 5.0 
-        },
-        { 
-            "id": "VolcanicAsh_Alt", "machine": "Grinder", 
-            "inputs": { "Obsidian": 1 }, "outputs": { "Volcanic Ash": 1 }, 
-            "baseTime": 24.0 
         },
         // --- End Game Gem Alternates ---
         { 
