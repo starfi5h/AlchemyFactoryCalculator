@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Alchemy Factory Planner v54</title>
+    <title>Alchemy Factory Planner v55</title>
     <script src="alchemy_db.js"></script> 
     
     <style>
@@ -118,7 +118,7 @@
             <h1>Alchemy Factory Planner</h1>
             <span style="margin-left: 20px;">
                 <a href="https://github.com/JoeJoesGit/AlchemyFactoryCalculator" target="_blank" class="repo-link">GitHub Repo</a>
-                <span class="subtitle" onclick="showChangelog()">v54 | View Changelog</span>
+                <span class="subtitle" onclick="showChangelog()">v55 | View Changelog</span>
             </span>
         </div>
         <div class="tabs">
@@ -132,11 +132,11 @@
             <div class="modal-content">
                 <div class="modal-header"><h2>Changelog</h2><button class="close-modal" onclick="closeModal('changelog-modal')">&times;</button></div>
                 <div style="line-height:1.6; color:#ccc;">
+                    <strong>v55 - Belt Cap Logic</strong><br>
+                    - <strong>Fix:</strong> Machine counts now respect the current Belt Speed cap.<br>
+                    - Example: If a Nursery *could* produce 540 items/min but the belt limit is 90, the calculator now correctly requires 6 machines.<br><br>
                     <strong>v54 - Logic Repair</strong><br>
-                    - Disabled aggressive tree pruning for Self-Fuel/Fert.<br>
-                    - <strong>Fix:</strong> Ensures sub-dependencies (like Sage in Basic Fertilizer) are calculated correctly even when Self-Fert is ON.<br><br>
-                    <strong>v53 - Lean Version</strong><br>
-                    - Separated Database Logic.<br>
+                    - Disabled aggressive tree pruning to fix nutrient calculations in sub-chains.<br>
                     <a href="https://github.com/JoeJoesGit/AlchemyFactoryCalculator/blob/main/CHANGELOG.md" target="_blank" style="color:var(--accent);">View Full History on GitHub</a>
                 </div>
             </div>
@@ -812,7 +812,9 @@ function calculate() {
             if (itemDef.category === "Herbs" && itemDef.nutrientCost) {
                 const fertilitySpeed = (fertDef.maxFertility || 12); 
                 const timePerItem = itemDef.nutrientCost / fertilitySpeed; 
-                const itemsPerMinPerMachine = (60 / timePerItem) * speedMult; 
+                const calculatedSpeed = (60 / timePerItem) * speedMult; 
+                // APPLIED BELT CAP HERE
+                const itemsPerMinPerMachine = Math.min(calculatedSpeed, beltSpeed);
                 const machinesNeeded = rate / itemsPerMinPerMachine;
                 addMachineCount("Nursery", machinesNeeded);
 
@@ -861,7 +863,9 @@ function calculate() {
                         outputQty = outputQty * alchemyMult;
                     }
 
-                    const itemsPerMinPerMachine = (60 / recipe.baseTime * outputQty) * speedMult;
+                    const calculatedSpeed = (60 / recipe.baseTime * outputQty) * speedMult;
+                    // APPLIED BELT CAP HERE
+                    const itemsPerMinPerMachine = Math.min(calculatedSpeed, beltSpeed);
                     const machinesNeeded = attemptsRate / itemsPerMinPerMachine;
                     addMachineCount(recipe.machine, machinesNeeded);
 
