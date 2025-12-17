@@ -1,4 +1,5 @@
 window.ALCHEMY_DB = {
+	"version": 16,
     "items": {
         // --- 1. RAW RESOURCES ---
         "Logs": { "category": "Raw Materials", "buyPrice": 200, "heat": 10 },
