@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Alchemy Factory Planner v60</title>
+    <title>Alchemy Factory Planner v62</title>
     <script src="alchemy_db.js"></script> 
     
     <style>
@@ -137,7 +137,7 @@
         .btn-active-green { background: #2e7d32 !important; border-color: #4caf50 !important; color: white !important; }
         .btn-inactive-red { background: #333 !important; color: #aaa !important; }
 
-        /* --- CONSTRUCTION LIST (Tree Style) --- */
+        /* --- CONSTRUCTION LIST --- */
         .build-list { list-style: none; padding: 0; margin: 0; }
         .build-group { margin-bottom: 2px; }
         .build-header { 
@@ -213,7 +213,7 @@
             <h1>Alchemy Factory Planner</h1>
             <span style="margin-left: 20px;">
                 <a href="https://github.com/JoeJoesGit/AlchemyFactoryCalculator" target="_blank" class="repo-link">GitHub Repo</a>
-                <span class="subtitle" onclick="showChangelog()">v60 | View Changelog</span>
+                <span class="subtitle" onclick="showChangelog()">v62 | View Changelog</span>
             </span>
         </div>
         <div class="tabs">
@@ -227,11 +227,12 @@
             <div class="modal-content">
                 <div class="modal-header"><h2>Changelog</h2><button class="close-modal" onclick="closeModal('changelog-modal')">&times;</button></div>
                 <div style="line-height:1.6; color:#ccc;">
-                    <strong>v60 - Layout & Fixes</strong><br>
-                    - <strong>Auto-Update:</strong> App now detects DB version changes and automatically refreshes data.<br>
-                    - <strong>Layout:</strong> Moved Byproducts to Main Tree (Col 2).<br>
-                    - <strong>Fix:</strong> Restored missing Recipe Swap functionality.<br>
-                    - <strong>UX:</strong> Smart Search box now has a dedicated Clear button.<br>
+                    <strong>v62 - Precision Counting</strong><br>
+                    - <strong>Logic:</strong> Construction List now uses "Round-then-Sum" logic. Machines are rounded up per production step before being totaled, matching the Tree visual exactly.<br>
+                    - <strong>Cost:</strong> Total Materials now reflect this more realistic (and slightly higher) machine count.<br><br>
+                    <strong>v61 - Batch Logic & Multi-Outputs</strong><br>
+                    - <strong>Logic:</strong> Replaced all "Failure/Probability" math with **Batch Cycles**.<br>
+                    - <strong>Byproducts:</strong> Secondary outputs (e.g., Planks, Charcoal) are now automatically listed.<br>
                     <a href="https://github.com/JoeJoesGit/AlchemyFactoryCalculator/blob/main/CHANGELOG.md" target="_blank" style="color:var(--accent);">View Full History on GitHub</a>
                 </div>
             </div>
@@ -420,28 +421,23 @@ function init() {
         
         if (fileVersion > localVersion) {
             console.log(`Auto-Updating DB: v${localVersion} -> v${fileVersion}`);
-            // Keep user settings if possible
             const oldSettings = (JSON.parse(localData || '{}')).settings || {};
             DB = JSON.parse(JSON.stringify(window.ALCHEMY_DB));
-            // Restore belt level etc if they exist
             if(oldSettings.beltLevel !== undefined) DB.settings = oldSettings;
-            persist(); // Save new DB to storage
+            persist();
         } else if (localData) {
             try { 
                 DB = JSON.parse(localData); 
                 if (!DB.recipes || !DB.recipes[0].id) throw new Error("Invalid DB");
             } catch(e) {
-                // Fallback
                 DB = JSON.parse(JSON.stringify(window.ALCHEMY_DB));
                 persist();
             }
         } else {
-            // No local data, use file
             DB = JSON.parse(JSON.stringify(window.ALCHEMY_DB));
             persist();
         }
     } else {
-        // Fallback for offline if file failed to load but storage exists
         if(localData) {
             try { DB = JSON.parse(localData); } catch(e) { alert("Database Error"); }
         } else {
@@ -668,31 +664,14 @@ function openRecipeModal(item) {
         const div = document.createElement('div');
         div.className = `recipe-option ${r.id === currentId ? 'active' : ''}`;
         
-        // Build Input String
-        let inputs = [];
-        Object.keys(r.inputs).forEach(key => { inputs.push(`${r.inputs[key]}x ${key}`); });
-        let inputStr = inputs.join(', ');
-
-        // Build Output String
-        let outputs = [];
-        Object.keys(r.outputs).forEach(key => { outputs.push(`${r.outputs[key]}x ${key}`); });
-        let outputStr = outputs.join(', ');
+        let inputs = []; Object.keys(r.inputs).forEach(key => { inputs.push(`${r.inputs[key]}x ${key}`); });
+        let outputs = []; Object.keys(r.outputs).forEach(key => { outputs.push(`${r.outputs[key]}x ${key}`); });
 
         div.innerHTML = `
-            <div class="recipe-header">
-                <strong>${r.machine}</strong> <span style="font-size:0.9em; opacity:0.8;">(${r.baseTime}s)</span>
-                ${r.id === currentId ? '✅' : ''}
-            </div>
-            <div class="recipe-details">
-                Input: ${inputStr}<br>Yields: ${outputStr}
-            </div>
+            <div class="recipe-header"><strong>${r.machine}</strong> <span style="font-size:0.9em; opacity:0.8;">(${r.baseTime}s)</span>${r.id === currentId ? '✅' : ''}</div>
+            <div class="recipe-details">Input: ${inputs.join(', ')}<br>Yields: ${outputs.join(', ')}</div>
         `;
-        div.onclick = () => { 
-            DB.settings.preferredRecipes[item] = r.id; 
-            persist(); 
-            closeModal('recipe-modal'); 
-            calculate(); 
-        };
+        div.onclick = () => { DB.settings.preferredRecipes[item] = r.id; persist(); closeModal('recipe-modal'); calculate(); };
         list.appendChild(div);
     });
     document.getElementById('recipe-modal').style.display = 'flex';
@@ -744,15 +723,21 @@ function getActiveRecipe(item) {
 function getProductionHeatCost(item, speedMult, alchemyMult) {
     let cost = 0; const recipe = getActiveRecipe(item);
     if (recipe) {
-        let outQty = recipe.outputs[item];
-        if (recipe.machine === "Extractor" || recipe.machine === "Alembic") outQty *= alchemyMult;
-        if (DB.machines[recipe.machine] && DB.machines[recipe.machine].heatCost) {
-            const mach = DB.machines[recipe.machine]; const parent = DB.machines[mach.parent];
-            const slotsReq = mach.slotsRequired || 1; const pSlots = mach.parentSlots || parent.slots || 3;
-            const heatPs = (mach.heatCost * speedMult) + (parent.heatSelf / (pSlots/slotsReq)); 
-            cost += heatPs * ((recipe.baseTime / speedMult) / outQty);
+        let outQty = recipe.outputs[item]; 
+        if (recipe.outputs[item]) {
+             let batchYield = recipe.outputs[item];
+             if (recipe.machine === "Extractor" || recipe.machine === "Alembic") batchYield *= alchemyMult;
+             
+             if (DB.machines[recipe.machine] && DB.machines[recipe.machine].heatCost) {
+                const mach = DB.machines[recipe.machine]; const parent = DB.machines[mach.parent];
+                const slotsReq = mach.slotsRequired || 1; const pSlots = mach.parentSlots || parent.slots || 3;
+                const heatPs = (mach.heatCost * speedMult) + (parent.heatSelf / (pSlots/slotsReq)); 
+                cost += heatPs * ((recipe.baseTime / speedMult) / batchYield);
+            }
+            Object.keys(recipe.inputs).forEach(k => { 
+                cost += getProductionHeatCost(k, speedMult, alchemyMult) * (recipe.inputs[k] / batchYield); 
+            });
         }
-        Object.keys(recipe.inputs).forEach(k => { cost += getProductionHeatCost(k, speedMult, alchemyMult) * (recipe.inputs[k]/outQty); });
     }
     return cost;
 }
@@ -761,10 +746,12 @@ function getProductionFertCost(item, fertVal, fertSpeed, speedMult, alchemyMult)
     let cost = 0; const itemDef = DB.items[item] || {};
     if (itemDef.category === "Herbs" && itemDef.nutrientCost) cost += itemDef.nutrientCost;
     const recipe = getActiveRecipe(item);
-    if (recipe) {
-        let outQty = recipe.outputs[item];
-        if (recipe.machine === "Extractor" || recipe.machine === "Alembic") outQty *= alchemyMult;
-        Object.keys(recipe.inputs).forEach(k => { cost += getProductionFertCost(k, fertVal, fertSpeed, speedMult, alchemyMult) * (recipe.inputs[k]/outQty); });
+    if (recipe && recipe.outputs[item]) {
+        let batchYield = recipe.outputs[item];
+        if (recipe.machine === "Extractor" || recipe.machine === "Alembic") batchYield *= alchemyMult;
+        Object.keys(recipe.inputs).forEach(k => { 
+            cost += getProductionFertCost(k, fertVal, fertSpeed, speedMult, alchemyMult) * (recipe.inputs[k] / batchYield); 
+        });
     }
     return cost;
 }
@@ -839,7 +826,8 @@ function calculate() {
                 const isLiquid = (itemDef.liquid === true);
                 const itemsPerMinPerMachine = isLiquid ? calculatedSpeed : Math.min(calculatedSpeed, beltSpeed);
                 const machinesNeeded = rate / itemsPerMinPerMachine;
-                addMachineCount("Nursery", machinesNeeded);
+                // --- V62: Round-then-Sum ---
+                addMachineCount("Nursery", Math.ceil(machinesNeeded));
 
                 const totalNutrientsNeeded = rate * itemDef.nutrientCost; const itemsNeeded = totalNutrientsNeeded / grossFertVal; 
                 if (!isInternalModule) { globalFertDemandItems += itemsNeeded; globalBioLoad += (totalNutrientsNeeded / 60); }
@@ -852,20 +840,34 @@ function calculate() {
                     let costHtml = ""; if(itemDef.buyPrice) { let c = rate * itemDef.buyPrice; globalCostPerMin += c; costHtml = `<span class="cost-tag">${Math.ceil(c).toLocaleString()} G/m</span>`; }
                     innerHTML = `<div class="node-content"><span class="row-id">${myRowID})</span><span class="qty">${rate.toFixed(1)}/m</span><strong>${item}</strong><span class="details">(Raw Input)</span>${costHtml}${outputTag}</div>`;
                 } else {
-                    let prob = recipe.probability || 1.0; let attemptsRate = rate / prob; let outputQty = recipe.outputs[item];
-                    if (recipe.machine === "Extractor" || recipe.machine === "Alembic") outputQty *= alchemyMult;
-                    const calculatedSpeed = (60 / recipe.baseTime * outputQty) * speedMult; 
+                    let batchYield = recipe.outputs[item] || 1;
+                    if (recipe.machine === "Extractor" || recipe.machine === "Alembic") batchYield *= alchemyMult;
+                    const batchesPerMin = rate / batchYield;
+                    const maxBatchesPerMin = (60 / recipe.baseTime) * speedMult;
                     const isLiquid = (itemDef.liquid === true);
-                    const itemsPerMinPerMachine = isLiquid ? calculatedSpeed : Math.min(calculatedSpeed, beltSpeed);
-                    const machinesNeeded = attemptsRate / itemsPerMinPerMachine;
-                    addMachineCount(recipe.machine, machinesNeeded);
-
-                    if (recipe.failures && prob < 1.0) {
-                        let failureCount = attemptsRate - rate;
-                        recipe.failures.forEach(fail => { if(!totalByproducts[fail.item]) totalByproducts[fail.item]=0; totalByproducts[fail.item] += failureCount * fail.qty; });
+                    let effectiveBatchesPerMin = maxBatchesPerMin;
+                    
+                    if (!isLiquid) {
+                        const maxItemsPerMin = maxBatchesPerMin * batchYield;
+                        if (maxItemsPerMin > beltSpeed) {
+                            effectiveBatchesPerMin = beltSpeed / batchYield;
+                        }
                     }
+                    
+                    const machinesNeeded = batchesPerMin / effectiveBatchesPerMin;
+                    // --- V62: Round-then-Sum ---
+                    addMachineCount(recipe.machine, Math.ceil(machinesNeeded));
 
-                    let heatTag = ""; let failTag = (prob < 1.0) ? `<span class="fail-tag">(${(prob*100).toFixed(0)}% Chance)</span>` : "";
+                    Object.keys(recipe.outputs).forEach(outKey => {
+                        if (outKey !== item) {
+                            let yieldPerBatch = recipe.outputs[outKey];
+                            let totalByproduct = batchesPerMin * yieldPerBatch;
+                            if(!totalByproducts[outKey]) totalByproducts[outKey] = 0;
+                            totalByproducts[outKey] += totalByproduct;
+                        }
+                    });
+
+                    let heatTag = ""; 
                     if (DB.machines[recipe.machine] && DB.machines[recipe.machine].heatCost) {
                         const mach = DB.machines[recipe.machine]; const parent = DB.machines[mach.parent];
                         const sReq = mach.slotsRequired || 1; const pSlots = mach.parentSlots || parent.slots || 3;
@@ -879,10 +881,12 @@ function calculate() {
                     let swapHtml = ""; const alts = getRecipesFor(item);
                     if(alts.length > 1) { swapHtml = `<button class="swap-btn" onclick="openRecipeModal('${item}')" title="Swap Recipe">🔄</button>`; }
 
-                    innerHTML = `<div class="node-content"><span class="row-id">${myRowID})</span><span class="qty">${rate.toFixed(1)}/m</span><strong>${item}</strong>${swapHtml}${failTag}<span class="machine-tag">${Math.ceil(machinesNeeded)} ${recipe.machine}s</span>${heatTag}${outputTag}</div>`;
+                    innerHTML = `<div class="node-content"><span class="row-id">${myRowID})</span><span class="qty">${rate.toFixed(1)}/m</span><strong>${item}</strong>${swapHtml}<span class="machine-tag">${Math.ceil(machinesNeeded)} ${recipe.machine}s</span>${heatTag}${outputTag}</div>`;
                     
                     Object.keys(recipe.inputs).forEach(iName => {
-                        ingredientChildren.push({ type: 'input', item: iName, rate: (attemptsRate / outputQty) * recipe.inputs[iName] });
+                        let qtyPerBatch = recipe.inputs[iName];
+                        let requiredInputRate = batchesPerMin * qtyPerBatch;
+                        ingredientChildren.push({ type: 'input', item: iName, rate: requiredInputRate });
                     });
                 }
             }
@@ -942,7 +946,7 @@ function calculate() {
         let totalConstructionMaterials = {};
 
         sortedMachines.forEach(m => {
-            const count = Math.ceil(totalMachineCounts[m]);
+            const count = totalMachineCounts[m]; // Already rounded-then-summed integers
             if(count <= 0) return;
             
             const li = document.createElement('li'); li.className = 'build-group';

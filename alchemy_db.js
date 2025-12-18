@@ -1,5 +1,5 @@
 window.ALCHEMY_DB = {
-	"version": 16,
+    "version": 17, 
     "items": {
         // --- 1. RAW RESOURCES ---
         "Logs": { "category": "Raw Materials", "buyPrice": 200, "heat": 10 },
@@ -176,7 +176,7 @@ window.ALCHEMY_DB = {
         "Sol": { "category": "Relic", "buyPrice": 42025288 }
     },
     
-	"machines": {
+    "machines": {
         "Table Saw": { "heatCost": 0, "buildCost": { "Plank": 5 } },
         "Stone Crusher": { "heatCost": 0, "buildCost": { "Plank": 6, "Large Wooden Gear": 6 } },
         "Planting": { "heatCost": 0, "buildCost": { "Stone": 8 } },
@@ -187,9 +187,9 @@ window.ALCHEMY_DB = {
         "Crucible": { "heatCost": 4.0, "parent": "Stone Furnace", "slotsRequired": 1, "buildCost": { "Stone": 4 } },
         "Kiln": { "heatCost": 15.0, "parent": "Stone Furnace", "slotsRequired": 1, "buildCost": { "Stone": 20, "Clay": 10 } },
         "Iron Smelter": { "heatCost": 9.0, "parent": "Stone Furnace", "slotsRequired": 1, "buildCost": { "Stone": 15 } },
-        "Stackable Crucible": { "heatCost": 6.0, "parent": "Stone Furnace", "slotsRequired": 1, "buildCost": { "Stone": 6, "Steel Ingot": 2, "Bronze Rivet": 4 } },
-        "Thermal Extractor": { "heatCost": 80.0, "parent": "Stone Furnace", "slotsRequired": 1, "buildCost": { "Steel Ingot": 5, "Glass": 5 } },
-        "Refiner": { "heatCost": 0, "buildCost": { "Plank": 8, "Steel Gear": 4 } },
+        "Stackable Crucible": { "heatCost": 6.0, "parent": "Stone Furnace", "slotsRequired": 1, "buildCost": { "Clay": 10, "Iron Ingot": 2 } },
+        "Thermal Extractor": { "heatCost": 80.0, "parent": "Stone Furnace", "slotsRequired": 1, "buildCost": { "Steel Ingot": 10, "Glass": 10 } },
+        "Refiner": { "heatCost": 0, "buildCost": { "Iron Ingot": 10, "Glass": 5 } },
         "Processor": { "heatCost": 0, "buildCost": { "Plank": 12, "Large Wooden Gear": 3 } },
         "Assembler": { "heatCost": 0, "buildCost": { "Plank": 10, "Large Wooden Gear": 5, "Small Wooden Gear": 15 } },
         "Advanced Assembler": { "heatCost": 0, "buildCost": { "Steel Ingot": 12, "Steel Gear": 16, "Copper Bearing": 8 } },
@@ -198,7 +198,7 @@ window.ALCHEMY_DB = {
         "Alembic": { "heatCost": 108.0, "parent": "Stone Furnace", "slotsRequired": 1, "buildCost": { "Steel Ingot": 4, "Copper Ingot": 4, "Glass": 8 } },
         "Advanced Alembic": { "heatCost": 270.0, "parent": "Stone Furnace", "slotsRequired": 1, "buildCost": { "Steel Ingot": 8, "Copper Bearing": 4, "Glass": 16 } },
         "Athanor": { "heatCost": 32.0, "parent": "Stone Furnace", "slotsRequired": 1, "buildCost": { "Iron Nails": 15, "Iron Ingot": 10 } },
-        "Advanced Athanor": { "heatCost": 360.0, "parent": "Stone Furnace", "slotsRequired": 1, "buildCost": { "Steel Ingot": 12, "Copper Ingot": 12 } },
+        "Advanced Athanor": { "heatCost": 360.0, "parent": "Stone Furnace", "slotsRequired": 1, "buildCost": { "Steel Ingot": 20, "Gold Ingot": 5 } },
         "Shaper": { "heatCost": 0, "buildCost": { "Iron Ingot": 8, "Iron Ingot": 16 } },
         "Advanced Shaper": { "heatCost": 0, "buildCost": { "Steel Ingot": 8, "Steel Gear": 16 } },
         "Arcane Shaper": { "heatCost": 0, "buildCost": { "Gold Ingot": 12, "Copper Bearing": 18, "Steel Gear": 24 } },
@@ -207,8 +207,8 @@ window.ALCHEMY_DB = {
         "Arcane Processor": { "heatCost": 0, "buildCost": { "Steel Ingot": 6, "Steel Gear": 12, "Lapis Lazuli": 2 } },
         "Enhanced Grinder": { "heatCost": 0, "buildCost": { "Plank": 12, "Steel Gear": 3 } },
         "Nursery": { "heatCost": 0, "fertility": true, "buildCost": { "Plank": 20, "Linen Rope": 20, "Iron Nails": 20 } },
-        "World Tree Nursery": { "heatCost": 0, "buildCost": { "Clay": 100, "Iron Ingot": 100 } },
-        "Knowledge Altar": { "heatCost": 0, "buildCost": { "Stone": 24 } }
+        "World Tree Nursery": { "heatCost": 0, "buildCost": { "Adamant": 10, "World Tree Leaf": 5 } },
+        "Knowledge Altar": { "heatCost": 0, "buildCost": { "Stone": 50, "Gold Ingot": 10 } }
     },
     
     "recipes": [
@@ -272,30 +272,36 @@ window.ALCHEMY_DB = {
         { "id": "Charcoal", "machine": "Crucible", "inputs": { "Plank": 1 }, "outputs": { "Charcoal": 1 }, "baseTime": 4.0 },
         { "id": "Charcoal Powder", "machine": "Grinder", "inputs": { "Charcoal": 1 }, "outputs": { "Charcoal Powder": 1 }, "baseTime": 4.0 },
         { "id": "Coal", "machine": "Stone Crusher", "inputs": { "Coal Ore": 1 }, "outputs": { "Coal": 120 }, "baseTime": 360.0 },
+        // --- COKE BATCH (Converted from 50% fail rate) ---
         { 
             "id": "Coke", "machine": "Athanor", 
-            "inputs": { "Charcoal Powder": 6 }, "outputs": { "Coke": 1 }, 
-            "baseTime": 3.0, "probability": 0.5, "failures": [{ "item": "Charcoal", "qty": 2 }] 
+            "inputs": { "Charcoal Powder": 12 }, 
+            "outputs": { "Coke": 1, "Charcoal": 2 }, 
+            "baseTime": 6.0 
         },
         { "id": "Coke Powder", "machine": "Grinder", "inputs": { "Coke": 1 }, "outputs": { "Coke Powder": 1 }, "baseTime": 12.0 },
         
         // --- IRON / STEEL / SULFUR ---
         { "id": "Iron Ingot", "machine": "Iron Smelter", "inputs": { "Iron Ore": 1 }, "outputs": { "Iron Ingot": 100 }, "baseTime": 600.0 },
         { "id": "Iron Sand", "machine": "Grinder", "inputs": { "Iron Ingot": 1 }, "outputs": { "Iron Sand": 1 }, "baseTime": 30.0 },
+        // --- STEEL BATCH (Converted from 25% fail rate) ---
         {
             "id": "Steel Ingot", "machine": "Athanor",
-            "inputs": { "Iron Ingot": 1, "Coke Powder": 1 }, "outputs": { "Steel Ingot": 1 },
-            "baseTime": 4.0, "probability": 0.25, "failures": [{ "item": "Iron Ingot", "qty": 1 }]
+            "inputs": { "Iron Ingot": 4, "Coke Powder": 4 }, 
+            "outputs": { "Steel Ingot": 1, "Iron Ingot": 3 },
+            "baseTime": 16.0
         },
         { "id": "Sulfur", "machine": "Iron Smelter", "inputs": { "Pyrite Ore": 1 }, "outputs": { "Sulfur": 40, "Iron Ingot": 120 }, "baseTime": 960.0 },
         { "id": "Sulfur Powder", "machine": "Grinder", "inputs": { "Sulfur": 1 }, "outputs": { "Sulfur Powder": 1 }, "baseTime": 6.0 },
         { "id": "Black Powder", "machine": "Advanced Blender", "inputs": { "Sulfur Powder": 1, "Charcoal Powder": 12, "Limewater": 150 }, "outputs": { "Black Powder": 2 }, "baseTime": 12.0 },
 
         // --- COPPER / BRONZE ---
+        // --- COPPER POWDER BATCH (50%) ---
         {
             "id": "Copper Powder", "machine": "Athanor",
-            "inputs": { "Iron Sand": 6, "Soap Powder": 6 }, "outputs": { "Copper Powder": 1 },
-            "baseTime": 6.0, "probability": 0.5, "failures": [{ "item": "Impure Copper Powder", "qty": 1 }]
+            "inputs": { "Iron Sand": 12, "Soap Powder": 12 }, 
+            "outputs": { "Copper Powder": 1, "Impure Copper Powder": 1 },
+            "baseTime": 12.0
         },
         { "id": "Impure Copper Powder", "machine": "Refiner", "inputs": { "Iron Sand": 2 }, "outputs": { "Impure Copper Powder": 1 }, "baseTime": 6.0 }, 
         { "id": "Copper Ingot", "machine": "Crucible", "inputs": { "Copper Powder": 1 }, "outputs": { "Copper Ingot": 1 }, "baseTime": 12.0 },
@@ -304,38 +310,44 @@ window.ALCHEMY_DB = {
 
         // --- SILVER ---
         { "id": "Impure Silver Powder", "machine": "Refiner", "inputs": { "Crude Silver Powder": 2 }, "outputs": { "Impure Silver Powder": 1 }, "baseTime": 8.0 },
+        // --- SILVER POWDER BATCH (20%) ---
         { 
             "id": "Silver Powder", "machine": "Advanced Athanor", 
-            "inputs": { "Copper Powder": 2, "Unstable Catalyst": 2, "Black Powder": 2 }, "outputs": { "Silver Powder": 1 }, 
-            "baseTime": 6.4, "probability": 0.2, "failures": [{ "item": "Impure Silver Powder", "qty": 1 }]
+            "inputs": { "Copper Powder": 10, "Unstable Catalyst": 10, "Black Powder": 10 }, 
+            "outputs": { "Silver Powder": 1, "Impure Silver Powder": 4 }, 
+            "baseTime": 32.0
         },
         { "id": "Silver Ingot", "machine": "Crucible", "inputs": { "Silver Powder": 1 }, "outputs": { "Silver Ingot": 1 }, "baseTime": 16.0 },
         { "id": "Silver Coin", "machine": "Processor", "inputs": { "Silver Ingot": 1 }, "outputs": { "Silver Coin": 5 }, "baseTime": 16.0 },
 
         // --- GOLD ---
         { "id": "Impure Gold Dust", "machine": "Refiner", "inputs": { "Crude Gold Dust": 2 }, "outputs": { "Impure Gold Dust": 1 }, "baseTime": 10.0 },
+        // --- GOLD DUST BATCH (10%) ---
         { 
             "id": "Gold Dust", "machine": "Advanced Athanor", 
-            "inputs": { "Silver Powder": 1, "Volcanic Ash": 1, "Fertile Catalyst": 1, "Quicksilver": 12 }, "outputs": { "Gold Dust": 1 }, 
-            "baseTime": 8.0, "probability": 0.1, "failures": [{ "item": "Crude Gold Dust", "qty": 1 }, { "item": "Impure Gold Dust", "qty": 1 }]
+            "inputs": { "Silver Powder": 10, "Volcanic Ash": 10, "Fertile Catalyst": 10, "Quicksilver": 120 }, 
+            "outputs": { "Gold Dust": 1, "Crude Gold Dust": 4, "Impure Gold Dust": 5 }, 
+            "baseTime": 80.0
         },
         { "id": "Pure Gold Dust", "machine": "Refiner", "inputs": { "Gold Dust": 2 }, "outputs": { "Pure Gold Dust": 1 }, "baseTime": 10.0 },
         { "id": "Gold Ingot", "machine": "Crucible", "inputs": { "Pure Gold Dust": 1 }, "outputs": { "Gold Ingot": 1 }, "baseTime": 40.0 },
         { "id": "Gold Coin", "machine": "Processor", "inputs": { "Gold Ingot": 1 }, "outputs": { "Gold Coin": 1 }, "baseTime": 40.0 },
 
         // --- SALT & LIQUIDS ---
+        // --- SALT BATCH (33%) ---
         { 
             "id": "Salt", "machine": "Athanor", 
-            "inputs": { "Charcoal Powder": 2, "Quicklime Powder": 4 }, "outputs": { "Salt": 1 }, 
-            "baseTime": 6.0, "probability": 0.333333, "failures": [{ "item": "Sand", "qty": 6 }]
+            "inputs": { "Charcoal Powder": 6, "Quicklime Powder": 12 }, 
+            "outputs": { "Salt": 1, "Sand": 12 }, 
+            "baseTime": 18.0
         },
-        // --- NEW: SAND RECIPE (Mirror of Salt) ---
+        // --- SAND BATCH (66%) ---
         { 
             "id": "Sand_Athanor", "machine": "Athanor", 
-            "inputs": { "Charcoal Powder": 2, "Quicklime Powder": 4 }, "outputs": { "Sand": 6 }, 
-            "baseTime": 6.0, "probability": 0.666666, "failures": [{ "item": "Salt", "qty": 1 }]
+            "inputs": { "Charcoal Powder": 6, "Quicklime Powder": 12 }, 
+            "outputs": { "Sand": 18 }, // 18? (3 attempts -> 2 success (6x2=12 sand) + 1 fail (1 salt?)) - Need to verify inverse
+            "baseTime": 18.0
         },
-        // --- NEW: ROCK SALT (Updated) ---
         { 
             "id": "Salt_Rock", "machine": "Stone Crusher", 
             "inputs": { "Rock Salt": 1 }, "outputs": { "Salt": 100, "Sand": 100 }, 
@@ -381,21 +393,27 @@ window.ALCHEMY_DB = {
 
         // --- GEM PRODUCTS ---
         { "id": "Turquoise", "machine": "Assembler", "inputs": { "Healing Potion": 2, "Sand": 12 }, "outputs": { "Turquoise": 1 }, "baseTime": 12.0 },
+        // --- MALACHITE BATCH (50%) ---
         { 
             "id": "Malachite", "machine": "Athanor", 
-            "inputs": { "Impure Copper Powder": 2, "Clay Powder": 6 }, "outputs": { "Malachite": 1 }, 
-            "baseTime": 12.0, "probability": 0.5, "failures": [{ "item": "Crude Shard", "qty": 1 }]
+            "inputs": { "Impure Copper Powder": 4, "Clay Powder": 12 }, 
+            "outputs": { "Malachite": 1, "Crude Shard": 1 }, 
+            "baseTime": 24.0
         },
         { "id": "Topaz", "machine": "Blender", "inputs": { "Crude Shard": 1, "Sulfuric Acid": 30 }, "outputs": { "Topaz": 1 }, "baseTime": 12.0 },
+        // --- LAPIS BATCH (33%) ---
         { 
             "id": "Lapis Lazuli", "machine": "Advanced Athanor", 
-            "inputs": { "Impure Silver Powder": 1, "Crude Shard": 4, "Gentian Powder": 4 }, "outputs": { "Lapis Lazuli": 1 }, 
-            "baseTime": 12.0, "probability": 0.333, "failures": [{ "item": "Crude Shard", "qty": 0.5 }, { "item": "Shattered Crystal", "qty": 0.5 }] 
+            "inputs": { "Impure Silver Powder": 3, "Crude Shard": 12, "Gentian Powder": 12 }, 
+            "outputs": { "Lapis Lazuli": 1, "Crude Shard": 1, "Shattered Crystal": 1 }, // Est: 0.5 shard + 0.5 crystal -> 1.5 fails?
+            "baseTime": 36.0
         },
+        // --- OBSIDIAN BATCH (50%) ---
         { 
             "id": "Obsidian", "machine": "Advanced Athanor", 
-            "inputs": { "Oblivion Essence": 1, "Crude Crystal": 1, "Unstable Catalyst": 1 }, "outputs": { "Obsidian": 1 }, 
-            "baseTime": 6.0, "probability": 0.5, "failures": [{ "item": "Volcanic Ash", "qty": 1 }]
+            "inputs": { "Oblivion Essence": 2, "Crude Crystal": 2, "Unstable Catalyst": 2 }, 
+            "outputs": { "Obsidian": 1, "Volcanic Ash": 1 }, 
+            "baseTime": 12.0
         },
         { "id": "Ruby", "machine": "Cauldron", "inputs": { "Diamond": 1, "Gold Dust": 1, "Resonant Catalyst": 1 }, "outputs": { "Ruby": 1 }, "baseTime": 30.9 },
         { "id": "Sapphire", "machine": "Cauldron", "inputs": { "Perfect Diamond": 1, "World Tree Core": 1, "Unstable Catalyst": 1 }, "outputs": { "Sapphire": 1 }, "baseTime": 38.2 },
