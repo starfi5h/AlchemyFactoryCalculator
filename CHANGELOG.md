@@ -1,4 +1,32 @@
-# Alchemy Factory Planner - Changelog
+## v64 - Tooltips & Insight
+* **UI:** **Hover Tooltips.** Hovering over machine counts (e.g., "24 Grinders") now displays a detailed tooltip showing the Recipe, Base Time, Speed Multiplier, and actual Items/Min throughput per machine.
+* **UX:** Provides instant verification of *why* a certain number of machines is required without leaving the main view.
+
+## v63 - Ranges & Exploration
+* **Construction:** **Min/Max Logic.** The Construction List now displays a range (e.g., "Min 4, Max 5").
+    * *Min:* Optimal layout (sharing capacity across lines).
+    * *Max:* Siloed layout (building separate machines for every sub-chain).
+    * *Cost:* Total Materials are calculated based on the *Minimum* (Optimal) count.
+* **Navigation:** **Drill-Down.** Clicking an item name in the production tree now opens a **New Window** focused specifically on that item, preserving the original plan in the previous tab.
+* **Analysis:** **Machine Capacity.** Added a "Show Machine Max Cap" toggle to the Logistics panel. When enabled, displays the theoretical max throughput of the built machines next to the count (e.g., `Cap: 15.0/m`).
+
+## v62 - Precision Counting
+* **Logic:** **Round-then-Sum.** Changed the Construction List logic to round up machine counts *per production step* before summing them.
+* **Fix:** Resolves discrepancies where the Construction List (previously using "Sum-then-Round") would show fewer machines than visually depicted in the tree.
+* **Accuracy:** The "Total Material Cost" now accurately reflects the cost of building every machine shown in the visual plan.
+
+## v61 - Batch Logic
+* **Logic:** **Deterministic Batches.** Completely replaced the "Probability/Failure" engine with **Batch Cycles** to match the game's actual mechanics.
+    * *Example:* Coke is no longer "50% chance"; it is now "12 Powder -> 1 Coke + 2 Charcoal".
+* **Database:** Updated to **v17**. Removed `probability` fields and converted uncertain recipes to fixed Batch inputs/outputs.
+* **Byproducts:** Secondary outputs (e.g., Planks from Gloom Fungus, Charcoal from Coke) are now automatically detected and listed in the "Byproducts" section of the tree.
+* **Refinement:** Fixed an issue where fuel ingredients (like Charcoal Powder for Coke) were hidden if they matched the global fuel source.
+
+## v60 - Layout & Auto-Update
+* **Layout:** Moved the **"Byproducts (Waste)"** section from the Construction List to the Main Tree (Column 2) for better visibility.
+* **Data Safety:** Implemented **Auto-Update Logic.** The app now detects if the `alchemy_db.js` file version is newer than the browser cache and automatically upgrades the database.
+* **Fix:** Restored missing modal functions that caused the Recipe Swap button to fail in v57-v59.
+* **UX:** Smart Search arrow now transforms into a "Clear" (`✖`) button when text is entered.
 
 ## v59 - Byproducts & UX
 * **Relocation:** Moved the **"Byproducts (Waste)"** section from the Construction List to the Main Tree (Column 2), directly below "External Inputs," for better visibility of the complete production flow.

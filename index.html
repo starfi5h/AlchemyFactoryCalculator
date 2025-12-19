@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Alchemy Factory Planner v62</title>
+    <title>Alchemy Factory Planner v64</title>
     <script src="alchemy_db.js"></script> 
     
     <style>
@@ -16,27 +16,19 @@
             --row-id: #4fc3f7; --byproduct: #9c27b0;
         }
         * { box-sizing: border-box; }
-        /* Reduced font size for tighter UI (80% scale equivalent) */
         body { 
             font-family: 'Segoe UI', sans-serif; 
-            background: var(--bg); 
-            color: var(--text); 
-            padding: 0; 
-            margin: 0; 
-            height: 100vh; 
-            display: flex; 
-            flex-direction: column; 
+            background: var(--bg); color: var(--text); 
+            padding: 0; margin: 0; height: 100vh; 
+            display: flex; flex-direction: column; 
             font-size: 13px; 
         }
         
         /* --- HEADER --- */
         header { 
-            background: #111; 
-            padding: 8px 20px; 
+            background: #111; padding: 8px 20px; 
             border-bottom: 1px solid var(--border); 
-            display: flex; 
-            align-items: center; 
-            justify-content: space-between; 
+            display: flex; align-items: center; justify-content: space-between; 
             flex-shrink: 0; 
         }
         h1 { color: var(--accent); margin: 0; font-size: 1.1em; }
@@ -64,28 +56,20 @@
         .view { position: absolute; top: 0; left: 0; width: 100%; height: 100%; overflow-y: auto; padding: 15px; display: none; }
         .view.active { display: block; }
         
-        /* 260px | 1fr | 280px | 220px */
         .app-grid { 
             display: grid; 
             grid-template-columns: 260px 1fr 280px 220px; 
             gap: 15px; 
-            max-width: 1920px; 
-            margin: 0 auto; 
-            height: 100%; 
+            max-width: 1920px; margin: 0 auto; height: 100%; 
         }
         .panel { 
-            background: var(--panel); 
-            padding: 12px; 
-            border-radius: 8px; 
-            border: 1px solid var(--border); 
+            background: var(--panel); padding: 12px; 
+            border-radius: 8px; border: 1px solid var(--border); 
             margin-bottom: 15px; 
         }
         .panel h3 { 
-            margin-top: 0; color: #fff; 
-            border-bottom: 1px solid #444; 
-            padding-bottom: 8px; 
-            font-size: 1.05em; 
-            margin-bottom: 10px; 
+            margin-top: 0; color: #fff; border-bottom: 1px solid #444; 
+            padding-bottom: 8px; font-size: 1.05em; margin-bottom: 10px; 
         }
 
         /* --- CONTROLS --- */
@@ -137,6 +121,10 @@
         .btn-active-green { background: #2e7d32 !important; border-color: #4caf50 !important; color: white !important; }
         .btn-inactive-red { background: #333 !important; color: #aaa !important; }
 
+        /* --- CHECKBOX ROW --- */
+        .checkbox-row { display: flex; align-items: center; margin-top: 8px; font-size: 0.9em; color: #ccc; }
+        .checkbox-row input { margin-right: 8px; }
+
         /* --- CONSTRUCTION LIST --- */
         .build-list { list-style: none; padding: 0; margin: 0; }
         .build-group { margin-bottom: 2px; }
@@ -148,17 +136,11 @@
         .build-header:hover { background: #444; border-color: #555; color: #fff; }
         .build-arrow { font-size: 0.8em; margin-right: 8px; transition: transform 0.1s; display: inline-block; width: 10px; }
         .expanded .build-arrow { transform: rotate(90deg); }
-        
         .build-sublist { list-style: none; padding: 0 0 0 10px; margin: 0; display: none; border-left: 2px solid #444; margin-left: 10px; }
         .expanded .build-sublist { display: block; }
-        
-        .build-subitem { 
-            display: flex; justify-content: space-between; padding: 4px 8px; 
-            font-size: 0.9em; color: #aaa; border-bottom: 1px dashed #333; 
-        }
+        .build-subitem { display: flex; justify-content: space-between; padding: 4px 8px; font-size: 0.9em; color: #aaa; border-bottom: 1px dashed #333; }
         .build-subitem:last-child { border-bottom: none; }
         .build-val { color: var(--gold); }
-
         .total-mats-header { margin-top: 20px; border-top: 1px solid #555; padding-top: 10px; font-weight: bold; color: var(--accent); text-transform: uppercase; font-size: 0.9em; }
         .total-mat-item { display: flex; justify-content: space-between; padding: 4px 0; border-bottom: 1px solid #333; font-size: 0.95em; color: #ddd; }
         
@@ -176,11 +158,14 @@
         .node-content { display: flex; align-items: center; gap: 8px; background: #222; padding: 6px 10px; border-radius: 4px; border: 1px solid #333; }
         .row-id { color: var(--row-id); font-family: monospace; font-weight: bold; min-width: 20px; font-size: 0.9em; }
         .qty { color: var(--accent); font-weight: bold; min-width: 70px; }
-        .machine-tag { background: #333; padding: 2px 6px; border-radius: 3px; font-size: 0.85em; border: 1px solid #444; color: #fff; font-weight: bold; }
+        .item-link { cursor: pointer; text-decoration: none; color: inherit; transition: 0.2s; }
+        .item-link:hover { color: var(--info); text-decoration: underline; }
+        .machine-tag { background: #333; padding: 2px 6px; border-radius: 3px; font-size: 0.85em; border: 1px solid #444; color: #fff; font-weight: bold; cursor: help; }
         .heat-tag { color: var(--warn); font-size: 0.85em; margin-left: 5px; }
         .bio-tag { color: var(--bio); font-size: 0.85em; margin-left: 5px; }
         .cost-tag { color: var(--gold); font-size: 0.85em; margin-left: 10px; font-weight: bold; }
         .fail-tag { color: var(--danger); font-size: 0.85em; margin-left: 5px; font-weight: bold; }
+        .max-cap-tag { color: #888; font-size: 0.8em; margin-left: 5px; font-style: italic; }
         .details { font-size: 0.9em; color: #ccc; }
         .output-tag { color: var(--info); font-size: 0.85em; margin-left: 10px; font-weight: bold; border-left: 1px solid #555; padding-left: 10px; }
         .swap-btn { background: transparent; border: 1px solid #555; color: #888; width: 22px; height: 22px; border-radius: 11px; font-size: 11px; cursor: pointer; margin-left: 10px; }
@@ -213,7 +198,7 @@
             <h1>Alchemy Factory Planner</h1>
             <span style="margin-left: 20px;">
                 <a href="https://github.com/JoeJoesGit/AlchemyFactoryCalculator" target="_blank" class="repo-link">GitHub Repo</a>
-                <span class="subtitle" onclick="showChangelog()">v62 | View Changelog</span>
+                <span class="subtitle" onclick="showChangelog()">v64 | View Changelog</span>
             </span>
         </div>
         <div class="tabs">
@@ -227,12 +212,12 @@
             <div class="modal-content">
                 <div class="modal-header"><h2>Changelog</h2><button class="close-modal" onclick="closeModal('changelog-modal')">&times;</button></div>
                 <div style="line-height:1.6; color:#ccc;">
-                    <strong>v62 - Precision Counting</strong><br>
-                    - <strong>Logic:</strong> Construction List now uses "Round-then-Sum" logic. Machines are rounded up per production step before being totaled, matching the Tree visual exactly.<br>
-                    - <strong>Cost:</strong> Total Materials now reflect this more realistic (and slightly higher) machine count.<br><br>
-                    <strong>v61 - Batch Logic & Multi-Outputs</strong><br>
-                    - <strong>Logic:</strong> Replaced all "Failure/Probability" math with **Batch Cycles**.<br>
-                    - <strong>Byproducts:</strong> Secondary outputs (e.g., Planks, Charcoal) are now automatically listed.<br>
+                    <strong>v64 - Tooltips</strong><br>
+                    - <strong>Hover Details:</strong> Hover over any machine count (e.g. "24 Grinders") to see a tooltip with the exact Recipe, Base Time, Speed Multiplier, and calculated Throughput per machine.<br><br>
+                    <strong>v63 - Ranges & Exploration</strong><br>
+                    - <strong>Construction Range:</strong> Displays "Min X, Max Y" for machines. Costs are based on the Minimum (optimal layout).<br>
+                    - <strong>Drill-Down:</strong> Clicking an item name in the tree opens that item in a new window for focused analysis.<br>
+                    - <strong>Machine Cap:</strong> Added "Show Machine Max" option to see theoretical throughput of your built machines.<br>
                     <a href="https://github.com/JoeJoesGit/AlchemyFactoryCalculator/blob/main/CHANGELOG.md" target="_blank" style="color:var(--accent);">View Full History on GitHub</a>
                 </div>
             </div>
@@ -307,6 +292,10 @@
                                 <button id="btnSelfFert" class="split-btn btn-inactive-red" onclick="toggleFert()">Self-Fert: OFF</button>
                                 <button id="btnDefFert" class="split-btn" onclick="setDefaultFert()">Make Default</button>
                             </div>
+                        </div>
+                        <div class="checkbox-row">
+                            <input type="checkbox" id="showMaxCap" onchange="calculate()">
+                            <label for="showMaxCap" style="display:inline; margin:0; cursor:pointer;">Show Machine Max Cap</label>
                         </div>
                     </div>
                 </div>
@@ -406,8 +395,12 @@ let currentFocus = -1;
 function init() {
     const localData = localStorage.getItem(STORAGE_KEY);
     
+    // URL PARAM HANDLING (Drill-Down)
+    const urlParams = new URLSearchParams(window.location.search);
+    const urlItem = urlParams.get('item');
+    const urlRate = urlParams.get('rate');
+
     // 1. AUTO-UPDATE CHECK
-    // If window.ALCHEMY_DB exists (loaded from file) and is newer than localData, overwrite local.
     if (window.ALCHEMY_DB) {
         let localVersion = 0;
         if (localData) {
@@ -453,8 +446,19 @@ function init() {
     prepareComboboxData();
     populateSelects(); 
     loadSettingsToUI();
-    applyPreset();
+    
+    // IF URL PARAMS EXIST, OVERRIDE
+    if (urlItem && urlRate) {
+        document.getElementById('targetItemInput').value = decodeURIComponent(urlItem);
+        document.getElementById('targetRate').disabled = false; // Allow custom rate
+        document.getElementById('ratePreset').value = "custom";
+        document.getElementById('targetRate').value = urlRate;
+    } else {
+        applyPreset();
+    }
+    
     loadEditorContent(); 
+    calculate(); // Trigger initial calc
 }
 
 function loadEditorContent() {
@@ -649,7 +653,7 @@ function persist() { localStorage.setItem(STORAGE_KEY, JSON.stringify(DB)); }
 function saveSettings() { ['lvlBelt','lvlSpeed','lvlAlchemy','lvlFuel','lvlFert'].forEach(k => { DB.settings[k] = parseInt(document.getElementById(k).value) || 0; }); persist(); alert("Settings Saved!"); }
 function resetToDefault() { if(confirm("Factory Reset?")) { localStorage.removeItem(STORAGE_KEY); localStorage.removeItem(SOURCE_KEY); location.reload(); } }
 
-// --- RESTORED MODAL FUNCTIONS ---
+// --- MODAL FUNCTIONS ---
 function closeModal(id) { document.getElementById(id).style.display = 'none'; }
 function showChangelog() { document.getElementById('changelog-modal').style.display = 'flex'; }
 
@@ -663,18 +667,18 @@ function openRecipeModal(item) {
     candidates.forEach(r => {
         const div = document.createElement('div');
         div.className = `recipe-option ${r.id === currentId ? 'active' : ''}`;
-        
         let inputs = []; Object.keys(r.inputs).forEach(key => { inputs.push(`${r.inputs[key]}x ${key}`); });
         let outputs = []; Object.keys(r.outputs).forEach(key => { outputs.push(`${r.outputs[key]}x ${key}`); });
-
-        div.innerHTML = `
-            <div class="recipe-header"><strong>${r.machine}</strong> <span style="font-size:0.9em; opacity:0.8;">(${r.baseTime}s)</span>${r.id === currentId ? '✅' : ''}</div>
-            <div class="recipe-details">Input: ${inputs.join(', ')}<br>Yields: ${outputs.join(', ')}</div>
-        `;
+        div.innerHTML = `<div class="recipe-header"><strong>${r.machine}</strong> <span style="font-size:0.9em; opacity:0.8;">(${r.baseTime}s)</span>${r.id === currentId ? '✅' : ''}</div><div class="recipe-details">Input: ${inputs.join(', ')}<br>Yields: ${outputs.join(', ')}</div>`;
         div.onclick = () => { DB.settings.preferredRecipes[item] = r.id; persist(); closeModal('recipe-modal'); calculate(); };
         list.appendChild(div);
     });
     document.getElementById('recipe-modal').style.display = 'flex';
+}
+
+function openDrillDown(item, rate) {
+    const url = `index.html?item=${encodeURIComponent(item)}&rate=${rate.toFixed(2)}`;
+    window.open(url, '_blank');
 }
 
 function switchTab(tabName) {
@@ -722,22 +726,18 @@ function getActiveRecipe(item) {
 
 function getProductionHeatCost(item, speedMult, alchemyMult) {
     let cost = 0; const recipe = getActiveRecipe(item);
-    if (recipe) {
-        let outQty = recipe.outputs[item]; 
-        if (recipe.outputs[item]) {
-             let batchYield = recipe.outputs[item];
-             if (recipe.machine === "Extractor" || recipe.machine === "Alembic") batchYield *= alchemyMult;
-             
-             if (DB.machines[recipe.machine] && DB.machines[recipe.machine].heatCost) {
-                const mach = DB.machines[recipe.machine]; const parent = DB.machines[mach.parent];
-                const slotsReq = mach.slotsRequired || 1; const pSlots = mach.parentSlots || parent.slots || 3;
-                const heatPs = (mach.heatCost * speedMult) + (parent.heatSelf / (pSlots/slotsReq)); 
-                cost += heatPs * ((recipe.baseTime / speedMult) / batchYield);
-            }
-            Object.keys(recipe.inputs).forEach(k => { 
-                cost += getProductionHeatCost(k, speedMult, alchemyMult) * (recipe.inputs[k] / batchYield); 
-            });
+    if (recipe && recipe.outputs[item]) {
+         let batchYield = recipe.outputs[item];
+         if (recipe.machine === "Extractor" || recipe.machine === "Alembic") batchYield *= alchemyMult;
+         if (DB.machines[recipe.machine] && DB.machines[recipe.machine].heatCost) {
+            const mach = DB.machines[recipe.machine]; const parent = DB.machines[mach.parent];
+            const slotsReq = mach.slotsRequired || 1; const pSlots = mach.parentSlots || parent.slots || 3;
+            const heatPs = (mach.heatCost * speedMult) + (parent.heatSelf / (pSlots/slotsReq)); 
+            cost += heatPs * ((recipe.baseTime / speedMult) / batchYield);
         }
+        Object.keys(recipe.inputs).forEach(k => { 
+            cost += getProductionHeatCost(k, speedMult, alchemyMult) * (recipe.inputs[k] / batchYield); 
+        });
     }
     return cost;
 }
@@ -774,6 +774,7 @@ function calculate() {
         const targetRate = parseFloat(document.getElementById('targetRate').value) || 0;
         const selectedFuel = document.getElementById('fuelSelect').value; const selfFeed = document.getElementById('selfFeed').checked;
         const selectedFert = document.getElementById('fertSelect').value; const selfFert = document.getElementById('selfFert').checked;
+        const showMax = document.getElementById('showMaxCap').checked;
 
         const lvlSpeed = parseInt(document.getElementById('lvlSpeed').value) || 0;
         const lvlBelt = parseInt(document.getElementById('lvlBelt').value) || 0;
@@ -798,11 +799,16 @@ function calculate() {
         if(netFertVal <= 0) netFertVal = 0.1;
 
         let globalFuelDemandItems = 0; let globalFertDemandItems = 0; let globalHeatLoad = 0; let globalBioLoad = 0; let globalCostPerMin = 0;
-        let totalMachineCounts = {}; let totalFurnaces = 0; let totalByproducts = {};
+        
+        let totalMachineCounts_Max = {}; // Round-then-Sum (Realistic)
+        let totalMachineCounts_Min = {}; // Sum-then-Round (Optimized)
+        let totalFurnaces = 0; let totalByproducts = {};
 
-        function addMachineCount(name, count) {
-            if(!totalMachineCounts[name]) totalMachineCounts[name] = 0;
-            totalMachineCounts[name] += count;
+        function addMachineCount(name, countMax, countRaw) {
+            if(!totalMachineCounts_Max[name]) totalMachineCounts_Max[name] = 0;
+            if(!totalMachineCounts_Min[name]) totalMachineCounts_Min[name] = 0;
+            totalMachineCounts_Max[name] += countMax;
+            totalMachineCounts_Min[name] += countRaw;
         }
 
         let grossRate = targetRate;
@@ -826,19 +832,28 @@ function calculate() {
                 const isLiquid = (itemDef.liquid === true);
                 const itemsPerMinPerMachine = isLiquid ? calculatedSpeed : Math.min(calculatedSpeed, beltSpeed);
                 const machinesNeeded = rate / itemsPerMinPerMachine;
-                // --- V62: Round-then-Sum ---
-                addMachineCount("Nursery", Math.ceil(machinesNeeded));
+                
+                addMachineCount("Nursery", Math.ceil(machinesNeeded), machinesNeeded);
 
                 const totalNutrientsNeeded = rate * itemDef.nutrientCost; const itemsNeeded = totalNutrientsNeeded / grossFertVal; 
                 if (!isInternalModule) { globalFertDemandItems += itemsNeeded; globalBioLoad += (totalNutrientsNeeded / 60); }
                 
-                innerHTML = `<div class="node-content"><span class="row-id">${myRowID})</span><span class="qty">${rate.toFixed(1)}/m</span><strong>${item}</strong><span class="machine-tag">${Math.ceil(machinesNeeded)} Nursery</span><span class="bio-tag">Nutr: ${formatVal(totalNutrientsNeeded / 60)} V/s, Needs ${itemsNeeded.toFixed(1)}/m ${selectedFert}</span>${outputTag}</div>`;
+                let capTag = "";
+                let tooltipText = `Recipe: ${item} (Nursery)\nBase Time: ${(timePerItem * (60/speedMult)).toFixed(1)}s\nSpeed Mult: ${speedMult.toFixed(2)}x\nThroughput: ${itemsPerMinPerMachine.toFixed(2)} items/min`;
+
+                if(showMax) {
+                    const actualMachines = Math.ceil(machinesNeeded);
+                    const maxOutput = actualMachines * itemsPerMinPerMachine;
+                    capTag = `<span class="max-cap-tag">(Max: ${formatVal(maxOutput)}/m)</span>`;
+                }
+
+                innerHTML = `<div class="node-content"><span class="row-id">${myRowID})</span><span class="qty">${rate.toFixed(1)}/m</span><span class="item-link" onclick="openDrillDown('${item}', ${rate})"><strong>${item}</strong></span><span class="machine-tag" title="${tooltipText}">${Math.ceil(machinesNeeded)} Nursery${capTag}</span><span class="bio-tag">Nutr: ${formatVal(totalNutrientsNeeded / 60)} V/s, Needs ${itemsNeeded.toFixed(1)}/m ${selectedFert}</span>${outputTag}</div>`;
             } 
             else {
                 const recipe = getActiveRecipe(item);
                 if (!recipe) {
                     let costHtml = ""; if(itemDef.buyPrice) { let c = rate * itemDef.buyPrice; globalCostPerMin += c; costHtml = `<span class="cost-tag">${Math.ceil(c).toLocaleString()} G/m</span>`; }
-                    innerHTML = `<div class="node-content"><span class="row-id">${myRowID})</span><span class="qty">${rate.toFixed(1)}/m</span><strong>${item}</strong><span class="details">(Raw Input)</span>${costHtml}${outputTag}</div>`;
+                    innerHTML = `<div class="node-content"><span class="row-id">${myRowID})</span><span class="qty">${rate.toFixed(1)}/m</span><span class="item-link" onclick="openDrillDown('${item}', ${rate})"><strong>${item}</strong></span><span class="details">(Raw Input)</span>${costHtml}${outputTag}</div>`;
                 } else {
                     let batchYield = recipe.outputs[item] || 1;
                     if (recipe.machine === "Extractor" || recipe.machine === "Alembic") batchYield *= alchemyMult;
@@ -855,8 +870,23 @@ function calculate() {
                     }
                     
                     const machinesNeeded = batchesPerMin / effectiveBatchesPerMin;
-                    // --- V62: Round-then-Sum ---
-                    addMachineCount(recipe.machine, Math.ceil(machinesNeeded));
+                    addMachineCount(recipe.machine, Math.ceil(machinesNeeded), machinesNeeded);
+
+                    let capTag = "";
+                    
+                    // Tooltip Construction
+                    let inputsStr = Object.keys(recipe.inputs).map(k => `${recipe.inputs[k]} ${k}`).join(', ');
+                    let outputsStr = Object.keys(recipe.outputs).map(k => `${recipe.outputs[k]} ${k}`).join(', ');
+                    let cycleTime = recipe.baseTime / speedMult;
+                    let throughput = effectiveBatchesPerMin * batchYield;
+                    
+                    let tooltipText = `Recipe: ${inputsStr} -> ${outputsStr}\nBase Time: ${recipe.baseTime}s\nSpeed Mult: ${speedMult.toFixed(2)}x\nCycle Time: ${cycleTime.toFixed(2)}s\nThroughput: ${throughput.toFixed(2)} items/min per machine`;
+
+                    if(showMax) {
+                        const actualMachines = Math.ceil(machinesNeeded);
+                        const maxOutput = actualMachines * throughput;
+                        capTag = `<span class="max-cap-tag">(Max: ${formatVal(maxOutput)}/m)</span>`;
+                    }
 
                     Object.keys(recipe.outputs).forEach(outKey => {
                         if (outKey !== item) {
@@ -881,7 +911,7 @@ function calculate() {
                     let swapHtml = ""; const alts = getRecipesFor(item);
                     if(alts.length > 1) { swapHtml = `<button class="swap-btn" onclick="openRecipeModal('${item}')" title="Swap Recipe">🔄</button>`; }
 
-                    innerHTML = `<div class="node-content"><span class="row-id">${myRowID})</span><span class="qty">${rate.toFixed(1)}/m</span><strong>${item}</strong>${swapHtml}<span class="machine-tag">${Math.ceil(machinesNeeded)} ${recipe.machine}s</span>${heatTag}${outputTag}</div>`;
+                    innerHTML = `<div class="node-content"><span class="row-id">${myRowID})</span><span class="qty">${rate.toFixed(1)}/m</span><span class="item-link" onclick="openDrillDown('${item}', ${rate})"><strong>${item}</strong></span>${swapHtml}<span class="machine-tag" title="${tooltipText}">${Math.ceil(machinesNeeded)} ${recipe.machine}s${capTag}</span>${heatTag}${outputTag}</div>`;
                     
                     Object.keys(recipe.inputs).forEach(iName => {
                         let qtyPerBatch = recipe.inputs[iName];
@@ -942,13 +972,18 @@ function calculate() {
         const buildList = document.getElementById('construction-list'); buildList.innerHTML = '';
         const totalMatsContainer = document.getElementById('total-mats-container'); totalMatsContainer.innerHTML = '';
         
-        const sortedMachines = Object.keys(totalMachineCounts).sort();
+        const sortedMachines = Object.keys(totalMachineCounts_Max).sort();
         let totalConstructionMaterials = {};
 
         sortedMachines.forEach(m => {
-            const count = totalMachineCounts[m]; // Already rounded-then-summed integers
-            if(count <= 0) return;
+            const countMax = totalMachineCounts_Max[m]; 
+            const countMin = Math.ceil(totalMachineCounts_Min[m]);
+            if(countMax <= 0) return;
             
+            let label = "";
+            if (countMax === countMin) { label = `${countMax}`; }
+            else { label = `<span style="font-size:0.9em">Min ${countMin}, Max ${countMax}</span>`; }
+
             const li = document.createElement('li'); li.className = 'build-group';
             const machineDef = DB.machines[m] || {};
             const buildCost = machineDef.buildCost;
@@ -957,7 +992,7 @@ function calculate() {
             if (buildCost) {
                 subListHtml = `<ul class="build-sublist">`;
                 Object.keys(buildCost).forEach(mat => {
-                    const totalQty = buildCost[mat] * count;
+                    const totalQty = buildCost[mat] * countMin; // MIN
                     subListHtml += `<li class="build-subitem"><span>${mat}</span> <span class="build-val">${totalQty}</span></li>`;
                     if(!totalConstructionMaterials[mat]) totalConstructionMaterials[mat] = 0;
                     totalConstructionMaterials[mat] += totalQty;
@@ -968,7 +1003,7 @@ function calculate() {
             }
 
             li.innerHTML = `<div class="build-header" onclick="toggleBuildGroup(this.parentNode)">
-                <span><span class="build-arrow">▶</span> ${m}</span> <span class="build-count">${count}</span>
+                <span><span class="build-arrow">▶</span> ${m}</span> <span class="build-count">${label}</span>
             </div>${subListHtml}`;
             buildList.appendChild(li);
         });
@@ -1001,7 +1036,7 @@ function calculate() {
 
         // Render Grand Totals
         if (Object.keys(totalConstructionMaterials).length > 0) {
-            let totalHtml = `<div class="total-mats-header">Total Materials Required</div>`;
+            let totalHtml = `<div class="total-mats-header">Total Materials Required (Minimum)</div>`;
             Object.keys(totalConstructionMaterials).sort().forEach(mat => {
                 totalHtml += `<div class="total-mat-item"><span>${mat}</span> <strong>${totalConstructionMaterials[mat]}</strong></div>`;
             });
