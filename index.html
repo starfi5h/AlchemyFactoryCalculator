@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Alchemy Factory Planner v73</title>
+    <title>Alchemy Factory Planner v81</title>
     <script src="alchemy_db.js"></script> 
     
     <style>
@@ -169,7 +169,7 @@
         .max-cap-tag { color: #888; font-size: 0.8em; margin-left: 5px; font-style: italic; }
         .details { font-size: 0.9em; color: #ccc; }
         .output-tag { color: var(--info); font-size: 0.85em; margin-left: 10px; font-weight: bold; border-left: 1px solid #555; padding-left: 10px; }
-        
+        .recycle-tag { color: var(--byproduct); font-size: 0.85em; margin-left: 10px; font-weight: bold; }
         .swap-btn { background: transparent; border: 1px solid #555; color: #888; width: 22px; height: 22px; border-radius: 11px; font-size: 11px; cursor: pointer; margin-left: 10px; }
         .swap-btn:hover { background: #444; color: white; border-color: #fff; }
         
@@ -210,7 +210,7 @@
             <h1>Alchemy Factory Planner</h1>
             <span style="margin-left: 20px;">
                 <a href="https://github.com/JoeJoesGit/AlchemyFactoryCalculator" target="_blank" class="repo-link">GitHub Repo</a>
-                <span class="subtitle" onclick="showChangelog()">v73 | View Changelog</span>
+                <span class="subtitle" onclick="showChangelog()">v81 | View Changelog</span>
             </span>
         </div>
         <div class="tabs">
@@ -224,11 +224,10 @@
             <div class="modal-content">
                 <div class="modal-header"><h2>Changelog</h2><button class="close-modal" onclick="closeModal('changelog-modal')">&times;</button></div>
                 <div style="line-height:1.6; color:#ccc;">
-                    <strong>v73 - Recycling Update</strong><br>
-                    - <strong>UI:</strong> Moved Recycle button to end of row. Added active state visualization.<br>
-                    - <strong>Math:</strong> Machine counts and raw material costs now correctly reflect the <em>Net</em> input after recycling, allowing for accurate profit calculations on closed-loop systems.<br><br>
-                    <strong>v72 - Byproduct Logic</strong><br>
-                    - <strong>Smart Injection:</strong> Added ability to toggle recycling on specific rows.<br>
+                    <strong>v81 - Stabilization Regression Fix</strong><br>
+                    - <strong>Bug Fix:</strong> Fixed a regression where Internal Modules stopped reporting their heat/nutrient needs during the calculation loop. The Fuel Module will now correctly start up if the Fertilizer Module needs heat.<br><br>
+                    <strong>v80 - Math Precision Fix</strong><br>
+                    - <strong>Core Math:</strong> Implemented floating-point snapping.<br>
                     <a href="https://github.com/JoeJoesGit/AlchemyFactoryCalculator/blob/main/CHANGELOG.md" target="_blank" style="color:var(--accent);">View Full History on GitHub</a>
                 </div>
             </div>
@@ -895,13 +894,15 @@ function calculatePass(p, isGhost) {
     const treeContainer = document.getElementById('tree');
 
     // Recursive Builder
-    function buildNode(item, rate, isInternalModule, ancestors = []) {
+    function buildNode(item, rate, isInternalModule, ancestors = [], forceGhost = false) {
+        const effectiveGhost = isGhost || forceGhost;
+
         // RECYCLING CHECK (Only apply deduction in Render pass)
         let deduction = 0;
         let pathKey = ancestors.join(">") + ">" + item;
         let canRecycle = false;
         
-        if (!isGhost) {
+        if (!effectiveGhost) {
             // Check if we have byproducts for this item
             if (globalByproducts[item] && globalByproducts[item] > 0.01) {
                 canRecycle = true;
@@ -920,7 +921,7 @@ function calculatePass(p, isGhost) {
         let currentPath = [...ancestors, item];
         let myRowID = 0;
         
-        if (!isGhost) { rowCounter++; myRowID = rowCounter; }
+        if (!effectiveGhost) { rowCounter++; myRowID = rowCounter; }
 
         let outputTag = ""; let machineTag = ""; let heatTag = ""; let swapBtn = ""; 
         let bioTag = ""; let costTag = ""; let detailsTag = ""; let recycleTag = "";
@@ -953,11 +954,21 @@ function calculatePass(p, isGhost) {
             // Machines are calculated based on NET rate (after recycling deduction)
             machinesNeeded = netRate / itemsPerMinPerMachine;
             
-            if(!isGhost) {
+            // MATH PRECISION FIX
+            if (Math.abs(Math.round(machinesNeeded) - machinesNeeded) < 0.0001) { machinesNeeded = Math.round(machinesNeeded); }
+
+            if(!effectiveGhost) {
                 addMachineCount("Nursery", Math.ceil(machinesNeeded), machinesNeeded);
-                const totalNutrientsNeeded = netRate * itemDef.nutrientCost; const itemsNeeded = totalNutrientsNeeded / grossFertVal; 
-                if (!isInternalModule) { globalFertDemandItems += itemsNeeded; globalBioLoad += (totalNutrientsNeeded / 60); }
-                
+            }
+
+            const totalNutrientsNeeded = netRate * itemDef.nutrientCost; const itemsNeeded = totalNutrientsNeeded / grossFertVal; 
+            
+            // ALWAYS calculate demand, even in ghost mode
+            // Removed !isInternalModule check to fix cross-coupling
+            globalFertDemandItems += itemsNeeded; 
+            globalBioLoad += (totalNutrientsNeeded / 60); 
+            
+            if(!effectiveGhost) {
                 let tooltipText = `Recipe: ${item} (Nursery)\nBase Time: ${(timePerItem * (60/p.speedMult)).toFixed(1)}s\nSpeed Mult: ${p.speedMult.toFixed(2)}x\nThroughput: ${itemsPerMinPerMachine.toFixed(2)} items/min`;
                 let capTag = "";
                 if(p.showMax) {
@@ -971,7 +982,7 @@ function calculatePass(p, isGhost) {
         else {
             const recipe = getActiveRecipe(item);
             if (!recipe) {
-                if(!isGhost) {
+                if(!effectiveGhost) {
                     if(itemDef.buyPrice) { 
                         // Cost based on NET rate (we only buy what we don't recycle)
                         let c = netRate * itemDef.buyPrice; 
@@ -986,7 +997,6 @@ function calculatePass(p, isGhost) {
                 if (recipe.machine === "Extractor" || recipe.machine === "Alembic") batchYield *= p.alchemyMult;
                 
                 // Machine counts based on NET rate
-                // (If we only need to produce 60 because we recycled 180, we only build machines for 60)
                 const batchesPerMin = netRate / batchYield;
                 const maxBatchesPerMin = (60 / recipe.baseTime) * p.speedMult;
                 const isLiquid = (itemDef.liquid === true);
@@ -997,11 +1007,13 @@ function calculatePass(p, isGhost) {
                     if (maxItemsPerMin > p.beltSpeed) { effectiveBatchesPerMin = p.beltSpeed / batchYield; }
                 }
                 
-                machinesNeeded = batchesPerMin / effectiveBatchesPerMin;
+                let rawMachines = batchesPerMin / effectiveBatchesPerMin;
+                // MATH PRECISION FIX
+                if (Math.abs(Math.round(rawMachines) - rawMachines) < 0.0001) { rawMachines = Math.round(rawMachines); }
+                machinesNeeded = rawMachines;
                 
                 // BYPRODUCTS CALCULATION (Must happen in Ghost Pass too)
                 // Note: Byproducts are generated based on NET production. 
-                // If we recycle iron to reduce smelter load, the smelters produce FEWER byproducts (e.g. less slag, if any).
                 Object.keys(recipe.outputs).forEach(outKey => {
                     if (outKey !== item) {
                         let yieldPerBatch = recipe.outputs[outKey];
@@ -1009,15 +1021,36 @@ function calculatePass(p, isGhost) {
                         if(isGhost) {
                             if(!globalByproducts[outKey]) globalByproducts[outKey] = 0;
                             globalByproducts[outKey] += totalByproduct;
-                        } else {
+                        } else if (!effectiveGhost) {
                             if(!totalByproducts[outKey]) totalByproducts[outKey] = 0;
                             totalByproducts[outKey] += totalByproduct;
                         }
                     }
                 });
 
-                if(!isGhost) {
+                if(!effectiveGhost) {
                     addMachineCount(recipe.machine, Math.ceil(machinesNeeded), machinesNeeded);
+                }
+
+                // HEAT CALCULATION - UNGUARDED to fix cross-coupling
+                if (DB.machines[recipe.machine] && DB.machines[recipe.machine].heatCost) {
+                    const mach = DB.machines[recipe.machine]; const parent = DB.machines[mach.parent];
+                    const sReq = mach.slotsRequired || 1; const pSlots = mach.parentSlots || parent.slots || 3;
+                    const activeHeat = mach.heatCost * p.speedMult; const parentsNeeded = Math.ceil(machinesNeeded / (pSlots/sReq));
+                    const totalHeatPs = (parentsNeeded * parent.heatSelf) + (machinesNeeded * activeHeat);
+                    
+                    if(!effectiveGhost) totalFurnaces += parentsNeeded;
+                    
+                    // Removed !isInternalModule check to fix cross-coupling
+                    globalHeatLoad += totalHeatPs; 
+                    globalFuelDemandItems += (totalHeatPs * 60) / grossFuelEnergy;
+                    
+                    if(!effectiveGhost) {
+                        heatTag = `<span class="heat-tag">Heat: ${totalHeatPs.toFixed(1)} P/s, Needs ${((totalHeatPs * 60) / grossFuelEnergy).toFixed(1)}/m ${p.selectedFuel}</span>`;
+                    }
+                }
+
+                if(!effectiveGhost) {
                     let inputsStr = Object.keys(recipe.inputs).map(k => `${recipe.inputs[k]} ${k}`).join(', ');
                     let outputsStr = Object.keys(recipe.outputs).map(k => `${recipe.outputs[k]} ${k}`).join(', ');
                     let cycleTime = recipe.baseTime / p.speedMult;
@@ -1031,47 +1064,26 @@ function calculatePass(p, isGhost) {
                     }
                     machineTag = `<span class="machine-tag" title="${tooltipText}">${Math.ceil(machinesNeeded)} ${recipe.machine}s${capTag}</span>`;
 
-                    if (DB.machines[recipe.machine] && DB.machines[recipe.machine].heatCost) {
-                        const mach = DB.machines[recipe.machine]; const parent = DB.machines[mach.parent];
-                        const sReq = mach.slotsRequired || 1; const pSlots = mach.parentSlots || parent.slots || 3;
-                        const activeHeat = mach.heatCost * p.speedMult; const parentsNeeded = Math.ceil(machinesNeeded / (pSlots/sReq));
-                        const totalHeatPs = (parentsNeeded * parent.heatSelf) + (machinesNeeded * activeHeat);
-                        totalFurnaces += parentsNeeded;
-                        if (!isInternalModule) { globalHeatLoad += totalHeatPs; globalFuelDemandItems += (totalHeatPs * 60) / grossFuelEnergy; }
-                        heatTag = `<span class="heat-tag">Heat: ${totalHeatPs.toFixed(1)} P/s, Needs ${((totalHeatPs * 60) / grossFuelEnergy).toFixed(1)}/m ${p.selectedFuel}</span>`;
-                    }
-
                     const alts = getRecipesFor(item);
                     if(alts.length > 1) { 
                         swapBtn = `<button class="swap-btn" onclick="openRecipeModal('${item}', this.parentElement)" title="Swap Recipe">🔄</button>`; 
                     }
-                    
-                    // RECURSE INPUTS
-                    if (netRate > 0.0001) {
-                        const netBatches = netRate / batchYield;
-                        Object.keys(recipe.inputs).forEach(iName => {
-                            let qtyPerBatch = recipe.inputs[iName];
-                            let requiredInputRate = netBatches * qtyPerBatch;
-                            ingredientChildren.push({ type: 'input', item: iName, rate: requiredInputRate });
-                        });
-                    }
-                } else {
-                    // Ghost Mode: Recurse based on GROSS rate initially to find all POTENTIAL byproducts
-                    // However, accurate byproduct estimation requires mimicking the Net Flow.
-                    // This is complex. For now, Ghost Mode assumes Gross to ensure all byproducts are found.
-                    // This might overestimate available byproducts slightly in complex circular chains,
-                    // but is safe for "Availability" check. The Render pass applies strict math.
-                    const grossBatches = rate / batchYield;
+                }
+                
+                // RECURSE INPUTS
+                if (netRate > 0.0001) {
+                    const netBatches = netRate / batchYield;
                     Object.keys(recipe.inputs).forEach(iName => {
                         let qtyPerBatch = recipe.inputs[iName];
-                        let requiredInputRate = grossBatches * qtyPerBatch;
-                        buildNode(iName, requiredInputRate, isInternalModule, currentPath);
+                        let requiredInputRate = netBatches * qtyPerBatch;
+                        // PASS forceGhost DOWN TO CHILDREN
+                        ingredientChildren.push({ type: 'input', item: iName, rate: requiredInputRate });
                     });
                 }
             }
         }
 
-        if (isGhost) return null; // No DOM needed
+        if (effectiveGhost) return null; // No DOM needed
 
         // --- RENDER DOM (Pass 2 Only) ---
         const div = document.createElement('div'); div.className = 'node';
@@ -1079,7 +1091,7 @@ function calculatePass(p, isGhost) {
         let nodeContent = `
             ${arrowHtml}
             <span class="row-id" onclick="toggleNode(this)">${myRowID})</span>
-            <span class="qty">${rate.toFixed(1)}/m</span>
+            <span class="qty">${formatVal(rate)}/m</span>
             <span class="item-link" onclick="openDrillDown('${item}', ${rate})"><strong>${item}</strong></span>
             ${swapBtn}
             ${detailsTag}
@@ -1096,7 +1108,7 @@ function calculatePass(p, isGhost) {
             const childrenDiv = document.createElement('div');
             childrenDiv.className = 'node-children';
             ingredientChildren.forEach(child => { 
-                childrenDiv.appendChild(buildNode(child.item, child.rate, isInternalModule, currentPath)); 
+                childrenDiv.appendChild(buildNode(child.item, child.rate, isInternalModule, currentPath, effectiveGhost)); 
             });
             div.appendChild(childrenDiv);
         }
@@ -1112,36 +1124,77 @@ function calculatePass(p, isGhost) {
         }
     }
 
-    if (p.selfFert && globalFertDemandItems > 0) {
-        const fertEff = netFertVal / grossFertVal; const grossFertNeeded = globalFertDemandItems / fertEff;
-        if (p.targetItem === p.selectedFert) {
-            if(!isGhost) {
-                const note = document.createElement('div'); note.innerHTML = `<div class="node" style="margin-top:20px; color:#aaa; font-style:italic;">Internal Nutrient Source: <strong>${p.selectedFert}</strong> (Supplied by Main Output)<br>Total Required: ${grossFertNeeded.toFixed(1)}/m</div>`; treeContainer.appendChild(note);
+    // ITERATIVE STABILIZATION FOR MODULES
+    if (!isGhost) {
+        // We have rendered the Main Chain above.
+        // Now we need to determine the final size of the modules.
+        
+        let stableFuelDemand = globalFuelDemandItems;
+        let stableFertDemand = globalFertDemandItems;
+        let byproductSnapshot = {...globalByproducts};
+        
+        if (p.selfFeed || p.selfFert) {
+            let baseFuel = globalFuelDemandItems;
+            let baseFert = globalFertDemandItems;
+            
+            for(let i=0; i<10; i++) {
+                globalByproducts = {...byproductSnapshot};
+                let prevFuel = stableFuelDemand;
+                let prevFert = stableFertDemand;
+                let preGhostFuel = globalFuelDemandItems;
+                let preGhostFert = globalFertDemandItems;
+                
+                if (p.selfFert && prevFert > 0) {
+                    buildNode(p.selectedFert, prevFert, true, [], true); // Force isGhost=true
+                }
+                if (p.selfFeed && prevFuel > 0) {
+                    buildNode(p.selectedFuel, prevFuel, true, [], true); // Force isGhost=true
+                }
+                
+                let deltaFuel = globalFuelDemandItems - preGhostFuel;
+                let deltaFert = globalFertDemandItems - preGhostFert;
+                let nextFuel = baseFuel + deltaFuel;
+                let nextFert = baseFert + deltaFert;
+                
+                globalFuelDemandItems = baseFuel; 
+                globalFertDemandItems = baseFert; 
+                
+                if (Math.abs(nextFuel - prevFuel) < 0.01 && Math.abs(nextFert - prevFert) < 0.01) {
+                    stableFuelDemand = nextFuel;
+                    stableFertDemand = nextFert;
+                    break;
+                }
+                stableFuelDemand = nextFuel;
+                stableFertDemand = nextFert;
             }
-        } else {
-            if(!isGhost) {
+        }
+        
+        globalByproducts = {...byproductSnapshot};
+        
+        // Now render the modules using the stabilized demands
+        if (p.selfFert && stableFertDemand > 0) {
+            const fertEff = netFertVal / grossFertVal; const grossFertNeeded = stableFertDemand / fertEff;
+            if (p.targetItem === p.selectedFert) {
+                const note = document.createElement('div'); note.innerHTML = `<div class="node" style="margin-top:20px; color:#aaa; font-style:italic;">Internal Nutrient Source: <strong>${p.selectedFert}</strong> (Supplied by Main Output)<br>Total Required: ${grossFertNeeded.toFixed(1)}/m</div>`; treeContainer.appendChild(note);
+            } else {
                 const h = document.createElement('div'); h.className = 'section-header'; h.innerText = `--- Internal Nutrient Module (${p.selectedFert}) ---`; treeContainer.appendChild(h); rowCounter=0; 
                 treeContainer.appendChild(buildNode(p.selectedFert, grossFertNeeded, true, []));
-            } else {
-                buildNode(p.selectedFert, grossFertNeeded, true, []);
             }
         }
-    }
 
-    if (p.selfFeed && globalFuelDemandItems > 0) {
-        const fuelEff = netFuelEnergy / grossFuelEnergy; const grossFuelNeeded = globalFuelDemandItems / fuelEff;
-        if (p.targetItem === p.selectedFuel) {
-            if(!isGhost) {
+        if (p.selfFeed && stableFuelDemand > 0) {
+            const fuelEff = netFuelEnergy / grossFuelEnergy; const grossFuelNeeded = stableFuelDemand / fuelEff;
+            if (p.targetItem === p.selectedFuel) {
                 const note = document.createElement('div'); note.innerHTML = `<div class="node" style="margin-top:20px; color:#aaa; font-style:italic;">Internal Fuel Source: <strong>${p.selectedFuel}</strong> (Supplied by Main Output)<br>Total Required: ${grossFuelNeeded.toFixed(1)}/m</div>`; treeContainer.appendChild(note);
-            }
-        } else {
-            if(!isGhost) {
+            } else {
                 const h = document.createElement('div'); h.className = 'section-header'; h.innerText = `--- Internal Heat Module (${p.selectedFuel}) ---`; treeContainer.appendChild(h); rowCounter=0; 
                 treeContainer.appendChild(buildNode(p.selectedFuel, grossFuelNeeded, true, []));
-            } else {
-                buildNode(p.selectedFuel, grossFuelNeeded, true, []);
             }
         }
+        
+        // Override the globals with the stable values for the summary box
+        globalFuelDemandItems = stableFuelDemand;
+        globalFertDemandItems = stableFertDemand;
     }
 
     if (!isGhost) {
