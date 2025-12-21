@@ -1,4 +1,4 @@
-# AlchemyFactoryCalculator
+# Alchemy Factory Calculator
 
 Hi! This is a simple, browser-based calculator I built for the game **Alchemy Factory**.
 
