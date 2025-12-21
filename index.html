@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Alchemy Factory Planner v71</title>
+    <title>Alchemy Factory Planner v73</title>
     <script src="alchemy_db.js"></script> 
     
     <style>
@@ -51,7 +51,7 @@
         .tab-btn:hover { background: #333; color: #fff; }
         .tab-btn.active { background: var(--accent); color: white; border-color: var(--accent); font-weight: bold; }
 
-        /* --- LAYOUT (4 Columns) --- */
+        /* --- LAYOUT --- */
         main { flex: 1; overflow: hidden; position: relative; }
         .view { position: absolute; top: 0; left: 0; width: 100%; height: 100%; overflow-y: auto; padding: 15px; display: none; }
         .view.active { display: block; }
@@ -90,7 +90,6 @@
         }
         .combo-arrow { padding: 0 8px; color: #888; font-size: 0.8em; cursor: pointer; z-index: 3; user-select: none; }
         .combo-arrow:hover { color: #fff; }
-        
         .combobox-list {
             position: absolute; top: 100%; left: 0; right: 0;
             background: #252525; border: 1px solid #444; border-radius: 4px;
@@ -113,15 +112,12 @@
         input[type="number"] { flex: 1; text-align: center; font-size: 1.1em; background: #333; border: 1px solid #555; border-left: none; border-right: none; color: white; width: 10px; -moz-appearance: textfield; }
         input:disabled { opacity: 0.5; cursor: not-allowed; background: #2a2a2a; color: #aaa; }
         
-        /* SPLIT BUTTONS */
+        /* --- BUTTONS --- */
         .split-btn-container { display: flex; gap: 5px; margin-top: 6px; }
         .split-btn { flex: 1; padding: 6px 4px; border: 1px solid #555; border-radius: 4px; cursor: pointer; font-size: 0.8em; font-weight: bold; transition: 0.2s; color: #ddd; background: #333; text-align: center; }
         .split-btn:hover:not(:disabled) { background: #444; color: #fff; }
-        .split-btn:disabled { opacity: 0.5; cursor: default; border-color: #444; }
         .btn-active-green { background: #2e7d32 !important; border-color: #4caf50 !important; color: white !important; }
         .btn-inactive-red { background: #333 !important; color: #aaa !important; }
-
-        /* --- CHECKBOX ROW --- */
         .checkbox-row { display: flex; align-items: center; margin-top: 8px; font-size: 0.9em; color: #ccc; }
         .checkbox-row input { margin-right: 8px; }
 
@@ -156,8 +152,6 @@
         /* --- TREE NODES --- */
         .node { margin-left: 15px; padding: 4px 0; border-left: 2px solid #555; position: relative; }
         .node-content { display: flex; align-items: center; gap: 8px; background: #222; padding: 6px 10px; border-radius: 4px; border: 1px solid #333; }
-        
-        /* COLLAPSING LOGIC */
         .tree-arrow { display: inline-block; width: 14px; cursor: pointer; transition: transform 0.1s; user-select: none; font-size: 0.8em; color: #888; text-align:center; }
         .row-id { color: var(--row-id); font-family: monospace; font-weight: bold; min-width: 20px; font-size: 0.9em; cursor: pointer; }
         .node.collapsed .node-children { display: none; }
@@ -175,8 +169,16 @@
         .max-cap-tag { color: #888; font-size: 0.8em; margin-left: 5px; font-style: italic; }
         .details { font-size: 0.9em; color: #ccc; }
         .output-tag { color: var(--info); font-size: 0.85em; margin-left: 10px; font-weight: bold; border-left: 1px solid #555; padding-left: 10px; }
+        
         .swap-btn { background: transparent; border: 1px solid #555; color: #888; width: 22px; height: 22px; border-radius: 11px; font-size: 11px; cursor: pointer; margin-left: 10px; }
         .swap-btn:hover { background: #444; color: white; border-color: #fff; }
+        
+        /* Recycle Button Styles */
+        .push-right { margin-left: auto; display: flex; align-items: center; }
+        .recycle-btn { background: transparent; border: 1px solid var(--byproduct); color: var(--byproduct); border-radius: 4px; font-size: 0.8em; cursor: pointer; padding: 2px 8px; font-weight:bold; transition:0.2s; }
+        .recycle-btn:hover { background: rgba(156, 39, 176, 0.2); }
+        .recycle-btn.active { background: #2e3d30; color: var(--profit); border-color: var(--profit); }
+        
         .section-header { margin-top: 25px; margin-bottom: 8px; padding-bottom: 4px; border-bottom: 1px dashed #555; color: #888; text-transform: uppercase; letter-spacing: 1px; font-size: 0.85em; font-weight: bold; }
 
         /* --- MODALS & EDITOR --- */
@@ -208,7 +210,7 @@
             <h1>Alchemy Factory Planner</h1>
             <span style="margin-left: 20px;">
                 <a href="https://github.com/JoeJoesGit/AlchemyFactoryCalculator" target="_blank" class="repo-link">GitHub Repo</a>
-                <span class="subtitle" onclick="showChangelog()">v71 | View Changelog</span>
+                <span class="subtitle" onclick="showChangelog()">v73 | View Changelog</span>
             </span>
         </div>
         <div class="tabs">
@@ -222,11 +224,11 @@
             <div class="modal-content">
                 <div class="modal-header"><h2>Changelog</h2><button class="close-modal" onclick="closeModal('changelog-modal')">&times;</button></div>
                 <div style="line-height:1.6; color:#ccc;">
-                    <strong>v71 - Code Refactor & Collapsible Tree</strong><br>
-                    - <strong>Refactor:</strong> Unified the rendering logic for Raw Resources and Machines to remove code duplication.<br>
-                    - <strong>UI:</strong> Added collapsible arrows to tree nodes.<br><br>
-                    <strong>v69 - Recursion Safety</strong><br>
-                    - <strong>Loop Detection:</strong> Prevents selection of recipes that create infinite loops.<br>
+                    <strong>v73 - Recycling Update</strong><br>
+                    - <strong>UI:</strong> Moved Recycle button to end of row. Added active state visualization.<br>
+                    - <strong>Math:</strong> Machine counts and raw material costs now correctly reflect the <em>Net</em> input after recycling, allowing for accurate profit calculations on closed-loop systems.<br><br>
+                    <strong>v72 - Byproduct Logic</strong><br>
+                    - <strong>Smart Injection:</strong> Added ability to toggle recycling on specific rows.<br>
                     <a href="https://github.com/JoeJoesGit/AlchemyFactoryCalculator/blob/main/CHANGELOG.md" target="_blank" style="color:var(--accent);">View Full History on GitHub</a>
                 </div>
             </div>
@@ -397,6 +399,10 @@ let rowCounter = 0;
 let isSelfFuel = false;
 let isSelfFert = false;
 
+// RECYCLING STATE
+let globalByproducts = {};
+let activeRecyclers = {}; // { "path_to_node": true }
+
 // COMBOBOX GLOBALS
 let allItemsList = [];
 let currentFocus = -1;
@@ -448,6 +454,10 @@ function init() {
     if(!DB.items) DB.items = {};
     if(!DB.settings) DB.settings = {};
     if(!DB.settings.preferredRecipes) DB.settings.preferredRecipes = {};
+    
+    if(DB.settings.activeRecyclers) {
+        activeRecyclers = DB.settings.activeRecyclers;
+    }
 
     prepareComboboxData();
     populateSelects(); 
@@ -653,7 +663,10 @@ function updateDefaultButtonState() {
     if(curFert === defFert) { btnFert.disabled = true; btnFert.innerText = "Current Default"; } else { btnFert.disabled = false; btnFert.innerText = "Make Default"; }
 }
 
-function persist() { localStorage.setItem(STORAGE_KEY, JSON.stringify(DB)); }
+function persist() { 
+    DB.settings.activeRecyclers = activeRecyclers;
+    localStorage.setItem(STORAGE_KEY, JSON.stringify(DB)); 
+}
 function saveSettings() { ['lvlBelt','lvlSpeed','lvlAlchemy','lvlFuel','lvlFert'].forEach(k => { DB.settings[k] = parseInt(document.getElementById(k).value) || 0; }); persist(); alert("Settings Saved!"); }
 function resetToDefault() { if(confirm("Factory Reset?")) { localStorage.removeItem(STORAGE_KEY); localStorage.removeItem(SOURCE_KEY); location.reload(); } }
 
@@ -801,251 +814,343 @@ function toggleNode(arrowElement) {
     if (node) node.classList.toggle('collapsed');
 }
 
-// --- MAIN CALC ---
+function toggleRecycle(pathKey) {
+    if (activeRecyclers[pathKey]) {
+        delete activeRecyclers[pathKey];
+    } else {
+        activeRecyclers[pathKey] = true;
+    }
+    persist();
+    calculate();
+}
+
+// --- CALCULATION ENGINE ---
 function calculate() {
     try {
         if(!DB || !DB.recipes) return;
-        rowCounter = 0; 
-
+        
+        // 1. Gather Inputs
         let rawInput = document.getElementById('targetItemInput').value.trim();
         let targetItem = Object.keys(DB.items).find(k => k.toLowerCase() === rawInput.toLowerCase()) || rawInput;
-
         const targetRate = parseFloat(document.getElementById('targetRate').value) || 0;
+        
+        // Settings
         const selectedFuel = document.getElementById('fuelSelect').value; const selfFeed = document.getElementById('selfFeed').checked;
         const selectedFert = document.getElementById('fertSelect').value; const selfFert = document.getElementById('selfFert').checked;
         const showMax = document.getElementById('showMaxCap').checked;
-
         const lvlSpeed = parseInt(document.getElementById('lvlSpeed').value) || 0;
         const lvlBelt = parseInt(document.getElementById('lvlBelt').value) || 0;
         const lvlFuel = parseInt(document.getElementById('lvlFuel').value) || 0;
         const lvlAlchemy = parseInt(document.getElementById('lvlAlchemy').value) || 0;
         const lvlFert = parseInt(document.getElementById('lvlFert').value) || 0;
-
-        const speedMult = getSpeedMult(lvlSpeed); const alchemyMult = getAlchemyMult(lvlAlchemy);
-        const fuelMult = 1 + (lvlFuel * 0.10); const fertMult = 1 + (lvlFert * 0.10); 
-        const beltSpeed = getBeltSpeed(lvlBelt);
-
-        const treeContainer = document.getElementById('tree'); treeContainer.innerHTML = '';
         
-        const fuelDef = DB.items[selectedFuel] || {};
-        let netFuelEnergy = (fuelDef.heat || 10) * fuelMult; const grossFuelEnergy = netFuelEnergy; 
-        if (selfFeed) { netFuelEnergy -= getProductionHeatCost(selectedFuel, speedMult, alchemyMult); }
-        if(netFuelEnergy <= 0) netFuelEnergy = 0.1; 
+        const params = {
+            targetItem, targetRate, selectedFuel, selfFeed, selectedFert, selfFert, showMax,
+            lvlSpeed, lvlBelt, lvlFuel, lvlAlchemy, lvlFert,
+            speedMult: getSpeedMult(lvlSpeed),
+            alchemyMult: getAlchemyMult(lvlAlchemy),
+            fuelMult: 1 + (lvlFuel * 0.10),
+            fertMult: 1 + (lvlFert * 0.10),
+            beltSpeed: getBeltSpeed(lvlBelt)
+        };
 
-        const fertDef = DB.items[selectedFert] || { nutrientValue: 144, maxFertility: 12 };
-        let netFertVal = fertDef.nutrientValue * fertMult; const grossFertVal = netFertVal;
-        if (selfFert) { netFertVal -= getProductionFertCost(selectedFert, netFertVal, fertDef.maxFertility, speedMult, alchemyMult); }
-        if(netFertVal <= 0) netFertVal = 0.1;
+        // --- PASS 1: GHOST CALCULATION (Find Byproducts) ---
+        globalByproducts = {}; 
+        calculatePass(params, true); // True = Ghost Mode (No DOM, just Byproducts)
 
-        let globalFuelDemandItems = 0; let globalFertDemandItems = 0; let globalHeatLoad = 0; let globalBioLoad = 0; let globalCostPerMin = 0;
+        // --- PASS 2: RENDER ---
+        rowCounter = 0;
+        document.getElementById('tree').innerHTML = '';
+        calculatePass(params, false); // False = Render Mode
+
+    } catch(e) { console.error(e); }
+}
+
+function calculatePass(p, isGhost) {
+    // Re-calc basic inputs derived from params
+    const fuelDef = DB.items[p.selectedFuel] || {};
+    let netFuelEnergy = (fuelDef.heat || 10) * p.fuelMult; const grossFuelEnergy = netFuelEnergy; 
+    if (p.selfFeed) { netFuelEnergy -= getProductionHeatCost(p.selectedFuel, p.speedMult, p.alchemyMult); }
+    if(netFuelEnergy <= 0) netFuelEnergy = 0.1; 
+
+    const fertDef = DB.items[p.selectedFert] || { nutrientValue: 144, maxFertility: 12 };
+    let netFertVal = fertDef.nutrientValue * p.fertMult; const grossFertVal = netFertVal;
+    if (p.selfFert) { netFertVal -= getProductionFertCost(p.selectedFert, netFertVal, fertDef.maxFertility, p.speedMult, p.alchemyMult); }
+    if(netFertVal <= 0) netFertVal = 0.1;
+
+    let globalFuelDemandItems = 0; let globalFertDemandItems = 0; let globalHeatLoad = 0; let globalBioLoad = 0; let globalCostPerMin = 0;
+    let totalMachineCounts_Max = {}; let totalMachineCounts_Min = {}; let totalFurnaces = 0; let totalByproducts = {};
+
+    function addMachineCount(name, countMax, countRaw) {
+        if(!totalMachineCounts_Max[name]) totalMachineCounts_Max[name] = 0;
+        if(!totalMachineCounts_Min[name]) totalMachineCounts_Min[name] = 0;
+        totalMachineCounts_Max[name] += countMax;
+        totalMachineCounts_Min[name] += countRaw;
+    }
+
+    let grossRate = p.targetRate;
+    if (p.selfFeed && p.targetItem === p.selectedFuel) { grossRate = p.targetRate * (grossFuelEnergy / netFuelEnergy); }
+    if (p.selfFert && p.targetItem === p.selectedFert) { grossRate = p.targetRate * (grossFertVal / netFertVal); }
+
+    const treeContainer = document.getElementById('tree');
+
+    // Recursive Builder
+    function buildNode(item, rate, isInternalModule, ancestors = []) {
+        // RECYCLING CHECK (Only apply deduction in Render pass)
+        let deduction = 0;
+        let pathKey = ancestors.join(">") + ">" + item;
+        let canRecycle = false;
         
-        let totalMachineCounts_Max = {}; 
-        let totalMachineCounts_Min = {}; 
-        let totalFurnaces = 0; let totalByproducts = {};
-
-        function addMachineCount(name, countMax, countRaw) {
-            if(!totalMachineCounts_Max[name]) totalMachineCounts_Max[name] = 0;
-            if(!totalMachineCounts_Min[name]) totalMachineCounts_Min[name] = 0;
-            totalMachineCounts_Max[name] += countMax;
-            totalMachineCounts_Min[name] += countRaw;
+        if (!isGhost) {
+            // Check if we have byproducts for this item
+            if (globalByproducts[item] && globalByproducts[item] > 0.01) {
+                canRecycle = true;
+                if (activeRecyclers[pathKey]) {
+                    // Claim the byproduct
+                    deduction = Math.min(rate, globalByproducts[item]);
+                    globalByproducts[item] -= deduction; // Reduce pool for subsequent rows
+                }
+            }
         }
 
-        let grossRate = targetRate;
-        if (selfFeed && targetItem === selectedFuel) { grossRate = targetRate * (grossFuelEnergy / netFuelEnergy); }
-        if (selfFert && targetItem === selectedFert) { grossRate = targetRate * (grossFertVal / netFertVal); }
+        const netRate = Math.max(0, rate - deduction);
+        
+        const itemDef = DB.items[item] || {}; 
+        let ingredientChildren = []; 
+        let currentPath = [...ancestors, item];
+        let myRowID = 0;
+        
+        if (!isGhost) { rowCounter++; myRowID = rowCounter; }
 
-        const targetItemDef = DB.items[targetItem] || {};
+        let outputTag = ""; let machineTag = ""; let heatTag = ""; let swapBtn = ""; 
+        let bioTag = ""; let costTag = ""; let detailsTag = ""; let recycleTag = "";
+        let machinesNeeded = 0; let hasChildren = false;
 
-        // UPDATED BUILDNODE: Refactored to remove code duplication and support collapsing
-        function buildNode(item, rate, isInternalModule, ancestors = []) {
-            const div = document.createElement('div'); div.className = 'node';
-            const itemDef = DB.items[item] || {}; rowCounter++; const myRowID = rowCounter;
+        let isFuel = (item === p.selectedFuel); let isFert = (item === p.selectedFert);
+        if(isFuel) { outputTag = `<span class="output-tag">Output: ${formatVal((rate * (fuelDef.heat||10)*p.fuelMult)/60)} P/s</span>`; }
+        else if (isFert) { outputTag = `<span class="output-tag">Output: ${formatVal((rate * fertDef.nutrientValue*p.fertMult)/60)} V/s</span>`; }
+
+        // --- RECYCLE UI ---
+        if (canRecycle) {
+            if (activeRecyclers[pathKey]) {
+                let activeClass = "active";
+                let label = `♻️ ${formatVal(deduction)} Used`;
+                recycleTag = `<div class="push-right"><button class="recycle-btn ${activeClass}" onclick="toggleRecycle('${pathKey}')">${label}</button></div>`;
+            } else {
+                let label = `♻️ ${formatVal(globalByproducts[item])} Avail`;
+                recycleTag = `<div class="push-right"><button class="recycle-btn" onclick="toggleRecycle('${pathKey}')">${label}</button></div>`;
+            }
+        }
+
+        // Logic branching based on Item Type
+        if (itemDef.category === "Herbs" && itemDef.nutrientCost) {
+            // Nursery Logic
+            const fertilitySpeed = (fertDef.maxFertility || 12); const timePerItem = itemDef.nutrientCost / fertilitySpeed; 
+            const calculatedSpeed = (60 / timePerItem) * p.speedMult; 
+            const isLiquid = (itemDef.liquid === true);
+            const itemsPerMinPerMachine = isLiquid ? calculatedSpeed : Math.min(calculatedSpeed, p.beltSpeed);
             
-            let ingredientChildren = []; 
-            let currentPath = [...ancestors, item];
-
-            // --- 1. PREPARE DATA VARIABLES (Default to Empty) ---
-            let outputTag = "";
-            let machineTag = "";
-            let heatTag = "";
-            let swapBtn = "";
-            let bioTag = "";
-            let costTag = "";
-            let detailsTag = "";
-            let machinesNeeded = 0;
-            let hasChildren = false;
-
-            // --- 2. CALCULATE LOGIC ---
-            let isFuel = (item === selectedFuel); let isFert = (item === selectedFert);
-            if(isFuel) { outputTag = `<span class="output-tag">Output: ${formatVal((rate * (fuelDef.heat||10)*fuelMult)/60)} P/s</span>`; }
-            else if (isFert) { outputTag = `<span class="output-tag">Output: ${formatVal((rate * fertDef.nutrientValue*fertMult)/60)} V/s</span>`; }
-
-            // PATH A: NURSERY (Herbs)
-            if (itemDef.category === "Herbs" && itemDef.nutrientCost) {
-                const fertilitySpeed = (fertDef.maxFertility || 12); const timePerItem = itemDef.nutrientCost / fertilitySpeed; 
-                const calculatedSpeed = (60 / timePerItem) * speedMult; 
-                const isLiquid = (itemDef.liquid === true);
-                const itemsPerMinPerMachine = isLiquid ? calculatedSpeed : Math.min(calculatedSpeed, beltSpeed);
-                machinesNeeded = rate / itemsPerMinPerMachine;
-                
+            // Machines are calculated based on NET rate (after recycling deduction)
+            machinesNeeded = netRate / itemsPerMinPerMachine;
+            
+            if(!isGhost) {
                 addMachineCount("Nursery", Math.ceil(machinesNeeded), machinesNeeded);
-
-                const totalNutrientsNeeded = rate * itemDef.nutrientCost; const itemsNeeded = totalNutrientsNeeded / grossFertVal; 
+                const totalNutrientsNeeded = netRate * itemDef.nutrientCost; const itemsNeeded = totalNutrientsNeeded / grossFertVal; 
                 if (!isInternalModule) { globalFertDemandItems += itemsNeeded; globalBioLoad += (totalNutrientsNeeded / 60); }
                 
-                let tooltipText = `Recipe: ${item} (Nursery)\nBase Time: ${(timePerItem * (60/speedMult)).toFixed(1)}s\nSpeed Mult: ${speedMult.toFixed(2)}x\nThroughput: ${itemsPerMinPerMachine.toFixed(2)} items/min`;
-                
+                let tooltipText = `Recipe: ${item} (Nursery)\nBase Time: ${(timePerItem * (60/p.speedMult)).toFixed(1)}s\nSpeed Mult: ${p.speedMult.toFixed(2)}x\nThroughput: ${itemsPerMinPerMachine.toFixed(2)} items/min`;
                 let capTag = "";
-                if(showMax) {
+                if(p.showMax) {
                     const maxOutput = Math.ceil(machinesNeeded) * itemsPerMinPerMachine;
                     capTag = `<span class="max-cap-tag">(Max: ${formatVal(maxOutput)}/m)</span>`;
                 }
-                
                 machineTag = `<span class="machine-tag" title="${tooltipText}">${Math.ceil(machinesNeeded)} Nursery${capTag}</span>`;
-                bioTag = `<span class="bio-tag">Nutr: ${formatVal(rate * itemDef.nutrientCost / 60)} V/s, Needs ${(rate * itemDef.nutrientCost / grossFertVal).toFixed(1)}/m ${selectedFert}</span>`;
-            } 
-            // PATH B: STANDARD RECIPE
-            else {
-                const recipe = getActiveRecipe(item);
-                
-                if (!recipe) {
-                    // RAW INPUT
+                bioTag = `<span class="bio-tag">Nutr: ${formatVal(netRate * itemDef.nutrientCost / 60)} V/s, Needs ${(netRate * itemDef.nutrientCost / grossFertVal).toFixed(1)}/m ${p.selectedFert}</span>`;
+            }
+        } 
+        else {
+            const recipe = getActiveRecipe(item);
+            if (!recipe) {
+                if(!isGhost) {
                     if(itemDef.buyPrice) { 
-                        let c = rate * itemDef.buyPrice; 
+                        // Cost based on NET rate (we only buy what we don't recycle)
+                        let c = netRate * itemDef.buyPrice; 
                         globalCostPerMin += c; 
                         costTag = `<span class="cost-tag">${Math.ceil(c).toLocaleString()} G/m</span>`; 
                     }
                     detailsTag = `<span class="details">(Raw Input)</span>`;
-                } else {
-                    // MACHINE RECIPE
-                    hasChildren = true; // Recipes have inputs, so they have children
-                    let batchYield = recipe.outputs[item] || 1;
-                    if (recipe.machine === "Extractor" || recipe.machine === "Alembic") batchYield *= alchemyMult;
-                    
-                    const batchesPerMin = rate / batchYield;
-                    const maxBatchesPerMin = (60 / recipe.baseTime) * speedMult;
-                    const isLiquid = (itemDef.liquid === true);
-                    let effectiveBatchesPerMin = maxBatchesPerMin;
-                    
-                    if (!isLiquid) {
-                        const maxItemsPerMin = maxBatchesPerMin * batchYield;
-                        if (maxItemsPerMin > beltSpeed) { effectiveBatchesPerMin = beltSpeed / batchYield; }
+                }
+            } else {
+                hasChildren = true;
+                let batchYield = recipe.outputs[item] || 1;
+                if (recipe.machine === "Extractor" || recipe.machine === "Alembic") batchYield *= p.alchemyMult;
+                
+                // Machine counts based on NET rate
+                // (If we only need to produce 60 because we recycled 180, we only build machines for 60)
+                const batchesPerMin = netRate / batchYield;
+                const maxBatchesPerMin = (60 / recipe.baseTime) * p.speedMult;
+                const isLiquid = (itemDef.liquid === true);
+                let effectiveBatchesPerMin = maxBatchesPerMin;
+                
+                if (!isLiquid) {
+                    const maxItemsPerMin = maxBatchesPerMin * batchYield;
+                    if (maxItemsPerMin > p.beltSpeed) { effectiveBatchesPerMin = p.beltSpeed / batchYield; }
+                }
+                
+                machinesNeeded = batchesPerMin / effectiveBatchesPerMin;
+                
+                // BYPRODUCTS CALCULATION (Must happen in Ghost Pass too)
+                // Note: Byproducts are generated based on NET production. 
+                // If we recycle iron to reduce smelter load, the smelters produce FEWER byproducts (e.g. less slag, if any).
+                Object.keys(recipe.outputs).forEach(outKey => {
+                    if (outKey !== item) {
+                        let yieldPerBatch = recipe.outputs[outKey];
+                        let totalByproduct = batchesPerMin * yieldPerBatch; // derived from netRate
+                        if(isGhost) {
+                            if(!globalByproducts[outKey]) globalByproducts[outKey] = 0;
+                            globalByproducts[outKey] += totalByproduct;
+                        } else {
+                            if(!totalByproducts[outKey]) totalByproducts[outKey] = 0;
+                            totalByproducts[outKey] += totalByproduct;
+                        }
                     }
-                    
-                    machinesNeeded = batchesPerMin / effectiveBatchesPerMin;
-                    addMachineCount(recipe.machine, Math.ceil(machinesNeeded), machinesNeeded);
+                });
 
+                if(!isGhost) {
+                    addMachineCount(recipe.machine, Math.ceil(machinesNeeded), machinesNeeded);
                     let inputsStr = Object.keys(recipe.inputs).map(k => `${recipe.inputs[k]} ${k}`).join(', ');
                     let outputsStr = Object.keys(recipe.outputs).map(k => `${recipe.outputs[k]} ${k}`).join(', ');
-                    let cycleTime = recipe.baseTime / speedMult;
+                    let cycleTime = recipe.baseTime / p.speedMult;
                     let throughput = effectiveBatchesPerMin * batchYield;
-                    let tooltipText = `Recipe: ${inputsStr} -> ${outputsStr}\nBase Time: ${recipe.baseTime}s\nSpeed Mult: ${speedMult.toFixed(2)}x\nCycle Time: ${cycleTime.toFixed(2)}s\nThroughput: ${throughput.toFixed(2)} items/min per machine`;
+                    let tooltipText = `Recipe: ${inputsStr} -> ${outputsStr}\nBase Time: ${recipe.baseTime}s\nSpeed Mult: ${p.speedMult.toFixed(2)}x\nCycle Time: ${cycleTime.toFixed(2)}s\nThroughput: ${throughput.toFixed(2)} items/min per machine`;
 
                     let capTag = "";
-                    if(showMax) {
+                    if(p.showMax) {
                         const maxOutput = Math.ceil(machinesNeeded) * throughput;
                         capTag = `<span class="max-cap-tag">(Max: ${formatVal(maxOutput)}/m)</span>`;
                     }
                     machineTag = `<span class="machine-tag" title="${tooltipText}">${Math.ceil(machinesNeeded)} ${recipe.machine}s${capTag}</span>`;
 
-                    // Byproducts
-                    Object.keys(recipe.outputs).forEach(outKey => {
-                        if (outKey !== item) {
-                            let yieldPerBatch = recipe.outputs[outKey];
-                            let totalByproduct = batchesPerMin * yieldPerBatch;
-                            if(!totalByproducts[outKey]) totalByproducts[outKey] = 0;
-                            totalByproducts[outKey] += totalByproduct;
-                        }
-                    });
-
-                    // Heat
                     if (DB.machines[recipe.machine] && DB.machines[recipe.machine].heatCost) {
                         const mach = DB.machines[recipe.machine]; const parent = DB.machines[mach.parent];
                         const sReq = mach.slotsRequired || 1; const pSlots = mach.parentSlots || parent.slots || 3;
-                        const activeHeat = mach.heatCost * speedMult; const parentsNeeded = Math.ceil(machinesNeeded / (pSlots/sReq));
+                        const activeHeat = mach.heatCost * p.speedMult; const parentsNeeded = Math.ceil(machinesNeeded / (pSlots/sReq));
                         const totalHeatPs = (parentsNeeded * parent.heatSelf) + (machinesNeeded * activeHeat);
                         totalFurnaces += parentsNeeded;
                         if (!isInternalModule) { globalHeatLoad += totalHeatPs; globalFuelDemandItems += (totalHeatPs * 60) / grossFuelEnergy; }
-                        heatTag = `<span class="heat-tag">Heat: ${totalHeatPs.toFixed(1)} P/s, Needs ${((totalHeatPs * 60) / grossFuelEnergy).toFixed(1)}/m ${selectedFuel}</span>`;
+                        heatTag = `<span class="heat-tag">Heat: ${totalHeatPs.toFixed(1)} P/s, Needs ${((totalHeatPs * 60) / grossFuelEnergy).toFixed(1)}/m ${p.selectedFuel}</span>`;
                     }
 
-                    // Swap Button
                     const alts = getRecipesFor(item);
                     if(alts.length > 1) { 
                         swapBtn = `<button class="swap-btn" onclick="openRecipeModal('${item}', this.parentElement)" title="Swap Recipe">🔄</button>`; 
                     }
                     
-                    // Build Inputs
+                    // RECURSE INPUTS
+                    if (netRate > 0.0001) {
+                        const netBatches = netRate / batchYield;
+                        Object.keys(recipe.inputs).forEach(iName => {
+                            let qtyPerBatch = recipe.inputs[iName];
+                            let requiredInputRate = netBatches * qtyPerBatch;
+                            ingredientChildren.push({ type: 'input', item: iName, rate: requiredInputRate });
+                        });
+                    }
+                } else {
+                    // Ghost Mode: Recurse based on GROSS rate initially to find all POTENTIAL byproducts
+                    // However, accurate byproduct estimation requires mimicking the Net Flow.
+                    // This is complex. For now, Ghost Mode assumes Gross to ensure all byproducts are found.
+                    // This might overestimate available byproducts slightly in complex circular chains,
+                    // but is safe for "Availability" check. The Render pass applies strict math.
+                    const grossBatches = rate / batchYield;
                     Object.keys(recipe.inputs).forEach(iName => {
                         let qtyPerBatch = recipe.inputs[iName];
-                        let requiredInputRate = batchesPerMin * qtyPerBatch;
-                        ingredientChildren.push({ type: 'input', item: iName, rate: requiredInputRate });
+                        let requiredInputRate = grossBatches * qtyPerBatch;
+                        buildNode(iName, requiredInputRate, isInternalModule, currentPath);
                     });
                 }
             }
+        }
 
-            // --- 3. UNIFIED RENDER ---
-            let arrowHtml = `<span class="tree-arrow" style="visibility:${hasChildren ? 'visible' : 'hidden'}" onclick="toggleNode(this)">▼</span>`;
-            
-            let nodeContent = `
-                ${arrowHtml}
-                <span class="row-id" onclick="toggleNode(this)">${myRowID})</span>
-                <span class="qty">${rate.toFixed(1)}/m</span>
-                <span class="item-link" onclick="openDrillDown('${item}', ${rate})"><strong>${item}</strong></span>
-                ${swapBtn}
-                ${detailsTag}
-                ${costTag}
-                ${machineTag}
-                ${bioTag}
-                ${heatTag}
-                ${outputTag}
-            `;
+        if (isGhost) return null; // No DOM needed
 
-            div.innerHTML = `<div class="node-content" data-ancestors='${JSON.stringify(ancestors)}'>${nodeContent}</div>`;
-            
-            // Append Children
-            if (ingredientChildren.length > 0) {
-                const childrenDiv = document.createElement('div');
-                childrenDiv.className = 'node-children';
-                ingredientChildren.forEach(child => { 
-                    childrenDiv.appendChild(buildNode(child.item, child.rate, isInternalModule, currentPath)); 
-                });
-                div.appendChild(childrenDiv);
+        // --- RENDER DOM (Pass 2 Only) ---
+        const div = document.createElement('div'); div.className = 'node';
+        let arrowHtml = `<span class="tree-arrow" style="visibility:${hasChildren ? 'visible' : 'hidden'}" onclick="toggleNode(this)">▼</span>`;
+        let nodeContent = `
+            ${arrowHtml}
+            <span class="row-id" onclick="toggleNode(this)">${myRowID})</span>
+            <span class="qty">${rate.toFixed(1)}/m</span>
+            <span class="item-link" onclick="openDrillDown('${item}', ${rate})"><strong>${item}</strong></span>
+            ${swapBtn}
+            ${detailsTag}
+            ${costTag}
+            ${machineTag}
+            ${bioTag}
+            ${heatTag}
+            ${outputTag}
+            ${recycleTag}
+        `;
+
+        div.innerHTML = `<div class="node-content" data-ancestors='${JSON.stringify(ancestors)}'>${nodeContent}</div>`;
+        if (ingredientChildren.length > 0) {
+            const childrenDiv = document.createElement('div');
+            childrenDiv.className = 'node-children';
+            ingredientChildren.forEach(child => { 
+                childrenDiv.appendChild(buildNode(child.item, child.rate, isInternalModule, currentPath)); 
+            });
+            div.appendChild(childrenDiv);
+        }
+        return div;
+    }
+
+    // --- EXECUTE THE PASS ---
+    if(p.targetItem) {
+        const root = buildNode(p.targetItem, grossRate, false, []);
+        if(!isGhost) {
+            const h = document.createElement('div'); h.className = 'section-header'; h.innerText = `--- Primary Production Chain (${p.targetItem}) ---`; treeContainer.appendChild(h); 
+            treeContainer.appendChild(root);
+        }
+    }
+
+    if (p.selfFert && globalFertDemandItems > 0) {
+        const fertEff = netFertVal / grossFertVal; const grossFertNeeded = globalFertDemandItems / fertEff;
+        if (p.targetItem === p.selectedFert) {
+            if(!isGhost) {
+                const note = document.createElement('div'); note.innerHTML = `<div class="node" style="margin-top:20px; color:#aaa; font-style:italic;">Internal Nutrient Source: <strong>${p.selectedFert}</strong> (Supplied by Main Output)<br>Total Required: ${grossFertNeeded.toFixed(1)}/m</div>`; treeContainer.appendChild(note);
             }
-            
-            return div;
-        }
-
-        if(targetItem) {
-            const h = document.createElement('div'); h.className = 'section-header'; h.innerText = `--- Primary Production Chain (${targetItem}) ---`; treeContainer.appendChild(h); 
-            treeContainer.appendChild(buildNode(targetItem, grossRate, false, []));
-        }
-
-        if (selfFert && globalFertDemandItems > 0) {
-            const fertEff = netFertVal / grossFertVal; const grossFertNeeded = globalFertDemandItems / fertEff;
-            if (targetItem === selectedFert) {
-                const note = document.createElement('div'); note.innerHTML = `<div class="node" style="margin-top:20px; color:#aaa; font-style:italic;">Internal Nutrient Source: <strong>${selectedFert}</strong> (Supplied by Main Output)<br>Total Required: ${grossFertNeeded.toFixed(1)}/m</div>`; treeContainer.appendChild(note);
+        } else {
+            if(!isGhost) {
+                const h = document.createElement('div'); h.className = 'section-header'; h.innerText = `--- Internal Nutrient Module (${p.selectedFert}) ---`; treeContainer.appendChild(h); rowCounter=0; 
+                treeContainer.appendChild(buildNode(p.selectedFert, grossFertNeeded, true, []));
             } else {
-                const h = document.createElement('div'); h.className = 'section-header'; h.innerText = `--- Internal Nutrient Module (${selectedFert}) ---`; treeContainer.appendChild(h); rowCounter=0; 
-                treeContainer.appendChild(buildNode(selectedFert, grossFertNeeded, true, []));
+                buildNode(p.selectedFert, grossFertNeeded, true, []);
             }
         }
+    }
 
-        if (selfFeed && globalFuelDemandItems > 0) {
-            const fuelEff = netFuelEnergy / grossFuelEnergy; const grossFuelNeeded = globalFuelDemandItems / fuelEff;
-            if (targetItem === selectedFuel) {
-                const note = document.createElement('div'); note.innerHTML = `<div class="node" style="margin-top:20px; color:#aaa; font-style:italic;">Internal Fuel Source: <strong>${selectedFuel}</strong> (Supplied by Main Output)<br>Total Required: ${grossFuelNeeded.toFixed(1)}/m</div>`; treeContainer.appendChild(note);
+    if (p.selfFeed && globalFuelDemandItems > 0) {
+        const fuelEff = netFuelEnergy / grossFuelEnergy; const grossFuelNeeded = globalFuelDemandItems / fuelEff;
+        if (p.targetItem === p.selectedFuel) {
+            if(!isGhost) {
+                const note = document.createElement('div'); note.innerHTML = `<div class="node" style="margin-top:20px; color:#aaa; font-style:italic;">Internal Fuel Source: <strong>${p.selectedFuel}</strong> (Supplied by Main Output)<br>Total Required: ${grossFuelNeeded.toFixed(1)}/m</div>`; treeContainer.appendChild(note);
+            }
+        } else {
+            if(!isGhost) {
+                const h = document.createElement('div'); h.className = 'section-header'; h.innerText = `--- Internal Heat Module (${p.selectedFuel}) ---`; treeContainer.appendChild(h); rowCounter=0; 
+                treeContainer.appendChild(buildNode(p.selectedFuel, grossFuelNeeded, true, []));
             } else {
-                const h = document.createElement('div'); h.className = 'section-header'; h.innerText = `--- Internal Heat Module (${selectedFuel}) ---`; treeContainer.appendChild(h); rowCounter=0; 
-                treeContainer.appendChild(buildNode(selectedFuel, grossFuelNeeded, true, []));
+                buildNode(p.selectedFuel, grossFuelNeeded, true, []);
             }
         }
+    }
 
+    if (!isGhost) {
+        // --- SUMMARY & EXTERNALS (Only in Render Pass) ---
         const extH = document.createElement('div'); extH.className = 'section-header'; extH.innerText = `--- External Inputs ---`; treeContainer.appendChild(extH);
         const extDiv = document.createElement('div'); extDiv.className = 'node';
         let extHTML = `<div class="node-content" style="margin-bottom:5px;"><span class="qty" style="color:var(--gold)">${Math.ceil(globalCostPerMin).toLocaleString()} G/m</span><strong>Raw Material Cost</strong></div>`;
-        if (!selfFeed && globalFuelDemandItems > 0) { extHTML += `<div class="node-content" style="margin-bottom:5px;"><span class="qty" style="color:var(--fuel)">${globalFuelDemandItems.toFixed(1)}/m</span><strong>${selectedFuel}</strong> (Fuel Import)</div>`; }
-        if (!selfFert && globalFertDemandItems > 0) { extHTML += `<div class="node-content" style="margin-bottom:5px;"><span class="qty" style="color:var(--bio)">${globalFertDemandItems.toFixed(1)}/m</span><strong>${selectedFert}</strong> (Fertilizer Import)</div>`; }
+        if (!p.selfFeed && globalFuelDemandItems > 0) { extHTML += `<div class="node-content" style="margin-bottom:5px;"><span class="qty" style="color:var(--fuel)">${globalFuelDemandItems.toFixed(1)}/m</span><strong>${p.selectedFuel}</strong> (Fuel Import)</div>`; }
+        if (!p.selfFert && globalFertDemandItems > 0) { extHTML += `<div class="node-content" style="margin-bottom:5px;"><span class="qty" style="color:var(--bio)">${globalFertDemandItems.toFixed(1)}/m</span><strong>${p.selectedFert}</strong> (Fertilizer Import)</div>`; }
         extDiv.innerHTML = extHTML; treeContainer.appendChild(extDiv);
 
         // --- BYPRODUCTS SECTION ---
@@ -1055,116 +1160,113 @@ function calculate() {
         const sortedByproducts = Object.keys(totalByproducts).sort();
         if (sortedByproducts.length > 0) {
             sortedByproducts.forEach(item => {
-                bypHTML += `<div class="node-content"><span class="qty" style="color:var(--byproduct)">${formatVal(totalByproducts[item])}/m</span><strong>${item}</strong></div>`;
+                let remaining = globalByproducts[item] || 0; // After claims
+                let note = "";
+                if (remaining < totalByproducts[item]) {
+                    note = ` <span style="font-size:0.8em; color:#888;">(${formatVal(totalByproducts[item] - remaining)} recycled)</span>`;
+                }
+                bypHTML += `<div class="node-content"><span class="qty" style="color:var(--byproduct)">${formatVal(remaining)}/m</span><strong>${item}</strong>${note}</div>`;
             });
         } else {
             bypHTML = `<div class="node-content"><span class="details" style="font-style:italic">None</span></div>`;
         }
         bypDiv.innerHTML = bypHTML; treeContainer.appendChild(bypDiv);
 
-        // --- CONSTRUCTION LIST ---
-        const buildList = document.getElementById('construction-list'); buildList.innerHTML = '';
-        const totalMatsContainer = document.getElementById('total-mats-container'); totalMatsContainer.innerHTML = '';
+        // Update Totals Panel
+        updateConstructionList(totalMachineCounts_Max, totalMachineCounts_Min, totalFurnaces);
+        updateSummaryBox(p, globalHeatLoad, globalBioLoad, globalCostPerMin, grossRate);
+    }
+}
+
+function updateConstructionList(maxCounts, minCounts, furnaces) {
+    const buildList = document.getElementById('construction-list'); buildList.innerHTML = '';
+    const totalMatsContainer = document.getElementById('total-mats-container'); totalMatsContainer.innerHTML = '';
+    const sortedMachines = Object.keys(maxCounts).sort();
+    let totalConstructionMaterials = {};
+
+    sortedMachines.forEach(m => {
+        const countMax = maxCounts[m]; 
+        const countMin = Math.ceil(minCounts[m]);
+        if(countMax <= 0) return;
         
-        const sortedMachines = Object.keys(totalMachineCounts_Max).sort();
-        let totalConstructionMaterials = {};
+        let label = (countMax === countMin) ? `${countMax}` : `<span style="font-size:0.9em">Min ${countMin}, Max ${countMax}</span>`;
+        const li = document.createElement('li'); li.className = 'build-group';
+        const machineDef = DB.machines[m] || {};
+        const buildCost = machineDef.buildCost;
 
-        sortedMachines.forEach(m => {
-            const countMax = totalMachineCounts_Max[m]; 
-            const countMin = Math.ceil(totalMachineCounts_Min[m]);
-            if(countMax <= 0) return;
-            
-            let label = "";
-            if (countMax === countMin) { label = `${countMax}`; }
-            else { label = `<span style="font-size:0.9em">Min ${countMin}, Max ${countMax}</span>`; }
-
-            const li = document.createElement('li'); li.className = 'build-group';
-            const machineDef = DB.machines[m] || {};
-            const buildCost = machineDef.buildCost;
-
-            let subListHtml = '';
-            if (buildCost) {
-                subListHtml = `<ul class="build-sublist">`;
-                Object.keys(buildCost).forEach(mat => {
-                    const totalQty = buildCost[mat] * countMin; // MIN
-                    subListHtml += `<li class="build-subitem"><span>${mat}</span> <span class="build-val">${totalQty}</span></li>`;
-                    if(!totalConstructionMaterials[mat]) totalConstructionMaterials[mat] = 0;
-                    totalConstructionMaterials[mat] += totalQty;
-                });
-                subListHtml += `</ul>`;
-            } else {
-                subListHtml = `<ul class="build-sublist"><li class="build-subitem" style="color:#666;">No build data</li></ul>`;
-            }
-
-            li.innerHTML = `<div class="build-header" onclick="toggleBuildGroup(this.parentNode)">
-                <span><span class="build-arrow">▶</span> ${m}</span> <span class="build-count">${label}</span>
-            </div>${subListHtml}`;
-            buildList.appendChild(li);
-        });
-
-        // Add Furnaces
-        if(totalFurnaces > 0) {
-            const li = document.createElement('li'); li.className = 'build-group';
-            const mName = "Stone Furnace";
-            const count = totalFurnaces;
-            const machineDef = DB.machines[mName] || {};
-            const buildCost = machineDef.buildCost;
-            
-            let subListHtml = '';
-            if (buildCost) {
-                subListHtml = `<ul class="build-sublist">`;
-                Object.keys(buildCost).forEach(mat => {
-                    const totalQty = buildCost[mat] * count;
-                    subListHtml += `<li class="build-subitem"><span>${mat}</span> <span class="build-val">${totalQty}</span></li>`;
-                    if(!totalConstructionMaterials[mat]) totalConstructionMaterials[mat] = 0;
-                    totalConstructionMaterials[mat] += totalQty;
-                });
-                subListHtml += `</ul>`;
-            }
-
-            li.innerHTML = `<div class="build-header" style="border-top:1px dashed #555" onclick="toggleBuildGroup(this.parentNode)">
-                <span><span class="build-arrow">▶</span> Stone Furnace (Min)</span> <span class="build-count" style="color:var(--warn)">${count}</span>
-            </div>${subListHtml}`;
-            buildList.appendChild(li);
-        }
-
-        // Render Grand Totals
-        if (Object.keys(totalConstructionMaterials).length > 0) {
-            let totalHtml = `<div class="total-mats-header">Total Materials Required (Minimum)</div>`;
-            Object.keys(totalConstructionMaterials).sort().forEach(mat => {
-                totalHtml += `<div class="total-mat-item"><span>${mat}</span> <strong>${totalConstructionMaterials[mat]}</strong></div>`;
+        let subListHtml = '';
+        if (buildCost) {
+            subListHtml = `<ul class="build-sublist">`;
+            Object.keys(buildCost).forEach(mat => {
+                const totalQty = buildCost[mat] * countMin;
+                subListHtml += `<li class="build-subitem"><span>${mat}</span> <span class="build-val">${totalQty}</span></li>`;
+                if(!totalConstructionMaterials[mat]) totalConstructionMaterials[mat] = 0;
+                totalConstructionMaterials[mat] += totalQty;
             });
-            totalMatsContainer.innerHTML = totalHtml;
-        }
-
-        // Summary Stats
-        let internalHeat = selfFeed ? globalHeatLoad : 0;
-        let externalHeat = !selfFeed ? globalHeatLoad : 0;
-        let internalBio = selfFert ? globalBioLoad : 0;
-        let externalBio = !selfFert ? globalBioLoad : 0;
-
-        let profitHtml = "";
-        if (targetItemDef.sellPrice) {
-            const revenuePerMin = targetRate * targetItemDef.sellPrice;
-            const profit = revenuePerMin - globalCostPerMin;
-            profitHtml = `<div class="stat-block"><span class="stat-label">Projected Profit</span><span class="stat-value ${profit >= 0 ? 'gold-profit' : 'gold-cost'}">${Math.floor(profit).toLocaleString()} G/m</span></div>`;
+            subListHtml += `</ul>`;
         } else {
-            profitHtml = `<div class="stat-block"><span class="stat-label">Total Raw Cost</span><span class="stat-value gold-cost">${Math.ceil(globalCostPerMin).toLocaleString()} G/m</span></div>`;
+            subListHtml = `<ul class="build-sublist"><li class="build-subitem" style="color:#666;">No build data</li></ul>`;
         }
+        li.innerHTML = `<div class="build-header" onclick="toggleBuildGroup(this.parentNode)"><span><span class="build-arrow">▶</span> ${m}</span> <span class="build-count">${label}</span></div>${subListHtml}`;
+        buildList.appendChild(li);
+    });
 
-        let deductionText = [];
-        if (selfFeed && targetItem === selectedFuel) { deductionText.push(`Gross: ${grossRate.toFixed(1)}`); deductionText.push(`Use: ${(grossRate - targetRate).toFixed(1)}`); }
-        if (selfFert && targetItem === selectedFert) { deductionText.push(`Gross: ${grossRate.toFixed(1)}`); deductionText.push(`Use: ${(grossRate - targetRate).toFixed(1)}`); }
+    if(furnaces > 0) {
+        const li = document.createElement('li'); li.className = 'build-group';
+        const mName = "Stone Furnace"; const count = furnaces;
+        const machineDef = DB.machines[mName] || {}; const buildCost = machineDef.buildCost;
+        let subListHtml = '';
+        if (buildCost) {
+            subListHtml = `<ul class="build-sublist">`;
+            Object.keys(buildCost).forEach(mat => {
+                const totalQty = buildCost[mat] * count;
+                subListHtml += `<li class="build-subitem"><span>${mat}</span> <span class="build-val">${totalQty}</span></li>`;
+                if(!totalConstructionMaterials[mat]) totalConstructionMaterials[mat] = 0;
+                totalConstructionMaterials[mat] += totalQty;
+            });
+            subListHtml += `</ul>`;
+        }
+        li.innerHTML = `<div class="build-header" style="border-top:1px dashed #555" onclick="toggleBuildGroup(this.parentNode)"><span><span class="build-arrow">▶</span> Stone Furnace (Min)</span> <span class="build-count" style="color:var(--warn)">${count}</span></div>${subListHtml}`;
+        buildList.appendChild(li);
+    }
 
-        document.getElementById('summary-container').innerHTML = `
-            <div class="summary-box">
-                <div class="stat-block"><span class="stat-label">Net Output</span><span class="stat-value ${targetRate >= 0 ? 'net-positive' : 'net-warning'}">${targetRate.toFixed(1)} / min</span>${deductionText.length > 0 ? `<span class="stat-sub" style="font-size:0.75em">${deductionText.join('<br>')}</span>` : ''}</div>
-                <div class="stat-block"><span class="stat-label">Internal Load</span><span class="stat-value" style="font-size:0.9em; color:var(--fuel);">Heat: ${internalHeat.toFixed(1)} P/s</span><span class="stat-value" style="font-size:0.9em; color:var(--bio);">Nutr: ${formatVal(internalBio)} V/s</span></div>
-                <div class="stat-block"><span class="stat-label">External Load</span><span class="stat-value" style="font-size:0.9em; color:var(--fuel);">Heat: ${externalHeat.toFixed(1)} P/s</span><span class="stat-value" style="font-size:0.9em; color:var(--bio);">Nutr: ${formatVal(externalBio)} V/s</span></div>
-                ${profitHtml}
-                <div class="stat-block"><span class="stat-label">Belt Usage (Net)</span><span class="stat-value" style="font-size:1.1em; color:${targetRate > beltSpeed ? '#ff5252' : '#aaa'};">${(targetRate/beltSpeed * 100).toFixed(0)}%</span><span class="stat-sub">Cap: ${beltSpeed}/m</span></div>
-            </div>`;
-    } catch(e) { console.error(e); }
+    if (Object.keys(totalConstructionMaterials).length > 0) {
+        let totalHtml = `<div class="total-mats-header">Total Materials Required (Minimum)</div>`;
+        Object.keys(totalConstructionMaterials).sort().forEach(mat => {
+            totalHtml += `<div class="total-mat-item"><span>${mat}</span> <strong>${totalConstructionMaterials[mat]}</strong></div>`;
+        });
+        totalMatsContainer.innerHTML = totalHtml;
+    }
+}
+
+function updateSummaryBox(p, heat, bio, cost, grossRate) {
+    const targetItemDef = DB.items[p.targetItem] || {};
+    let internalHeat = p.selfFeed ? heat : 0;
+    let externalHeat = !p.selfFeed ? heat : 0;
+    let internalBio = p.selfFert ? bio : 0;
+    let externalBio = !p.selfFert ? bio : 0;
+
+    let profitHtml = "";
+    if (targetItemDef.sellPrice) {
+        const revenuePerMin = p.targetRate * targetItemDef.sellPrice;
+        const profit = revenuePerMin - cost;
+        profitHtml = `<div class="stat-block"><span class="stat-label">Projected Profit</span><span class="stat-value ${profit >= 0 ? 'gold-profit' : 'gold-cost'}">${Math.floor(profit).toLocaleString()} G/m</span></div>`;
+    } else {
+        profitHtml = `<div class="stat-block"><span class="stat-label">Total Raw Cost</span><span class="stat-value gold-cost">${Math.ceil(cost).toLocaleString()} G/m</span></div>`;
+    }
+
+    let deductionText = [];
+    if (p.selfFeed && p.targetItem === p.selectedFuel) { deductionText.push(`Gross: ${grossRate.toFixed(1)}`); deductionText.push(`Use: ${(grossRate - p.targetRate).toFixed(1)}`); }
+    if (p.selfFert && p.targetItem === p.selectedFert) { deductionText.push(`Gross: ${grossRate.toFixed(1)}`); deductionText.push(`Use: ${(grossRate - p.targetRate).toFixed(1)}`); }
+
+    document.getElementById('summary-container').innerHTML = `
+        <div class="summary-box">
+            <div class="stat-block"><span class="stat-label">Net Output</span><span class="stat-value ${p.targetRate >= 0 ? 'net-positive' : 'net-warning'}">${p.targetRate.toFixed(1)} / min</span>${deductionText.length > 0 ? `<span class="stat-sub" style="font-size:0.75em">${deductionText.join('<br>')}</span>` : ''}</div>
+            <div class="stat-block"><span class="stat-label">Internal Load</span><span class="stat-value" style="font-size:0.9em; color:var(--fuel);">Heat: ${internalHeat.toFixed(1)} P/s</span><span class="stat-value" style="font-size:0.9em; color:var(--bio);">Nutr: ${formatVal(internalBio)} V/s</span></div>
+            <div class="stat-block"><span class="stat-label">External Load</span><span class="stat-value" style="font-size:0.9em; color:var(--fuel);">Heat: ${externalHeat.toFixed(1)} P/s</span><span class="stat-value" style="font-size:0.9em; color:var(--bio);">Nutr: ${formatVal(externalBio)} V/s</span></div>
+            ${profitHtml}
+            <div class="stat-block"><span class="stat-label">Belt Usage (Net)</span><span class="stat-value" style="font-size:1.1em; color:${p.targetRate > p.beltSpeed ? '#ff5252' : '#aaa'};">${(p.targetRate/p.beltSpeed * 100).toFixed(0)}%</span><span class="stat-sub">Cap: ${p.beltSpeed}/m</span></div>
+        </div>`;
 }
 
 init();
