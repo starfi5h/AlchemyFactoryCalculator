@@ -372,7 +372,7 @@ window.ALCHEMY_DB = {
         // --- ESSENCES & CATALYSTS ---
         { "id": "Basic Fertilizer", "machine": "Assembler", "inputs": { "Plant Ash": 1, "Quicklime Powder": 1 }, "outputs": { "Basic Fertilizer": 1 }, "baseTime": 4.0 },
         { "id": "Advanced Fertilizer", "machine": "Assembler", "inputs": { "Basic Fertilizer": 1, "Gloom Fungus": 1 }, "outputs": { "Advanced Fertilizer": 1 }, "baseTime": 4.0 },
-		{"id": "Philosopher's Stone", "machine": "Advanced Assembler", "inputs": { "Unstable Catalyst": 1, "Vitality Essence": 1, "Lavender Essential Oil": 18 }, "outputs": { "Fertile Catalyst": 1 }, "baseTime": 8.0 },
+		{ "id": "Fertile Catalyst", "machine": "Advanced Assembler", "inputs": { "Unstable Catalyst": 1, "Vitality Essence": 1, "Lavender Essential Oil": 18 }, "outputs": { "Fertile Catalyst": 1 }, "baseTime": 8.0 },
         { "id": "Unstable Catalyst", "machine": "Advanced Assembler", "inputs": { "Chamomile Powder": 1, "Gloom Spores": 1, "Sulfur Powder": 1 }, "outputs": { "Unstable Catalyst": 1 }, "baseTime": 4.0 },
         { "id": "Oblivion Essence", "machine": "Paradox Crucible", "inputs": { "Sage Seed": 1 }, "outputs": { "Oblivion Essence": 1 }, "baseTime": 8.7 },
         { "id": "Vitality Essence", "machine": "Paradox Crucible", "inputs": { "Oblivion Essence": 1 }, "outputs": { "Vitality Essence": 1 }, "baseTime": 5.0 },
