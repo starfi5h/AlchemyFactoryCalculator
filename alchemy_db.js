@@ -139,11 +139,11 @@ window.ALCHEMY_DB = {
         "Basic Fertilizer": { "category": "Fertilizer", "nutrientValue": 144, "maxFertility": 12, "buyPrice": 14 },
         "Advanced Fertilizer": { "category": "Fertilizer", "nutrientValue": 720, "maxFertility": 144, "buyPrice": 60 },
         
-        "Oblivion Essence": { "category": "Essence", "buyPrice": 600 },
-        "Vitality Essence": { "category": "Essence", "buyPrice": 900 },
-        "Unstable Catalyst": { "category": "Catalyst", "buyPrice": 1266 },
-        "Fertile Catalyst": { "category": "Catalyst", "buyPrice": 4148, "nutrientValue": 24000, "maxFertility": 6000 },
-        "Resonant Catalyst": { "category": "Catalyst", "buyPrice": 22949 },
+        "Oblivion Essence": { "category": "Essence" },
+        "Vitality Essence": { "category": "Essence" },
+        "Unstable Catalyst": { "category": "Catalyst" },
+        "Fertile Catalyst": { "category": "Catalyst", "nutrientValue": 24000, "maxFertility": 6000 },
+        "Resonant Catalyst": { "category": "Catalyst" },
         "Eternal Catalyst": { "category": "Catalyst" },
         "Philosopher's Stone": { "category": "Catalyst" },
 
@@ -372,7 +372,8 @@ window.ALCHEMY_DB = {
         // --- ESSENCES & CATALYSTS ---
         { "id": "Basic Fertilizer", "machine": "Assembler", "inputs": { "Plant Ash": 1, "Quicklime Powder": 1 }, "outputs": { "Basic Fertilizer": 1 }, "baseTime": 4.0 },
         { "id": "Advanced Fertilizer", "machine": "Assembler", "inputs": { "Basic Fertilizer": 1, "Gloom Fungus": 1 }, "outputs": { "Advanced Fertilizer": 1 }, "baseTime": 4.0 },
-        { "id": "Fertile Catalyst", "machine": "Advanced Assembler", "inputs": { "Chamomile Powder": 1, "Gloom Spores": 1, "Sulfur Powder": 1 }, "outputs": { "Unstable Catalyst": 1 }, "baseTime": 4.0 },
+		{"id": "Philosopher's Stone", "machine": "Advanced Assembler", "inputs": { "Unstable Catalyst": 1, "Vitality Essence": 1, "Lavender Essential Oil": 18 }, "outputs": { "Fertile Catalyst": 1 }, "baseTime": 8.0 },
+        { "id": "Unstable Catalyst", "machine": "Advanced Assembler", "inputs": { "Chamomile Powder": 1, "Gloom Spores": 1, "Sulfur Powder": 1 }, "outputs": { "Unstable Catalyst": 1 }, "baseTime": 4.0 },
         { "id": "Oblivion Essence", "machine": "Paradox Crucible", "inputs": { "Sage Seed": 1 }, "outputs": { "Oblivion Essence": 1 }, "baseTime": 8.7 },
         { "id": "Vitality Essence", "machine": "Paradox Crucible", "inputs": { "Oblivion Essence": 1 }, "outputs": { "Vitality Essence": 1 }, "baseTime": 5.0 },
         { "id": "Resonant Catalyst", "machine": "Advanced Blender", "inputs": { "Fertile Catalyst": 1, "Volcanic Ash": 1, "Aqua Vitae": 12 }, "outputs": { "Resonant Catalyst": 1 }, "baseTime": 8.0 },
