@@ -6,6 +6,8 @@
     <title>Alchemy Factory Planner v94</title>
     <script src="alchemy_db.js"></script> 
     <script src="alchemy_constants.js"></script> 
+
+    <script src="alchemy_i18n.js"></script>
     
     <style>
         /* ==========================================================================
@@ -448,6 +450,11 @@
         <div id="view-db" class="view">
             <div class="editor-container">
                 <div class="editor-toolbar">
+                    <!-- Add a selector to switch between DB and I18N -->
+                    <select id="editor-target" onchange="loadEditorContent()" style="width: auto; padding: 5px;">
+                        <option value="db">Database</option>
+                        <option value="i18n">Translations</option>
+                    </select>
                     <button class="save-btn" onclick="applyChanges()" style="width:auto; margin:0;">Apply Changes</button>
                     <button class="info" onclick="exportData()" style="padding:10px; background:var(--info); border:none; color:white; border-radius:4px; font-weight:bold; cursor:pointer;">Export to File</button>
                 </div>
@@ -463,6 +470,8 @@
 let DB = null;
 const STORAGE_KEY = "alchemy_factory_save_v1";
 const SOURCE_KEY = "alchemy_source_v1";
+const I18N_STORAGE_KEY = "alchemy_i18n_save_v1";
+const I18N_SOURCE_KEY = "alchemy_i18n_source_v1";
 let rowCounter = 0; 
 let isSelfFuel = false;
 let isSelfFert = false;
@@ -480,6 +489,9 @@ function init() {
     const urlParams = new URLSearchParams(window.location.search);
     const urlItem = urlParams.get('item');
     const urlRate = urlParams.get('rate');
+    const urlFuel = urlParams.get('fuel');
+    const urlFert = urlParams.get('fert');
+    lastUrlItem = urlItem || "";
 
     if (window.ALCHEMY_DB) {
         let localVersion = 0;
@@ -527,20 +539,31 @@ function init() {
         activeRecyclers = DB.settings.activeRecyclers;
     }
 
+    translateDatabase(DB);
+
     prepareComboboxData();
     populateSelects(); 
     loadSettingsToUI();
     renderSlider(); // Initialize the slider logic
     
-    if (urlItem && urlRate) {
+    if (urlItem) {
         document.getElementById('targetItemInput').value = decodeURIComponent(urlItem);
+        updateComboIcon();
+    }    
+    if (urlRate) {
         document.getElementById('targetRate').disabled = false;
         document.getElementById('targetRate').value = urlRate;
     } else {
         updateFromSlider(); // Apply default slider position
     }
     
-    loadEditorContent(); 
+    if (urlFuel && document.querySelector(`#fuelSelect option[value="${urlFuel}"]`)) {
+        document.getElementById('fuelSelect').value = urlFuel;
+    }
+    if (urlFert && document.querySelector(`#fertSelect option[value="${urlFert}"]`)) {
+        document.getElementById('fertSelect').value = urlFert;
+    }
+    
     calculate();
 }
 
@@ -618,24 +641,45 @@ function updateFromSlider() {
    ========================================================================== */
 function loadEditorContent() {
     const localSource = localStorage.getItem(SOURCE_KEY);
+    const localI18nSource = localStorage.getItem(I18N_SOURCE_KEY);
+    const target = document.getElementById('editor-target').value;
     const editor = document.getElementById('json-editor');
-    if (localSource) { editor.value = localSource; } 
+
+    if (target === 'db') {
+        editor.value = localSource ?? JSON.stringify(DB, null, 2);
+    }
     else {
-        fetch('alchemy_db.js')
-            .then(res => { if(!res.ok) throw new Error("404"); return res.text(); })
-            .then(text => {
-                editor.value = text;
-                localStorage.setItem(SOURCE_KEY, text);
-            })
-            .catch(err => {
-                editor.value = "// Cannot load 'alchemy_db.js' source code due to browser security restrictions on local files.\n// Please edit the file directly in your text editor (e.g. Notepad++).";
-            });
+        editor.value = localI18nSource ?? JSON.stringify(window.ALCHEMY_I18N, null, 2);
     }
 }
 
 function applyChanges() {
     const txt = document.getElementById('json-editor').value;
-    try { eval(txt); DB = window.ALCHEMY_DB; localStorage.setItem(SOURCE_KEY, txt); persist(); init(); alert("Applied!"); } catch(e) { alert("Syntax Error: " + e.message); }
+    const target = document.getElementById('editor-target').value;
+    try {
+        const jsonMatch = txt.match(/\{[\s\S]*\}/);
+        if (!jsonMatch) throw new Error("Format error: No valid JSON found (missing { ... })");
+        
+        let jsonString = jsonMatch[0];
+        jsonString = jsonString.replace(/\/\/.*$/gm, '');
+        const parsedData = JSON.parse(jsonString); // Avoid using eval()
+
+        if (target === 'db') {
+            window.ALCHEMY_DB = parsedData;
+            DB = window.ALCHEMY_DB;
+            localStorage.setItem(SOURCE_KEY, txt);
+            persist();
+        } else {
+            window.ALCHEMY_I18N = parsedData;
+            localStorage.setItem(I18N_SOURCE_KEY, txt);
+            localStorage.setItem(I18N_STORAGE_KEY, JSON.stringify(window.ALCHEMY_I18N));
+        }
+
+        init();
+        alert("Applied " + (target === 'db' ? "Database" : "Translations") + " safely!");
+    } catch(e) {
+        alert("JSON Parsing Error: " + e.message + "\n\nNote: Please ensure the data uses double quotes and no trailing commas.");
+    }
 }
 
 function exportData() {
@@ -655,7 +699,7 @@ function prepareComboboxData() {
     const allItems = new Set(Object.keys(DB.items || {}));
     if(DB.recipes) DB.recipes.forEach(r => Object.keys(r.outputs).forEach(k => allItems.add(k)));
     allItemsList = Array.from(allItems).sort().map(name => {
-        return { name: name, category: (DB.items[name] ? DB.items[name].category : "Other") };
+        return { name: name, category: t((DB.items[name] ? DB.items[name].category : "Other"), 'categories') };
     });
 }
 
@@ -854,7 +898,7 @@ function openRecipeModal(item, domElement) {
     const candidates = getRecipesFor(item);
     const list = document.getElementById('recipe-list');
     list.innerHTML = '';
-    document.getElementById('recipe-modal-title').innerText = `Select Recipe for ${item}`;
+    document.getElementById('recipe-modal-title').innerText = t('Select Recipe for ') + item;
     const currentId = (getActiveRecipe(item) || {}).id;
     
     let ancestors = [];
@@ -882,8 +926,8 @@ function openRecipeModal(item, domElement) {
         let outputs = []; Object.keys(r.outputs).forEach(key => { outputs.push(`${r.outputs[key]}x ${key}`); });
 
         let content = `
-            <div class="recipe-header"><strong>${r.machine}</strong> <span style="font-size:0.9em; opacity:0.8;">(${r.baseTime}s)</span>${r.id === currentId ? '✅' : ''}</div>
-            <div class="recipe-details">Input: ${inputs.join(', ')}<br>Yields: ${outputs.join(', ')}</div>
+            <div class="recipe-header"><strong>${t(r.machine, 'machines')}</strong> <span style="font-size:0.9em; opacity:0.8;">(${r.baseTime}s)</span>${r.id === currentId ? '✅' : ''}</div>
+            <div class="recipe-details">${t('Input')}: ${inputs.join(', ')}<br>${t('Yields')}: ${outputs.join(', ')}</div>
         `;
 
         if (isLoop) {
@@ -904,6 +948,23 @@ function openDrillDown(item, rate) {
     const url = `index.html?item=${encodeURIComponent(item)}&rate=${rate.toFixed(2)}`;
     window.open(url, '_blank');
 }
+
+function switchTab(tabName) {
+    document.querySelectorAll('.view').forEach(el => el.classList.remove('active'));
+    document.querySelectorAll('.tab-btn').forEach(el => el.classList.remove('active'));
+    document.getElementById('view-' + tabName).classList.add('active');
+    if (tabName === 'db') {
+        const editor = document.getElementById('json-editor');
+        if (editor.value.trim() === "") {
+            loadEditorContent();
+        }
+    }
+    const btnIndex = tabName === 'calc' ? 0 : 1;
+    document.querySelectorAll('.tab-btn')[btnIndex].classList.add('active');
+}
+
+function adjustInput(id, delta) { const el = document.getElementById(id); let val = parseInt(el.value) || 0; el.value = Math.max(0, val + delta); }
+function adjustRate(delta) { const el = document.getElementById('targetRate'); if(el.disabled) return; let val = parseFloat(el.value) || 0; el.value = (val + delta).toFixed(1); calculate(); }
 
 /* ==========================================================================
    SECTION: JS - HELPER FUNCTIONS
@@ -1009,7 +1070,7 @@ function calculate() {
         // --- UPDATE SMART LABEL (v92) ---
         if (typeof getSmartLabel === 'function') {
             const lbl = getSmartLabel(targetRate, params.beltSpeed);
-            document.getElementById('rateLabel').innerText = `Rate (Items/Min): ${lbl}`;
+            document.getElementById('rateLabel').innerText = `${t('Rate (Items/Min)')}: ${lbl}`;
         }
 
         // --- PASS 1: GHOST CALCULATION (Find Byproducts) ---
@@ -1021,8 +1082,68 @@ function calculate() {
         document.getElementById('tree').innerHTML = '';
         calculatePass(params, false); // False = Render Mode
 
+        // --- PASS 3: TRANSLATION --- (extra)
+        translateText();
+        updateURL();
+
     } catch(e) { console.error(e); }
 }
+
+function translateText() {
+    const selectors = [
+        '.panel h3', '.total-mats-header', '.section-header',
+        '.input-group label', '.checkbox-row label', '.stat-label',
+        '.tab-btn', '.split-btn', '.save-btn', '.reset-btn', '.info'
+    ].join(',');
+
+    document.querySelectorAll(selectors).forEach(el => {
+        const key = el.textContent.trim();
+        el.textContent = t(key, 'ui');
+    });
+
+    const input = document.getElementById('targetItemInput');
+    if (input) input.placeholder = t("Select or Type...", "ui");
+}
+
+let lastUrlItem = ""; 
+let isHandlingPopstate = false;
+
+function updateURL() {
+    const item = document.getElementById('targetItemInput').value;
+    const rate = document.getElementById('targetRate').value;
+    const fuel = document.getElementById('fuelSelect').value;
+    const fert = document.getElementById('fertSelect').value;
+    
+    const params = new URLSearchParams();
+    if (item) params.set('item', item);
+    if (rate) params.set('rate', Number(rate));
+    // Maybe enable in future if user needs?
+    //if (fuel) params.set('fuel', fuel);
+    //if (fert) params.set('fert', fert);
+
+    const newUrl = window.location.pathname + '?' + params.toString();
+    if (isHandlingPopstate || item == lastUrlItem) {        
+        window.history.replaceState(null, '', newUrl);
+    }
+    else {
+        window.history.pushState(null, '', newUrl);
+        lastUrlItem = item;
+    }
+}
+
+window.addEventListener('popstate', function(event) {
+    isHandlingPopstate = true;
+    const urlParams = new URLSearchParams(window.location.search);
+    if (urlParams.has('item')) {
+        document.getElementById('targetItemInput').value = urlParams.get('item');
+        if (urlParams.has('rate')) document.getElementById('targetRate').value = urlParams.get('rate');
+        if (urlParams.has('fuel')) document.getElementById('fuelSelect').value = urlParams.get('fuel');
+        if (urlParams.has('fert')) document.getElementById('fertSelect').value = urlParams.get('fert');
+        calculate(); 
+    }
+    isHandlingPopstate = false;
+});
+
 
 function calculatePass(p, isGhost) {
     // Re-calc basic inputs derived from params
@@ -1098,10 +1219,10 @@ function calculatePass(p, isGhost) {
         if (canRecycle && !effectiveGhost) {
             if (activeRecyclers[pathKey]) {
                 let activeClass = "active";
-                let label = `♻️ ${formatVal(deduction)} Used`;
+                let label = `♻️ ${formatVal(deduction)} ${t('Used')}`;
                 recycleTag = `<div class="push-right"><button class="recycle-btn ${activeClass}" onclick="toggleRecycle('${pathKey}')">${label}</button></div>`;
             } else {
-                let label = `♻️ ${formatVal(globalByproducts[item])} Avail`;
+                let label = `♻️ ${formatVal(globalByproducts[item])} ${t('Avail')}`;
                 recycleTag = `<div class="push-right"><button class="recycle-btn" onclick="toggleRecycle('${pathKey}')">${label}</button></div>`;
             }
         }
@@ -1136,7 +1257,7 @@ function calculatePass(p, isGhost) {
                     const maxOutput = Math.ceil(machinesNeeded) * itemsPerMinPerMachine;
                     capTag = `<span class="max-cap-tag">(Max: ${formatVal(maxOutput)}/m)</span>`;
                 }
-                machineTag = `<span class="machine-tag" title="${tooltipText}">${Math.ceil(machinesNeeded)} Nursery${capTag}</span>`;
+                machineTag = `<span class="machine-tag" title="${tooltipText}">${Math.ceil(machinesNeeded)} ${t('Nursery', 'machines')}${capTag}</span>`;
                 bioTag = `<span class="bio-tag">Nutr: ${formatVal(netRate * itemDef.nutrientCost / 60)} V/s, Needs ${(netRate * itemDef.nutrientCost / grossFertVal).toFixed(1)}/m ${p.selectedFert}</span>`;
             }
         } 
@@ -1149,7 +1270,7 @@ function calculatePass(p, isGhost) {
                         globalCostPerMin += c; 
                         costTag = `<span class="cost-tag">${Math.ceil(c).toLocaleString()} G/m</span>`; 
                     }
-                    detailsTag = `<span class="details">(Raw Input)</span>`;
+                    detailsTag = `<span class="details">(${t('Raw Input')})</span>`;
                 }
             } else {
                 hasChildren = true;
@@ -1224,7 +1345,7 @@ function calculatePass(p, isGhost) {
                         const maxOutput = Math.ceil(machinesNeeded) * throughput;
                         capTag = `<span class="max-cap-tag">(Max: ${formatVal(maxOutput)}/m)</span>`;
                     }
-                    machineTag = `<span class="machine-tag" title="${tooltipText}">${Math.ceil(machinesNeeded)} ${recipe.machine}s${capTag}</span>`;
+                    machineTag = `<span class="machine-tag" title="${tooltipText}">${Math.ceil(machinesNeeded)} ${t(recipe.machine, 'machines')}${capTag}</span>`;
 
                     const alts = getRecipesFor(item);
                     if(alts.length > 1) { 
@@ -1285,7 +1406,7 @@ function calculatePass(p, isGhost) {
     if(p.targetItem) {
         const root = buildNode(p.targetItem, grossRate, false, []);
         if(!isGhost) {
-            const h = document.createElement('div'); h.className = 'section-header'; h.innerText = `--- Primary Production Chain (${p.targetItem}) ---`; treeContainer.appendChild(h); 
+            const h = document.createElement('div'); h.className = 'section-header'; h.innerText = `--- ${t('Primary Production Chain')} (${p.targetItem}) ---`; treeContainer.appendChild(h); 
             treeContainer.appendChild(root);
         }
     }
@@ -1345,7 +1466,7 @@ function calculatePass(p, isGhost) {
                 if (p.targetItem === p.selectedFert) {
                     const note = document.createElement('div'); note.innerHTML = `<div class="node" style="margin-top:20px; color:#aaa; font-style:italic;">Internal Nutrient Source: <strong>${p.selectedFert}</strong> (Supplied by Main Output)<br>Total Required: ${grossFertNeeded.toFixed(1)}/m</div>`; treeContainer.appendChild(note);
                 } else {
-                    const h = document.createElement('div'); h.className = 'section-header'; h.innerText = `--- Internal Nutrient Module (${p.selectedFert}) ---`; treeContainer.appendChild(h); rowCounter=0; 
+                    const h = document.createElement('div'); h.className = 'section-header'; h.innerText = `--- ${t('Internal Nutrient Module')} (${p.selectedFert}) ---`; treeContainer.appendChild(h); rowCounter=0; 
                     treeContainer.appendChild(buildNode(p.selectedFert, grossFertNeeded, true, []));
                 }
             }
@@ -1355,7 +1476,7 @@ function calculatePass(p, isGhost) {
                 if (p.targetItem === p.selectedFuel) {
                     const note = document.createElement('div'); note.innerHTML = `<div class="node" style="margin-top:20px; color:#aaa; font-style:italic;">Internal Fuel Source: <strong>${p.selectedFuel}</strong> (Supplied by Main Output)<br>Total Required: ${grossFuelNeeded.toFixed(1)}/m</div>`; treeContainer.appendChild(note);
                 } else {
-                    const h = document.createElement('div'); h.className = 'section-header'; h.innerText = `--- Internal Heat Module (${p.selectedFuel}) ---`; treeContainer.appendChild(h); rowCounter=0; 
+                    const h = document.createElement('div'); h.className = 'section-header'; h.innerText = `--- ${t('Internal Heat Module')} (${p.selectedFuel}) ---`; treeContainer.appendChild(h); rowCounter=0; 
                     treeContainer.appendChild(buildNode(p.selectedFuel, grossFuelNeeded, true, []));
                 }
             }
@@ -1366,9 +1487,9 @@ function calculatePass(p, isGhost) {
         // --- SUMMARY & EXTERNALS ---
         const extH = document.createElement('div'); extH.className = 'section-header'; extH.innerText = `--- External Inputs ---`; treeContainer.appendChild(extH);
         const extDiv = document.createElement('div'); extDiv.className = 'node';
-        let extHTML = `<div class="node-content" style="margin-bottom:5px;"><span class="qty" style="color:var(--gold)">${Math.ceil(globalCostPerMin).toLocaleString()} G/m</span><strong>Raw Material Cost</strong></div>`;
-        if (!p.selfFeed && globalFuelDemandItems > 0) { extHTML += `<div class="node-content" style="margin-bottom:5px;"><span class="qty" style="color:var(--fuel)">${globalFuelDemandItems.toFixed(1)}/m</span><strong>${p.selectedFuel}</strong> (Fuel Import)</div>`; }
-        if (!p.selfFert && globalFertDemandItems > 0) { extHTML += `<div class="node-content" style="margin-bottom:5px;"><span class="qty" style="color:var(--bio)">${globalFertDemandItems.toFixed(1)}/m</span><strong>${p.selectedFert}</strong> (Fertilizer Import)</div>`; }
+        let extHTML = `<div class="node-content" style="margin-bottom:5px;"><span class="qty" style="color:var(--gold)">${Math.ceil(globalCostPerMin).toLocaleString()} G/m</span><strong>${t('Raw Material Cost')}</strong></div>`;
+        if (!p.selfFeed && globalFuelDemandItems > 0) { extHTML += `<div class="node-content" style="margin-bottom:5px;"><span class="qty" style="color:var(--fuel)">${globalFuelDemandItems.toFixed(1)}/m</span><strong>${p.selectedFuel}</strong> (${t('Fuel Import')})</div>`; }
+        if (!p.selfFert && globalFertDemandItems > 0) { extHTML += `<div class="node-content" style="margin-bottom:5px;"><span class="qty" style="color:var(--bio)">${globalFertDemandItems.toFixed(1)}/m</span><strong>${p.selectedFert}</strong> (${t('Fertilizer Import')})</div>`; }
         extDiv.innerHTML = extHTML; treeContainer.appendChild(extDiv);
 
         const bypHeader = document.createElement('div'); bypHeader.className = 'section-header'; bypHeader.innerText = `--- BYPRODUCTS ---`; treeContainer.appendChild(bypHeader);
@@ -1380,12 +1501,12 @@ function calculatePass(p, isGhost) {
                 let remaining = globalByproducts[item] || 0; 
                 let note = "";
                 if (remaining < totalByproducts[item]) {
-                    note = ` <span style="font-size:0.8em; color:#888;">(${formatVal(totalByproducts[item] - remaining)} recycled)</span>`;
+                    note = ` <span style="font-size:0.8em; color:#888;">(${formatVal(totalByproducts[item] - remaining)} ${t(`recycled`, `ui`)})</span>`;
                 }
                 bypHTML += `<div class="node-content"><span class="qty" style="color:var(--byproduct)">${formatVal(remaining)}/m</span><strong>${item}</strong>${note}</div>`;
             });
         } else {
-            bypHTML = `<div class="node-content"><span class="details" style="font-style:italic">None</span></div>`;
+            bypHTML = `<div class="node-content"><span class="details" style="font-style:italic">${t('None')}</span></div>`;
         }
         bypDiv.innerHTML = bypHTML; treeContainer.appendChild(bypDiv);
 
@@ -1447,7 +1568,7 @@ function updateConstructionList(maxCounts, minCounts, furnaces) {
         } else {
             subListHtml = `<ul class="build-sublist"><li class="build-subitem" style="color:#666;">No build data</li></ul>`;
         }
-        li.innerHTML = `<div class="build-header" onclick="toggleBuildGroup(this.parentNode)"><span><span class="build-arrow">▶</span> ${m}</span> <span class="build-count">${label}</span></div>${subListHtml}`;
+        li.innerHTML = `<div class="build-header" onclick="toggleBuildGroup(this.parentNode)"><span><span class="build-arrow">▶</span> ${t(m, 'machines')}</span> <span class="build-count">${label}</span></div>${subListHtml}`;
         buildList.appendChild(li);
     });
 
@@ -1466,7 +1587,7 @@ function updateConstructionList(maxCounts, minCounts, furnaces) {
             });
             subListHtml += `</ul>`;
         }
-        li.innerHTML = `<div class="build-header" style="border-top:1px dashed #555" onclick="toggleBuildGroup(this.parentNode)"><span><span class="build-arrow">▶</span> Stone Furnace (Min)</span> <span class="build-count" style="color:var(--warn)">${count}</span></div>${subListHtml}`;
+        li.innerHTML = `<div class="build-header" style="border-top:1px dashed #555" onclick="toggleBuildGroup(this.parentNode)"><span><span class="build-arrow">▶</span> ${t('Stone Furnace', 'machines')} (Min)</span> <span class="build-count" style="color:var(--warn)">${count}</span></div>${subListHtml}`;
         buildList.appendChild(li);
     }
 
@@ -1502,10 +1623,10 @@ function updateSummaryBox(p, heat, bio, cost, grossRate) {
     document.getElementById('summary-container').innerHTML = `
         <div class="summary-box">
             <div class="stat-block"><span class="stat-label">Net Output</span><span class="stat-value ${p.targetRate >= 0 ? 'net-positive' : 'net-warning'}">${p.targetRate.toFixed(1)} / min</span>${deductionText.length > 0 ? `<span class="stat-sub" style="font-size:0.75em">${deductionText.join('<br>')}</span>` : ''}</div>
-            <div class="stat-block"><span class="stat-label">Internal Load</span><span class="stat-value" style="font-size:0.9em; color:var(--fuel);">Heat: ${internalHeat.toFixed(1)} P/s</span><span class="stat-value" style="font-size:0.9em; color:var(--bio);">Nutr: ${formatVal(internalBio)} V/s</span></div>
-            <div class="stat-block"><span class="stat-label">External Load</span><span class="stat-value" style="font-size:0.9em; color:var(--fuel);">Heat: ${externalHeat.toFixed(1)} P/s</span><span class="stat-value" style="font-size:0.9em; color:var(--bio);">Nutr: ${formatVal(externalBio)} V/s</span></div>
+            <div class="stat-block"><span class="stat-label">Internal Load</span><span class="stat-value" style="font-size:0.9em; color:var(--fuel);">${t('Heat')}: ${internalHeat.toFixed(1)} P/s</span><span class="stat-value" style="font-size:0.9em; color:var(--bio);">${t('Nutr')}: ${formatVal(internalBio)} V/s</span></div>
+            <div class="stat-block"><span class="stat-label">External Load</span><span class="stat-value" style="font-size:0.9em; color:var(--fuel);">${t('Heat')}: ${externalHeat.toFixed(1)} P/s</span><span class="stat-value" style="font-size:0.9em; color:var(--bio);">${t('Nutr')}: ${formatVal(externalBio)} V/s</span></div>
             ${profitHtml}
-            <div class="stat-block"><span class="stat-label">Belt Usage (Net)</span><span class="stat-value" style="font-size:1.1em; color:${p.targetRate > p.beltSpeed ? '#ff5252' : '#aaa'};">${(p.targetRate/p.beltSpeed * 100).toFixed(0)}%</span><span class="stat-sub">Cap: ${p.beltSpeed}/m</span></div>
+            <div class="stat-block"><span class="stat-label">Belt Usage (Net)</span><span class="stat-value" style="font-size:1.1em; color:${p.targetRate > p.beltSpeed ? '#ff5252' : '#aaa'};">${(p.targetRate/p.beltSpeed * 100).toFixed(0)}%</span><span class="stat-sub">${t('Cap')}: ${p.beltSpeed}/m</span></div>
         </div>`;
 }
 
