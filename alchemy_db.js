@@ -181,8 +181,8 @@ window.ALCHEMY_DB = {
         "Planting": { "heatCost": 0, "buildCost": { "Stone": 8 } },
         "Grinder": { "heatCost": 0, "buildCost": { "Plank": 8 } },
         "Extractor": { "heatCost": 0, "buildCost": { "Iron Ingot": 5, "Glass": 5 } },
-        "Stone Furnace": { "heatSelf": 1.5, "slots": 9, "isGenerator": true, "buildCost": { "Stone": 20 } }, 
-        "Blast Furnace": { "heatSelf": 6.0, "slots": 42, "isGenerator": true, "buildCost": { "Brick": 30 } }, 
+        "Stone Furnace": { "heatSelf": 1, "slots": 9, "isGenerator": true, "buildCost": { "Stone": 20 } }, 
+        "Blast Furnace": { "heatSelf": 4.0, "slots": 42, "isGenerator": true, "buildCost": { "Brick": 30 } }, 
         "Crucible": { "heatCost": 4.0, "parent": "Stone Furnace", "slotsRequired": 3, "buildCost": { "Stone": 4 } },
         "Kiln": { "heatCost": 15.0, "parent": "Stone Furnace", "slotsRequired": 6, "buildCost": { "Stone": 20, "Clay": 10 } },
         "Iron Smelter": { "heatCost": 9.0, "parent": "Stone Furnace", "slotsRequired": 9, "buildCost": { "Stone": 15 } },
@@ -321,37 +321,18 @@ window.ALCHEMY_DB = {
 
         // --- GOLD ---
         { "id": "Impure Gold Dust", "machine": "Refiner", "inputs": { "Crude Gold Dust": 2 }, "outputs": { "Impure Gold Dust": 1 }, "baseTime": 10.0 },
+
         // --- GOLD DUST BATCH (10%) ---
-        { 
-            "id": "Gold Dust", "machine": "Advanced Athanor", 
-            "inputs": { "Silver Powder": 10, "Volcanic Ash": 10, "Fertile Catalyst": 10, "Quicksilver": 120 }, 
-            "outputs": { "Gold Dust": 1, "Crude Gold Dust": 4, "Impure Gold Dust": 5 }, 
-            "baseTime": 80.0
-        },
+        { "id": "Gold Dust", "machine": "Advanced Athanor", "inputs": { "Silver Powder": 10, "Volcanic Ash": 10, "Fertile Catalyst": 10, "Quicksilver": 120 }, "outputs": { "Gold Dust": 1, "Crude Gold Dust": 4, "Impure Gold Dust": 5 }, "baseTime": 80.0 },
         { "id": "Pure Gold Dust", "machine": "Refiner", "inputs": { "Gold Dust": 2 }, "outputs": { "Pure Gold Dust": 1 }, "baseTime": 10.0 },
         { "id": "Gold Ingot", "machine": "Crucible", "inputs": { "Pure Gold Dust": 1 }, "outputs": { "Gold Ingot": 1 }, "baseTime": 40.0 },
         { "id": "Gold Coin", "machine": "Processor", "inputs": { "Gold Ingot": 1 }, "outputs": { "Gold Coin": 1 }, "baseTime": 40.0 },
 
-        // --- SALT & LIQUIDS ---
         // --- SALT BATCH (33%) ---
-        { 
-            "id": "Salt", "machine": "Athanor", 
-            "inputs": { "Charcoal Powder": 6, "Quicklime Powder": 12 }, 
-            "outputs": { "Salt": 1, "Sand": 12 }, 
-            "baseTime": 18.0
-        },
-        // --- SAND BATCH (66%) ---
-        { 
-            "id": "Sand_Athanor", "machine": "Athanor", 
-            "inputs": { "Charcoal Powder": 6, "Quicklime Powder": 12 }, 
-            "outputs": { "Sand": 12, "Salt": 1 }, 
-            "baseTime": 18.0
-        },
-        { 
-            "id": "Salt_Rock", "machine": "Stone Crusher", 
-            "inputs": { "Rock Salt": 1 }, "outputs": { "Salt": 100, "Sand": 100 }, 
-            "baseTime": 600.0 
-        },
+        { "id": "Salt", "machine": "Athanor", "inputs": { "Charcoal Powder": 6, "Quicklime Powder": 12 }, "outputs": { "Salt": 1, "Sand": 12 }, "baseTime": 18.0 },
+        { "id": "Salt_Rock", "machine": "Stone Crusher", "inputs": { "Rock Salt": 1 }, "outputs": { "Salt": 100, "Sand": 100 }, "baseTime": 600.0 },
+
+		// --- LIQUIDS ---
         { "id": "Salt Water", "machine": "Extractor", "inputs": { "Salt": 1 }, "outputs": { "Salt Water": 20 }, "baseTime": 4.0 },
         { "id": "Lavender Essential Oil", "machine": "Alembic", "inputs": { "Lavender": 3, "Linseed Oil": 300 }, "outputs": { "Lavender Essential Oil": 15 }, "baseTime": 3.0 },
         { "id": "Brandy", "machine": "Alembic", "inputs": { "Coke Powder": 5, "Fruit Wine": 100 }, "outputs": { "Brandy": 40 }, "baseTime": 5.0 },
@@ -474,10 +455,22 @@ window.ALCHEMY_DB = {
             "inputs": { "Gold Coin": 3 }, "outputs": { "Gold Ingot": 1 }, 
             "baseTime": 40.0 
         },
-        // --- Recycling & Other Alts ---
-        // REMOVED Shard1_Alt (Duplicate output of Crude Shard with conflicting time 6s vs 480s)
-        // --- End Game Gem Alternates ---
-        // REMOVED PhilosopherStone_Alt, Ruby_Alt, Sapphire_Alt, Emerald_Alt (Exact duplicates of main recipes)
+        // --- ENHANCED GRINDER ALTERNATE RECIPES ---
+        // (Base times are halved to represent 2x Machine Speed)
+        { "id": "Sand_Enhanced", "machine": "Enhanced Grinder", "inputs": { "Stone": 1 }, "outputs": { "Sand": 1 }, "baseTime": 6.0 },
+        { "id": "Quicklime Powder_Enhanced", "machine": "Enhanced Grinder", "inputs": { "Quicklime": 1 }, "outputs": { "Quicklime Powder": 1 }, "baseTime": 4.5 },
+        { "id": "Clay Powder_Enhanced", "machine": "Enhanced Grinder", "inputs": { "Clay": 1 }, "outputs": { "Clay Powder": 1 }, "baseTime": 2.0 },
+        { "id": "Flax Fiber_Enhanced", "machine": "Enhanced Grinder", "inputs": { "Flax": 1 }, "outputs": { "Flax Fiber": 1 }, "baseTime": 1.5 },
+        { "id": "Sage Powder_Enhanced", "machine": "Enhanced Grinder", "inputs": { "Sage": 1 }, "outputs": { "Sage Powder": 1 }, "baseTime": 1.5 },
+        { "id": "Chamomile Powder_Enhanced", "machine": "Enhanced Grinder", "inputs": { "Chamomile": 1 }, "outputs": { "Chamomile Powder": 1 }, "baseTime": 1.5 },
+        { "id": "Gentian Powder_Enhanced", "machine": "Enhanced Grinder", "inputs": { "Gentian": 1 }, "outputs": { "Gentian Powder": 1 }, "baseTime": 1.5 },
+        { "id": "Soap Powder_Enhanced", "machine": "Enhanced Grinder", "inputs": { "Soap": 1 }, "outputs": { "Soap Powder": 1 }, "baseTime": 3.0 },
+        { "id": "Perfumed Soap Powder_Enhanced", "machine": "Enhanced Grinder", "inputs": { "Perfumed Soap": 1 }, "outputs": { "Perfumed Soap Powder": 1 }, "baseTime": 4.0 },
+        { "id": "Large Wooden Gear_Enhanced", "machine": "Enhanced Grinder", "inputs": { "Plank": 1 }, "outputs": { "Large Wooden Gear": 1 }, "baseTime": 3.0 },
+        { "id": "Charcoal Powder_Enhanced", "machine": "Enhanced Grinder", "inputs": { "Charcoal": 1 }, "outputs": { "Charcoal Powder": 1 }, "baseTime": 2.0 },
+        { "id": "Coke Powder_Enhanced", "machine": "Enhanced Grinder", "inputs": { "Coke": 1 }, "outputs": { "Coke Powder": 1 }, "baseTime": 6.0 },
+        { "id": "Iron Sand_Enhanced", "machine": "Enhanced Grinder", "inputs": { "Iron Ingot": 1 }, "outputs": { "Iron Sand": 1 }, "baseTime": 15.0 },
+        { "id": "Sulfur Powder_Enhanced", "machine": "Enhanced Grinder", "inputs": { "Sulfur": 1 }, "outputs": { "Sulfur Powder": 1 }, "baseTime": 3.0 }
     ],
 
     "settings": {
