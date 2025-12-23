@@ -1,5 +1,13 @@
 # Alchemy Factory Calculator Change Log
 
+## v94 - Calculation & Data Overhaul
+**Critical Fix:** Fixed Stone Furnace calculation at higher upgrade levels. Furnace self-heat (overhead) now properly scales with Factory Speed, preventing artificial drops in fuel machine counts.
+**Logic Overhaul:** Rewrote Construction List aggregation logic.
+	**Minimum:** Calculates based on total throughput for a specific item type (assumes merging identical production lines).
+	**Maximum:** Sums up the ceiling of every physical node shown in the tree (assumes separate production lines).
+**New Content:** Added "Enhanced Grinder" alternate recipes for all items that use a Grinder. These recipes have 50% `baseTime` to simulate 2x speed.
+**UI:** Fixed CSS for the "Swap Recipe" button to perfectly center the icon.
+
 ## v93 - Slider Alignment & Visuals
 * **UI Fix:** **Perfect Alignment.** Corrected the slider tick math (`+2px` offset) to ensure the tick marks line up perfectly with the slider handle's visual center.
 * **UI:** **Diamond Handle.** Replaced the standard round slider thumb with a custom CSS "Diamond/Triangle" pointer for better precision.

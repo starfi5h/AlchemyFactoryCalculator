@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Alchemy Factory Planner v93</title>
+    <title>Alchemy Factory Planner v94</title>
     <script src="alchemy_db.js"></script> 
     <script src="alchemy_constants.js"></script> 
     
@@ -233,7 +233,7 @@
         .details { font-size: 0.9em; color: #ccc; }
         .output-tag { color: var(--info); font-size: 0.85em; margin-left: 10px; font-weight: bold; border-left: 1px solid #555; padding-left: 10px; }
         .recycle-tag { color: var(--byproduct); font-size: 0.85em; margin-left: 10px; font-weight: bold; }
-        .swap-btn { background: transparent; border: 1px solid #555; color: #888; width: 22px; height: 22px; border-radius: 11px; font-size: 11px; cursor: pointer; margin-left: 10px; }
+        .swap-btn { background: transparent; border: 1px solid #555; color: #888; width: 22px; height: 22px; border-radius: 50%; font-size: 11px; cursor: pointer; margin-left: 10px; display: inline-flex; align-items: center; justify-content: center; padding: 0; line-height: 1; }
         .swap-btn:hover { background: #444; color: white; border-color: #fff; }
         
         .push-right { margin-left: auto; display: flex; align-items: center; }
@@ -274,7 +274,7 @@
             <h1>Alchemy Factory Planner</h1>
             <span style="margin-left: 20px;">
                 <a href="https://github.com/JoeJoesGit/AlchemyFactoryCalculator" target="_blank" class="repo-link">GitHub Repo</a>
-                <span class="subtitle" onclick="showChangelog()">v93 | View Changelog</span>
+                <span class="subtitle" onclick="showChangelog()">v94 | View Changelog</span>
             </span>
         </div>
         <div class="tabs">
@@ -288,6 +288,11 @@
             <div class="modal-content">
                 <div class="modal-header"><h2>Changelog</h2><button class="close-modal" onclick="closeModal('changelog-modal')">&times;</button></div>
                 <div style="line-height:1.6; color:#ccc;">
+					<strong>v94 - Calculation & Data Overhaul</strong><br>
+					- <strong>Critical Fix:</strong> Stone Furnace counts now scale correctly with upgrades (Heat Overhead now scales with Speed).<br>
+					- <strong>Logic:</strong> Rewrote Construction List math. "Min" now assumes merging identical outputs; "Max" counts physical nodes.<br>
+					- <strong>Data:</strong> Added "Enhanced Grinder" (2x Speed) alternate recipes for all grinding tasks.<br>
+					- <strong>UI:</strong> Fixed vertical alignment of the Recipe Swap button.<br><br>
                     <strong>v93 - Slider Alignment Fix</strong><br>
                     - <strong>UI Fix:</strong> Corrected slider tick alignment to perfectly match handle position.<br>
                     - <strong>UI Update:</strong> Changed slider handle to a "Diamond" style.<br>
@@ -1032,13 +1037,20 @@ function calculatePass(p, isGhost) {
     if(netFertVal <= 0) netFertVal = 0.1;
 
     let globalFuelDemandItems = 0; let globalFertDemandItems = 0; let globalHeatLoad = 0; let globalBioLoad = 0; let globalCostPerMin = 0;
-    let totalMachineCounts_Max = {}; let totalMachineCounts_Min = {}; let totalFurnaces = 0; let totalByproducts = {};
+    let totalFurnaces = 0; let totalByproducts = {};
 
-    function addMachineCount(name, countMax, countRaw) {
-        if(!totalMachineCounts_Max[name]) totalMachineCounts_Max[name] = 0;
-        if(!totalMachineCounts_Min[name]) totalMachineCounts_Min[name] = 0;
-        totalMachineCounts_Max[name] += countMax;
-        totalMachineCounts_Min[name] += countRaw;
+    // machineStats[MachineName][OutputItem] = { rawFloat: 0, nodeSumInt: 0 }
+    let machineStats = {};
+
+    function addMachineCount(machineName, outputItem, countMax, countRaw) {
+        if (!machineStats[machineName]) machineStats[machineName] = {};
+        if (!machineStats[machineName][outputItem]) machineStats[machineName][outputItem] = { rawFloat: 0, nodeSumInt: 0 };
+        
+        // Accumulate the precise float for the "Minimum" (shared efficiency within same item)
+        machineStats[machineName][outputItem].rawFloat += countRaw;
+        
+        // Accumulate the integer ceil for the "Maximum" (physical nodes in the tree)
+        machineStats[machineName][outputItem].nodeSumInt += countMax;
     }
 
     let grossRate = p.targetRate;
@@ -1051,25 +1063,22 @@ function calculatePass(p, isGhost) {
     function buildNode(item, rate, isInternalModule, ancestors = [], forceGhost = false) {
         const effectiveGhost = isGhost || forceGhost;
 
-        // RECYCLING CHECK (Only apply deduction in Render pass)
+        // RECYCLING CHECK
         let deduction = 0;
         let pathKey = ancestors.join(">") + ">" + item;
         let canRecycle = false;
         
         if (!effectiveGhost) {
-            // Check if we have byproducts for this item
             if (globalByproducts[item] && globalByproducts[item] > 0.01) {
                 canRecycle = true;
                 if (activeRecyclers[pathKey]) {
-                    // Claim the byproduct
                     deduction = Math.min(rate, globalByproducts[item]);
-                    globalByproducts[item] -= deduction; // Reduce pool for subsequent rows
+                    globalByproducts[item] -= deduction; 
                 }
             }
         }
 
         const netRate = Math.max(0, rate - deduction);
-        
         const itemDef = DB.items[item] || {}; 
         let ingredientChildren = []; 
         let currentPath = [...ancestors, item];
@@ -1105,19 +1114,16 @@ function calculatePass(p, isGhost) {
             const isLiquid = (itemDef.liquid === true);
             const itemsPerMinPerMachine = isLiquid ? calculatedSpeed : Math.min(calculatedSpeed, p.beltSpeed);
             
-            // Machines are calculated based on NET rate (after recycling deduction)
             machinesNeeded = netRate / itemsPerMinPerMachine;
-            
-            // MATH PRECISION FIX
             if (Math.abs(Math.round(machinesNeeded) - machinesNeeded) < 0.0001) { machinesNeeded = Math.round(machinesNeeded); }
 
             if(!effectiveGhost) {
-                addMachineCount("Nursery", Math.ceil(machinesNeeded), machinesNeeded);
+                // Epsilon adjustment for float errors
+                addMachineCount("Nursery", item, Math.ceil(machinesNeeded - 0.0001), machinesNeeded);
             }
 
             const totalNutrientsNeeded = netRate * itemDef.nutrientCost; const itemsNeeded = totalNutrientsNeeded / grossFertVal; 
             
-            // ACCUMULATION LOGIC FIX v90: Check LOCAL ghost state, not global
             if (effectiveGhost || !isInternalModule) {
                 globalFertDemandItems += itemsNeeded; 
                 globalBioLoad += (totalNutrientsNeeded / 60); 
@@ -1139,7 +1145,6 @@ function calculatePass(p, isGhost) {
             if (!recipe) {
                 if(!effectiveGhost) {
                     if(itemDef.buyPrice) { 
-                        // Cost based on NET rate (we only buy what we don't recycle)
                         let c = netRate * itemDef.buyPrice; 
                         globalCostPerMin += c; 
                         costTag = `<span class="cost-tag">${Math.ceil(c).toLocaleString()} G/m</span>`; 
@@ -1151,7 +1156,6 @@ function calculatePass(p, isGhost) {
                 let batchYield = recipe.outputs[item] || 1;
                 if (recipe.machine === "Extractor" || recipe.machine === "Alembic") batchYield *= p.alchemyMult;
                 
-                // Machine counts based on NET rate
                 const batchesPerMin = netRate / batchYield;
                 const maxBatchesPerMin = (60 / recipe.baseTime) * p.speedMult;
                 const isLiquid = (itemDef.liquid === true);
@@ -1163,16 +1167,13 @@ function calculatePass(p, isGhost) {
                 }
                 
                 let rawMachines = batchesPerMin / effectiveBatchesPerMin;
-                // MATH PRECISION FIX
                 if (Math.abs(Math.round(rawMachines) - rawMachines) < 0.0001) { rawMachines = Math.round(rawMachines); }
                 machinesNeeded = rawMachines;
                 
-                // BYPRODUCTS CALCULATION (Must happen in Ghost Pass too)
-                // Note: Byproducts are generated based on NET production. 
                 Object.keys(recipe.outputs).forEach(outKey => {
                     if (outKey !== item) {
                         let yieldPerBatch = recipe.outputs[outKey];
-                        let totalByproduct = batchesPerMin * yieldPerBatch; // derived from netRate
+                        let totalByproduct = batchesPerMin * yieldPerBatch; 
                         if(isGhost) {
                             if(!globalByproducts[outKey]) globalByproducts[outKey] = 0;
                             globalByproducts[outKey] += totalByproduct;
@@ -1184,19 +1185,23 @@ function calculatePass(p, isGhost) {
                 });
 
                 if(!effectiveGhost) {
-                    addMachineCount(recipe.machine, Math.ceil(machinesNeeded), machinesNeeded);
+                    // Epsilon adjustment for float errors
+                    addMachineCount(recipe.machine, item, Math.ceil(machinesNeeded - 0.0001), machinesNeeded);
                 }
 
                 // HEAT CALCULATION
                 if (DB.machines[recipe.machine] && DB.machines[recipe.machine].heatCost) {
                     const mach = DB.machines[recipe.machine]; const parent = DB.machines[mach.parent];
                     const sReq = mach.slotsRequired || 1; const pSlots = mach.parentSlots || parent.slots || 3;
-                    const activeHeat = mach.heatCost * p.speedMult; const parentsNeeded = Math.ceil(machinesNeeded / (pSlots/sReq));
-                    const totalHeatPs = (parentsNeeded * parent.heatSelf) + (machinesNeeded * activeHeat);
+                    const activeHeat = mach.heatCost * p.speedMult; 
+                    
+                    const parentsNeeded = Math.ceil((machinesNeeded / (pSlots/sReq)) - 0.0001);
+                    
+                    // FIX: Apply speed multiplier to parent.heatSelf too!
+                    const totalHeatPs = (parentsNeeded * parent.heatSelf * p.speedMult) + (machinesNeeded * activeHeat);
                     
                     if(!effectiveGhost) totalFurnaces += parentsNeeded;
                     
-                    // ACCUMULATION LOGIC FIX v90: Check LOCAL ghost state, not global
                     if (effectiveGhost || !isInternalModule) {
                         globalHeatLoad += totalHeatPs; 
                         globalFuelDemandItems += (totalHeatPs * 60) / grossFuelEnergy;
@@ -1233,7 +1238,6 @@ function calculatePass(p, isGhost) {
                     Object.keys(recipe.inputs).forEach(iName => {
                         let qtyPerBatch = recipe.inputs[iName];
                         let requiredInputRate = netBatches * qtyPerBatch;
-                        // PASS forceGhost DOWN TO CHILDREN
                         ingredientChildren.push({ type: 'input', item: iName, rate: requiredInputRate });
                     });
                 }
@@ -1241,14 +1245,13 @@ function calculatePass(p, isGhost) {
         }
 
         if (effectiveGhost) {
-            // Process children now to continue recursion
             ingredientChildren.forEach(child => { 
                 buildNode(child.item, child.rate, isInternalModule, currentPath, effectiveGhost); 
             });
             return null; 
         }
 
-        // --- RENDER DOM (Pass 2 Only) ---
+        // --- RENDER DOM ---
         const div = document.createElement('div'); div.className = 'node';
         let arrowHtml = `<span class="tree-arrow" style="visibility:${hasChildren ? 'visible' : 'hidden'}" onclick="toggleNode(this)">▼</span>`;
         let nodeContent = `
@@ -1280,23 +1283,18 @@ function calculatePass(p, isGhost) {
 
     // --- EXECUTE THE PASS ---
     if(p.targetItem) {
-        // Capture Main Chain Baselines BEFORE Stabilization Loop
         const root = buildNode(p.targetItem, grossRate, false, []);
-        
-        // Pass 1: Draw Main Chain to DOM
         if(!isGhost) {
             const h = document.createElement('div'); h.className = 'section-header'; h.innerText = `--- Primary Production Chain (${p.targetItem}) ---`; treeContainer.appendChild(h); 
             treeContainer.appendChild(root);
         }
     }
 
-    // ITERATIVE STABILIZATION LOOP
     if (!isGhost) {
         let stableFuelDemand = globalFuelDemandItems;
         let stableFertDemand = globalFertDemandItems;
         let byproductSnapshot = {...globalByproducts}; 
         
-        // Capture Baselines
         let baseFuel = globalFuelDemandItems;
         let baseFert = globalFertDemandItems;
         let baseHeat = globalHeatLoad;
@@ -1304,9 +1302,7 @@ function calculatePass(p, isGhost) {
         let baseCost = globalCostPerMin;
         
         if (p.selfFeed || p.selfFert) {
-            
             for(let i=0; i<10; i++) {
-                // RESET Global Pools to baseline every iteration
                 globalFuelDemandItems = baseFuel;
                 globalFertDemandItems = baseFert;
                 globalHeatLoad = baseHeat;
@@ -1318,14 +1314,12 @@ function calculatePass(p, isGhost) {
                 let prevFuel = stableFuelDemand;
                 let prevFert = stableFertDemand;
                 
-                // Run Fert (Ghost)
                 if (p.selfFert && prevFert > 0) {
-                    buildNode(p.selectedFert, prevFert, true, [], true); // Force isGhost=true
+                    buildNode(p.selectedFert, prevFert, true, [], true); 
                 }
                 
-                // Run Fuel (Ghost)
                 if (p.selfFeed && prevFuel > 0) {
-                    buildNode(p.selectedFuel, prevFuel, true, [], true); // Force isGhost=true
+                    buildNode(p.selectedFuel, prevFuel, true, [], true); 
                 }
                 
                 let nextFuel = globalFuelDemandItems;
@@ -1341,12 +1335,10 @@ function calculatePass(p, isGhost) {
             }
         }
         
-        // Restore for final render
         globalByproducts = {...byproductSnapshot};
         globalFuelDemandItems = stableFuelDemand;
         globalFertDemandItems = stableFertDemand;
         
-        // Only render the modules if we are in Pass 2 (not ghost)
         if (!isGhost) {
             if (p.selfFert && stableFertDemand > 0) {
                 const grossFertNeeded = stableFertDemand;
@@ -1371,7 +1363,7 @@ function calculatePass(p, isGhost) {
     }
 
     if (!isGhost) {
-        // --- SUMMARY & EXTERNALS (Only in Render Pass) ---
+        // --- SUMMARY & EXTERNALS ---
         const extH = document.createElement('div'); extH.className = 'section-header'; extH.innerText = `--- External Inputs ---`; treeContainer.appendChild(extH);
         const extDiv = document.createElement('div'); extDiv.className = 'node';
         let extHTML = `<div class="node-content" style="margin-bottom:5px;"><span class="qty" style="color:var(--gold)">${Math.ceil(globalCostPerMin).toLocaleString()} G/m</span><strong>Raw Material Cost</strong></div>`;
@@ -1379,7 +1371,6 @@ function calculatePass(p, isGhost) {
         if (!p.selfFert && globalFertDemandItems > 0) { extHTML += `<div class="node-content" style="margin-bottom:5px;"><span class="qty" style="color:var(--bio)">${globalFertDemandItems.toFixed(1)}/m</span><strong>${p.selectedFert}</strong> (Fertilizer Import)</div>`; }
         extDiv.innerHTML = extHTML; treeContainer.appendChild(extDiv);
 
-        // --- BYPRODUCTS SECTION ---
         const bypHeader = document.createElement('div'); bypHeader.className = 'section-header'; bypHeader.innerText = `--- BYPRODUCTS ---`; treeContainer.appendChild(bypHeader);
         const bypDiv = document.createElement('div'); bypDiv.className = 'node';
         let bypHTML = '';
@@ -1398,8 +1389,28 @@ function calculatePass(p, isGhost) {
         }
         bypDiv.innerHTML = bypHTML; treeContainer.appendChild(bypDiv);
 
-        // Update Totals Panel
-        updateConstructionList(totalMachineCounts_Max, totalMachineCounts_Min, totalFurnaces);
+        // --- FLATTEN AGGREGATION FOR UI ---
+        let flatMax = {};
+        let flatMin = {};
+        
+        Object.keys(machineStats).forEach(mName => {
+            let totalIntMax = 0;
+            let totalCeiledMin = 0;
+            
+            Object.keys(machineStats[mName]).forEach(outItem => {
+                const data = machineStats[mName][outItem];
+                totalIntMax += data.nodeSumInt;
+                // Epsilon logic is already handled during accumulation logic? No, accumulation was raw.
+                // We must apply ceil here on the sum.
+                // FIX: Apply epsilon to the SUM of floats before ceiling
+                totalCeiledMin += Math.ceil(data.rawFloat - 0.0001);
+            });
+            
+            flatMax[mName] = totalIntMax;
+            flatMin[mName] = totalCeiledMin;
+        });
+
+        updateConstructionList(flatMax, flatMin, totalFurnaces);
         updateSummaryBox(p, globalHeatLoad, globalBioLoad, globalCostPerMin, grossRate);
     }
 }
