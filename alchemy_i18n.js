@@ -85,6 +85,11 @@ window.ALCHEMY_I18N = {
         "Alchemy Factory Planner": "炼金工厂計算器",
         "Calculator": "計算器",
         "Database Editor": "编辑数据库",
+        "New database version available": "发现新版本数据库",
+        "Current local version:": "您的本地版本为:",
+        "Update Now": "立即更新",
+        "Skip Update": "略过更新",
+        "Reset All Database?": "是否重置所有数据库?",
 
         // --- 1. Production Goal ---
         "Production Goal": "生产目标",

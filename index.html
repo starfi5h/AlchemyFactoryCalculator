@@ -260,6 +260,10 @@
         .recipe-details { font-size: 0.9em; color: #aaa; }
         .loop-warning { color: #ef5350; font-size: 0.85em; font-weight: bold; margin-top: 4px; }
         
+        #update-banner{display:none;background:var(--warn);color:#000;padding:10px 20px;font-weight:bold;justify-content:space-between;align-items:center;position:sticky;top:0;z-index:2000;box-shadow:0 2px 10px rgba(0,0,0,0.3);}
+        .update-btns{display:flex;gap:10px;}.update-btn{background:#000;color:#fff;border:none;padding:5px 15px;border-radius:4px;cursor:pointer;font-size:0.9em;}
+        .update-btn:hover{background:#333;}.update-btn.secondary{background:transparent;color:#000;border:1px solid #000;}
+
         .editor-container { max-width: 1400px; margin: 0 auto; height: 100%; display: flex; flex-direction: column; }
         #json-editor { flex: 1; background: #151515; color: #a5d6a7; font-family: 'Consolas', 'Courier New', monospace; border: 1px solid #444; padding: 15px; resize: none; line-height: 1.4; white-space: pre; }
         .editor-toolbar { margin-bottom: 10px; display: flex; gap: 10px; }
@@ -270,6 +274,16 @@
     </style>
 </head>
 <body>
+    <div id="update-banner">
+        <span>
+        🚀 <span id="ui-update-msg">New database version available</span> (<span id="new-version-id">v0</span>)! 
+            <span id="ui-update-local-msg">Current local version:</span> <span id="old-version-id">v0</span>
+        </span>
+        <div class="update-btns">
+            <button id="ui-btn-update" class="update-btn" onclick="performUpdate()">Update Now</button>
+            <button id="ui-btn-later" class="update-btn secondary" onclick="closeUpdateBanner()">Skip Update</button>
+        </div>
+    </div>
 
     <header>
         <div style="display:flex; align-items:baseline;">
@@ -454,6 +468,8 @@
                     <select id="editor-target" onchange="loadEditorContent()" style="width: auto; padding: 5px;">
                         <option value="db">Database</option>
                         <option value="i18n">Translations</option>
+                        <option value="db_backup">(BACKUP) Database</option>
+                        <option value="i18n_backup">(BACKUP) Translations</option>
                     </select>
                     <button class="save-btn" onclick="applyChanges()" style="width:auto; margin:0;">Apply Changes</button>
                     <button class="info" onclick="exportData()" style="padding:10px; background:var(--info); border:none; color:white; border-radius:4px; font-weight:bold; cursor:pointer;">Export to File</button>
@@ -470,8 +486,9 @@
 let DB = null;
 const STORAGE_KEY = "alchemy_factory_save_v1";
 const SOURCE_KEY = "alchemy_source_v1";
-const I18N_STORAGE_KEY = "alchemy_i18n_save_v1";
-const I18N_SOURCE_KEY = "alchemy_i18n_source_v1";
+const BACKUP_KEY = "alchemy_source_backup_v1";
+const I18N_DATA_KEY = "alchemy_i18n_source_v1";
+const I18N_BACKUP_KEY = "alchemy_i18n_source_backup_v1";
 let rowCounter = 0; 
 let isSelfFuel = false;
 let isSelfFert = false;
@@ -493,42 +510,43 @@ function init() {
     const urlFert = urlParams.get('fert');
     lastUrlItem = urlItem || "";
 
-    if (window.ALCHEMY_DB) {
-        let localVersion = 0;
-        if (localData) {
-            try {
-                const parsed = JSON.parse(localData);
-                localVersion = parsed.version || 0;
-            } catch(e) {}
-        }
-        
-        const fileVersion = window.ALCHEMY_DB.version || 0;
-        
-        if (fileVersion > localVersion) {
-            console.log(`Auto-Updating DB: v${localVersion} -> v${fileVersion}`);
-            const oldSettings = (JSON.parse(localData || '{}')).settings || {};
-            DB = JSON.parse(JSON.stringify(window.ALCHEMY_DB));
-            if(oldSettings.beltLevel !== undefined) DB.settings = oldSettings;
-            persist();
-        } else if (localData) {
-            try { 
-                DB = JSON.parse(localData); 
-                if (!DB.recipes || !DB.recipes[0].id) throw new Error("Invalid DB");
-            } catch(e) {
-                DB = JSON.parse(JSON.stringify(window.ALCHEMY_DB));
-                persist();
-            }
-        } else {
-            DB = JSON.parse(JSON.stringify(window.ALCHEMY_DB));
-            persist();
+    if (!window.ALCHEMY_DB) { alert("Error: alchemy_db.js not found!"); }
+    if (!window.ALCHEMY_I18N) { alert("Error: alchemy_i18n.js not found!"); }
+
+    const localTranslation = localStorage.getItem(I18N_DATA_KEY);
+    if (localTranslation) {
+        try {
+            console.log("Loading local translation data...");
+            window.ALCHEMY_I18N = JSON.parse(localTranslation);
+        } catch (e) {
+            console.error("Local translation data corrupt, resetting...");
+            window.ALCHEMY_I18N = JSON.parse(JSON.stringify(window.ALCHEMY_I18N));
         }
     } else {
-        if(localData) {
-            try { DB = JSON.parse(localData); } catch(e) { alert("Database Error"); }
-        } else {
-            alert("Error: alchemy_db.js not found!");
-            DB = { items: {}, recipes: [], machines: {}, settings: {} };
+        console.log("Loading remote translation data...");
+        window.ALCHEMY_I18N = JSON.parse(JSON.stringify(window.ALCHEMY_I18N));
+    }
+
+    const fileDB = window.ALCHEMY_DB;
+    if (localData) {
+        try {
+            console.log("Loading local database...");
+            DB = JSON.parse(localData);
+            const localVersion = DB.version || 0;
+            const fileVersion = fileDB.version || 0;
+
+            if (fileVersion != localVersion) {
+                console.log(fileVersion);
+                showUpdateBanner(localVersion, fileVersion);
+            }
+        } catch (e) {
+            console.error("Local data corrupt, resetting...");
+            DB = JSON.parse(JSON.stringify(fileDB));
         }
+    } else {
+        console.log("Loading remote database...");
+        DB = JSON.parse(JSON.stringify(fileDB));
+        persist();
     }
     
     if(!DB.items) DB.items = {};
@@ -539,7 +557,7 @@ function init() {
         activeRecyclers = DB.settings.activeRecyclers;
     }
 
-    translateDatabase(DB);
+    if (window.ALCHEMY_I18N) translateDatabase(DB);
 
     prepareComboboxData();
     populateSelects(); 
@@ -640,16 +658,14 @@ function updateFromSlider() {
    SECTION: JS - EDITOR & DATA MANAGEMENT
    ========================================================================== */
 function loadEditorContent() {
-    const localSource = localStorage.getItem(SOURCE_KEY);
-    const localI18nSource = localStorage.getItem(I18N_SOURCE_KEY);
     const target = document.getElementById('editor-target').value;
     const editor = document.getElementById('json-editor');
 
-    if (target === 'db') {
-        editor.value = localSource ?? JSON.stringify(DB, null, 2);
-    }
-    else {
-        editor.value = localI18nSource ?? JSON.stringify(window.ALCHEMY_I18N, null, 2);
+    switch (target) {
+        case 'db': editor.value = localStorage.getItem(SOURCE_KEY) ?? JSON.stringify(DB, null, 2); break;
+        case 'db_backup': editor.value = localStorage.getItem(BACKUP_KEY) ?? ""; break;
+        case 'i18n': editor.value = JSON.stringify(window.ALCHEMY_I18N, null, 2); break;
+        case 'i18n_backup': editor.value = localStorage.getItem(I18N_BACKUP_KEY) ?? ""; break;
     }
 }
 
@@ -664,22 +680,59 @@ function applyChanges() {
         jsonString = jsonString.replace(/\/\/.*$/gm, '');
         const parsedData = JSON.parse(jsonString); // Avoid using eval()
 
-        if (target === 'db') {
-            window.ALCHEMY_DB = parsedData;
-            DB = window.ALCHEMY_DB;
-            localStorage.setItem(SOURCE_KEY, txt);
-            persist();
-        } else {
-            window.ALCHEMY_I18N = parsedData;
-            localStorage.setItem(I18N_SOURCE_KEY, txt);
-            localStorage.setItem(I18N_STORAGE_KEY, JSON.stringify(window.ALCHEMY_I18N));
-        }
-
-        init();
-        alert("Applied " + (target === 'db' ? "Database" : "Translations") + " safely!");
+        switch (target) {
+            case 'db': 
+            case 'db_backup': 
+                window.ALCHEMY_DB = parsedData;
+                DB = window.ALCHEMY_DB;
+                if (localStorage.getItem(SOURCE_KEY)) localStorage.setItem(BACKUP_KEY, localStorage.getItem(SOURCE_KEY));
+                localStorage.setItem(SOURCE_KEY, txt);
+                persist();
+                init();
+            case 'i18n':
+            case 'i18n_backup':
+                window.ALCHEMY_I18N = parsedData;
+                if (localStorage.getItem(I18N_DATA_KEY)) localStorage.setItem(I18N_BACKUP_KEY, localStorage.getItem(I18N_DATA_KEY));
+                localStorage.setItem(I18N_DATA_KEY, JSON.stringify(window.ALCHEMY_I18N));
+                location.reload();
+        }        
+        alert("Applied " + (target === 'db' || target === 'db_backup' ? "Database" : "Translations") + " safely!");
     } catch(e) {
         alert("JSON Parsing Error: " + e.message + "\n\nNote: Please ensure the data uses double quotes and no trailing commas.");
     }
+}
+
+function showUpdateBanner(oldV, newV) {
+    const banner = document.getElementById('update-banner');
+    banner.style.display = 'flex';
+    document.getElementById('old-version-id').innerText = 'v' + oldV;
+    document.getElementById('new-version-id').innerText = 'v' + newV;
+    document.getElementById('ui-update-msg').innerText = t('New database version available', 'ui');
+    document.getElementById('ui-update-local-msg').innerText = t('Current local version:', 'ui');
+    document.getElementById('ui-btn-update').innerText = t('Update Now', 'ui');
+    document.getElementById('ui-btn-later').innerText = t('Skip Update', 'ui');   
+}
+
+function closeUpdateBanner() {
+    document.getElementById('update-banner').style.display = 'none';
+    console.log("Bump local data version to " + window.ALCHEMY_DB.version);
+    DB.version = window.ALCHEMY_DB.version;
+    persist();
+}
+
+function performUpdate() {
+    console.log("Updating database v" + window.ALCHEMY_DB.version);    
+    const newData = JSON.parse(JSON.stringify(window.ALCHEMY_DB));
+    if (DB && DB.settings) {
+        newData.settings = DB.settings;
+    }
+    localStorage.setItem(STORAGE_KEY, JSON.stringify(newData));
+    const localSourceData = localStorage.getItem(SOURCE_KEY);
+    if (localSourceData) {
+        localStorage.setItem(BACKUP_KEY, localSourceData);
+    }
+    localStorage.removeItem(SOURCE_KEY);
+    location.reload();
 }
 
 function exportData() {
@@ -869,7 +922,17 @@ function updateDefaultButtonState() {
 }
 
 function saveSettings() { ['lvlBelt','lvlSpeed','lvlAlchemy','lvlFuel','lvlFert'].forEach(k => { DB.settings[k] = parseInt(document.getElementById(k).value) || 0; }); persist(); alert("Settings Saved!"); }
-function resetToDefault() { if(confirm("Factory Reset?")) { localStorage.removeItem(STORAGE_KEY); localStorage.removeItem(SOURCE_KEY); location.reload(); } }
+function resetToDefault() {
+    if(confirm(t('Reset All Database?', 'ui'))) {
+        console.log("Reset All Database");
+        const localSourceData = localStorage.getItem(SOURCE_KEY);
+        const localSourceI18NData = localStorage.getItem(I18N_DATA_KEY);
+        localStorage.clear();
+        if (localSourceData) localStorage.setItem(BACKUP_KEY, localSourceData);
+        if (localSourceI18NData) localStorage.setItem(I18N_BACKUP_KEY, localSourceI18NData);
+        location.reload();
+    } 
+}
 
 function closeModal(id) { document.getElementById(id).style.display = 'none'; }
 function showChangelog() { document.getElementById('changelog-modal').style.display = 'flex'; }
