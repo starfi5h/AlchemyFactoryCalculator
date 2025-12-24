@@ -1,6 +1,7 @@
 // Translation helper function
 function t(text, category = 'ui') {
     if (!text) return "";
+    if (window.ALCHEMY_I18N.enabled === false) return text;
     const i18n = window.ALCHEMY_I18N;
 	const translatedText = i18n?.[category]?.[text];
 	if (!translatedText && category != 'ui') {
@@ -9,67 +10,84 @@ function t(text, category = 'ui') {
     return translatedText ?? text;
 }
 
-function translateDatabase(db) {
-    if (!window.ALCHEMY_I18N) return;
+function translateDatabase(db, forward) {
     const i18n = window.ALCHEMY_I18N;
+    if (!db || !i18n || !i18n.items) return;
+    if (i18n.enabled === false) return;
 
-    const itemMap = i18n.items || {};
-    const invertedMap = new Map();
-    for (let key in itemMap) { invertedMap.set(itemMap[key], key); }
+    const item2translate = new Map();
+    const translate2item = new Map();
+    for (let key in i18n.items) {
+        const value = i18n.items[key];
+        item2translate.set(key, value);
+        translate2item.set(value, key);
+    }
+    const forwardMap = forward ? item2translate : translate2item;
+    const invertedMap = forward ? translate2item : item2translate;
     const missingKeys = new Set();
 
-    const getT = (str, map) => {
-        if (!map[str]) {
+    const getT = (str) => {
+        if (!str) return str; 
+        const translated = forwardMap.get(str);
+        if (translated === undefined) {
             if (!invertedMap.has(str)) missingKeys.add(str);
             return str;
         }
-        return map[str];}
+        return translated;
+    };
 
     // Destructive replace the item keys
-    const newItems = {};
-    for (let key in db.items) {
-        const newKey = getT(key, itemMap);
-        const itemData = db.items[key];
-        newItems[newKey] = itemData;
+    if (db.items) {
+        const newItems = {};
+        for (let key in db.items) {
+            const newKey = getT(key);
+            const itemData = db.items[key];
+            newItems[newKey] = itemData;
+        }
+        db.items = newItems;
     }
-    db.items = newItems;   
 
-    const newMachines = {};
-    for (let key in db.machines) {
-        const machineData = db.machines[key];        
-        if (machineData.buildCost) {
-            const newCost = {};
-            for (let mat in machineData.buildCost) {
-                newCost[getT(mat, itemMap)] = machineData.buildCost[mat];
+    if (db.machines) {
+        const newMachines = {};
+        for (let key in db.machines) {
+            const machineData = db.machines[key];        
+            if (machineData.buildCost) {
+                const newCost = {};
+                for (let mat in machineData.buildCost) {
+                    newCost[getT(mat)] = machineData.buildCost[mat];
+                }
+                machineData.buildCost = newCost;
             }
-            machineData.buildCost = newCost;
+            newMachines[key] = machineData;
         }
-        newMachines[key] = machineData;
+        db.machines = newMachines;
     }
-    db.machines = newMachines;
 
-    db.recipes.forEach(recipe => {        
-        const newInputs = {};
-        for (let inKey in recipe.inputs) {
-            newInputs[getT(inKey, itemMap)] = recipe.inputs[inKey];
-        }
-        recipe.inputs = newInputs;
+    if (db.recipes) {
+        db.recipes.forEach(recipe => {        
+            const newInputs = {};
+            for (let inKey in recipe.inputs) {
+                newInputs[getT(inKey)] = recipe.inputs[inKey];
+            }
+            recipe.inputs = newInputs;
 
-        const newOutputs = {};
-        for (let outKey in recipe.outputs) {
-            newOutputs[getT(outKey, itemMap)] = recipe.outputs[outKey];
-        }
-        recipe.outputs = newOutputs;
-    });
-    
-    if (db.settings.defaultFuel) db.settings.defaultFuel = getT(db.settings.defaultFuel, itemMap);
-    if (db.settings.defaultFert) db.settings.defaultFert = getT(db.settings.defaultFert, itemMap);
-    
-    const newPrefs = {};
-    for (let itemKey in db.settings.preferredRecipes) {
-        newPrefs[getT(itemKey, itemMap)] = db.settings.preferredRecipes[itemKey];
+            const newOutputs = {};
+            for (let outKey in recipe.outputs) {
+                newOutputs[getT(outKey)] = recipe.outputs[outKey];
+            }
+            recipe.outputs = newOutputs;
+        });
     }
-    db.settings.preferredRecipes = newPrefs;
+    
+    if (db.settings) {
+        if (db.settings.defaultFuel) db.settings.defaultFuel = getT(db.settings.defaultFuel);
+        if (db.settings.defaultFert) db.settings.defaultFert = getT(db.settings.defaultFert);    
+        const newPrefs = {};
+        for (let itemKey in db.settings.preferredRecipes) {
+            newPrefs[getT(itemKey)] = db.settings.preferredRecipes[itemKey];
+        }
+        db.settings.preferredRecipes = newPrefs;
+    }
 
     if (missingKeys.size > 0) {
         console.warn(`DB Translate: Missing ${missingKeys.size} keys\n` + [...missingKeys]);
@@ -78,8 +96,9 @@ function translateDatabase(db) {
 }
 
 
-window.ALCHEMY_I18N = {
+window.ALCHEMY_I18N = {    
     "version": 1,
+    "enabled": true,
     "ui": {
         // --- 0. Title ---
         "Alchemy Factory Planner": "炼金工厂計算器",
@@ -99,6 +118,9 @@ window.ALCHEMY_I18N = {
         "Belt": "带",
         "Custom Rate": "自定义速率",
         "Rate (Items/Min)": "速率 (个/分钟)",
+        "Select Target Item": "选择目标物品",
+        "All Items": "所有物品",
+        "Browse Items": "浏览物品清单",
 
         // --- 2. Logistics ---
         "Logistics": "物流设置",
@@ -146,7 +168,7 @@ window.ALCHEMY_I18N = {
 
         // --- 4. Construction List ---
         "Construction List": "建造清单",
-        "Total Materials Required (Minimum)": "总计材料需求 (最小值)",
+        "Total Materials Required": "总计材料需求",
 
         // --- 5. Upgrades ---
         "Upgrades (Levels)": "升级",

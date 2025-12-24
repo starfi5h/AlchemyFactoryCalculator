@@ -64,7 +64,7 @@
         
         .app-grid { 
             display: grid; 
-            grid-template-columns: 260px 1fr 280px 220px; 
+            grid-template-columns: 260px 1fr 220px 200px; 
             gap: 15px; 
             max-width: 1920px; margin: 0 auto; height: 100%; 
         }
@@ -181,6 +181,35 @@
         .checkbox-row input { margin-right: 8px; }
 
         /* ==========================================================================
+           SECTION: CSS - TOGGLE SWITCH
+           ========================================================================== */
+        .switch {
+            position: relative;
+            display: inline-block;
+            width: 34px;
+            height: 18px;
+        }
+        .switch input { opacity: 0; width: 0; height: 0; }
+        .slider-switch {
+            position: absolute; cursor: pointer;
+            top: 0; left: 0; right: 0; bottom: 0;
+            background-color: #444; transition: .3s;
+            border-radius: 18px;
+        }
+        .slider-switch:before {
+            position: absolute; content: "";
+            height: 12px; width: 12px;
+            left: 3px; bottom: 3px;
+            background-color: white; transition: .3s;
+            border-radius: 50%;
+        }
+        input:checked + .slider-switch { background-color: var(--accent); }
+        input:checked + .slider-switch:before { transform: translateX(16px); }
+
+        /* Highlight current mode label */
+        .active-mode { color: var(--accent) !important; }
+
+        /* ==========================================================================
            SECTION: CSS - CONSTRUCTION LIST
            ========================================================================== */
         .build-list { list-style: none; padding: 0; margin: 0; }
@@ -223,7 +252,7 @@
         .node.collapsed .tree-arrow { transform: rotate(-90deg); }
         .node-children { margin-left: 0; }
 
-        .qty { color: var(--accent); font-weight: bold; min-width: 70px; }
+        .qty { color: var(--accent); font-weight: bold; min-width: 50px; }
         .item-link { cursor: pointer; text-decoration: none; color: inherit; transition: 0.2s; }
         .item-link:hover { color: var(--info); text-decoration: underline; }
         .machine-tag { background: #333; padding: 2px 6px; border-radius: 3px; font-size: 0.85em; border: 1px solid #444; color: #fff; font-weight: bold; cursor: help; }
@@ -264,6 +293,30 @@
         .update-btns{display:flex;gap:10px;}.update-btn{background:#000;color:#fff;border:none;padding:5px 15px;border-radius:4px;cursor:pointer;font-size:0.9em;}
         .update-btn:hover{background:#333;}.update-btn.secondary{background:transparent;color:#000;border:1px solid #000;}
 
+        /* Item Picker Styles */       
+        .picker-category { margin-bottom: 8px; border: 1px solid var(--border); border-radius: 6px; overflow: hidden; }
+        .picker-cat-header { 
+            background: #333; padding: 10px 15px; cursor: pointer; 
+            display: flex; justify-content: space-between; align-items: center;
+            font-weight: bold;
+        }
+        .picker-cat-header:hover { background: #444; }
+        .picker-cat-header .arrow { transition: transform 0.2s; font-size: 0.8em; }
+        .picker-category.collapsed .picker-cat-header .arrow { transform: rotate(-90deg); }
+        .picker-category.collapsed .picker-grid { display: none; }
+
+        .picker-grid { 
+            display: grid; grid-template-columns: repeat(auto-fill, minmax(130px, 1fr)); 
+            gap: 8px; padding: 12px; background: #252525; 
+        }
+        .picker-item { 
+            background: #3a3a3a; border: 1px solid #444; padding: 10px 5px; 
+            border-radius: 4px; text-align: center; cursor: pointer; 
+            font-size: 0.9em; transition: 0.2s; display: flex; flex-direction: column; align-items: center; justify-content: center;
+        }
+        .picker-item:hover { background: var(--accent); border-color: #fff; color: #fff; transform: translateY(-2px); }
+        .picker-item.active { border-color: var(--accent); background: #2e3d30; box-shadow: inset 0 0 5px var(--accent); }
+
         .editor-container { max-width: 1400px; margin: 0 auto; height: 100%; display: flex; flex-direction: column; }
         #json-editor { flex: 1; background: #151515; color: #a5d6a7; font-family: 'Consolas', 'Courier New', monospace; border: 1px solid #444; padding: 15px; resize: none; line-height: 1.4; white-space: pre; }
         .editor-toolbar { margin-bottom: 10px; display: flex; gap: 10px; }
@@ -300,8 +353,8 @@
     </header>
 
     <main>
-        <div id="changelog-modal" class="modal-overlay">
-            <div class="modal-content">
+        <div id="changelog-modal" class="modal-overlay" onclick="closeModal('changelog-modal')">
+            <div class="modal-content" onclick="event.stopPropagation()">
                 <div class="modal-header"><h2>Changelog</h2><button class="close-modal" onclick="closeModal('changelog-modal')">&times;</button></div>
                 <div style="line-height:1.6; color:#ccc;">
 					<strong>v94 - Calculation & Data Overhaul</strong><br>
@@ -320,13 +373,34 @@
             </div>
         </div>
 
-        <div id="recipe-modal" class="modal-overlay">
-            <div class="modal-content">
+        <div id="recipe-modal" class="modal-overlay" onclick="closeModal('recipe-modal')">
+            <div class="modal-content" onclick="event.stopPropagation()">
                 <div class="modal-header">
                     <h2 id="recipe-modal-title">Select Recipe</h2>
                     <button class="close-modal" onclick="closeModal('recipe-modal')">&times;</button>
                 </div>
                 <div id="recipe-list"></div>
+            </div>
+        </div>
+
+        <!-- Item Picker Modal -->
+        <div id="picker-modal" class="modal-overlay" onclick="closeModal('picker-modal')">
+            <div class="modal-content picker-modal-content" style="width: 800px; max-width: 95vw;" onclick="event.stopPropagation()">
+                <div class="modal-header">
+                    <div style="display:flex; align-items:center; gap:15px;">
+                        <h2 id="ui-picker-title" style="margin:0;">Select Target Item</h2>
+                        <!-- New toggle buttons -->
+                        <div class="picker-controls">
+                            <button id="ui-picker-expand-all" class="split-btn" onclick="toggleAllCategories(false)">Expand All</button>
+                            <button id="ui-picker-collapse-all" class="split-btn" onclick="toggleAllCategories(true)">Collapse All</button>
+                        </div>
+                    </div>
+                    <button class="close-modal" onclick="closeModal('picker-modal')">&times;</button>
+                </div>
+                <!-- Scrollable area is separate from header -->
+                <div id="picker-body" class="picker-scroll-area">
+                    <!-- Categories will be injected here -->
+                </div>
             </div>
         </div>
 
@@ -341,6 +415,7 @@
                                 <div class="input-wrapper" onclick="toggleCombobox()">
                                     <div id="ghost-text" class="ghost-input"></div>
                                     <input type="text" id="targetItemInput" class="real-input" placeholder="Select or Type..." autocomplete="off" oninput="filterCombobox(); updateComboIcon();" onkeydown="handleComboKey(event)" onblur="closeComboboxDelayed()">
+                                    <div class="combo-arrow" onclick="openItemPicker()" title="Browse Items">☰</div>
                                     <div id="combo-btn" class="combo-arrow" onclick="handleComboIconClick(event)">▼</div>
                                 </div>
                                 <div id="combobox-list" class="combobox-list"></div>
@@ -397,12 +472,19 @@
                     <div id="tree"></div>
                 </div>
 
-                <div>
-                    <div class="panel">
-                        <h3>Construction List</h3>
-                        <ul id="construction-list" class="build-list"></ul>
-                        <div id="total-mats-container"></div>
+                <div class="panel" solid>
+                    <div style="display:flex; justify-content:space-between; align-items:center; border-bottom:1px solid #444; margin-bottom:10px; padding-bottom:8px;">
+                        <h3 style="margin:0; border:none; padding:0;">Construction List</h3>
+                        <div style="display:flex; align-items:center; gap:8px;">
+                            <span id="build-mode-label" style="font-size:0.8em; color:#ccc; font-weight:bold;">MAX</span>
+                            <label class="switch">
+                                <input type="checkbox" id="buildModeToggle" onchange="updateBuildModeLabel(); calculate();">
+                                <span class="slider-switch"></span>
+                            </label>
+                        </div>
                     </div>
+                    <ul id="construction-list" class="build-list"></ul>
+                    <div id="total-mats-container"></div>
                 </div>
 
                 <div>
@@ -557,7 +639,7 @@ function init() {
         activeRecyclers = DB.settings.activeRecyclers;
     }
 
-    if (window.ALCHEMY_I18N) translateDatabase(DB);
+    translateDatabase(DB, true); // Translate DB item key
 
     prepareComboboxData();
     populateSelects(); 
@@ -690,7 +772,8 @@ function applyChanges() {
                 persist();
                 init();
             case 'i18n':
-            case 'i18n_backup':
+            case 'i18n_backup':                
+                translateDatabase(DB, false); // Revert DB item key back the the original key
                 window.ALCHEMY_I18N = parsedData;
                 if (localStorage.getItem(I18N_DATA_KEY)) localStorage.setItem(I18N_BACKUP_KEY, localStorage.getItem(I18N_DATA_KEY));
                 localStorage.setItem(I18N_DATA_KEY, JSON.stringify(window.ALCHEMY_I18N));
@@ -934,6 +1017,96 @@ function resetToDefault() {
     } 
 }
 
+
+let pickerCollapsedStates = {}; //Global state to remember which categories are collapsed during the current session
+
+/**
+ * Opens the item picker modal and populates it with categorized items.
+ */
+function openItemPicker() {
+    const body = document.getElementById('picker-body');
+    body.innerHTML = ''; 
+
+    const categories = {};
+    const itemKeys = Object.keys(DB.items);
+    const currentItem = document.getElementById('targetItemInput').value;
+
+    // Grouping logic
+    itemKeys.forEach(key => {
+        const item = DB.items[key];
+        const cat = item.category || "Other";
+        if (!categories[cat]) categories[cat] = [];
+        categories[cat].push({ name: key, ...item });
+    });
+
+    Object.keys(categories).forEach(catName => {
+        const catContainer = document.createElement('div');
+        catContainer.className = 'picker-category';
+        
+        // Restore collapse state from memory (default to expanded if undefined)
+        if (pickerCollapsedStates[catName] === true) {
+            catContainer.classList.add('collapsed');
+        }
+
+        const translatedCat = t(catName, 'categories');
+        
+        const header = document.createElement('div');
+        header.className = 'picker-cat-header';
+        header.innerHTML = `<span>${translatedCat} (${categories[catName].length})</span> <span class="arrow">▼</span>`;
+        
+        header.onclick = () => {
+            const isCollapsed = catContainer.classList.toggle('collapsed');
+            // Save state to session memory
+            pickerCollapsedStates[catName] = isCollapsed;
+        };
+        
+        const grid = document.createElement('div');
+        grid.className = 'picker-grid';
+        
+        categories[catName].forEach(item => {
+            const itemBtn = document.createElement('div');
+            itemBtn.className = 'picker-item' + (item.name === currentItem ? ' active' : '');
+            itemBtn.innerHTML = `<span>${item.name}</span>`;
+            itemBtn.onclick = (e) => {
+                e.stopPropagation(); // Prevent trigger header toggle
+                selectItem(item.name);
+                closeModal('picker-modal');
+            };
+            grid.appendChild(itemBtn);
+        });
+
+        catContainer.appendChild(header);
+        catContainer.appendChild(grid);
+        body.appendChild(catContainer);
+    });
+
+    document.getElementById('ui-picker-title').innerText = t('Select Target Item', 'ui');
+    document.getElementById('ui-picker-expand-all').innerText = t('Expand All', 'ui');
+    document.getElementById('ui-picker-collapse-all').innerText = t('Collapse All', 'ui');
+    document.getElementById('picker-modal').style.display = 'flex';
+}
+
+/**
+ * Expand or Collapse all categories at once
+ * @param {boolean} shouldCollapse 
+ */
+function toggleAllCategories(shouldCollapse) {
+    const categories = document.querySelectorAll('.picker-category');
+    categories.forEach(el => {
+        if (shouldCollapse) el.classList.add('collapsed');
+        else el.classList.remove('collapsed');
+    });
+
+    // Update all states in memory
+    const catNames = Object.keys(pickerCollapsedStates);
+    // If memory is empty, find names from the data
+    const targetNames = catNames.length > 0 ? catNames : Array.from(new Set(Object.values(DB.items).map(i => i.category)));
+    
+    targetNames.forEach(name => {
+        pickerCollapsedStates[name] = shouldCollapse;
+    });
+}
+
 function closeModal(id) { document.getElementById(id).style.display = 'none'; }
 function showChangelog() { document.getElementById('changelog-modal').style.display = 'flex'; }
 function switchTab(tabName) {
@@ -1154,7 +1327,7 @@ function calculate() {
 
 function translateText() {
     const selectors = [
-        '.panel h3', '.total-mats-header', '.section-header',
+        '.panel h3', '.section-header',
         '.input-group label', '.checkbox-row label', '.stat-label',
         '.tab-btn', '.split-btn', '.save-btn', '.reset-btn', '.info'
     ].join(',');
@@ -1321,7 +1494,7 @@ function calculatePass(p, isGhost) {
                     capTag = `<span class="max-cap-tag">(Max: ${formatVal(maxOutput)}/m)</span>`;
                 }
                 machineTag = `<span class="machine-tag" title="${tooltipText}">${Math.ceil(machinesNeeded)} ${t('Nursery', 'machines')}${capTag}</span>`;
-                bioTag = `<span class="bio-tag">Nutr: ${formatVal(netRate * itemDef.nutrientCost / 60)} V/s, Needs ${(netRate * itemDef.nutrientCost / grossFertVal).toFixed(1)}/m ${p.selectedFert}</span>`;
+                bioTag = `<span class="bio-tag">${formatVal(netRate * itemDef.nutrientCost / 60)} V/s ( ${(netRate * itemDef.nutrientCost / grossFertVal).toFixed(1)}/m ${p.selectedFert} )</span>`;
             }
         } 
         else {
@@ -1392,7 +1565,7 @@ function calculatePass(p, isGhost) {
                     }
                     
                     if(!effectiveGhost) {
-                        heatTag = `<span class="heat-tag">Heat: ${totalHeatPs.toFixed(1)} P/s, Needs ${((totalHeatPs * 60) / grossFuelEnergy).toFixed(1)}/m ${p.selectedFuel}</span>`;
+                        heatTag = `<span class="heat-tag">${totalHeatPs.toFixed(1)} P/s ( ${((totalHeatPs * 60) / grossFuelEnergy).toFixed(1)}/m ${p.selectedFuel} )</span>`;
                     }
                 }
 
@@ -1605,6 +1778,10 @@ function calculatePass(p, isGhost) {
 function updateConstructionList(maxCounts, minCounts, furnaces) {
     const buildList = document.getElementById('construction-list'); buildList.innerHTML = '';
     const totalMatsContainer = document.getElementById('total-mats-container'); totalMatsContainer.innerHTML = '';
+    
+    // Check if we are in MAX mode
+    const isMaxMode = !document.getElementById('buildModeToggle').checked;
+    
     const sortedMachines = Object.keys(maxCounts).sort();
     let totalConstructionMaterials = {};
 
@@ -1613,7 +1790,13 @@ function updateConstructionList(maxCounts, minCounts, furnaces) {
         const countMin = Math.ceil(minCounts[m]);
         if(countMax <= 0) return;
         
-        let label = (countMax === countMin) ? `${countMax}` : `<span style="font-size:0.9em">Min ${countMin}, Max ${countMax}</span>`;
+        // Decide which count to use for material calculation
+        const activeCount = isMaxMode ? countMax : countMin;
+        
+        let label = (countMax === countMin) ? `${countMax}` : 
+                    isMaxMode ? `<span>${countMax}</span>` : 
+                    `<span style="color:var(--accent)">${countMin}</span>`;
+
         const li = document.createElement('li'); li.className = 'build-group';
         const machineDef = DB.machines[m] || {};
         const buildCost = machineDef.buildCost;
@@ -1622,22 +1805,25 @@ function updateConstructionList(maxCounts, minCounts, furnaces) {
         if (buildCost) {
             subListHtml = `<ul class="build-sublist">`;
             Object.keys(buildCost).forEach(mat => {
-                const totalQty = buildCost[mat] * countMin;
+                // Calculation based on activeCount
+                const totalQty = buildCost[mat] * activeCount;
                 subListHtml += `<li class="build-subitem"><span>${mat}</span> <span class="build-val">${totalQty}</span></li>`;
                 if(!totalConstructionMaterials[mat]) totalConstructionMaterials[mat] = 0;
                 totalConstructionMaterials[mat] += totalQty;
             });
             subListHtml += `</ul>`;
-        } else {
-            subListHtml = `<ul class="build-sublist"><li class="build-subitem" style="color:#666;">No build data</li></ul>`;
         }
         li.innerHTML = `<div class="build-header" onclick="toggleBuildGroup(this.parentNode)"><span><span class="build-arrow">▶</span> ${t(m, 'machines')}</span> <span class="build-count">${label}</span></div>${subListHtml}`;
         buildList.appendChild(li);
     });
 
+    // Stone Furnaces (Calculated as shared sources, but can scale in MAX mode if nodes are separate)
     if(furnaces > 0) {
         const li = document.createElement('li'); li.className = 'build-group';
-        const mName = "Stone Furnace"; const count = furnaces;
+        const mName = "Stone Furnace";
+        // If MAX mode, furnaces usually increase because machines are spread out
+        // For simplicity, we keep it as 'furnaces' but you could implement a max-furnace logic if needed
+        const count = furnaces; 
         const machineDef = DB.machines[mName] || {}; const buildCost = machineDef.buildCost;
         let subListHtml = '';
         if (buildCost) {
@@ -1650,17 +1836,26 @@ function updateConstructionList(maxCounts, minCounts, furnaces) {
             });
             subListHtml += `</ul>`;
         }
-        li.innerHTML = `<div class="build-header" style="border-top:1px dashed #555" onclick="toggleBuildGroup(this.parentNode)"><span><span class="build-arrow">▶</span> ${t('Stone Furnace', 'machines')} (Min)</span> <span class="build-count" style="color:var(--warn)">${count}</span></div>${subListHtml}`;
+        li.innerHTML = `<div class="build-header" style="border-top:1px dashed #555" onclick="toggleBuildGroup(this.parentNode)"><span><span class="build-arrow">▶</span> ${t('Stone Furnace', 'machines')}</span> <span class="build-count" style="color:var(--warn)">${count}</span></div>${subListHtml}`;
         buildList.appendChild(li);
     }
 
+    // Render Total Section
     if (Object.keys(totalConstructionMaterials).length > 0) {
-        let totalHtml = `<div class="total-mats-header">Total Materials Required (Minimum)</div>`;
+        let totalHtml = `<div class="total-mats-header">${t('Total Materials Required')}</div>`;
         Object.keys(totalConstructionMaterials).sort().forEach(mat => {
             totalHtml += `<div class="total-mat-item"><span>${mat}</span> <strong>${totalConstructionMaterials[mat]}</strong></div>`;
         });
         totalMatsContainer.innerHTML = totalHtml;
     }
+
+    updateBuildModeLabel();
+}
+
+function updateBuildModeLabel() {
+    const isMinMode = document.getElementById('buildModeToggle').checked;
+    document.getElementById('build-mode-label').classList.toggle('active-mode', isMinMode);
+    document.getElementById('build-mode-label').innerText = isMinMode ? "MIN" : "MAX";
 }
 
 function updateSummaryBox(p, heat, bio, cost, grossRate) {
