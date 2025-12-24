@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Alchemy Factory Planner v94</title>
+    <title>Alchemy Factory Planner v95</title>
     <script src="alchemy_db.js"></script> 
     <script src="alchemy_constants.js"></script> 
 
@@ -343,7 +343,7 @@
             <h1>Alchemy Factory Planner</h1>
             <span style="margin-left: 20px;">
                 <a href="https://github.com/JoeJoesGit/AlchemyFactoryCalculator" target="_blank" class="repo-link">GitHub Repo</a>
-                <span class="subtitle" onclick="showChangelog()">v94 | View Changelog</span>
+                <span class="subtitle" onclick="showChangelog()">v95 | View Changelog</span>
             </span>
         </div>
         <div class="tabs">
@@ -357,6 +357,12 @@
             <div class="modal-content" onclick="event.stopPropagation()">
                 <div class="modal-header"><h2>Changelog</h2><button class="close-modal" onclick="closeModal('changelog-modal')">&times;</button></div>
                 <div style="line-height:1.6; color:#ccc;">
+					<strong>v95 - Stability & Math Overhaul</strong><br>
+					- <strong>Critical Fix:</strong> Stone Furnaces now pool slots globally across the factory (e.g., 23 Crucibles correctly ask for 8 Furnaces).<br>
+					- <strong>Fix:</strong> Summary Box "Gross/Use" logic is now accurate.<br>
+					- <strong>Fix:</strong> Internal Modules (Heat/Nutrients) now correctly contribute to Global Load stats.<br>
+					- <strong>Fix:</strong> Selecting a new item now auto-resets the Target Rate to match Belt settings.<br>
+					- <strong>Logic:</strong> Construction List "Min" now assumes merging identical outputs; "Max" counts physical nodes.<br><br>
 					<strong>v94 - Calculation & Data Overhaul</strong><br>
 					- <strong>Critical Fix:</strong> Stone Furnace counts now scale correctly with upgrades (Heat Overhead now scales with Speed).<br>
 					- <strong>Logic:</strong> Rewrote Construction List math. "Min" now assumes merging identical outputs; "Max" counts physical nodes.<br>
@@ -943,7 +949,7 @@ function setActive(items) {
 
 function selectItem(name) {
     const input = document.getElementById('targetItemInput'); input.value = name;
-    document.getElementById('ghost-text').innerText = ""; closeCombobox(); updateComboIcon(); calculate();
+    document.getElementById('ghost-text').innerText = ""; closeCombobox(); updateComboIcon(); updateFromSlider(); 
 }
 
 /* ==========================================================================
@@ -1394,19 +1400,16 @@ function calculatePass(p, isGhost) {
     if(netFertVal <= 0) netFertVal = 0.1;
 
     let globalFuelDemandItems = 0; let globalFertDemandItems = 0; let globalHeatLoad = 0; let globalBioLoad = 0; let globalCostPerMin = 0;
-    let totalFurnaces = 0; let totalByproducts = {};
+    let totalByproducts = {};
 
-    // machineStats[MachineName][OutputItem] = { rawFloat: 0, nodeSumInt: 0 }
+    // --- AGGREGATION STRUCTURES ---
     let machineStats = {};
+    let furnaceSlotDemand = {}; 
 
     function addMachineCount(machineName, outputItem, countMax, countRaw) {
         if (!machineStats[machineName]) machineStats[machineName] = {};
         if (!machineStats[machineName][outputItem]) machineStats[machineName][outputItem] = { rawFloat: 0, nodeSumInt: 0 };
-        
-        // Accumulate the precise float for the "Minimum" (shared efficiency within same item)
         machineStats[machineName][outputItem].rawFloat += countRaw;
-        
-        // Accumulate the integer ceil for the "Maximum" (physical nodes in the tree)
         machineStats[machineName][outputItem].nodeSumInt += countMax;
     }
 
@@ -1475,13 +1478,13 @@ function calculatePass(p, isGhost) {
             if (Math.abs(Math.round(machinesNeeded) - machinesNeeded) < 0.0001) { machinesNeeded = Math.round(machinesNeeded); }
 
             if(!effectiveGhost) {
-                // Epsilon adjustment for float errors
                 addMachineCount("Nursery", item, Math.ceil(machinesNeeded - 0.0001), machinesNeeded);
             }
 
             const totalNutrientsNeeded = netRate * itemDef.nutrientCost; const itemsNeeded = totalNutrientsNeeded / grossFertVal; 
             
-            if (effectiveGhost || !isInternalModule) {
+            // FIX: Always track Global Load (Fixes Summary Box)
+            if (effectiveGhost || !isInternalModule || isInternalModule) {
                 globalFertDemandItems += itemsNeeded; 
                 globalBioLoad += (totalNutrientsNeeded / 60); 
             }
@@ -1531,10 +1534,13 @@ function calculatePass(p, isGhost) {
                     if (outKey !== item) {
                         let yieldPerBatch = recipe.outputs[outKey];
                         let totalByproduct = batchesPerMin * yieldPerBatch; 
-                        if(isGhost) {
+                        
+                        if(effectiveGhost) {
                             if(!globalByproducts[outKey]) globalByproducts[outKey] = 0;
                             globalByproducts[outKey] += totalByproduct;
-                        } else if (!effectiveGhost) {
+                        } 
+                        
+                        if (!effectiveGhost) {
                             if(!totalByproducts[outKey]) totalByproducts[outKey] = 0;
                             totalByproducts[outKey] += totalByproduct;
                         }
@@ -1542,7 +1548,6 @@ function calculatePass(p, isGhost) {
                 });
 
                 if(!effectiveGhost) {
-                    // Epsilon adjustment for float errors
                     addMachineCount(recipe.machine, item, Math.ceil(machinesNeeded - 0.0001), machinesNeeded);
                 }
 
@@ -1552,14 +1557,18 @@ function calculatePass(p, isGhost) {
                     const sReq = mach.slotsRequired || 1; const pSlots = mach.parentSlots || parent.slots || 3;
                     const activeHeat = mach.heatCost * p.speedMult; 
                     
-                    const parentsNeeded = Math.ceil((machinesNeeded / (pSlots/sReq)) - 0.0001);
+                    const nodeParentsNeeded = Math.ceil((machinesNeeded / (pSlots/sReq)) - 0.0001);
+                    const totalHeatPs = (nodeParentsNeeded * parent.heatSelf * p.speedMult) + (machinesNeeded * activeHeat);
                     
-                    // FIX: Apply speed multiplier to parent.heatSelf too!
-                    const totalHeatPs = (parentsNeeded * parent.heatSelf * p.speedMult) + (machinesNeeded * activeHeat);
+                    if (!effectiveGhost) {
+                        const pName = mach.parent; 
+                        if (!furnaceSlotDemand[pName]) furnaceSlotDemand[pName] = 0;
+                        // FIX: Use CEIL() here to count PHYSICAL slots needed, not fractional heat load.
+                        furnaceSlotDemand[pName] += Math.ceil(machinesNeeded - 0.0001) * sReq;
+                    }
                     
-                    if(!effectiveGhost) totalFurnaces += parentsNeeded;
-                    
-                    if (effectiveGhost || !isInternalModule) {
+                    // FIX: Always track Global Load (Fixes Summary Box)
+                    if (effectiveGhost || !isInternalModule || isInternalModule) {
                         globalHeatLoad += totalHeatPs; 
                         globalFuelDemandItems += (totalHeatPs * 60) / grossFuelEnergy;
                     }
@@ -1692,7 +1701,6 @@ function calculatePass(p, isGhost) {
             }
         }
         
-        globalByproducts = {...byproductSnapshot};
         globalFuelDemandItems = stableFuelDemand;
         globalFertDemandItems = stableFertDemand;
         
@@ -1757,9 +1765,6 @@ function calculatePass(p, isGhost) {
             Object.keys(machineStats[mName]).forEach(outItem => {
                 const data = machineStats[mName][outItem];
                 totalIntMax += data.nodeSumInt;
-                // Epsilon logic is already handled during accumulation logic? No, accumulation was raw.
-                // We must apply ceil here on the sum.
-                // FIX: Apply epsilon to the SUM of floats before ceiling
                 totalCeiledMin += Math.ceil(data.rawFloat - 0.0001);
             });
             
@@ -1767,8 +1772,19 @@ function calculatePass(p, isGhost) {
             flatMin[mName] = totalCeiledMin;
         });
 
+        // CALCULATE FINAL FURNACE COUNT FROM SLOTS
+        let totalFurnaces = 0;
+        Object.keys(furnaceSlotDemand).forEach(parentName => {
+            const parentDef = DB.machines[parentName];
+            if (parentDef) {
+                totalFurnaces += Math.ceil((furnaceSlotDemand[parentName] - 0.0001) / (parentDef.slots || 3));
+            }
+        });
+
         updateConstructionList(flatMax, flatMin, totalFurnaces);
-        updateSummaryBox(p, globalHeatLoad, globalBioLoad, globalCostPerMin, grossRate);
+        
+        // Pass the actual simulated fuel/fert demand items to the summary
+        updateSummaryBox(p, globalHeatLoad, globalBioLoad, globalCostPerMin, grossRate, globalFuelDemandItems, globalFertDemandItems);
     }
 }
 
@@ -1858,7 +1874,7 @@ function updateBuildModeLabel() {
     document.getElementById('build-mode-label').innerText = isMinMode ? "MIN" : "MAX";
 }
 
-function updateSummaryBox(p, heat, bio, cost, grossRate) {
+function updateSummaryBox(p, heat, bio, cost, grossRate, actualFuelNeed, actualFertNeed) {
     const targetItemDef = DB.items[p.targetItem] || {};
     let internalHeat = p.selfFeed ? heat : 0;
     let externalHeat = !p.selfFeed ? heat : 0;
@@ -1875,8 +1891,19 @@ function updateSummaryBox(p, heat, bio, cost, grossRate) {
     }
 
     let deductionText = [];
-    if (p.selfFeed && p.targetItem === p.selectedFuel) { deductionText.push(`Gross: ${grossRate.toFixed(1)}`); deductionText.push(`Use: ${(grossRate - p.targetRate).toFixed(1)}`); }
-    if (p.selfFert && p.targetItem === p.selectedFert) { deductionText.push(`Gross: ${grossRate.toFixed(1)}`); deductionText.push(`Use: ${(grossRate - p.targetRate).toFixed(1)}`); }
+    
+    // FIX: Correctly calculate Gross as (Target + Use)
+    if (p.selfFeed && p.targetItem === p.selectedFuel) { 
+        let gross = p.targetRate + actualFuelNeed;
+        deductionText.push(`Gross: ${gross.toFixed(1)}`); 
+        deductionText.push(`Use: ${actualFuelNeed.toFixed(1)}`); 
+    }
+    
+    if (p.selfFert && p.targetItem === p.selectedFert) { 
+        let gross = p.targetRate + actualFertNeed;
+        deductionText.push(`Gross: ${gross.toFixed(1)}`); 
+        deductionText.push(`Use: ${actualFertNeed.toFixed(1)}`); 
+    }
 
     document.getElementById('summary-container').innerHTML = `
         <div class="summary-box">

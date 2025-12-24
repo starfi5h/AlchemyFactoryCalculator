@@ -1,5 +1,12 @@
 # Alchemy Factory Calculator Change Log
 
+## v95 - Stability & Math Overhaul
+- **Furnace Aggregation:** Completely rewrote Stone Furnace calculation. It now aggregates total slot demand from all machines (including internal modules) and divides by capacity, rather than summing per-node requirements.
+- **Summary Box Logic:** Fixed the "Gross vs Net" calculation. "Gross" now correctly equals "Net Output + Internal Use".
+- **Global Load Tracking:** Fixed a bug where Internal Modules (Heat/Nutrient loops) were being excluded from the Global Heat and Fuel Demand totals.
+- **UI UX:** Selecting a new Target Item now immediately clamps the input rate to the current Belt Slider setting, preventing massive calculation spikes.
+- **Construction List:** split logic into "Max" (Physical Node Sum) and "Min" (Item Throughput Sum) for better planning accuracy.
+
 ## v94 - Calculation & Data Overhaul
 **Critical Fix:** Fixed Stone Furnace calculation at higher upgrade levels. Furnace self-heat (overhead) now properly scales with Factory Speed, preventing artificial drops in fuel machine counts.
 **Logic Overhaul:** Rewrote Construction List aggregation logic.

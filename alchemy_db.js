@@ -5,7 +5,7 @@ window.ALCHEMY_DB = {
         "Logs": { "category": "Raw Materials", "buyPrice": 200, "heat": 2000 },
         "Limestone": { "category": "Raw Materials", "buyPrice": 600 },
         "Iron Ore": { "category": "Raw Materials", "buyPrice": 1200 },
-        "Coal Ore": { "category": "Raw Materials", "buyPrice": 4800, "heat": 250 },
+        "Coal Ore": { "category": "Raw Materials", "buyPrice": 4800, "heat": 30000 },
         "Pyrite Ore": { "category": "Raw Materials", "buyPrice": 11000 },
         "Quartz Ore": { "category": "Raw Materials", "buyPrice": 44000 },
         "Rock Salt": { "category": "Raw Materials", "buyPrice": 9000 },
@@ -302,7 +302,6 @@ window.ALCHEMY_DB = {
             "outputs": { "Copper Powder": 1, "Impure Copper Powder": 1 },
             "baseTime": 12.0
         },
-        { "id": "Impure Copper Powder", "machine": "Refiner", "inputs": { "Iron Sand": 2 }, "outputs": { "Impure Copper Powder": 1 }, "baseTime": 6.0 }, 
         { "id": "Copper Ingot", "machine": "Crucible", "inputs": { "Copper Powder": 1 }, "outputs": { "Copper Ingot": 1 }, "baseTime": 12.0 },
         { "id": "Bronze Ingot", "machine": "Crucible", "inputs": { "Impure Copper Powder": 1 }, "outputs": { "Bronze Ingot": 1 }, "baseTime": 12.0 },
         { "id": "Copper Coin", "machine": "Processor", "inputs": { "Copper Ingot": 1 }, "outputs": { "Copper Coin": 300 }, "baseTime": 12.0 },
