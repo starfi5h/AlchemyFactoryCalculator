@@ -1,25 +1,27 @@
 window.ALCHEMY_DB = {
-    "version": 18, 
+    "version": 19,
+    "date": "2025.12.25",
+    "gameVersion": "0.4.1.3800",
     "items": {
-        // --- 1. RAW RESOURCES ---
-        "Logs": { "category": "Raw Materials", "buyPrice": 200, "heat": 2000 },
+        // --- 1. RAW RESOURCES ---
+        "Logs": { "category": "Raw Materials", "buyPrice": 200, "heat": 2000 }, // heat = 10hv x 200
         "Limestone": { "category": "Raw Materials", "buyPrice": 600 },
         "Iron Ore": { "category": "Raw Materials", "buyPrice": 1200 },
-        "Coal Ore": { "category": "Raw Materials", "buyPrice": 4800, "heat": 30000 },
         "Pyrite Ore": { "category": "Raw Materials", "buyPrice": 11000 },
-        "Quartz Ore": { "category": "Raw Materials", "buyPrice": 44000 },
         "Rock Salt": { "category": "Raw Materials", "buyPrice": 9000 },
+        "Coal Ore": { "category": "Raw Materials", "buyPrice": 4800, "heat": 30000 }, // heat = 250hv x 200
         "Rotten Log": { "category": "Raw Materials", "buyPrice": 2000 },
+        "Quartz Ore": { "category": "Raw Materials", "buyPrice": 44000 },
         "Meteorite": { "category": "Raw Materials", "buyPrice": 2000000 },
 
         // --- 2. SEEDS ---
-        "Flax Seed": { "category": "Seeds", "buyPrice": 280 },
-        "Sage Seed": { "category": "Seeds", "buyPrice": 360 },
-        "Red Currant Seed": { "category": "Seeds", "buyPrice": 1300 },
-        "Lavender Seed": { "category": "Seeds", "buyPrice": 16000 },
-        "Chamomile Seed": { "category": "Seeds", "buyPrice": 6000 },
-        "Gentian Seed": { "category": "Seeds", "buyPrice": 64000 },
-        "World Tree Seed": { "category": "Seeds", "buyPrice": 5000000 },
+        "Flax Seed": { "category": "Seeds", "buyPrice": 280, "maxStack": 20 },
+        "Sage Seed": { "category": "Seeds", "buyPrice": 360, "maxStack": 20 },
+        "Red Currant Seed": { "category": "Seeds", "buyPrice": 1300, "maxStack": 20 },
+        "Lavender Seed": { "category": "Seeds", "buyPrice": 16000, "maxStack": 20 },
+        "Chamomile Seed": { "category": "Seeds", "buyPrice": 6000, "maxStack": 20 },
+        "Gentian Seed": { "category": "Seeds", "buyPrice": 64000, "maxStack": 20 },
+        "World Tree Seed": { "category": "Seeds", "buyPrice": 5000000, "maxStack": 20 },
 
         // --- 3. HERBS ---
         "Flax": { "category": "Herbs", "nutrientCost": 24 },
@@ -28,150 +30,156 @@ window.ALCHEMY_DB = {
         "Lavender": { "category": "Herbs", "nutrientCost": 2160 },
         "Chamomile": { "category": "Herbs", "nutrientCost": 720 },
         "Gentian": { "category": "Herbs", "nutrientCost": 6000 },
-		"Gloom Fungus": { "category": "Herbs" },
-		"World Tree Leaf": { "category": "Herbs" },
-        "World Tree Core": { "category": "Herbs", "buyPrice": 3000000},
+        "Gentian Nectar": { "category": "Herbs", "nutrientCost": 6000 },
+        "World Tree Leaf": { "category": "Herbs"},
+        "World Tree Core": { "category": "Herbs"},
+        "Gloom Fungus": { "category": "Herbs" },
 
-        // --- 4. SOLIDS & MATERIALS ---
-        "Plank": { "category": "Material", "heat": 20 },
-        "Stone": { "category": "Material" },
-        "Sand": { "category": "Material" },
-        "Mortar": { "category": "Material" },
-        "Clay": { "category": "Material" },
-        "Brick": { "category": "Material" },
-        "Glass": { "category": "Material" },
-        "Sulfur": { "category": "Material" },
-        "Salt": { "category": "Material" },
-		"Adamant": { "category": "Material" },
-        "Obsidian": { "category": "Material" },
-
-        // --- 5. POWDERS & DUSTS ---
-        "Flax Fiber": { "category": "Material" },
-        "Sage Powder": { "category": "Material" },
-        "Plant Ash": { "category": "Material" },
-        "Quicklime": { "category": "Material" },
-        "Quicklime Powder": { "category": "Material" },
-        "Clay Powder": { "category": "Material" },
-        "Iron Sand": { "category": "Material" },
-        "Sulfur Powder": { "category": "Material" },
-        "Chamomile Powder": { "category": "Material" },
-        "Gentian Powder": { "category": "Material" },
-        "Yeast Powder": { "category": "Material" },
-        "Soap Powder": { "category": "Material" },
-        "Perfumed Soap Powder": { "category": "Material" },
-        "Gloom Spores": { "category": "Material" },
-		"Volcanic Ash": { "category": "Material" },
-        "Impure Copper Powder": { "category": "Material" },
-        "Copper Powder": { "category": "Material"},
-        "Crude Silver Powder": { "category": "Material"},
-        "Impure Silver Powder": { "category": "Material" },
-        "Silver Powder": { "category": "Material" },
-        "Crude Gold Dust": { "category": "Material" },
-        "Impure Gold Dust": { "category": "Material" },
-        "Gold Dust": { "category": "Material" },
-        "Pure Gold Dust": { "category": "Material" },
-        "Star Dust": { "category": "Material" },
-        "Fairy Dust": { "category": "Material" },
-
-        // --- 6. FUELS ---
-        "Charcoal": { "category": "Fuel", "heat": 40 },
+        // --- 4. FUELS ---
+        "Plank": { "category": "Fuel", "heat": 20, "maxStack":200 },
+        "Charcoal": { "category": "Fuel", "heat": 40 },
         "Charcoal Powder": { "category": "Fuel", "heat": 48 },
-        "Coal": { "category": "Fuel", "heat": 540 },
         "Coke": { "category": "Fuel", "heat": 600 },
         "Coke Powder": { "category": "Fuel", "heat": 660 },
-        "Black Powder": { "category": "Fuel", "heat": 3000 },
-        "Blast Potion": { "category": "Fuel", "heat": 24000 },
-        "Panacea Potion": { "category": "Fuel", "heat": 320000 },
+        "Coal": { "category": "Fuel", "heat": 540 },
+        "Black Powder": { "category": "Fuel", "heat": 3000 , "sellPrice": 330 },
+        "Blast Potion": { "category": "Fuel", "heat": 24000, "sellPrice":  2557 },
 
-        // --- 7. METALS ---
-        "Iron Ingot": { "category": "Material" },
-        "Copper Ingot": { "category": "Material"},
-        "Bronze Ingot": { "category": "Material" },
-        "Silver Ingot": { "category": "Material" },
-        "Gold Ingot": { "category": "Material" },
-        "Steel Ingot": { "category": "Material" },
+        // --- 5. FERTILIZERS ---
+        "Basic Fertilizer": { "category": "Fertilizer", "nutrientValue": 144, "maxFertility": 12, "buyPrice": 14 },
+        "Advanced Fertilizer": { "category": "Fertilizer", "nutrientValue": 720, "maxFertility": 144, "buyPrice": 60 },        
+	    "Growth Potion": { "category": "Fertilizer", "sellPrice": 1224, "nutrientValue": 6480, "maxFertility": 2160 },
+	    "Fertile Catalyst": { "category": "Fertilizer", "nutrientValue": 24000, "maxFertility": 6000 },
 
-        // --- 8. COMPONENTS ---
-        "Linen Thread": { "category": "Component" },
-        "Linen Rope": { "category": "Component", "sellPrice": 36 },
-        "Large Wooden Gear": { "category": "Component", "sellPrice": 5 },
-        "Small Wooden Gear": { "category": "Component", "sellPrice": 8 },
-        "Iron Nails": { "category": "Component", "sellPrice": 16 },
-        "Wooden Pulley": { "category": "Component", "sellPrice": 44 },
-        "Steel Gear": { "category": "Component", "sellPrice": 450 },
-        "Copper Bearing": { "category": "Component", "sellPrice": 300 },
-        "Bronze Rivet": { "category": "Component", "sellPrice": 120},
-
-        // --- 9. GOODS & CURRENCY ---
-        "Linen": { "category": "Goods", "sellPrice": 165 },
-        "Bandage": { "category": "Goods", "sellPrice": 350 },
-        "Soap": { "category": "Goods", "sellPrice": 60 },
-        "Perfumed Soap": { "category": "Goods", "sellPrice": 2590 },
-        "Moonlit Soap": { "category": "Goods", "sellPrice": 995280 },
-        "Pocket Watch": { "category": "Goods", "sellPrice": 900000 },
-        "Silver Amulet": { "category": "Goods", "sellPrice": 48000 },
-        "Crown": { "category": "Goods", "sellPrice": 1600000 },
-        "Copper Coin": { "category": "Currency", "sellPrice": 1 },
-        "Silver Coin": { "category": "Currency", "sellPrice": 1000 },
-        "Gold Coin": { "category": "Currency", "sellPrice": 100000 },
-
-        // --- 10. LIQUIDS ---
-        "Fruit Wine": { "category": "Liquid", "liquid": true },
-        "Linseed Oil": { "category": "Liquid", "liquid": true },
-        "Limewater": { "category": "Liquid", "liquid": true },
-        "Brandy": { "category": "Liquid", "liquid": true },
-        "Sulfuric Acid": { "category": "Liquid", "liquid": true },
-        "Lavender Essential Oil": { "category": "Liquid", "liquid": true },
-        "Gentian Nectar": { "category": "Liquid", "liquid": true },
-        "Fairy Tear": { "category": "Liquid", "liquid": true },
-        "Moon Tear": { "category": "Liquid", "liquid": true },
-        "Quicksilver": { "category": "Liquid", "liquid": true },
-        "Aqua Vitae": { "category": "Liquid", "liquid": true },
-        "Salt Water": { "category": "Liquid", "liquid": true },
-
-        // --- 11. POTIONS ---
+        // --- 6. POTIONS ---
         "Healing Potion": { "category": "Potion", "sellPrice": 85 },
         "Vitality Potion": { "category": "Potion", "sellPrice": 330 },
         "Transformation Potion": { "category": "Potion", "sellPrice": 620 },
-        "Growth Potion": { "category": "Fertilizer", "sellPrice": 1224, "nutrientValue": 6480, "maxFertility": 2160 },
-        
-        // --- 12. FERTILIZERS & CATALYSTS ---
-        "Basic Fertilizer": { "category": "Fertilizer", "nutrientValue": 144, "maxFertility": 12, "buyPrice": 14 },
-        "Advanced Fertilizer": { "category": "Fertilizer", "nutrientValue": 720, "maxFertility": 144, "buyPrice": 60 },
-        
-        "Oblivion Essence": { "category": "Essence" },
-        "Vitality Essence": { "category": "Essence" },
+	    "Panacea Potion": { "category": "Potion", "nutrientValue": 200000, "maxFertility": 20000, "heat": 320000, "sellPrice": 30000 },
+
+        // --- 7. SOLIDS ---        
+        "Stone": { "category": "Solid", "maxStack": 200 },
+	    "Iron Ingot": { "category": "Solid", "maxStack": 200 },
+        "Quicklime": { "category": "Solid" },
+        "Clay": { "category": "Solid", "maxStack": 200 },
+        "Brick": { "category": "Misc", "maxStack": 200 },
+        "Glass": { "category": "Misc", "sellPrice": 75, "maxStack": 200 },
+        "Steel Ingot": { "category": "Solid", "maxStack": 200 },
+        "Sulfur": { "category": "Solid" },
+	    "Bronze Ingot": { "category": "Solid", "maxStack": 100 },
+	    "Copper Ingot": { "category": "Solid", "maxStack": 200 },	        
+        "Silver Ingot": { "category": "Solid", "maxStack": 100 },
+        "Gold Ingot": { "category": "Solid", "maxStack": 100 },
+        "Crude Shard": { "category": "Solid" },
+        "Broken Shard": { "category": "Solid" },
+        "Dull Shard": { "category": "Solid" },
+        "Shattered Crystal": { "category": "Solid" },
+        "Crude Crystal": { "category": "Solid"},
+        "Polished Crystal": { "category": "Solid" },
+        "Adamant": { "category": "Solid" },
+        "Perfect Diamond": { "category": "Solid" },
+
+        // --- 8. MASH ---
+	    "Sand": { "category": "Mash" },
+        "Flax Fiber": { "category": "Mash" },
+	    "Iron Sand": { "category": "Mash" },
+	    "Plant Ash": { "category": "Mash" },
+	    "Sage Powder": { "category": "Mash" },
+		
+        "Quicklime Powder": { "category": "Mash" },
+        "Clay Powder": { "category": "Mash" },
+        "Soap Powder": { "category": "Mash" },
+        "Chamomile Powder": { "category": "Mash" },
+        "Sulfur Powder": { "category": "Mash" },
+        
+        "Impure Copper Powder": { "category": "Mash" },
+        "Copper Powder": { "category": "Mash"},
+        "Perfumed Soap Powder": { "category": "Mash" },
+        "Gentian Powder": { "category": "Mash" },
+        "Crude Silver Powder": { "category": "Mash"},
+        
+        "Impure Silver Powder": { "category": "Mash" },
+        "Silver Powder": { "category": "Mash" },
+        "Volcanic Ash": { "category": "Mash" },
+        "Crude Gold Dust": { "category": "Mash" },
+        "Impure Gold Dust": { "category": "Mash" },
+
+        "Gold Dust": { "category": "Mash" },
+        "Pure Gold Dust": { "category": "Mash" },
+
+        // --- 9. COMPONENTS ---
+        "Linen Thread": { "category": "Component", "maxStack": 200 },
+        "Linen Rope": { "category": "Component", "sellPrice": 36, "maxStack": 200 },
+        "Large Wooden Gear": { "category": "Component", "sellPrice": 5, "maxStack": 100 },
+        "Small Wooden Gear": { "category": "Component", "sellPrice": 8, "maxStack": 200 },
+        "Iron Nails": { "category": "Component", "sellPrice": 16, "maxStack": 200 },
+        "Wooden Pulley": { "category": "Component", "sellPrice": 44, "maxStack": 50 },
+        "Steel Gear": { "category": "Component", "sellPrice": 450, "maxStack": 200 },
+        "Copper Bearing": { "category": "Component", "sellPrice": 300, "maxStack": 200 },
+        "Bronze Rivet": { "category": "Component", "sellPrice": 120, "maxStack": 200},
+
+        // --- 10. LIQUIDS ---
+        "Linseed Oil": { "category": "Liquid", "liquid": true },
+        "Fruit Wine": { "category": "Liquid", "liquid": true },
+        "Limewater": { "category": "Liquid", "liquid": true },
+        "Salt Water": { "category": "Liquid", "liquid": true },
+        "Lavender Essential Oil": { "category": "Liquid", "liquid": true },
+        "Brandy": { "category": "Liquid", "liquid": true },
+        "Sulfuric Acid": { "category": "Liquid", "liquid": true },
+        "Quicksilver": { "category": "Liquid", "liquid": true },
+        "Aqua Vitae": { "category": "Liquid", "liquid": true },
+        "Fairy Tear": { "category": "Liquid", "liquid": true },
+        "Moon Tear": { "category": "Liquid", "liquid": true },
+
+	    // --- 11. CATALYSTS ---		
+        "Yeast Powder": { "category": "Catalyst" },
+        "Gloom Spores": { "category": "Catalyst" },
         "Unstable Catalyst": { "category": "Catalyst" },
-        "Fertile Catalyst": { "category": "Catalyst", "nutrientValue": 24000, "maxFertility": 6000 },
         "Resonant Catalyst": { "category": "Catalyst" },
         "Eternal Catalyst": { "category": "Catalyst" },
-        "Philosopher's Stone": { "category": "Catalyst" },
 
-        // --- 13. GEMS & SHARDS ---
-        "Crude Shard": { "category": "Gem" },
-        "Broken Shard": { "category": "Gem" },
-        "Dull Shard": { "category": "Gem" },
-        "Shattered Crystal": { "category": "Gem" },
-        "Crude Crystal": { "category": "Gem"},
-        "Polished Crystal": { "category": "Gem" },
-        "Adamant": { "category": "Material" },
-        "Diamond": { "category": "Gem", "sellPrice": 100000 },
-        "Perfect Diamond": { "category": "Gem" },
-        "Turquoise": { "category": "Gem", "sellPrice": 290 },
-        "Malachite": { "category": "Gem", "sellPrice": 1020 },
-        "Topaz": { "category": "Gem", "sellPrice": 2800 },
-        "Lapis Lazuli": { "category": "Gem", "sellPrice": 32000 },
-        "Ruby": { "category": "Gem", "sellPrice": 250000 },
-        "Sapphire": { "category": "Gem", "sellPrice": 480000 },
-        "Emerald": { "category": "Gem", "sellPrice": 700000 },
+	    // --- 12. Magic ---
+        "Philosopher's Stone": { "category": "Magic" },
+        "Oblivion Essence": { "category": "Magic" },
+        "Vitality Essence": { "category": "Magic" },
+        "Star Dust": { "category": "Magic" },
+        "Fairy Dust": { "category": "Magic" },
 
-        // --- 14. RELICS ---
+	    // -------
+
+        // --- 13. GOODS & CURRENCY ---
+        "Copper Coin": { "category": "Currency", "sellPrice": 1 },
+        "Silver Coin": { "category": "Currency", "sellPrice": 1000 },
+        "Gold Coin": { "category": "Currency", "sellPrice": 100000 },
+        "Mortar": { "category": "Misc", "sellPrice": 48 },
+        "Salt": { "category": "Misc", "sellPrice": 100 },
+        "Linen": { "category": "Misc", "sellPrice": 165 },
+        "Bandage": { "category": "Misc", "sellPrice": 350 },
+        "Soap": { "category": "Misc", "sellPrice": 60 },
+        "Perfumed Soap": { "category": "Misc", "sellPrice": 2590 },
+        "Moonlit Soap": { "category": "Misc", "sellPrice": 995280 },
+
+		// --- 14. Jewelry ---
+		"Ruby": { "category": "Jewelry", "sellPrice": 250000 },
+		"Sapphire": { "category": "Jewelry", "sellPrice": 480000 },
+		"Emerald": { "category": "Jewelry", "sellPrice": 700000 },
+		"Turquoise": { "category": "Jewelry", "sellPrice": 290 },
+        "Pocket Watch": { "category": "Jewelry", "sellPrice": 900000 },
+		"Malachite": { "category": "Jewelry", "sellPrice": 1020 },
+		"Diamond": { "category": "Jewelry", "sellPrice": 100000 },
+		"Topaz": { "category": "Jewelry", "sellPrice": 2800 },		
+		"Obsidian": { "category": "Jewelry", "sellPrice": 11000 },
+        "Silver Amulet": { "category": "Jewelry", "sellPrice": 48000 },
+        "Lapis Lazuli": { "category": "Jewelry", "sellPrice": 32000, "maxStack": 50 },
+        "Crown": { "category": "Jewelry", "sellPrice": 1600000 },
+
+        // --- 15. RELICS ---
         "Jupiter": { "category": "Relic", "sellPrice": 30000 },
         "Saturn": { "category": "Relic", "sellPrice": 150000 },
         "Mars": { "category": "Relic", "sellPrice": 280000 },
         "Venus": { "category": "Relic", "sellPrice": 1000000 },
-        "Luna": { "category": "Relic", "sellPrice": 18500000 },
         "Mercury": { "category": "Relic", "sellPrice": 5200000 },
+        "Luna": { "category": "Relic", "sellPrice": 18500000 },
         "Sol": { "category": "Relic", "sellPrice": 42000000 }
     },
     
@@ -186,9 +194,9 @@ window.ALCHEMY_DB = {
         "Crucible": { "heatCost": 4.0, "parent": "Stone Furnace", "slotsRequired": 3, "buildCost": { "Stone": 4 } },
         "Kiln": { "heatCost": 15.0, "parent": "Stone Furnace", "slotsRequired": 6, "buildCost": { "Stone": 20, "Clay": 10 } },
         "Iron Smelter": { "heatCost": 9.0, "parent": "Stone Furnace", "slotsRequired": 9, "buildCost": { "Stone": 15 } },
-        "Stackable Crucible": { "heatCost": 6.0, "parent": "Stone Furnace", "slotsRequired": 3, "buildCost": { "Clay": 10, "Iron Ingot": 2 } },
-        "Thermal Extractor": { "heatCost": 80.0, "parent": "Stone Furnace", "slotsRequired": 6, "buildCost": { "Steel Ingot": 10, "Glass": 10 } },
-        "Refiner": { "heatCost": 0, "buildCost": { "Iron Ingot": 10, "Glass": 5 } },
+        "Stackable Crucible": { "heatCost": 6.0, "parent": "Stone Furnace", "slotsRequired": 3, "buildCost": { "Stone": 6, "Steel Ingot": 2, "Bronze Rivet": 4 } },
+        "Thermal Extractor": { "heatCost": 80.0, "parent": "Stone Furnace", "slotsRequired": 6, "buildCost": { "Steel Ingot": 5, "Glass": 5 } },
+        "Refiner": { "heatCost": 0, "buildCost": { "Plank": 8, "Steel Gear": 5 } },
         "Processor": { "heatCost": 0, "buildCost": { "Plank": 12, "Large Wooden Gear": 3 } },
         "Assembler": { "heatCost": 0, "buildCost": { "Plank": 10, "Large Wooden Gear": 5, "Small Wooden Gear": 15 } },
         "Advanced Assembler": { "heatCost": 0, "buildCost": { "Steel Ingot": 12, "Steel Gear": 16, "Copper Bearing": 8 } },
@@ -197,17 +205,17 @@ window.ALCHEMY_DB = {
         "Alembic": { "heatCost": 108.0, "parent": "Stone Furnace", "slotsRequired": 1, "buildCost": { "Steel Ingot": 4, "Copper Ingot": 4, "Glass": 8 } },
         "Advanced Alembic": { "heatCost": 270.0, "parent": "Stone Furnace", "slotsRequired": 6, "buildCost": { "Steel Ingot": 8, "Copper Bearing": 4, "Glass": 16 } },
         "Athanor": { "heatCost": 32.0, "parent": "Stone Furnace", "slotsRequired": 6, "buildCost": { "Iron Nails": 15, "Iron Ingot": 10 } },
-        "Advanced Athanor": { "heatCost": 360.0, "parent": "Stone Furnace", "slotsRequired": 6, "buildCost": { "Steel Ingot": 20, "Gold Ingot": 5 } },
-        "Shaper": { "heatCost": 0, "buildCost": { "Iron Ingot": 8, "Iron Ingot": 16 } },
+        "Advanced Athanor": { "heatCost": 360.0, "parent": "Stone Furnace", "slotsRequired": 6, "buildCost": { "Steel Ingot": 12, "Gold Ingot": 12 } },
+        "Shaper": { "heatCost": 0, "buildCost": { "Iron Ingot": 8, "Iron Nails": 16 } },
         "Advanced Shaper": { "heatCost": 0, "buildCost": { "Steel Ingot": 8, "Steel Gear": 16 } },
         "Arcane Shaper": { "heatCost": 0, "buildCost": { "Gold Ingot": 12, "Copper Bearing": 18, "Steel Gear": 24 } },
         "Paradox Crucible": { "heatCost": 1200.0, "parent": "Stone Furnace", "slotsRequired": 9, "buildCost": { "Bronze Rivet": 16, "Copper Ingot": 8, "Steel Ingot": 8 } },
         "Cauldron": { "heatCost": 0, "buildCost": { "Bronze Ingot": 30 } },
         "Arcane Processor": { "heatCost": 0, "buildCost": { "Steel Ingot": 6, "Steel Gear": 12, "Lapis Lazuli": 2 } },
         "Enhanced Grinder": { "heatCost": 0, "buildCost": { "Plank": 12, "Steel Gear": 3 } },
-        "Nursery": { "heatCost": 0, "fertility": true, "buildCost": { "Plank": 20, "Linen Rope": 20, "Iron Nails": 20 } },
-        "World Tree Nursery": { "heatCost": 0, "buildCost": { "Adamant": 10, "World Tree Leaf": 5 } },
-        "Knowledge Altar": { "heatCost": 0, "buildCost": { "Stone": 50, "Gold Ingot": 10 } }
+        "Nursery": { "heatCost": 0, "fertility": true, "buildCost": { "Iron Ingot": 12, "Clay": 6 } },
+        "World Tree Nursery": { "heatCost": 0, "fertility": true, "buildCost": { "Iron Ingot": 100, "Clay": 100  } },
+        "Knowledge Altar": { "heatCost": 0, "buildCost": { "Stone": 24 } }
     },
     
     "recipes": [
@@ -424,17 +432,27 @@ window.ALCHEMY_DB = {
 
         // --- 15. ALTERNATE RECIPES ---
         { 
+            "id": "VolcanicAsh_Alt", "machine": "Refiner", 
+            "inputs": { "Obsidian": 1 }, "outputs": { "Volcanic Ash": 1 }, 
+            "baseTime": 24.0 
+        },
+        { 
             "id": "Coke_Alt", "machine": "Crucible", 
             "inputs": { "Coal": 1 }, "outputs": { "Coke": 1 }, 
             "baseTime": 6.0 
         },
+        { 
+            "id": "CopperPowder2_Alt", "machine": "Refiner", 
+            "inputs": { "Impure Copper Powder": 2 }, "outputs": { "Copper Powder": 1 }, 
+            "baseTime": 6.0 
+        },
         { 
-            "id": "SilverPowder3_Alt", "machine": "Advanced Athanor", 
+            "id": "SilverPowder3_Alt", "machine": "Refiner", 
             "inputs": { "Impure Silver Powder": 2 }, "outputs": { "Silver Powder": 1 }, 
             "baseTime": 8.0 
         },
         { 
-            "id": "GoldDust3_Alt", "machine": "Advanced Athanor", 
+            "id": "GoldDust3_Alt", "machine": "Refiner", 
             "inputs": { "Impure Gold Dust": 2 }, "outputs": { "Gold Dust": 1 }, 
             "baseTime": 10.0 
         },

@@ -188,52 +188,53 @@ window.ALCHEMY_I18N = {
         "Export to File": "导出到文件"        
     },
     "items": {
-        // Order by in-game codex
+        // Game version: 0.4.1.3800
+        // Group by meaning
 
-        // --- 1. RAW RESOURCES ---
+        // --- RAW RESOURCES ---        
         "Logs": "原木",
         "Limestone": "石灰石",
         "Iron Ore": "铁矿石",
-        "Coal Ore": "煤矿石",
         "Pyrite Ore": "硫铁矿",
         "Quartz Ore": "石英矿",
         "Rock Salt": "岩盐",
+        "Coal Ore": "煤矿石",
         "Rotten Log": "腐烂原木",
         "Meteorite": "陨石",
 
-        // --- 2. SEEDS ---
+        // --- SEEDS ---        
         "Flax Seed": "亚麻种子",
         "Sage Seed": "鼠尾草种子",
         "Red Currant Seed": "紅醋栗种子",
         "Lavender Seed": "薰衣草种子",
-        "Chamomile Seed": "洋甘菊种子",
+        "Chamomile Seed": "洋甘菊种子",        
         "Gentian Seed": "龙胆花种子",
         "World Tree Seed": "世界树种子",
 
-        // --- 3. HERBS ---
+        // --- HERBS ---
         "Flax": "亚麻",
         "Sage": "鼠尾草",
         "Redcurrant": "紅醋栗",
         "Lavender": "薰衣草",
-        "Chamomile": "洋甘菊",
+        "Chamomile": "洋甘菊",        
         "Gentian": "龙胆花",
         "Gentian Nectar": "龙胆花蜜",
-        "Gloom Fungus": "幽暗菇",
         "World Tree Leaf": "世界树之叶",
-        "World Tree Core": "世界树核心",
+        "World Tree Core": "世界树核心",        
+        "Gloom Fungus": "幽暗菇",
 
-        // --- 4. FUELS ---
+        // --- FUELS & FERTILIZERS---        
         "Plank": "木材",
         "Charcoal": "木炭",
-        "Charcoal Powder": "木炭粉",
-        "Coal": "煤炭",
+        "Charcoal Powder": "木炭粉",        
         "Coke": "焦炭",
         "Coke Powder": "焦炭粉",
+        "Coal": "煤炭",
         "Black Powder": "火药",
-        "Blast Potion": "爆炸药水",
-        "Panacea Potion": "万灵药",
+        "Basic Fertilizer": "初级肥料",
+        "Advanced Fertilizer": "高级肥料",
 
-        // --- 5. SOLIDS & MATERIALS ---        
+        // --- SOLIDS & MATERIALS ---        
         "Stone": "碎石",
         "Sand": "沙子",
         "Clay": "粘土",
@@ -241,46 +242,43 @@ window.ALCHEMY_I18N = {
         "Glass": "玻璃",
         "Sulfur": "硫磺",
         "Salt": "盐",
-        "Adamant": "金刚石",
-        "Obsidian": "黑曜石",
 
-        // --- 6. POWDERS & DUSTS ---
+        // --- POWDERS & DUSTS ---
         "Flax Fiber": "亚麻纤维",
         "Sage Powder": "鼠尾草粉",
         "Plant Ash": "植物灰",
         "Quicklime": "生石灰",
         "Quicklime Powder": "石灰粉",
-        "Clay Powder": "粘土粉",
-        "Iron Sand": "铁砂",
+        "Clay Powder": "粘土粉",        
         "Sulfur Powder": "硫磺粉",
         "Chamomile Powder": "洋甘菊粉",
         "Gentian Powder": "龙胆花粉",        
         "Yeast Powder": "酵母粉",
         "Soap Powder": "肥皂粉",
         "Perfumed Soap Powder": "香皂粉",
-        "Gloom Spores": "幽暗孢子",
         "Volcanic Ash": "火山灰",
+        "Star Dust": "星尘",
+        "Fairy Dust": "精灵尘",
+
+        // --- METALS ---
+        "Iron Sand": "铁砂",
+        "Iron Ingot": "铁锭",        
+        "Steel Ingot": "钢锭",
         "Impure Copper Powder": "不纯的铜粉",
+        "Bronze Ingot": "青铜锭",
         "Copper Powder": "铜粉",
+        "Copper Ingot": "铜锭",
         "Crude Silver Powder": "粗劣的银粉",
         "Impure Silver Powder": "不纯的银粉",
-        "Silver Powder": "银粉",
+        "Silver Powder": "银粉",  
+        "Silver Ingot": "银锭",
         "Crude Gold Dust": "粗劣的砂金",
         "Impure Gold Dust": "不纯的砂金",
         "Gold Dust": "砂金",
         "Pure Gold Dust": "纯净的砂金",
-        "Star Dust": "星尘",
-        "Fairy Dust": "精灵尘",
-
-        // --- 7. METALS ---
-        "Iron Ingot": "铁锭",        
-        "Steel Ingot": "钢锭",
-        "Bronze Ingot": "青铜锭",
-        "Copper Ingot": "铜锭",        
-        "Silver Ingot": "银锭",
         "Gold Ingot": "金锭",
 
-        // --- 8. COMPONENTS ---
+        // --- COMPONENTS ---
         "Linen Thread": "亚麻线",
         "Linen Rope": "麻绳",
         "Large Wooden Gear": "木制大齿轮",
@@ -291,7 +289,7 @@ window.ALCHEMY_I18N = {
         "Copper Bearing": "铜轴承",
         "Bronze Rivet": "青铜铆钉",
 
-        // --- 9. GOODS & CURRENCY ---        
+        // --- GOODS & CURRENCY ---        
         "Mortar": "研钵",
         "Linen": "麻布",
         "Bandage": "绷带",
@@ -305,7 +303,7 @@ window.ALCHEMY_I18N = {
         "Silver Coin": "银币",
         "Gold Coin": "金币",
 
-        // --- 10. LIQUIDS ---
+        // --- LIQUIDS ---
         "Linseed Oil": "亚麻籽油",
         "Fruit Wine": "浆果酒",        
         "Limewater": "石灰水",        
@@ -318,50 +316,53 @@ window.ALCHEMY_I18N = {
         "Fairy Tear": "精灵之泪",
         "Moon Tear": "月之泪",        
 
-        // --- 11. POTIONS ---
+        // --- POTIONS ---
         "Healing Potion": "治疗药水",
         "Vitality Potion": "活力药水",
-        "Transformation Potion": "变形药水",
+        "Transformation Potion": "变形药水",        
+        "Blast Potion": "爆炸药水",
         "Growth Potion": "成長藥水",
+        "Panacea Potion": "万灵药",
 
-        // --- 12. FERTILIZERS & CATALYSTS ---
-        "Basic Fertilizer": "初级肥料",
-        "Advanced Fertilizer": "高级肥料",
-        "Oblivion Essence": "湮灭精华",
-        "Vitality Essence": "生命精华",
+        // --- CATALYSTS & MAGIC ---        
+        "Gloom Spores": "幽暗孢子",
         "Unstable Catalyst": "不稳定催化剂",
         "Fertile Catalyst": "丰饶催化剂",
         "Resonant Catalyst": "共振催化剂",
-        "Eternal Catalyst": "永恒催化剂",
+        "Eternal Catalyst": "永恒催化剂",        
+        "Oblivion Essence": "湮灭精华",
+        "Vitality Essence": "生命精华",
         "Philosopher's Stone": "贤者之石",
 
-        // --- 13. GEMS & SHARDS ---
+        // --- GEMS & SHARDS ---
         "Crude Shard": "粗劣的晶片",
         "Broken Shard": "破碎的晶片",
         "Dull Shard": "暗淡的晶片",
         "Shattered Crystal": "碎裂的晶石",
         "Crude Crystal": "粗糙的晶石",
-        "Polished Crystal": "抛光的晶石",
+        "Polished Crystal": "抛光的晶石",        
+        "Adamant": "金刚石",
         "Diamond": "钻石",
         "Perfect Diamond": "完美的钻石",
         "Turquoise": "绿松石",
         "Malachite": "孔雀石",
-        "Topaz": "黄玉",
+        "Topaz": "黄玉",        
+        "Obsidian": "黑曜石",
         "Lapis Lazuli": "青金石",
         "Ruby": "红宝石",
         "Sapphire": "蓝宝石",
         "Emerald": "祖母绿",
 
-        // --- 14. RELICS ---
+        // --- RELICS ---
         "Jupiter": "木星",
         "Saturn": "土星",
         "Mars": "火星",
-        "Venus": "金星",
-        "Luna": "月曜",
+        "Venus": "金星",        
         "Mercury": "水星",
+        "Luna": "月曜",
         "Sol": "日耀",
 
-        // --- 15. SPECIAL / UNGROUPED ---
+        // --- SPECIAL ---
         "Portal Sigil": "传送门印章",
         "Gelatinous Gridlock": "格姆胶",
         "Automatic Cashier": "自动收銀機"
@@ -397,11 +398,11 @@ window.ALCHEMY_I18N = {
         "Advanced Shaper": "高级雕刻机",
         "Arcane Shaper": "奥术雕刻机",      
         "Nursery": "育苗圃",
-        "World Tree Nursery": "世界树育苗圃",
+        "World Tree Nursery": "世界树育苗圃",   
         "Knowledge Altar": "知识祭坛"
     },
     "categories": {
-        "Raw Materials": "原材料", "Seeds": "种子", "Herbs": "草药", "Fuel": "燃料", "Material": "材料", "Goods": "商品", "Currency": "货币", "Component": "零件",
-        "Liquid": "液体", "Potion": "药水", "Catalyst": "催化剂", "Essence": "精华", "Fertilizer": "肥料", "Gem": "宝石", "Relic": "圣物", "Other" : "其他"
+        "Raw Materials": "原材料", "Seeds": "种子", "Herbs": "草药", "Fuel": "燃料", "Fertilizer": "肥料", "Solid": "固体", "Mash": "研磨物", "Component": "零件",
+        "Liquid": "液体", "Potion": "药水", "Catalyst": "催化剂", "Magic": "魔法", "Jewelry": "珠宝", "Relic": "圣物", "Currency": "货币", "Misc" : "杂项"
     }
 };
