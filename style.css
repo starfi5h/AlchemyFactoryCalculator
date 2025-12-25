@@ -1,0 +1,314 @@
+/* ==========================================================================
+    SECTION: CSS - CORE THEME & VARIABLES
+    ========================================================================== */
+:root { 
+    --bg: #1a1a1a; --text: #e0e0e0; --accent: #4caf50; 
+    --panel: #2d2d2d; --border: #444; --warn: #ff9800; 
+    --gold: #ffd700; --info: #2196f3; --profit: #00e676; 
+    --bio: #76ff03; --fuel: #ff5722; --danger: #f44336;
+    --row-id: #4fc3f7; --byproduct: #9c27b0;
+    --thumb-size: 14px; /* Variable for slider thumb calculations */
+}
+* { box-sizing: border-box; }
+body { 
+    font-family: 'Segoe UI', sans-serif; 
+    background: var(--bg); color: var(--text); 
+    padding: 0; margin: 0; height: 100vh; 
+    display: flex; flex-direction: column; 
+    font-size: 13px; 
+}
+
+/* ==========================================================================
+    SECTION: CSS - LAYOUT & GRID
+    ========================================================================== */
+header { 
+    background: #111; padding: 8px 20px; 
+    border-bottom: 1px solid var(--border); 
+    display: flex; align-items: center; justify-content: space-between; 
+    flex-shrink: 0; 
+}
+h1 { color: var(--accent); margin: 0; font-size: 1.1em; }
+.repo-link { 
+    color: #888; text-decoration: none; font-size: 0.9em; 
+    margin-right: 15px; border: 1px solid #444; padding: 4px 8px; 
+    border-radius: 4px; transition: 0.2s; 
+}
+.repo-link:hover { color: #fff; border-color: #666; background: #222; }
+.subtitle { color: #888; font-size: 0.8em; margin-left: 10px; cursor: pointer; text-decoration: underline; }
+.subtitle:hover { color: #fff; }
+
+.tabs { display: flex; gap: 5px; }
+.tab-btn { 
+    background: #222; border: 1px solid var(--border); 
+    color: #888; padding: 6px 12px; cursor: pointer; 
+    border-radius: 4px; font-size: 0.9em; 
+}
+.tab-btn:hover { background: #333; color: #fff; }
+.tab-btn.active { background: var(--accent); color: white; border-color: var(--accent); font-weight: bold; }
+
+main { flex: 1; overflow: hidden; position: relative; }
+.view { position: absolute; top: 0; left: 0; width: 100%; height: 100%; overflow-y: auto; padding: 15px; display: none; }
+.view.active { display: block; }
+
+.app-grid { 
+    display: grid; 
+    grid-template-columns: 260px 1fr 220px 200px; 
+    gap: 15px; 
+    max-width: 1920px; margin: 0 auto; height: 100%; 
+}
+.panel { 
+    background: var(--panel); padding: 12px; 
+    border-radius: 8px; border: 1px solid var(--border); 
+    margin-bottom: 15px; 
+}
+.panel h3 { 
+    margin-top: 0; color: #fff; border-bottom: 1px solid #444; 
+    padding-bottom: 8px; font-size: 1.05em; margin-bottom: 10px; 
+}
+
+/* ==========================================================================
+    SECTION: CSS - CONTROLS & INPUTS
+    ========================================================================== */
+.input-group { margin-bottom: 12px; position: relative; }
+label { display: block; font-size: 0.85em; color: #aaa; margin-bottom: 4px; }
+select { width: 100%; padding: 6px; background: #333; border: 1px solid #555; color: white; border-radius: 4px; font-size: 1em; }
+
+/* ==========================================================================
+    SECTION: CSS - SLIDER COMPONENTS
+    ========================================================================== */
+.slider-container { position: relative; width: 100%; height: 50px; margin-top: 5px; }
+input[type=range] {
+    width: 100%; -webkit-appearance: none; -moz-appearance: none; appearance: none; background: transparent; cursor: pointer; position: relative; z-index: 10;
+}
+input[type=range]::-webkit-slider-runnable-track {
+    width: 100%; height: 6px; background: #444; border-radius: 3px;
+}
+
+/* THUMB: Downward Triangle Pointer */
+input[type=range]::-webkit-slider-thumb {
+    -webkit-appearance: none; 
+    height: var(--thumb-size); width: var(--thumb-size); 
+    background: var(--accent); 
+    margin-top: -6px; /* Center on track */
+    border: none;
+    clip-path: polygon(0% 0%, 100% 0%, 50% 100%);
+    transform: none;
+    border-radius: 0; 
+    position: relative;
+    z-index: 20;
+}
+input[type=range]:focus { outline: none; }
+
+.slider-ticks {
+    position: absolute; top: 14px; left: 0; right: 0; height: 20px; pointer-events: none;
+}
+.tick-mark {
+    position: absolute; display: flex; flex-direction: column; align-items: center; transform: translateX(-50%);
+}
+.tick-line { width: 1px; height: 6px; background: #666; margin-bottom: 2px; }
+.tick-mark.labeled .tick-line { height: 8px; background: #999; }
+
+/* Vertical Fractions Logic */
+.vertical-frac { 
+    display: flex; flex-direction: column; align-items: center; 
+    color: #888; font-family: sans-serif; font-size: 9px; line-height: 1;
+}
+.vertical-frac .num { margin-bottom: 2px; }
+.vertical-frac .sep { width: 8px; height: 1px; background: #666; opacity: 0.7; }
+.vertical-frac .den { margin-top: 2px; }
+.vertical-frac.full-label { font-size: 10px; margin-top: 2px; }
+
+/* ==========================================================================
+    SECTION: CSS - COMBOBOX
+    ========================================================================== */
+.combobox-container { position: relative; width: 100%; }
+.input-wrapper { position: relative; display: flex; align-items: center; background: #333; border: 1px solid #555; border-radius: 4px; }
+.real-input {
+    width: 100%; background: transparent; border: none; color: white; padding: 6px; font-size: 1em; z-index: 2; position: relative;
+}
+.real-input:focus { outline: none; border-color: var(--accent); }
+.ghost-input {
+    position: absolute; top: 6px; left: 7px;
+    color: #666; font-size: 1em; z-index: 1; pointer-events: none; white-space: pre;
+}
+.combo-arrow { padding: 0 8px; color: #888; font-size: 0.8em; cursor: pointer; z-index: 3; user-select: none; }
+.combo-arrow:hover { color: #fff; }
+.combobox-list {
+    position: absolute; top: 100%; left: 0; right: 0;
+    background: #252525; border: 1px solid #444; border-radius: 4px;
+    max-height: 300px; overflow-y: auto; z-index: 100; display: none;
+    box-shadow: 0 4px 10px rgba(0,0,0,0.5); margin-top: 2px;
+}
+.combobox-list.active { display: block; }
+.combo-item { padding: 6px 8px; cursor: pointer; border-bottom: 1px solid #333; font-size: 0.95em; display: flex; justify-content: space-between; }
+.combo-item:hover, .combo-item.selected { background: #333; color: white; }
+.combo-item.selected { border-left: 3px solid var(--accent); background: #2e3d30; }
+.combo-cat { font-size: 0.75em; color: #666; font-style: italic; }
+
+/* ==========================================================================
+    SECTION: CSS - SPINNERS & BUTTONS
+    ========================================================================== */
+.spinner-wrapper { display: flex; align-items: stretch; width: 100%; height: 32px; }
+.spinner-btn { background: #444; border: 1px solid #555; color: white; padding: 0 10px; cursor: pointer; font-size: 0.9em; font-weight: bold; display: flex; align-items: center; justify-content: center; transition: 0.1s; min-width: 32px; }
+.spinner-btn:hover { background: #555; }
+.spinner-btn:active { background: var(--accent); }
+.spinner-btn.left { border-right: none; }
+.spinner-btn.right { border-left: none; }
+.spinner-btn.first { border-radius: 4px 0 0 4px; }
+.spinner-btn.last { border-radius: 0 4px 4px 0; }
+
+input[type="number"] { flex: 1; text-align: center; font-size: 1.1em; background: #333; border: 1px solid #555; border-left: 1px solid #444; border-right: 1px solid #444; color: white; width: 10px; -moz-appearance: textfield; appearance: textfield; }
+input:disabled { opacity: 0.5; cursor: not-allowed; background: #2a2a2a; color: #aaa; }
+
+.split-btn-container { display: flex; gap: 5px; margin-top: 6px; }
+.split-btn { flex: 1; padding: 6px 4px; border: 1px solid #555; border-radius: 4px; cursor: pointer; font-size: 0.8em; font-weight: bold; transition: 0.2s; color: #ddd; background: #333; text-align: center; }
+.split-btn:hover:not(:disabled) { background: #444; color: #fff; }
+.btn-active-green { background: #2e7d32 !important; border-color: #4caf50 !important; color: white !important; }
+.btn-inactive-red { background: #333 !important; color: #aaa !important; }
+.checkbox-row { display: flex; align-items: center; margin-top: 8px; font-size: 0.9em; color: #ccc; }
+.checkbox-row input { margin-right: 8px; }
+
+/* ==========================================================================
+    SECTION: CSS - TOGGLE SWITCH
+    ========================================================================== */
+.switch {
+    position: relative;
+    display: inline-block;
+    width: 34px;
+    height: 18px;
+}
+.switch input { opacity: 0; width: 0; height: 0; }
+.slider-switch {
+    position: absolute; cursor: pointer;
+    top: 0; left: 0; right: 0; bottom: 0;
+    background-color: #444; transition: .3s;
+    border-radius: 18px;
+}
+.slider-switch:before {
+    position: absolute; content: "";
+    height: 12px; width: 12px;
+    left: 3px; bottom: 3px;
+    background-color: white; transition: .3s;
+    border-radius: 50%;
+}
+input:checked + .slider-switch { background-color: var(--accent); }
+input:checked + .slider-switch:before { transform: translateX(16px); }
+
+/* Highlight current mode label */
+.active-mode { color: var(--accent) !important; }
+
+/* ==========================================================================
+    SECTION: CSS - CONSTRUCTION LIST
+    ========================================================================== */
+.build-list { list-style: none; padding: 0; margin: 0; }
+.build-group { margin-bottom: 2px; }
+.build-header { 
+    display: flex; justify-content: space-between; align-items: center; 
+    padding: 6px 8px; background: #333; border-radius: 4px; cursor: pointer; 
+    font-weight: bold; color: #ccc; border: 1px solid transparent; user-select: none;
+}
+.build-header:hover { background: #444; border-color: #555; color: #fff; }
+.build-arrow { font-size: 0.8em; margin-right: 8px; transition: transform 0.1s; display: inline-block; width: 10px; }
+.expanded .build-arrow { transform: rotate(90deg); }
+.build-sublist { list-style: none; padding: 0 0 0 10px; margin: 0; display: none; border-left: 2px solid #444; margin-left: 10px; }
+.expanded .build-sublist { display: block; }
+.build-subitem { display: flex; justify-content: space-between; padding: 4px 8px; font-size: 0.9em; color: #aaa; border-bottom: 1px dashed #333; }
+.build-subitem:last-child { border-bottom: none; }
+.build-val { color: var(--gold); }
+.total-mats-header { margin-top: 20px; border-top: 1px solid #555; padding-top: 10px; font-weight: bold; color: var(--accent); text-transform: uppercase; font-size: 0.9em; }
+.total-mat-item { display: flex; justify-content: space-between; padding: 4px 0; border-bottom: 1px solid #333; font-size: 0.95em; color: #ddd; }
+
+/* ==========================================================================
+    SECTION: CSS - SUMMARY BOX
+    ========================================================================== */
+.summary-box { background: #252525; border-left: 4px solid var(--accent); padding: 12px; margin-bottom: 20px; display: grid; grid-template-columns: 1fr 1fr 1fr 1fr 1fr; gap: 10px; }
+.stat-block { display: flex; flex-direction: column; padding-right: 10px; border-right: 1px solid #444; }
+.stat-block:last-child { border-right: none; }
+.stat-label { font-size: 0.75em; color: #aaa; text-transform: uppercase; letter-spacing: 1px; }
+.stat-value { font-size: 1.1em; font-weight: bold; color: #fff; margin-top: 4px; }
+.stat-sub { font-size: 0.85em; color: var(--warn); margin-top: 2px; }
+.gold-profit { color: var(--profit); } .gold-cost { color: var(--gold); } .net-positive { color: #69f0ae; }
+
+/* ==========================================================================
+    SECTION: CSS - TREE NODES
+    ========================================================================== */
+.node { margin-left: 15px; padding: 4px 0; border-left: 2px solid #555; position: relative; }
+.node-content { display: flex; align-items: center; gap: 8px; background: #222; padding: 6px 10px; border-radius: 4px; border: 1px solid #333; }
+.tree-arrow { display: inline-block; width: 14px; cursor: pointer; transition: transform 0.1s; user-select: none; font-size: 0.8em; color: #888; text-align:center; }
+.row-id { color: var(--row-id); font-family: monospace; font-weight: bold; min-width: 20px; font-size: 0.9em; cursor: pointer; }
+.node.collapsed .node-children { display: none; }
+.node.collapsed .tree-arrow { transform: rotate(-90deg); }
+.node-children { margin-left: 0; }
+
+.qty { color: var(--accent); font-weight: bold; min-width: 50px; }
+.item-link { cursor: pointer; text-decoration: none; color: inherit; transition: 0.2s; }
+.item-link:hover { color: var(--info); text-decoration: underline; }
+.machine-tag { background: #333; padding: 2px 6px; border-radius: 3px; font-size: 0.85em; border: 1px solid #444; color: #fff; font-weight: bold; cursor: help; }
+.heat-tag { color: var(--warn); font-size: 0.85em; margin-left: 5px; }
+.bio-tag { color: var(--bio); font-size: 0.85em; margin-left: 5px; }
+.cost-tag { color: var(--gold); font-size: 0.85em; margin-left: 10px; font-weight: bold; }
+.fail-tag { color: var(--danger); font-size: 0.85em; margin-left: 5px; font-weight: bold; }
+.max-cap-tag { color: #888; font-size: 0.8em; margin-left: 5px; font-style: italic; }
+.details { font-size: 0.9em; color: #ccc; }
+.output-tag { color: var(--info); font-size: 0.85em; margin-left: 10px; font-weight: bold; border-left: 1px solid #555; padding-left: 10px; }
+.recycle-tag { color: var(--byproduct); font-size: 0.85em; margin-left: 10px; font-weight: bold; }
+.swap-btn { background: transparent; border: 1px solid #555; color: #888; width: 22px; height: 22px; border-radius: 50%; font-size: 11px; cursor: pointer; margin-left: 10px; display: inline-flex; align-items: center; justify-content: center; padding: 0; line-height: 1; }
+.swap-btn:hover { background: #444; color: white; border-color: #fff; }
+
+.push-right { margin-left: auto; display: flex; align-items: center; }
+.recycle-btn { background: transparent; border: 1px solid var(--byproduct); color: var(--byproduct); border-radius: 4px; font-size: 0.8em; cursor: pointer; padding: 2px 8px; font-weight:bold; transition:0.2s; }
+.recycle-btn:hover { background: rgba(156, 39, 176, 0.2); }
+.recycle-btn.active { background: #2e3d30; color: var(--profit); border-color: var(--profit); }
+
+.section-header { margin-top: 25px; margin-bottom: 8px; padding-bottom: 4px; border-bottom: 1px dashed #555; color: #888; text-transform: uppercase; letter-spacing: 1px; font-size: 0.85em; font-weight: bold; }
+
+/* ==========================================================================
+    SECTION: CSS - MODALS & EDITOR
+    ========================================================================== */
+.modal-overlay { position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.8); display: none; justify-content: center; align-items: center; z-index: 1000; }
+.modal-content { background: var(--panel); border: 1px solid var(--border); width: 600px; max-width: 90%; max-height: 80vh; overflow-y: auto; padding: 20px; border-radius: 8px; }
+.modal-header { display: flex; justify-content: space-between; border-bottom: 1px solid #444; padding-bottom: 10px; margin-bottom: 10px; }
+.close-modal { background: none; border: none; color: #aaa; font-size: 1.5em; cursor: pointer; }
+.close-modal:hover { color: #fff; }
+.recipe-option { background: #333; border: 1px solid #444; padding: 10px; margin-bottom: 10px; cursor: pointer; display: flex; justify-content: space-between; align-items: center; flex-direction: column; align-items: flex-start; }
+.recipe-option.active { border-color: var(--accent); background: #2e3d30; }
+.recipe-option.disabled { opacity: 0.6; cursor: not-allowed; background: #3e2a2a; border-color: #d32f2f; }
+.recipe-header { font-weight: bold; font-size: 1.1em; margin-bottom: 4px; display:flex; justify-content:space-between; width:100%; }
+.recipe-details { font-size: 0.9em; color: #aaa; }
+.loop-warning { color: #ef5350; font-size: 0.85em; font-weight: bold; margin-top: 4px; }
+
+#update-banner{display:none;background:var(--warn);color:#000;padding:10px 20px;font-weight:bold;justify-content:space-between;align-items:center;position:sticky;top:0;z-index:2000;box-shadow:0 2px 10px rgba(0,0,0,0.3);}
+.update-btns{display:flex;gap:10px;}.update-btn{background:#000;color:#fff;border:none;padding:5px 15px;border-radius:4px;cursor:pointer;font-size:0.9em;}
+.update-btn:hover{background:#333;}.update-btn.secondary{background:transparent;color:#000;border:1px solid #000;}
+
+/* Item Picker Styles */       
+.picker-category { margin-bottom: 8px; border: 1px solid var(--border); border-radius: 6px; overflow: hidden; }
+.picker-cat-header { 
+    background: #333; padding: 10px 15px; cursor: pointer; 
+    display: flex; justify-content: space-between; align-items: center;
+    font-weight: bold;
+}
+.picker-cat-header:hover { background: #444; }
+.picker-cat-header .arrow { transition: transform 0.2s; font-size: 0.8em; }
+.picker-category.collapsed .picker-cat-header .arrow { transform: rotate(-90deg); }
+.picker-category.collapsed .picker-grid { display: none; }
+
+.picker-grid { 
+    display: grid; grid-template-columns: repeat(auto-fill, minmax(130px, 1fr)); 
+    gap: 8px; padding: 12px; background: #252525; 
+}
+.picker-item { 
+    background: #3a3a3a; border: 1px solid #444; padding: 10px 5px; 
+    border-radius: 4px; text-align: center; cursor: pointer; 
+    font-size: 0.9em; transition: 0.2s; display: flex; flex-direction: column; align-items: center; justify-content: center;
+}
+.picker-item:hover { background: var(--accent); border-color: #fff; color: #fff; transform: translateY(-2px); }
+.picker-item.active { border-color: var(--accent); background: #2e3d30; box-shadow: inset 0 0 5px var(--accent); }
+
+.editor-container { max-width: 1400px; margin: 0 auto; height: 100%; display: flex; flex-direction: column; }
+#json-editor { flex: 1; background: #151515; color: #a5d6a7; font-family: 'Consolas', 'Courier New', monospace; border: 1px solid #444; padding: 15px; resize: none; line-height: 1.4; white-space: pre; }
+.editor-toolbar { margin-bottom: 10px; display: flex; gap: 10px; }
+button.save-btn { width: 100%; margin-top: 10px; background: #333; border: 1px solid var(--accent); color: var(--accent); padding: 8px; cursor: pointer; font-weight: bold; font-size: 0.9em; }
+button.save-btn:hover { background: var(--accent); color: white; }
+button.reset-btn { width: 100%; margin-top: 15px; background: transparent; border: 1px solid var(--danger); color: var(--danger); font-size:0.8em; padding: 5px; cursor: pointer; }
+button.reset-btn:hover { background: var(--danger); color: white; }
