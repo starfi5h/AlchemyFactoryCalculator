@@ -490,10 +490,15 @@ function openItemPicker() {
     const categories = {};
     const itemKeys = Object.keys(DB.items);
     const currentItem = document.getElementById('targetItemInput').value;
+    const productOnly = document.getElementById('productFilterToggle').checked;
 
     // Grouping logic
     itemKeys.forEach(key => {
         const item = DB.items[key];
+        // FILTER LOGIC: If Product Only is ON, item must have sellPrice > 0
+        if (productOnly && !(item.sellPrice > 0)) {
+            return; // Skip this item
+        }
         const cat = item.category || "Other";
         if (!categories[cat]) categories[cat] = [];
         categories[cat].push({ name: key, ...item });
@@ -540,9 +545,10 @@ function openItemPicker() {
         body.appendChild(catContainer);
     });
 
-    document.getElementById('ui-picker-title').innerText = t('Select Target Item', 'ui');
+    document.getElementById('ui-picker-title').innerText = t('Select Item', 'ui');
     document.getElementById('ui-picker-expand-all').innerText = t('Expand All', 'ui');
     document.getElementById('ui-picker-collapse-all').innerText = t('Collapse All', 'ui');
+    document.getElementById('ui-picker-saleable-only').innerText = t('Saleable Only', 'ui');
     document.getElementById('picker-modal').style.display = 'flex';
 }
 

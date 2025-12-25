@@ -602,9 +602,28 @@ function updateConstructionList(maxCounts, minCounts, furnaces) {
     // Render Total Section
     if (Object.keys(totalConstructionMaterials).length > 0) {
         let totalHtml = `<div class="total-mats-header">${t('Total Materials Required')}</div>`;
+        let totalSlots = 0;
+
         Object.keys(totalConstructionMaterials).sort().forEach(mat => {
-            totalHtml += `<div class="total-mat-item"><span>${mat}</span> <strong>${totalConstructionMaterials[mat]}</strong></div>`;
+            const qty = totalConstructionMaterials[mat];
+            const itemDef = DB.items[mat] || {};
+            const stackSize = itemDef.maxStack || 200;
+            const slotsNeeded = Math.ceil(qty / stackSize);
+            totalSlots += slotsNeeded;
+            totalHtml += `
+                <div class="total-mat-item">
+                    <span>${mat}</span> 
+                    <strong>
+                        ${qty} 
+                        <span style="color:#888; font-size:0.85em; margin-left:4px; font-weight:normal;"> [${slotsNeeded}]</span>
+                    </strong>
+                </div>`;
         });
+        totalHtml += `
+        <div style="margin-top:10px; padding-top:8px; border-top:1px dashed #444; display:flex; justify-content:space-between; align-items:center;">
+            <span style="font-size:0.85em; color:#aaa; text-transform:uppercase;">${t('Total Slots', 'ui')}</span>
+            <strong style="color:#888; font-size:0.85em; margin-left:4px; font-weight:normal;">[${totalSlots}]</strong>
+        </div>`;
         totalMatsContainer.innerHTML = totalHtml;
     }
 

@@ -103,7 +103,7 @@ window.ALCHEMY_I18N = {
         // --- 0. Title ---
         "Alchemy Factory Planner": "炼金工厂計算器",
         "Calculator": "計算器",
-        "Database Editor": "编辑数据库",
+        "Database Editor": "数据库",
         "New database version available": "发现新版本数据库",
         "Current local version:": "您的本地版本为:",
         "Update Now": "立即更新",
@@ -118,7 +118,10 @@ window.ALCHEMY_I18N = {
         "Belt": "带",
         "Custom Rate": "自定义速率",
         "Rate (Items/Min)": "速率 (个/分钟)",
-        "Select Target Item": "选择目标物品",
+        "Select Item": "选择物品",
+        "Expand All": "全部展开",
+        "Collapse All": "全部收起",
+        "Saleable Only": "仅可销售",
         "All Items": "所有物品",
         "Browse Items": "浏览物品清单",
 
@@ -169,6 +172,7 @@ window.ALCHEMY_I18N = {
         // --- 4. Construction List ---
         "Construction List": "建造清单",
         "Total Materials Required": "总计材料需求",
+        "Total Slots": "总计格子数",
 
         // --- 5. Upgrades ---
         "Upgrades (Levels)": "升级",

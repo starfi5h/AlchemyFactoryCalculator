@@ -58,6 +58,11 @@
                         <div class="picker-controls">
                             <button id="ui-picker-expand-all" class="split-btn" onclick="toggleAllCategories(false)">Expand All</button>
                             <button id="ui-picker-collapse-all" class="split-btn" onclick="toggleAllCategories(true)">Collapse All</button>
+                            <span id="ui-picker-saleable-only" style="font-size:0.75em; font-weight:bold;">Saleable Only</span>
+                            <label class="switch">
+                                <input type="checkbox" id="productFilterToggle" onchange="openItemPicker()">
+                                <span class="slider-switch"></span>
+                            </label>
                         </div>
                     </div>
                     <button class="close-modal" onclick="closeModal('picker-modal')">&times;</button>
