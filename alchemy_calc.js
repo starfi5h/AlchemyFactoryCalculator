@@ -5,7 +5,6 @@
 
 let rowCounter = 0;
 let globalByproducts = {};
-let activeRecyclers = {}; // { "path_to_node": true }
 
 /* ==========================================================================
    SECTION: HELPER MATH FUNCTIONS
@@ -67,10 +66,10 @@ function toggleNode(arrowElement) {
 }
 
 function toggleRecycle(pathKey) {
-    if (activeRecyclers[pathKey]) {
-        delete activeRecyclers[pathKey];
+    if (DB.settings.activeRecyclers[pathKey]) {
+        delete DB.settings.activeRecyclers[pathKey];
     } else {
-        activeRecyclers[pathKey] = true;
+        DB.settings.activeRecyclers[pathKey] = true;
     }
     persist();
     calculate();
@@ -174,7 +173,7 @@ function calculatePass(p, isGhost) {
         if (!effectiveGhost) {
             if (globalByproducts[item] && globalByproducts[item] > 0.01) {
                 canRecycle = true;
-                if (activeRecyclers[pathKey]) {
+                if (DB.settings.activeRecyclers[pathKey]) {
                     deduction = Math.min(rate, globalByproducts[item]);
                     globalByproducts[item] -= deduction; 
                 }
@@ -199,7 +198,7 @@ function calculatePass(p, isGhost) {
 
         // --- RECYCLE UI ---
         if (canRecycle && !effectiveGhost) {
-            if (activeRecyclers[pathKey]) {
+            if (DB.settings.activeRecyclers[pathKey]) {
                 let activeClass = "active";
                 let label = `♻️ ${formatVal(deduction)} ${t('Used')}`;
                 recycleTag = `<div class="push-right"><button class="recycle-btn ${activeClass}" onclick="toggleRecycle('${pathKey}')">${label}</button></div>`;

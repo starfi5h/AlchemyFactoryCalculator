@@ -7,6 +7,19 @@ const SOURCE_KEY = "alchemy_source_v1";
 const BACKUP_KEY = "alchemy_source_backup_v1";
 const I18N_DATA_KEY = "alchemy_i18n_source_v1";
 const I18N_BACKUP_KEY = "alchemy_i18n_source_backup_v1";
+const SETTINGS_KEY = "alchemy_settings_v1";
+
+const DEFAULT_SETTINGS = {
+    lvlBelt: 0,
+    lvlSpeed: 0,
+    lvlAlchemy: 0,
+    lvlFuel: 0,
+    lvlFert: 0,
+    defaultFuel: "Plank",
+    defaultFert: "Basic Fertilizer",
+    preferredRecipes: {},
+    activeRecyclers: {}
+};
 
 let isSelfFuel = false;
 let isSelfFert = false;
@@ -67,16 +80,27 @@ function init() {
     } else {
         console.log("Loading remote database...");
         DB = JSON.parse(JSON.stringify(fileDB));
-        persist();
+    }
+
+    const baseSettings = JSON.parse(JSON.stringify(DEFAULT_SETTINGS));
+    const savedSettings = localStorage.getItem(SETTINGS_KEY);
+    if (savedSettings) {
+        try {
+            console.log("Loading user settings...");
+            const parsed = JSON.parse(savedSettings);
+            DB.settings = Object.assign(baseSettings, parsed);
+        } catch (e) {
+            console.error("Settings corrupt, using defaults");
+            DB.settings = baseSettings;
+        }
+    } else {
+        console.log("Loading default settings...");
+        DB.settings = baseSettings;
     }
     
     if(!DB.items) DB.items = {};
-    if(!DB.settings) DB.settings = {};
     if(!DB.settings.preferredRecipes) DB.settings.preferredRecipes = {};
-    
-    if(DB.settings.activeRecyclers) {
-        activeRecyclers = DB.settings.activeRecyclers;
-    }
+    if(!DB.settings.activeRecyclers) DB.settings.activeRecyclers = {};
 
     translateDatabase(DB, true); // Translate DB item key
 
@@ -216,7 +240,7 @@ function applyChanges() {
                 DB = window.ALCHEMY_DB;
                 if (localStorage.getItem(SOURCE_KEY)) localStorage.setItem(BACKUP_KEY, localStorage.getItem(SOURCE_KEY));
                 localStorage.setItem(SOURCE_KEY, txt);
-                persist();
+                localStorage.setItem(STORAGE_KEY, JSON.stringify(DB));
                 init();
             case 'i18n':
             case 'i18n_backup':                
@@ -271,8 +295,7 @@ function exportData() {
 }
 
 function persist() { 
-    DB.settings.activeRecyclers = activeRecyclers;
-    localStorage.setItem(STORAGE_KEY, JSON.stringify(DB)); 
+    localStorage.setItem(SETTINGS_KEY, JSON.stringify(DB.settings));
 }
 
 /* ==========================================================================
