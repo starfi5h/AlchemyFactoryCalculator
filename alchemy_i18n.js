@@ -87,6 +87,11 @@ function translateDatabase(db, forward) {
             newPrefs[getT(itemKey)] = db.settings.preferredRecipes[itemKey];
         }
         db.settings.preferredRecipes = newPrefs;
+        const customCosts = {};
+        for (let itemKey in db.settings.customCosts) {
+            customCosts[getT(itemKey)] = db.settings.customCosts[itemKey];
+        }
+        db.settings.customCosts = customCosts;
     }
 
     if (missingKeys.size > 0) {
@@ -135,7 +140,9 @@ window.ALCHEMY_I18N = {
         "Self-Fert: ON": "自供肥料: 开",
         "Make Default": "设为默认",
         "Current Default": "当前默认",
+        "Cost (G/item):" : "成本设置(每个):",
         "Show Machine Max Cap": "显示机器产能上限",
+        "Show Machine Heat & Nutr": "显示机器热值&肥力用量",
 
         // --- 3. Tree & Nodes ---
         "Net Output": "净产出",

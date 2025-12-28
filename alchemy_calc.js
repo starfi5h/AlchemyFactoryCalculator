@@ -88,17 +88,32 @@ function calculate() {
         const targetRate = parseFloat(document.getElementById('targetRate').value) || 0;
         
         // Settings
-        const selectedFuel = document.getElementById('fuelSelect').value; const selfFeed = document.getElementById('selfFeed').checked;
-        const selectedFert = document.getElementById('fertSelect').value; const selfFert = document.getElementById('selfFert').checked;
-        const showMax = document.getElementById('showMaxCap').checked;
+        const selectedFuel = document.getElementById('fuelSelect').value;
+        const selfFuel = document.getElementById('selfFuel').checked;
+        const fuelCost = parseFloat(document.getElementById('fuelCostInput').value) || 0;
+
+        const selectedFert = document.getElementById('fertSelect').value;
+        const selfFert = document.getElementById('selfFert').checked;
+        const fertCost = parseFloat(document.getElementById('fertCostInput').value) || 0;
+
+        const showFuelCost = document.getElementById('fuelCostEnable').checked;
+        const showFertCost = document.getElementById('fertCostEnable').checked;
+        const showMaxCap = document.getElementById('showMaxCap').checked;
+        const showHeatFert = document.getElementById('showHeatFert').checked;
+
         const lvlSpeed = parseInt(document.getElementById('lvlSpeed').value) || 0;
         const lvlBelt = parseInt(document.getElementById('lvlBelt').value) || 0;
         const lvlFuel = parseInt(document.getElementById('lvlFuel').value) || 0;
         const lvlAlchemy = parseInt(document.getElementById('lvlAlchemy').value) || 0;
         const lvlFert = parseInt(document.getElementById('lvlFert').value) || 0;
         
+
+
         const params = {
-            targetItem, targetRate, selectedFuel, selfFeed, selectedFert, selfFert, showMax,
+            targetItem, targetRate, 
+            selectedFuel, selfFuel, fuelCost, showFuelCost,
+            selectedFert, selfFert, fertCost, showFertCost,
+            showMaxCap, showHeatFert,
             lvlSpeed, lvlBelt, lvlFuel, lvlAlchemy, lvlFert,
             speedMult: getSpeedMult(lvlSpeed),
             alchemyMult: getAlchemyMult(lvlAlchemy),
@@ -107,11 +122,24 @@ function calculate() {
             beltSpeed: getBeltSpeed(lvlBelt)
         };
 
-        // --- UPDATE SMART LABEL ---
-        if (typeof getSmartLabel === 'function') {
-            const lbl = getSmartLabel(targetRate, params.beltSpeed);
-            document.getElementById('rateLabel').innerText = `${t('Rate (Items/Min)')}: ${lbl}`;
-        }
+        
+
+        try {
+            // --- UPDATE SMART LABEL ---
+            if (typeof getSmartLabel === 'function') {
+                const lbl = getSmartLabel(targetRate, params.beltSpeed);
+                document.getElementById('rateLabel').innerText = `${t('Rate (Items/Min)')}: ${lbl}`;
+            }
+            
+            const fuelDef = DB.items[selectedFuel] || {};
+            let netHeat = (fuelDef.heat || 0) * (1 + (lvlFuel * 0.10));
+            document.getElementById('fuelEfficiencyCost').innerText = (fuelCost == 0 || netHeat == 0) ? '' : (fuelCost/netHeat).toFixed(4) + ' G/P';
+
+            const fertDef = DB.items[selectedFert] || {};
+            let netNtur = (fertDef.nutrientValue || 0) * (1 + (lvlFert * 0.10));
+            document.getElementById('fertEfficiencyCost').innerText = (fertCost == 0 || netNtur == 0) ? '' : (fertCost/netNtur).toFixed(4) + ' G/V';
+
+        } catch(e) { console.error(e); }
 
         // --- PASS 1: GHOST CALCULATION (Find Byproducts) ---
         globalByproducts = {}; 
@@ -119,7 +147,7 @@ function calculate() {
 
         // --- PASS 2: RENDER ---
         rowCounter = 0;
-        document.getElementById('tree').innerHTML = '';
+        document.getElementById('tree').innerText = '';
         calculatePass(params, false); // False = Render Mode
 
         // --- PASS 3: TRANSLATION --- (extra)
@@ -133,7 +161,7 @@ function calculatePass(p, isGhost) {
     // Re-calc basic inputs derived from params
     const fuelDef = DB.items[p.selectedFuel] || {};
     let netFuelEnergy = (fuelDef.heat || 10) * p.fuelMult; const grossFuelEnergy = netFuelEnergy; 
-    if (p.selfFeed) { netFuelEnergy -= getProductionHeatCost(p.selectedFuel, p.speedMult, p.alchemyMult); }
+    if (p.selfFuel) { netFuelEnergy -= getProductionHeatCost(p.selectedFuel, p.speedMult, p.alchemyMult); }
     if(netFuelEnergy <= 0) netFuelEnergy = 0.1; 
 
     const fertDef = DB.items[p.selectedFert] || { nutrientValue: 144, maxFertility: 12 };
@@ -156,7 +184,7 @@ function calculatePass(p, isGhost) {
     }
 
     let grossRate = p.targetRate;
-    if (p.selfFeed && p.targetItem === p.selectedFuel) { grossRate = p.targetRate * (grossFuelEnergy / netFuelEnergy); }
+    if (p.selfFuel && p.targetItem === p.selectedFuel) { grossRate = p.targetRate * (grossFuelEnergy / netFuelEnergy); }
     if (p.selfFert && p.targetItem === p.selectedFert) { grossRate = p.targetRate * (grossFertVal / netFertVal); }
 
     const treeContainer = document.getElementById('tree');
@@ -193,8 +221,10 @@ function calculatePass(p, isGhost) {
         let machinesNeeded = 0; let hasChildren = false;
 
         let isFuel = (item === p.selectedFuel); let isFert = (item === p.selectedFert);
-        if(isFuel) { outputTag = `<span class="output-tag">Output: ${formatVal((rate * (fuelDef.heat||10)*p.fuelMult)/60)} P/s</span>`; }
-        else if (isFert) { outputTag = `<span class="output-tag">Output: ${formatVal((rate * fertDef.nutrientValue*p.fertMult)/60)} V/s</span>`; }
+        if (p.showHeatFert) {
+            if(isFuel) { outputTag = `<span class="output-tag">Output: ${formatVal((rate * (fuelDef.heat||10)*p.fuelMult)/60)} P/s</span>`; }
+            else if (isFert) { outputTag = `<span class="output-tag">Output: ${formatVal((rate * fertDef.nutrientValue*p.fertMult)/60)} V/s</span>`; }
+        }
 
         // --- RECYCLE UI ---
         if (canRecycle && !effectiveGhost) {
@@ -234,12 +264,17 @@ function calculatePass(p, isGhost) {
             if(!effectiveGhost) {
                 let tooltipText = `Recipe: ${item} (Nursery)\nBase Time: ${(timePerItem * (60/p.speedMult)).toFixed(1)}s\nSpeed Mult: ${p.speedMult.toFixed(2)}x\nThroughput: ${itemsPerMinPerMachine.toFixed(2)} items/min`;
                 let capTag = "";
-                if(p.showMax) {
+                if(p.showMaxCap) {
                     const maxOutput = Math.ceil(machinesNeeded) * itemsPerMinPerMachine;
                     capTag = `<span class="max-cap-tag">(Max: ${formatVal(maxOutput)}/m)</span>`;
                 }
-                machineTag = `<span class="machine-tag" title="${tooltipText}">${Math.ceil(machinesNeeded)} ${t('Nursery', 'machines')}${capTag}</span>`;
-                bioTag = `<span class="bio-tag">${formatVal(netRate * itemDef.nutrientCost / 60)} V/s ( ${(netRate * itemDef.nutrientCost / grossFertVal).toFixed(1)}/m ${p.selectedFert} )</span>`;
+                machineTag = `<span class="machine-tag" data-tooltip="${tooltipText}">${Math.ceil(machinesNeeded)} ${t('Nursery', 'machines')}${capTag}</span>`;
+
+                const fertRate = netRate * itemDef.nutrientCost / grossFertVal;
+                bioTag = `${fertRate.toFixed(2)}/m ${p.selectedFert}`;
+                if (p.showHeatFert) bioTag += ` (${(netRate * itemDef.nutrientCost / grossFertVal).toFixed(1)} V/s)`;
+                bioTag = `<span class="bio-tag">` + bioTag + `</span>`;
+                if (p.showFertCost && p.fertCost > Number.EPSILON) costTag += `<span class="cost-tag">(${Math.ceil(fertRate * p.fertCost - Number.EPSILON).toLocaleString()} G/m)</span>`;
             }
         } 
         else {
@@ -249,7 +284,7 @@ function calculatePass(p, isGhost) {
                     if(itemDef.buyPrice) { 
                         let c = netRate * itemDef.buyPrice; 
                         globalCostPerMin += c; 
-                        costTag = `<span class="cost-tag">${Math.ceil(c).toLocaleString()} G/m</span>`; 
+                        costTag = `<span class="cost-tag">${Math.ceil(c - Number.EPSILON).toLocaleString()} G/m</span>`; 
                     }
                     detailsTag = `<span class="details">(${t('Raw Input')})</span>`;
                 }
@@ -299,6 +334,7 @@ function calculatePass(p, isGhost) {
                     const sReq = mach.slotsRequired || 1; const pSlots = mach.parentSlots || parent.slots || 3;
                     const activeHeat = mach.heatCost * p.speedMult; 
                     
+                    // NOTE: This part of heat calculation is different from others
                     const nodeParentsNeeded = Math.ceil((machinesNeeded / (pSlots/sReq)) - 0.0001);
                     const totalHeatPs = (nodeParentsNeeded * parent.heatSelf * p.speedMult) + (machinesNeeded * activeHeat);
                     
@@ -316,7 +352,11 @@ function calculatePass(p, isGhost) {
                     }
                     
                     if(!effectiveGhost) {
-                        heatTag = `<span class="heat-tag">${totalHeatPs.toFixed(1)} P/s ( ${((totalHeatPs * 60) / grossFuelEnergy).toFixed(1)}/m ${p.selectedFuel} )</span>`;
+                        const fuelRate = ((totalHeatPs * 60) / grossFuelEnergy);
+                        heatTag = `${fuelRate.toFixed(2)}/m ${p.selectedFuel}`;
+                        if (p.showHeatFert) heatTag += ` (${totalHeatPs.toFixed(1)} P/s)`;
+                        heatTag = `<span class="heat-tag">` + heatTag + `</span>`;
+                        if (p.showFuelCost && p.fuelCost > Number.EPSILON) costTag += `<span class="cost-tag">(${Math.ceil(fuelRate * p.fuelCost - Number.EPSILON).toLocaleString()} G/m)</span>`;
                     }
                 }
 
@@ -328,11 +368,11 @@ function calculatePass(p, isGhost) {
                     let tooltipText = `Recipe: ${inputsStr} -> ${outputsStr}\nBase Time: ${recipe.baseTime}s\nSpeed Mult: ${p.speedMult.toFixed(2)}x\nCycle Time: ${cycleTime.toFixed(2)}s\nThroughput: ${throughput.toFixed(2)} items/min per machine`;
 
                     let capTag = "";
-                    if(p.showMax) {
+                    if(p.showMaxCap) {
                         const maxOutput = Math.ceil(machinesNeeded) * throughput;
                         capTag = `<span class="max-cap-tag">(Max: ${formatVal(maxOutput)}/m)</span>`;
                     }
-                    machineTag = `<span class="machine-tag" title="${tooltipText}">${Math.ceil(machinesNeeded)} ${t(recipe.machine, 'machines')}${capTag}</span>`;
+                    machineTag = `<span class="machine-tag" data-tooltip="${tooltipText}">${Math.ceil(machinesNeeded)} ${t(recipe.machine, 'machines')}${capTag}</span>`;
 
                     const alts = getRecipesFor(item);
                     if(alts.length > 1) { 
@@ -369,10 +409,10 @@ function calculatePass(p, isGhost) {
             <span class="item-link" onclick="openDrillDown('${item}', ${rate})"><strong>${item}</strong></span>
             ${swapBtn}
             ${detailsTag}
-            ${costTag}
-            ${machineTag}
+            ${machineTag}            
             ${bioTag}
             ${heatTag}
+            ${costTag}
             ${outputTag}
             ${recycleTag}
         `;
@@ -409,7 +449,7 @@ function calculatePass(p, isGhost) {
         let baseBio = globalBioLoad;
         let baseCost = globalCostPerMin;
         
-        if (p.selfFeed || p.selfFert) {
+        if (p.selfFuel || p.selfFert) {
             for(let i=0; i<10; i++) {
                 globalFuelDemandItems = baseFuel;
                 globalFertDemandItems = baseFert;
@@ -426,7 +466,7 @@ function calculatePass(p, isGhost) {
                     buildNode(p.selectedFert, prevFert, true, [], true); 
                 }
                 
-                if (p.selfFeed && prevFuel > 0) {
+                if (p.selfFuel && prevFuel > 0) {
                     buildNode(p.selectedFuel, prevFuel, true, [], true); 
                 }
                 
@@ -457,7 +497,7 @@ function calculatePass(p, isGhost) {
                 }
             }
 
-            if (p.selfFeed && stableFuelDemand > 0) {
+            if (p.selfFuel && stableFuelDemand > 0) {
                 const grossFuelNeeded = stableFuelDemand;
                 if (p.targetItem === p.selectedFuel) {
                     const note = document.createElement('div'); note.innerHTML = `<div class="node" style="margin-top:20px; color:#aaa; font-style:italic;">Internal Fuel Source: <strong>${p.selectedFuel}</strong> (Supplied by Main Output)<br>Total Required: ${grossFuelNeeded.toFixed(1)}/m</div>`; treeContainer.appendChild(note);
@@ -474,8 +514,16 @@ function calculatePass(p, isGhost) {
         const extH = document.createElement('div'); extH.className = 'section-header'; extH.innerText = `--- External Inputs ---`; treeContainer.appendChild(extH);
         const extDiv = document.createElement('div'); extDiv.className = 'node';
         let extHTML = `<div class="node-content" style="margin-bottom:5px;"><span class="qty" style="color:var(--gold)">${Math.ceil(globalCostPerMin).toLocaleString()} G/m</span><strong>${t('Raw Material Cost')}</strong></div>`;
-        if (!p.selfFeed && globalFuelDemandItems > 0) { extHTML += `<div class="node-content" style="margin-bottom:5px;"><span class="qty" style="color:var(--fuel)">${globalFuelDemandItems.toFixed(1)}/m</span><strong>${p.selectedFuel}</strong> (${t('Fuel Import')})</div>`; }
-        if (!p.selfFert && globalFertDemandItems > 0) { extHTML += `<div class="node-content" style="margin-bottom:5px;"><span class="qty" style="color:var(--bio)">${globalFertDemandItems.toFixed(1)}/m</span><strong>${p.selectedFert}</strong> (${t('Fertilizer Import')})</div>`; }
+        if (!p.selfFuel && globalFuelDemandItems > Number.EPSILON) { 
+            extHTML += `<div class="node-content" style="margin-bottom:5px;"><span class="qty" style="color:var(--fuel)">${globalFuelDemandItems.toFixed(2)}/m</span><strong>${p.selectedFuel}</strong> (${t('Fuel Import')})`;
+            if (p.showFuelCost && p.fuelCost > Number.EPSILON) extHTML += `<span class="cost-tag">(${Math.ceil(globalFuelDemandItems * p.fuelCost - Number.EPSILON).toLocaleString()} G/m)</span>`;
+            extHTML += `</div>`;
+        }
+        if (!p.selfFert && globalFertDemandItems > Number.EPSILON) { 
+            extHTML += `<div class="node-content" style="margin-bottom:5px;"><span class="qty" style="color:var(--bio)">${globalFertDemandItems.toFixed(2)}/m</span><strong>${p.selectedFert}</strong> (${t('Fertilizer Import')})`; 
+            if (p.showFertCost && p.fertCost > Number.EPSILON) extHTML += `<span class="cost-tag">(${Math.ceil(globalFertDemandItems * p.fertCost - Number.EPSILON).toLocaleString()} G/m)</span>`;
+            extHTML += `</div>`;
+        }
         extDiv.innerHTML = extHTML; treeContainer.appendChild(extDiv);
 
         const bypHeader = document.createElement('div'); bypHeader.className = 'section-header'; bypHeader.innerText = `--- BYPRODUCTS ---`; treeContainer.appendChild(bypHeader);
@@ -637,8 +685,8 @@ function updateBuildModeLabel() {
 
 function updateSummaryBox(p, heat, bio, cost, grossRate, actualFuelNeed, actualFertNeed) {
     const targetItemDef = DB.items[p.targetItem] || {};
-    let internalHeat = p.selfFeed ? heat : 0;
-    let externalHeat = !p.selfFeed ? heat : 0;
+    let internalHeat = p.selfFuel ? heat : 0;
+    let externalHeat = !p.selfFuel ? heat : 0;
     let internalBio = p.selfFert ? bio : 0;
     let externalBio = !p.selfFert ? bio : 0;
 
@@ -654,7 +702,7 @@ function updateSummaryBox(p, heat, bio, cost, grossRate, actualFuelNeed, actualF
     let deductionText = [];
     
     // FIX: Correctly calculate Gross as (Target + Use)
-    if (p.selfFeed && p.targetItem === p.selectedFuel) { 
+    if (p.selfFuel && p.targetItem === p.selectedFuel) { 
         let gross = p.targetRate + actualFuelNeed;
         deductionText.push(`Gross: ${gross.toFixed(1)}`); 
         deductionText.push(`Use: ${actualFuelNeed.toFixed(1)}`); 

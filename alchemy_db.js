@@ -488,15 +488,5 @@ window.ALCHEMY_DB = {
         { "id": "Coke Powder_Enhanced", "machine": "Enhanced Grinder", "inputs": { "Coke": 1 }, "outputs": { "Coke Powder": 1 }, "baseTime": 6.0 },
         { "id": "Iron Sand_Enhanced", "machine": "Enhanced Grinder", "inputs": { "Iron Ingot": 1 }, "outputs": { "Iron Sand": 1 }, "baseTime": 15.0 },
         { "id": "Sulfur Powder_Enhanced", "machine": "Enhanced Grinder", "inputs": { "Sulfur": 1 }, "outputs": { "Sulfur Powder": 1 }, "baseTime": 3.0 }
-    ],
-
-    "settings": {
-        "beltLevel": 0,
-        "speedLevel": 0,
-        "alchemyLevel": 0,
-        "fuelLevel": 0,
-        "fertLevel": 0,
-        "defaultFuel": "Plank",
-        "defaultFert": "Basic Fertilizer"
-    }
+    ]
 };

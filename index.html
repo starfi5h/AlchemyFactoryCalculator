@@ -28,7 +28,7 @@
             <span style="margin-left: 20px;">
                 <a href="https://github.com/starfi5h/AlchemyFactoryCalculator" target="_blank" class="repo-link">GitHub Repo</a>
                 <span>Last Updated: </span>
-                <span id="last-updated-time-text">2025.12.25</span>
+                <span id="last-updated-time-text">2025.12.27</span>
             </span>
         </div>
         <div class="tabs">
@@ -113,26 +113,40 @@
                     <div class="panel">
                         <h3>Logistics</h3>
                         <div class="input-group">
-                            <label>Heat Source</label>
+                            <div><label>Heat Source</label><span id="fuelEfficiencyCost" class="cost-tag">0.000 G/P</span></div>
                             <select id="fuelSelect" onchange="updateDefaultButtonState(); calculate();"></select>
-                            <input type="checkbox" id="selfFeed" style="display:none;">
+                            <input type="checkbox" id="selfFuel" style="display:none;">
                             <div class="split-btn-container">
                                 <button id="btnSelfFuel" class="split-btn btn-inactive-red" onclick="toggleFuel()">Self-Fuel: OFF</button>
                                 <button id="btnDefFuel" class="split-btn" onclick="setDefaultFuel()">Make Default</button>
                             </div>
+                            <div class="checkbox-row">
+                                <input type="checkbox" checked id="fuelCostEnable" onchange="onLogisticsChange()">
+                                <label for="fuelCostEnable" style="display:inline; margin:0; cursor:pointer;">Cost (G/item):</label>
+                                <input type="number" id="fuelCostInput" class="small-num-input" value="0" oninput="onLogisticsChange()">
+                            </div>
                         </div>
                         <div class="input-group">
-                            <label>Fertilizer Source</label>
+                            <div><label>Fertilizer Source</label><span id="fertEfficiencyCost" class="cost-tag">0.000 G/V</span></div>
                             <select id="fertSelect" onchange="updateDefaultButtonState(); calculate();"></select>
                             <input type="checkbox" id="selfFert" style="display:none;">
                             <div class="split-btn-container">
                                 <button id="btnSelfFert" class="split-btn btn-inactive-red" onclick="toggleFert()">Self-Fert: OFF</button>
                                 <button id="btnDefFert" class="split-btn" onclick="setDefaultFert()">Make Default</button>
                             </div>
+                            <div class="checkbox-row">
+                                <input type="checkbox" checked id="fertCostEnable" onchange="onLogisticsChange()">
+                                <label for="fertCostEnable" style="display:inline; margin:0; cursor:pointer;">Cost (G/item):</label>
+                                <input type="number" id="fertCostInput" class="small-num-input" value="0" oninput="onLogisticsChange()">
+                            </div>
                         </div>
                         <div class="checkbox-row">
-                            <input type="checkbox" id="showMaxCap" onchange="calculate()">
+                            <input type="checkbox" id="showMaxCap" onchange="onLogisticsChange()">
                             <label for="showMaxCap" style="display:inline; margin:0; cursor:pointer;">Show Machine Max Cap</label>
+                        </div>
+                        <div class="checkbox-row">
+                            <input type="checkbox" id="showHeatFert" onchange="onLogisticsChange()">
+                            <label for="showHeatFert" style="display:inline; margin:0; cursor:pointer;">Show Machine Heat & Nutr</label>
                         </div>
                     </div>
                 </div>
