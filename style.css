@@ -223,7 +223,7 @@ input:checked + .slider-switch:before { transform: translateX(16px); }
 /* ==========================================================================
     SECTION: CSS - SUMMARY BOX
     ========================================================================== */
-.summary-box { background: #252525; border-left: 4px solid var(--accent); padding: 12px; margin-bottom: 20px; display: grid; grid-template-columns: 1fr 1fr 1fr 1fr 1fr; gap: 10px; }
+.summary-box { background: #252525; border-left: 4px solid var(--accent); padding: 12px; margin-bottom: 20px; display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 10px; }
 .stat-block { display: flex; flex-direction: column; padding-right: 10px; border-right: 1px solid #444; }
 .stat-block:last-child { border-right: none; }
 .stat-label { font-size: 0.75em; color: #aaa; text-transform: uppercase; letter-spacing: 1px; }
@@ -242,7 +242,7 @@ input:checked + .slider-switch:before { transform: translateX(16px); }
 .node.collapsed .tree-arrow { transform: rotate(-90deg); }
 .node-children { margin-left: 0; }
 
-.qty { color: var(--accent); font-weight: bold; min-width: 50px; }
+.qty { color: var(--accent); font-weight: bold; }
 .item-link { cursor: pointer; text-decoration: none; color: inherit; transition: 0.2s; }
 .item-link:hover { color: var(--info); text-decoration: underline; }
 .machine-tag { background: #333; padding: 2px 6px; border-radius: 3px; font-size: 0.85em; border: 1px solid #444; color: #fff; font-weight: bold; cursor: help; }
@@ -281,7 +281,7 @@ input:checked + .slider-switch:before { transform: translateX(16px); }
 .details { font-size: 0.9em; color: #ccc; }
 .output-tag { color: var(--info); font-size: 0.85em; margin-left: 10px; font-weight: bold; border-left: 1px solid #555; padding-left: 10px; }
 .recycle-tag { color: var(--byproduct); font-size: 0.85em; margin-left: 10px; font-weight: bold; }
-.swap-btn { background: transparent; border: 1px solid #555; color: #888; width: 22px; height: 22px; border-radius: 50%; font-size: 11px; cursor: pointer; margin-left: 10px; display: inline-flex; align-items: center; justify-content: center; padding: 0; line-height: 1; }
+.swap-btn { background: transparent; border: 1px solid #555; color: #888; width: 22px; height: 22px; border-radius: 50%; font-size: 11px; cursor: pointer; display: inline-flex; align-items: center; justify-content: center; padding: 0; line-height: 1; }
 .swap-btn:hover { background: #444; color: white; border-color: #fff; }
 
 .push-right { margin-left: auto; display: flex; align-items: center; }

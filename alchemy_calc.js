@@ -54,7 +54,7 @@ function getProductionFertCost(item, fertVal, fertSpeed, speedMult, alchemyMult)
     return cost;
 }
 
-function formatVal(val) { if(val >= 1000000) return (val/1000000).toFixed(2) + 'm'; if(val >= 10000) return (val/1000).toFixed(2) + 'k'; return val.toFixed(2); }
+function formatVal(val) { if(val >= 1000000) return Number((val/1000000).toFixed(2)) + 'm'; if(val >= 10000) return Number((val/1000).toFixed(2)) + 'k'; return Number(val.toFixed(2)); }
 
 function toggleBuildGroup(header) {
     header.classList.toggle('expanded');
@@ -184,8 +184,6 @@ function calculatePass(p, isGhost) {
     }
 
     let grossRate = p.targetRate;
-    if (p.selfFuel && p.targetItem === p.selectedFuel) { grossRate = p.targetRate * (grossFuelEnergy / netFuelEnergy); }
-    if (p.selfFert && p.targetItem === p.selectedFert) { grossRate = p.targetRate * (grossFertVal / netFertVal); }
 
     const treeContainer = document.getElementById('tree');
 
@@ -271,8 +269,8 @@ function calculatePass(p, isGhost) {
                 machineTag = `<span class="machine-tag" data-tooltip="${tooltipText}">${Math.ceil(machinesNeeded)} ${t('Nursery', 'machines')}${capTag}</span>`;
 
                 const fertRate = netRate * itemDef.nutrientCost / grossFertVal;
-                bioTag = `${fertRate.toFixed(2)}/m ${p.selectedFert}`;
-                if (p.showHeatFert) bioTag += ` (${(netRate * itemDef.nutrientCost / grossFertVal).toFixed(1)} V/s)`;
+                bioTag = `${formatVal(fertRate)}/m ${p.selectedFert}`;
+                if (p.showHeatFert) bioTag += ` (${formatVal(netRate * itemDef.nutrientCost / grossFertVal)} V/s)`;
                 bioTag = `<span class="bio-tag">` + bioTag + `</span>`;
                 if (p.showFertCost && p.fertCost > Number.EPSILON) costTag += `<span class="cost-tag">(${Math.ceil(fertRate * p.fertCost - Number.EPSILON).toLocaleString()} G/m)</span>`;
             }
@@ -353,8 +351,8 @@ function calculatePass(p, isGhost) {
                     
                     if(!effectiveGhost) {
                         const fuelRate = ((totalHeatPs * 60) / grossFuelEnergy);
-                        heatTag = `${fuelRate.toFixed(2)}/m ${p.selectedFuel}`;
-                        if (p.showHeatFert) heatTag += ` (${totalHeatPs.toFixed(1)} P/s)`;
+                        heatTag = `${formatVal(fuelRate)}/m ${p.selectedFuel}`;
+                        if (p.showHeatFert) heatTag += ` (${formatVal(totalHeatPs)} P/s)`;
                         heatTag = `<span class="heat-tag">` + heatTag + `</span>`;
                         if (p.showFuelCost && p.fuelCost > Number.EPSILON) costTag += `<span class="cost-tag">(${Math.ceil(fuelRate * p.fuelCost - Number.EPSILON).toLocaleString()} G/m)</span>`;
                     }
@@ -449,7 +447,7 @@ function calculatePass(p, isGhost) {
         let baseBio = globalBioLoad;
         let baseCost = globalCostPerMin;
         
-        if (p.selfFuel || p.selfFert) {
+        if ((p.selfFuel && p.selectedFuel != p.targetItem) || (p.selfFert && p.selectedFert != p.targetItem)) {
             for(let i=0; i<10; i++) {
                 globalFuelDemandItems = baseFuel;
                 globalFertDemandItems = baseFert;
@@ -489,8 +487,8 @@ function calculatePass(p, isGhost) {
         if (!isGhost) {
             if (p.selfFert && stableFertDemand > 0) {
                 const grossFertNeeded = stableFertDemand;
-                if (p.targetItem === p.selectedFert) {
-                    const note = document.createElement('div'); note.innerHTML = `<div class="node" style="margin-top:20px; color:#aaa; font-style:italic;">Internal Nutrient Source: <strong>${p.selectedFert}</strong> (Supplied by Main Output)<br>Total Required: ${grossFertNeeded.toFixed(1)}/m</div>`; treeContainer.appendChild(note);
+                if (p.targetItem == p.selectedFert) {
+                    // Do nothing
                 } else {
                     const h = document.createElement('div'); h.className = 'section-header'; h.innerText = `--- ${t('Internal Nutrient Module')} (${p.selectedFert}) ---`; treeContainer.appendChild(h); rowCounter=0; 
                     treeContainer.appendChild(buildNode(p.selectedFert, grossFertNeeded, true, []));
@@ -499,8 +497,8 @@ function calculatePass(p, isGhost) {
 
             if (p.selfFuel && stableFuelDemand > 0) {
                 const grossFuelNeeded = stableFuelDemand;
-                if (p.targetItem === p.selectedFuel) {
-                    const note = document.createElement('div'); note.innerHTML = `<div class="node" style="margin-top:20px; color:#aaa; font-style:italic;">Internal Fuel Source: <strong>${p.selectedFuel}</strong> (Supplied by Main Output)<br>Total Required: ${grossFuelNeeded.toFixed(1)}/m</div>`; treeContainer.appendChild(note);
+                if (p.targetItem == p.selectedFuel) {
+                    // Do nothing
                 } else {
                     const h = document.createElement('div'); h.className = 'section-header'; h.innerText = `--- ${t('Internal Heat Module')} (${p.selectedFuel}) ---`; treeContainer.appendChild(h); rowCounter=0; 
                     treeContainer.appendChild(buildNode(p.selectedFuel, grossFuelNeeded, true, []));
@@ -574,7 +572,9 @@ function calculatePass(p, isGhost) {
         updateConstructionList(flatMax, flatMin, totalFurnaces);
         
         // Pass the actual simulated fuel/fert demand items to the summary
-        updateSummaryBox(p, globalHeatLoad, globalBioLoad, globalCostPerMin, grossRate, globalFuelDemandItems, globalFertDemandItems);
+        if (p.fuelCost > Number.EPSILON) globalCostPerMin += p.fuelCost * globalFuelDemandItems;
+        if (p.fertCost > Number.EPSILON) globalCostPerMin += p.fertCost * globalFertDemandItems;
+        updateSummaryBox(p, globalHeatLoad, globalBioLoad, globalCostPerMin, globalFuelDemandItems, globalFertDemandItems);
     }
 }
 
@@ -683,43 +683,54 @@ function updateBuildModeLabel() {
     document.getElementById('build-mode-label').innerText = isMinMode ? "MIN" : "MAX";
 }
 
-function updateSummaryBox(p, heat, bio, cost, grossRate, actualFuelNeed, actualFertNeed) {
-    const targetItemDef = DB.items[p.targetItem] || {};
-    let internalHeat = p.selfFuel ? heat : 0;
-    let externalHeat = !p.selfFuel ? heat : 0;
-    let internalBio = p.selfFert ? bio : 0;
-    let externalBio = !p.selfFert ? bio : 0;
+function updateSummaryBox(p, heat, bio, cost, actualFuelNeed, actualFertNeed) {
+    const { targetItem, targetRate, selfFuel, selfFert, beltSpeed, selectedFuel, selectedFert } = p;
+    const targetItemDef = DB.items[targetItem] || {};
 
-    let profitHtml = "";
+    // --- Output Blocks ---
+    let usedRate = 0.0;
+    if (selfFuel && targetItem === selectedFuel) usedRate += actualFuelNeed;
+    if (selfFert && targetItem === selectedFert) usedRate += actualFertNeed;
+    const netRate = targetRate - usedRate;
+    const outputHtml = `
+        <div class="stat-block">
+            <span class="stat-label">${t('Gross Output')}</span>
+            <span class="stat-value ${targetRate >= 0 ? 'net-positive' : 'net-warning'}">${targetRate.toFixed(1)} / min</span>
+            ${usedRate > Number.EPSILON ? `<span class="stat-sub" style="font-size:0.75em">Net: ${netRate.toFixed(1)} / min <br>Used: ${usedRate.toFixed(1)} / min</span>` : ''}
+        </div>`;
+
+    // --- Load Blocks ---
+    const loadHtml = `
+        <div class="stat-block">
+            <span class="stat-label">${t('Load')}</span>
+            <span class="stat-value" style="color:var(--fuel);">${t('Heat')}: ${(heat * 60).toLocaleString()} P / min</span>
+            <span class="stat-value" style="color:var(--bio);">${t('Nutr')}: ${(bio * 60).toLocaleString()} V / min</span>
+        </div>`;
+
+    // --- Cost Block ---
+    let valueHtml = ``;
     if (targetItemDef.sellPrice) {
-        const revenuePerMin = p.targetRate * targetItemDef.sellPrice;
-        const profit = revenuePerMin - cost;
-        profitHtml = `<div class="stat-block"><span class="stat-label">Projected Profit</span><span class="stat-value ${profit >= 0 ? 'gold-profit' : 'gold-cost'}">${Math.floor(profit).toLocaleString()} G/m</span></div>`;
+        const profit = (targetRate * targetItemDef.sellPrice) - cost;
+        const colorClass = profit >= 0 ? 'gold-profit' : 'gold-cost';
+        valueHtml = `
+            <div class="stat-block">
+                <span class="stat-label">${t('Estimated Value')}</span>
+                <span class="stat-value gold-cost">${t('Cost')}: ${Math.ceil(cost).toLocaleString()} G / min</span>
+                <span class="stat-value ${colorClass}">${t('Profit')}: ${Math.floor(profit).toLocaleString()} G / min</span>
+            </div>`;
     } else {
-        profitHtml = `<div class="stat-block"><span class="stat-label">Total Raw Cost</span><span class="stat-value gold-cost">${Math.ceil(cost).toLocaleString()} G/m</span></div>`;
+        valueHtml = `
+            <div class="stat-block">
+                <span class="stat-label">${t('Estimated Value')}</span>
+                <span class="stat-value gold-cost">${t('Cost')}: ${Math.ceil(cost).toLocaleString()} G / min</span>
+            </div>`;
     }
 
-    let deductionText = [];
-    
-    // FIX: Correctly calculate Gross as (Target + Use)
-    if (p.selfFuel && p.targetItem === p.selectedFuel) { 
-        let gross = p.targetRate + actualFuelNeed;
-        deductionText.push(`Gross: ${gross.toFixed(1)}`); 
-        deductionText.push(`Use: ${actualFuelNeed.toFixed(1)}`); 
-    }
-    
-    if (p.selfFert && p.targetItem === p.selectedFert) { 
-        let gross = p.targetRate + actualFertNeed;
-        deductionText.push(`Gross: ${gross.toFixed(1)}`); 
-        deductionText.push(`Use: ${actualFertNeed.toFixed(1)}`); 
-    }
-
+    // --- Combine ---
     document.getElementById('summary-container').innerHTML = `
         <div class="summary-box">
-            <div class="stat-block"><span class="stat-label">Net Output</span><span class="stat-value ${p.targetRate >= 0 ? 'net-positive' : 'net-warning'}">${p.targetRate.toFixed(1)} / min</span>${deductionText.length > 0 ? `<span class="stat-sub" style="font-size:0.75em">${deductionText.join('<br>')}</span>` : ''}</div>
-            <div class="stat-block"><span class="stat-label">Internal Load</span><span class="stat-value" style="font-size:0.9em; color:var(--fuel);">${t('Heat')}: ${internalHeat.toFixed(1)} P/s</span><span class="stat-value" style="font-size:0.9em; color:var(--bio);">${t('Nutr')}: ${formatVal(internalBio)} V/s</span></div>
-            <div class="stat-block"><span class="stat-label">External Load</span><span class="stat-value" style="font-size:0.9em; color:var(--fuel);">${t('Heat')}: ${externalHeat.toFixed(1)} P/s</span><span class="stat-value" style="font-size:0.9em; color:var(--bio);">${t('Nutr')}: ${formatVal(externalBio)} V/s</span></div>
-            ${profitHtml}
-            <div class="stat-block"><span class="stat-label">Belt Usage (Net)</span><span class="stat-value" style="font-size:1.1em; color:${p.targetRate > p.beltSpeed ? '#ff5252' : '#aaa'};">${(p.targetRate/p.beltSpeed * 100).toFixed(0)}%</span><span class="stat-sub">${t('Cap')}: ${p.beltSpeed}/m</span></div>
+            ${outputHtml}
+            ${loadHtml}
+            ${valueHtml}
         </div>`;
 }

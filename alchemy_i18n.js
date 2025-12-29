@@ -145,15 +145,13 @@ window.ALCHEMY_I18N = {
         "Show Machine Heat & Nutr": "显示机器热值&肥力用量",
 
         // --- 3. Tree & Nodes ---
-        "Net Output": "净产出",
-        "Internal Load": "内部负载",
-        "External Load": "外部负载",
-        "Projected Profit": "预计利润",
-        "Total Raw Cost": "原料总成本",
-        "Belt Usage (Net)": "带宽占用",
+        "Gross Output": "净产出",
+        "Load": "负载",
         "Heat": "热值",
-        "Nutr": "肥力",
-        "Cap": "上限",
+        "Nutr": "肥力",        
+        "Estimated Value": "预计价值",
+        "Cost": "成本",
+        "Profit": "利润",
 
         "Primary Production Chain": "主生产链",
         "Select Recipe": "选择配方",
