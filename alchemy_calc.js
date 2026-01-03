@@ -8,7 +8,8 @@ let globalByproducts = {};
 
 const GLOBAL_CALC_STATE = {
     activeRecyclers: new Set(),
-    collapsedNode: new Set()    
+    forcedExternals: new Set(),
+    collapsedNode: new Set()
 };
 
 /* ==========================================================================
@@ -84,6 +85,16 @@ function toggleRecycle(pathKey) {
     }
     calculate();
 }
+
+function toggleExternal(pathKey) {
+    if (GLOBAL_CALC_STATE.forcedExternals.has(pathKey)) {
+        GLOBAL_CALC_STATE.forcedExternals.delete(pathKey)
+    } else {
+        GLOBAL_CALC_STATE.forcedExternals.add(pathKey);
+    }
+    calculate();
+}
+
 
 /* ==========================================================================
    SECTION: CALCULATION ENGINE
@@ -180,7 +191,7 @@ function calculatePass(p, isGhost) {
     if(netFertVal <= 0) netFertVal = 0.1;
 
     let globalFuelDemandItems = 0; let globalFertDemandItems = 0; let globalHeatLoad = 0; let globalBioLoad = 0; let globalCostPerMin = 0;
-    let totalByproducts = {};
+    let totalByproducts = {}; let globalForcedItems = {};
 
     // --- AGGREGATION STRUCTURES ---
     let machineStats = {};
@@ -205,6 +216,7 @@ function calculatePass(p, isGhost) {
         let deduction = 0;
         let pathKey = ancestors.join(">") + ">" + item;
         let canRecycle = false;
+        const isExternalInput = GLOBAL_CALC_STATE.forcedExternals.has(pathKey);
         
         if (!effectiveGhost) {
             if (globalByproducts[item] && globalByproducts[item] > 0.01) {
@@ -224,8 +236,8 @@ function calculatePass(p, isGhost) {
         
         if (!effectiveGhost) { rowCounter++; myRowID = rowCounter; }
 
-        let outputTag = ""; let machineTag = ""; let heatTag = ""; let swapBtn = ""; 
-        let bioTag = ""; let costTag = ""; let detailsTag = ""; let recycleTag = "";
+        let outputTag = ""; let machineTag = ""; let heatTag = ""; let swapBtn = ""; let byproductTag = "";
+        let bioTag = ""; let costTag = ""; let detailsTag = ""; let recycleTag = ""; let externalTag = "";
         let machinesNeeded = 0; let hasChildren = false;
 
         let isFuel = (item === p.selectedFuel); let isFert = (item === p.selectedFert);
@@ -239,15 +251,27 @@ function calculatePass(p, isGhost) {
             if (GLOBAL_CALC_STATE.activeRecyclers.has(pathKey)) {
                 let activeClass = "active";
                 let label = `♻️ ${formatVal(deduction)} ${t('Used')}`;
-                recycleTag = `<div class="push-right"><button class="recycle-btn ${activeClass}" onclick="toggleRecycle('${pathKey}')">${label}</button></div>`;
+                recycleTag = `<div><button class="recycle-btn ${activeClass}" onclick="toggleRecycle('${pathKey}')">${label}</button></div>`;
             } else {
                 let label = `♻️ ${formatVal(globalByproducts[item])} ${t('Avail')}`;
-                recycleTag = `<div class="push-right"><button class="recycle-btn" onclick="toggleRecycle('${pathKey}')">${label}</button></div>`;
+                recycleTag = `<div><button class="recycle-btn" onclick="toggleRecycle('${pathKey}')">${label}</button></div>`;
             }
         }
 
+        // --- External UI ---
+        if (!effectiveGhost) {            
+            externalTag = `<div><input type="checkbox" ${isExternalInput ? 'checked':''} id="buildModeToggle" onchange="toggleExternal('${pathKey}');"></input></div>`;
+        }
+
         // Logic branching based on Item Type
-        if (itemDef.category === "Herbs" && itemDef.nutrientCost) {
+        if (isExternalInput) {
+            if (!effectiveGhost && netRate > 0) {
+                if (!globalForcedItems[item]) globalForcedItems[item] = 0;
+                globalForcedItems[item] += netRate;
+                detailsTag = `<span class="details">(${t('External Input')})</span>`;
+            }
+        }
+        else if (itemDef.category === "Herbs" && itemDef.nutrientCost) {
             // Nursery Logic
             const fertilitySpeed = (fertDef.maxFertility || 12); const timePerItem = itemDef.nutrientCost / fertilitySpeed; 
             const calculatedSpeed = (60 / timePerItem) * p.speedMult; 
@@ -279,7 +303,7 @@ function calculatePass(p, isGhost) {
                 machineTag = `<span class="machine-tag" data-tooltip="${tooltipText}">${Math.ceil(machinesNeeded)} ${t('Nursery', 'machines')}${capTag}</span>`;
 
                 const fertRate = netRate * itemDef.nutrientCost / grossFertVal;
-                bioTag = `${formatVal(fertRate)}/m ${p.selectedFert}`;
+                bioTag = `-${formatVal(fertRate)}/m ${p.selectedFert}`;
                 if (p.showHeatFert) bioTag += ` (${formatVal(netRate * itemDef.nutrientCost / grossFertVal)} V/s)`;
                 bioTag = `<span class="bio-tag">` + bioTag + `</span>`;
                 if (p.showFertCost && p.fertCost > Number.EPSILON) costTag += `<span class="cost-tag">(${Math.ceil(fertRate * p.fertCost - Number.EPSILON).toLocaleString()} G/m)</span>`;
@@ -292,9 +316,14 @@ function calculatePass(p, isGhost) {
                     if(itemDef.buyPrice) { 
                         let c = netRate * itemDef.buyPrice; 
                         globalCostPerMin += c; 
-                        costTag = `<span class="cost-tag">${Math.ceil(c - Number.EPSILON).toLocaleString()} G/m</span>`; 
+                        costTag = `<span class="cost-tag">-${Math.ceil(c - Number.EPSILON).toLocaleString()} G/m</span>`;
+                        detailsTag = `<span class="details">(${t('Raw Input')})</span>`;
                     }
-                    detailsTag = `<span class="details">(${t('Raw Input')})</span>`;
+                    else {
+                        if (!globalForcedItems[item]) globalForcedItems[item] = 0;
+                        globalForcedItems[item] += netRate;
+                        detailsTag = `<span class="details">(${t('External Input')})</span>`;
+                    }                    
                 }
             } else {
                 hasChildren = true;
@@ -328,6 +357,7 @@ function calculatePass(p, isGhost) {
                         if (!effectiveGhost) {
                             if(!totalByproducts[outKey]) totalByproducts[outKey] = 0;
                             totalByproducts[outKey] += totalByproduct;
+                            byproductTag += `<span class="byproduct-tag">+${formatVal(totalByproduct)}/m ${outKey}</span>`;                        
                         }
                     }
                 });
@@ -361,7 +391,7 @@ function calculatePass(p, isGhost) {
                     
                     if(!effectiveGhost) {
                         const fuelRate = ((totalHeatPs * 60) / grossFuelEnergy);
-                        heatTag = `${formatVal(fuelRate)}/m ${p.selectedFuel}`;
+                        heatTag = `-${formatVal(fuelRate)}/m ${p.selectedFuel}`;
                         if (p.showHeatFert) heatTag += ` (${formatVal(totalHeatPs)} P/s)`;
                         heatTag = `<span class="heat-tag">` + heatTag + `</span>`;
                         if (p.showFuelCost && p.fuelCost > Number.EPSILON) costTag += `<span class="cost-tag">(${Math.ceil(fuelRate * p.fuelCost - Number.EPSILON).toLocaleString()} G/m)</span>`;
@@ -419,11 +449,14 @@ function calculatePass(p, isGhost) {
             ${swapBtn}
             ${detailsTag}
             ${machineTag}            
+            ${byproductTag}
             ${bioTag}
             ${heatTag}
             ${costTag}
             ${outputTag}
+            <div class="push-right"></div>
             ${recycleTag}
+            ${externalTag}
         `;
 
         div.innerHTML = `<div class="node-content" data-ancestors='${JSON.stringify(ancestors)}'>${nodeContent}</div>`;
@@ -533,6 +566,16 @@ function calculatePass(p, isGhost) {
             if (p.showFertCost && p.fertCost > Number.EPSILON) extHTML += `<span class="cost-tag">(${Math.ceil(globalFertDemandItems * p.fertCost - Number.EPSILON).toLocaleString()} G/m)</span>`;
             extHTML += `</div>`;
         }
+        Object.keys(globalForcedItems).forEach(itemName => {
+            const rate = globalForcedItems[itemName];
+            extHTML += `
+                <div class="node-content" style="margin-bottom:5px;">
+                    <span class="qty">${formatVal(rate)}/m</span>
+                    <strong>${itemName}</strong> 
+                    (${t('External Input')})
+                </div>`;
+        });
+
         extDiv.innerHTML = extHTML; treeContainer.appendChild(extDiv);
 
         const bypHeader = document.createElement('div'); bypHeader.className = 'section-header'; bypHeader.innerText = `--- BYPRODUCTS ---`; treeContainer.appendChild(bypHeader);

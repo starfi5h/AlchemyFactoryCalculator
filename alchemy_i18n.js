@@ -161,6 +161,7 @@ window.ALCHEMY_I18N = {
         "Avail": "可用",
         "Used": "已用",
         "Raw Input": "原料输入",
+        "External Input": "外部输入",
 
         "Internal Nutrient Module": "内部肥料模块",
         "Internal Heat Module": "内部燃料模块",
