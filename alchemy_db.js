@@ -1,6 +1,6 @@
 window.ALCHEMY_DB = {
-    "version": 19,
-    "date": "2025.12.25",
+    "version": 20,
+    "date": "2025.01.02",
     "gameVersion": "0.4.1.3800",
     "items": {
         // --- 1. RAW RESOURCES ---
@@ -222,7 +222,7 @@ window.ALCHEMY_DB = {
         // --- HERBS & SEEDS ---
         { "id": "Flax", "machine": "Planting", "inputs": { "Flax Seed": 1 }, "outputs": { "Flax": 200 }, "baseTime": 400.0 },
         { "id": "Sage", "machine": "Planting", "inputs": { "Sage Seed": 1 }, "outputs": { "Sage": 180 }, "baseTime": 540.0 },
-        { "id": "Redcurrant", "machine": "Planting", "inputs": { "Red Currant Seed": 1 }, "outputs": { "Redcurrant": 150 }, "baseTime": 900.0 },
+        { "id": "Redcurrant", "machine": "Planting", "inputs": { "Red Currant Seed": 1 }, "outputs": { "Redcurrant": 150 }, "baseTime": 720.0 },
         { "id": "Lavender", "machine": "Planting", "inputs": { "Lavender Seed": 1 }, "outputs": { "Lavender": 120 }, "baseTime": 1440.0 },
         { "id": "Chamomile", "machine": "Planting", "inputs": { "Chamomile Seed": 1 }, "outputs": { "Chamomile": 140 }, "baseTime": 1120.0 },
         { "id": "Gentian", "machine": "Planting", "inputs": { "Gentian Seed": 1 }, "outputs": { "Gentian": 80, "Gentian Nectar": 80 }, "baseTime": 2160.0 },
@@ -320,7 +320,7 @@ window.ALCHEMY_DB = {
         { 
             "id": "Silver Powder", "machine": "Advanced Athanor", 
             "inputs": { "Copper Powder": 10, "Unstable Catalyst": 10, "Black Powder": 10 }, 
-            "outputs": { "Silver Powder": 1, "Impure Silver Powder": 4 }, 
+            "outputs": { "Silver Powder": 1, "Crude Silver Powder": 4 }, 
             "baseTime": 32.0
         },
         { "id": "Silver Ingot", "machine": "Crucible", "inputs": { "Silver Powder": 1 }, "outputs": { "Silver Ingot": 1 }, "baseTime": 16.0 },
@@ -362,7 +362,8 @@ window.ALCHEMY_DB = {
         { "id": "Advanced Fertilizer", "machine": "Assembler", "inputs": { "Basic Fertilizer": 1, "Gloom Fungus": 1 }, "outputs": { "Advanced Fertilizer": 1 }, "baseTime": 4.0 },
 		{ "id": "Fertile Catalyst", "machine": "Advanced Blender", "inputs": { "Unstable Catalyst": 1, "Vitality Essence": 1, "Lavender Essential Oil": 18 }, "outputs": { "Fertile Catalyst": 1 }, "baseTime": 8.0 },
         { "id": "Unstable Catalyst", "machine": "Advanced Assembler", "inputs": { "Chamomile Powder": 1, "Gloom Spores": 1, "Sulfur Powder": 1 }, "outputs": { "Unstable Catalyst": 1 }, "baseTime": 4.0 },
-        { "id": "Oblivion Essence", "machine": "Paradox Crucible", "inputs": { "Sage Seed": 1 }, "outputs": { "Oblivion Essence": 1 }, "baseTime": 8.7 },
+        { "id": "Oblivion Essence Limestone", "machine": "Paradox Crucible", "inputs": { "Limestone": 1 }, "outputs": { "Oblivion Essence": 1 }, "baseTime": 3.3 },
+        { "id": "Oblivion Essence Gentian Nectar", "machine": "Paradox Crucible", "inputs": { "Gentian Nectar": 1 }, "outputs": { "Oblivion Essence": 1 }, "baseTime": 3.6 },
         { "id": "Vitality Essence", "machine": "Paradox Crucible", "inputs": { "Oblivion Essence": 1 }, "outputs": { "Vitality Essence": 1 }, "baseTime": 5.0 },
         { "id": "Resonant Catalyst", "machine": "Advanced Blender", "inputs": { "Fertile Catalyst": 1, "Volcanic Ash": 1, "Aqua Vitae": 12 }, "outputs": { "Resonant Catalyst": 1 }, "baseTime": 8.0 },
         { "id": "Eternal Catalyst", "machine": "Arcane Processor", "inputs": { "Resonant Catalyst": 15, "Philosopher's Stone": 1 }, "outputs": { "Eternal Catalyst": 1 }, "baseTime": 60.0 },
@@ -428,7 +429,7 @@ window.ALCHEMY_DB = {
         { "id": "Fairy Dust", "machine": "Arcane Processor", "inputs": { "Chamomile Powder": 1, "Gentian Powder": 1, "World Tree Leaf": 1 }, "outputs": { "Fairy Dust": 1 }, "baseTime": 4.0 },
         { "id": "Luna", "machine": "Arcane Shaper", "inputs": { "Steel Ingot": 75, "Bronze Ingot": 75, "Copper Ingot": 75, "Silver Ingot": 75, "Gold Ingot": 75, "Moon Tear": 75 }, "outputs": { "Luna": 1 }, "baseTime": 600.0 },
         { "id": "Mercury", "machine": "Arcane Shaper", "inputs": { "Turquoise": 100, "Malachite": 100, "Topaz": 100, "Obsidian": 100, "Lapis Lazuli": 100, "Quicksilver": 1000 }, "outputs": { "Mercury": 1 }, "baseTime": 600.0 },
-        { "id": "Sol", "machine": "Arcane Shaper", "inputs": { "Jupiter": 1, "Saturn": 1, "Mars": 1, "Venus": 1, "Mercury": 1, "Luna": 1, "Diamond": 25, "Eternal Catalyst": 5, "World Tree Core": 5 }, "outputs": { "Sol": 1 }, "baseTime": 300.0 },
+        { "id": "Sol", "machine": "Arcane Shaper", "inputs": { "Jupiter": 1, "Saturn": 1, "Mars": 1, "Venus": 1, "Mercury": 1, "Luna": 1, "Perfect Diamond": 25, "Eternal Catalyst": 5, "World Tree Core": 5 }, "outputs": { "Sol": 1 }, "baseTime": 300.0 },
 
         // --- 15. ALTERNATE RECIPES ---
         { 

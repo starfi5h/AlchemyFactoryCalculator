@@ -6,6 +6,11 @@
 let rowCounter = 0;
 let globalByproducts = {};
 
+const GLOBAL_CALC_STATE = {
+    activeRecyclers: new Set(),
+    collapsedNode: new Set()    
+};
+
 /* ==========================================================================
    SECTION: HELPER MATH FUNCTIONS
    ========================================================================== */
@@ -26,7 +31,7 @@ function getProductionHeatCost(item, speedMult, alchemyMult) {
     let cost = 0; const recipe = getActiveRecipe(item);
     if (recipe && recipe.outputs[item]) {
          let batchYield = recipe.outputs[item];
-         if (recipe.machine === "Extractor" || recipe.machine === "Alembic") batchYield *= alchemyMult;
+         if (recipe.machine === "Extractor" || recipe.machine === "Thermal Extractor" || recipe.machine === "Alembic" || recipe.machine === "Advanced Alembic") batchYield *= alchemyMult;
          if (DB.machines[recipe.machine] && DB.machines[recipe.machine].heatCost) {
             const mach = DB.machines[recipe.machine]; const parent = DB.machines[mach.parent];
             const slotsReq = mach.slotsRequired || 1; const pSlots = mach.parentSlots || parent.slots || 3;
@@ -46,7 +51,7 @@ function getProductionFertCost(item, fertVal, fertSpeed, speedMult, alchemyMult)
     const recipe = getActiveRecipe(item);
     if (recipe && recipe.outputs[item]) {
         let batchYield = recipe.outputs[item];
-        if (recipe.machine === "Extractor" || recipe.machine === "Alembic") batchYield *= alchemyMult;
+        if (recipe.machine === "Extractor" || recipe.machine === "Thermal Extractor" || recipe.machine === "Alembic" || recipe.machine === "Advanced Alembic") batchYield *= alchemyMult;
         Object.keys(recipe.inputs).forEach(k => { 
             cost += getProductionFertCost(k, fertVal, fertSpeed, speedMult, alchemyMult) * (recipe.inputs[k] / batchYield); 
         });
@@ -60,18 +65,23 @@ function toggleBuildGroup(header) {
     header.classList.toggle('expanded');
 }
 
-function toggleNode(arrowElement) {
+function toggleNode(arrowElement, pathKey) {
     const node = arrowElement.closest('.node');
     if (node) node.classList.toggle('collapsed');
+    if (GLOBAL_CALC_STATE.collapsedNode.has(pathKey)) {
+        GLOBAL_CALC_STATE.collapsedNode.delete(pathKey);
+    }
+    else {
+        GLOBAL_CALC_STATE.collapsedNode.add(pathKey);
+    }
 }
 
 function toggleRecycle(pathKey) {
-    if (DB.settings.activeRecyclers[pathKey]) {
-        delete DB.settings.activeRecyclers[pathKey];
+    if (GLOBAL_CALC_STATE.activeRecyclers.has(pathKey)) {
+        GLOBAL_CALC_STATE.activeRecyclers.delete(pathKey)
     } else {
-        DB.settings.activeRecyclers[pathKey] = true;
+        GLOBAL_CALC_STATE.activeRecyclers.add(pathKey);
     }
-    persist();
     calculate();
 }
 
@@ -199,7 +209,7 @@ function calculatePass(p, isGhost) {
         if (!effectiveGhost) {
             if (globalByproducts[item] && globalByproducts[item] > 0.01) {
                 canRecycle = true;
-                if (DB.settings.activeRecyclers[pathKey]) {
+                if (GLOBAL_CALC_STATE.activeRecyclers.has(pathKey)) {
                     deduction = Math.min(rate, globalByproducts[item]);
                     globalByproducts[item] -= deduction; 
                 }
@@ -226,7 +236,7 @@ function calculatePass(p, isGhost) {
 
         // --- RECYCLE UI ---
         if (canRecycle && !effectiveGhost) {
-            if (DB.settings.activeRecyclers[pathKey]) {
+            if (GLOBAL_CALC_STATE.activeRecyclers.has(pathKey)) {
                 let activeClass = "active";
                 let label = `♻️ ${formatVal(deduction)} ${t('Used')}`;
                 recycleTag = `<div class="push-right"><button class="recycle-btn ${activeClass}" onclick="toggleRecycle('${pathKey}')">${label}</button></div>`;
@@ -289,7 +299,7 @@ function calculatePass(p, isGhost) {
             } else {
                 hasChildren = true;
                 let batchYield = recipe.outputs[item] || 1;
-                if (recipe.machine === "Extractor" || recipe.machine === "Alembic") batchYield *= p.alchemyMult;
+                if (recipe.machine === "Extractor" || recipe.machine === "Thermal Extractor" || recipe.machine === "Alembic" || recipe.machine === "Advanced Alembic") batchYield *= p.alchemyMult;
                 
                 const batchesPerMin = netRate / batchYield;
                 const maxBatchesPerMin = (60 / recipe.baseTime) * p.speedMult;
@@ -399,10 +409,11 @@ function calculatePass(p, isGhost) {
 
         // --- RENDER DOM ---
         const div = document.createElement('div'); div.className = 'node';
-        let arrowHtml = `<span class="tree-arrow" style="visibility:${hasChildren ? 'visible' : 'hidden'}" onclick="toggleNode(this)">▼</span>`;
+        if (GLOBAL_CALC_STATE.collapsedNode.has(pathKey)) div.classList.add('collapsed');
+        let arrowHtml = `<span class="tree-arrow" style="visibility:${hasChildren ? 'visible' : 'hidden'}" onclick="toggleNode(this, '${pathKey}')">▼</span>`;
         let nodeContent = `
             ${arrowHtml}
-            <span class="row-id" onclick="toggleNode(this)">${myRowID})</span>
+            <span class="row-id" onclick="toggleNode(this, '${pathKey}')">${myRowID})</span>
             <span class="qty">${formatVal(rate)}/m</span>
             <span class="item-link" onclick="openDrillDown('${item}', ${rate})"><strong>${item}</strong></span>
             ${swapBtn}
@@ -696,7 +707,7 @@ function updateSummaryBox(p, heat, bio, cost, actualFuelNeed, actualFertNeed) {
         <div class="stat-block">
             <span class="stat-label">${t('Gross Output')}</span>
             <span class="stat-value ${targetRate >= 0 ? 'net-positive' : 'net-warning'}">${targetRate.toFixed(1)} / min</span>
-            ${usedRate > Number.EPSILON ? `<span class="stat-sub" style="font-size:0.75em">Net: ${netRate.toFixed(1)} / min <br>Used: ${usedRate.toFixed(1)} / min</span>` : ''}
+            ${usedRate > Number.EPSILON ? `<span class="stat-sub">Net: ${netRate.toFixed(1)} / min <br>Used: ${usedRate.toFixed(1)} / min</span>` : ''}
         </div>`;
 
     // --- Load Blocks ---

@@ -145,7 +145,7 @@ window.ALCHEMY_I18N = {
         "Show Machine Heat & Nutr": "显示机器热值&肥力用量",
 
         // --- 3. Tree & Nodes ---
-        "Gross Output": "净产出",
+        "Gross Output": "总产出",
         "Load": "负载",
         "Heat": "热值",
         "Nutr": "肥力",        

@@ -34,7 +34,7 @@ let allItemsList = [];
 let currentFocus = -1;
 
 // ITEM PICKER GLOBALS
-let pickerCollapsedStates = {};
+let pickerCollapsedStates = { "Raw Materials": true, "Seeds": true, "Herbs": true};
 
 // URL STATES
 let lastUrlItem = ""; 
