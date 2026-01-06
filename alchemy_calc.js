@@ -370,7 +370,8 @@ function calculatePass(p, isGhost) {
                 if (DB.machines[recipe.machine] && DB.machines[recipe.machine].heatCost) {
                     const mach = DB.machines[recipe.machine]; const parent = DB.machines[mach.parent];
                     const sReq = mach.slotsRequired || 1; const pSlots = mach.parentSlots || parent.slots || 3;
-                    const activeHeat = mach.heatCost * p.speedMult; 
+                    let activeHeat = mach.heatCost * p.speedMult;
+                    if (recipe.heatCost !== undefined) { activeHeat = recipe.heatCost * p.speedMult;} // Overwrite 
                     
                     // NOTE: This part of heat calculation is different from others
                     const nodeParentsNeeded = Math.ceil((machinesNeeded / (pSlots/sReq)) - 0.0001);

@@ -30,7 +30,7 @@ header {
 h1 { color: var(--accent); margin: 0; font-size: 1.1em; }
 .repo-link { 
     color: #888; text-decoration: none; font-size: 0.9em; 
-    margin-right: 15px; border: 1px solid #444; padding: 4px 8px; 
+    margin-right: 5px; border: 1px solid #444; padding: 4px 8px; 
     border-radius: 4px; transition: 0.2s; 
 }
 .repo-link:hover { color: #fff; border-color: #666; background: #222; }
@@ -277,6 +277,7 @@ input:checked + .slider-switch:before { transform: translateX(16px); }
 .bio-tag { color: var(--bio); font-size: 0.85em; margin-left: 3px; }
 .cost-tag { color: var(--gold); font-size: 0.85em; margin-left: 3px; font-weight: bold; }
 .byproduct-tag { color: var(--byproduct); font-size: 0.85em; margin-left: 3px; font-weight: bold; }
+.info-tag { color: var(--info); font-size: 0.85em; margin-left: 3px; }
 .fail-tag { color: var(--danger); font-size: 0.85em; margin-left: 3px; font-weight: bold; }
 .max-cap-tag { color: #888; font-size: 0.8em; margin-left: 3px; font-style: italic; }
 .details { font-size: 0.9em; color: #ccc; }
@@ -342,3 +343,58 @@ button.save-btn { width: 100%; margin-top: 10px; background: #333; border: 1px s
 button.save-btn:hover { background: var(--accent); color: white; }
 button.reset-btn { width: 100%; margin-top: 15px; background: transparent; border: 1px solid var(--danger); color: var(--danger); font-size:0.8em; padding: 5px; cursor: pointer; }
 button.reset-btn:hover { background: var(--danger); color: white; }
+
+
+/* ==========================================================================
+    SECTION: CAULDRON VIEW STYLES
+    ========================================================================== */
+.cauldron-grid { display: grid; grid-template-columns: 280px 1fr 320px; gap: 15px; height: 100%; }
+.scroll-panel { display: flex; flex-direction: column; max-height: 100%; }
+.candidate-list { flex: 1; overflow-y: auto; margin-top: 10px; border: 1px solid #444; background: #222; padding: 5px; }
+.candidate-item { display: flex; align-items: center; padding: 4px 8px; border-bottom: 1px solid #333; font-size: 0.9em; }
+.cand-name { flex: 1; margin-left: 8px; }
+.cand-cost { color: var(--gold); font-family: monospace; }
+.cauldron-tabs-row {
+    display: flex;
+    gap: 2px;
+    background: #222;
+    padding: 2px;
+    border-radius: 4px;
+    margin-bottom: 10px;
+}
+.mini-tab {
+    flex: 1;
+    padding: 4px 2px !important;
+    text-align: center;
+    border: none !important;
+}
+.mini-tab.active {
+    background: var(--accent) !important;
+    color: white !important;
+}
+
+.cauldron-filter-bar { display: flex; gap: 15px; align-items: center; background: #252525; padding: 8px; border-radius: 4px; margin-bottom: 10px; }
+.filter-group { display: flex; gap: 10px; align-items: center; }
+.mini-picker { background: #333; border: 1px solid #555; padding: 4px 10px; border-radius: 4px; font-size: 0.9em; cursor: pointer; min-width: 100px; text-align: center; }
+.mini-picker.active { border-color: var(--info); color: var(--info); background: rgba(33, 150, 243, 0.1); }
+
+.results-scroll { overflow-y: auto; max-height: calc(100vh - 180px); margin-top: 10px; }
+
+.cauldron-card { margin-bottom: 3px; margin-left: 0px; padding: 0px 0; border-left: none !important; }
+.cauldron-card.collapsed .node-children { display: none; }
+.cauldron-card .node-content { cursor: pointer; background: #333; margin-bottom: 2px; }
+.cauldron-card .node-children { border-left: 2px solid #444; margin-left: 10px; }
+
+.cauldron-recipe-row { display: flex; justify-content: space-between; align-items: center; padding: 6px 12px; background: #2a2a2a; border-bottom: 1px solid #333; font-size: 0.9em; }
+.cauldron-recipe-row:hover { background: #333; }
+.recipe-text { display: flex; align-items: center; gap: 5px; flex-wrap: wrap; }
+
+.fav-recipe-item { display: flex; justify-content: space-between; align-items: center; background: #333; padding: 8px; border-radius: 4px; margin-bottom: 5px; font-size: 0.9em; }
+
+#unattainable-list .picker-item { background: rgba(244, 67, 54, 0.05); border: 1px dashed #552222; }
+
+.btn-fav { background: transparent; border: 1px solid var(--info); color: var(--info); border-radius: 4px; font-size: 0.8em; cursor: pointer; padding: 2px 8px; }
+.btn-fav:hover { background: rgba(33, 150, 243, 0.1); }
+.btn-fav.active { background: var(--info); color: white; font-weight: bold; }
+
+.compact-grid { grid-template-columns: repeat(auto-fill, minmax(110px, 1fr)) !important; gap: 5px !important; }

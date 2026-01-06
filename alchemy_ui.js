@@ -43,10 +43,14 @@ let isHandlingPopstate = false;
 function init() {
     const localData = localStorage.getItem(STORAGE_KEY);
     const urlParams = new URLSearchParams(window.location.search);
+    const urlLang = urlParams.get('lang');
+    const urlTab = urlParams.get('tab');    
     const urlItem = urlParams.get('item');
     const urlRate = urlParams.get('rate');
     const urlFuel = urlParams.get('fuel');
     const urlFert = urlParams.get('fert');
+    const urlSetupgrades = urlParams.get('setupgrades');
+    
     lastUrlItem = urlItem || "";
 
     if (!window.ALCHEMY_DB) { alert("Error: alchemy_db.js not found!"); }
@@ -65,6 +69,7 @@ function init() {
         console.log("Loading remote translation data...");
         window.ALCHEMY_I18N = JSON.parse(JSON.stringify(window.ALCHEMY_I18N));
     }
+    if (urlLang === 'en') window.ALCHEMY_I18N.enabled = false;
 
     const fileDB = window.ALCHEMY_DB;
     if (localData) {
@@ -132,8 +137,43 @@ function init() {
     if (urlFert && document.querySelector(`#fertSelect option[value="${urlFert}"]`)) {
         document.getElementById('fertSelect').value = urlFert;
     }
-    
+    if (urlSetupgrades) {
+        /*
+        [0]Logistics Efficiency
+        [1]Throwing Efficiency
+        [2]Factory Efficiency
+        [3]Alchemy Skill
+        [4]Fuel Efficiency
+        [5]Fertilizer Efficiency
+        [6]Sales Ability
+        [7]Negotiation Skill
+        [8]Customer Management
+        [9]Relic Knowledge
+        */
+        const upgrades = urlSetupgrades.split(',').map(Number) || [];
+        if (upgrades.length > 5) {
+            console.log(urlSetupgrades);
+            DB.settings.lvlBelt = upgrades[0];
+            DB.settings.lvlSpeed = upgrades[2];
+            DB.settings.lvlAlchemy = upgrades[3];
+            DB.settings.lvlFuel = upgrades[4];
+            DB.settings.lvlFert = upgrades[5];
+            loadSettingsToUI();
+            persist();
+        }
+    }
+
+    // Import caldron recipes (if exist)
+    try {
+        loadCauldronSettings();
+        syncCauldronToMainDB();
+    } catch (e) {
+        log.error(e);
+    }
+
     calculate();
+    
+    if (urlTab) switchTab(urlTab);
 }
 
 /* ==========================================================================
@@ -221,11 +261,21 @@ function loadEditorContent() {
 }
 
 function switchTab(tabName) {
+    let btnIndex = 0;
+    switch (tabName) {
+        case 'calc': btnIndex = 0; break;
+        case 'cauldron': btnIndex = 1; break;
+        case 'db': btnIndex = 2; break;
+        default: return;
+    }
     document.querySelectorAll('.view').forEach(el => el.classList.remove('active'));
     document.querySelectorAll('.tab-btn').forEach(el => el.classList.remove('active'));
     document.getElementById('view-' + tabName).classList.add('active');
-    const btnIndex = tabName === 'calc' ? 0 : 1;
     document.querySelectorAll('.tab-btn')[btnIndex].classList.add('active');
+    updateURL(tabName);
+    if (tabName === 'cauldron' && typeof initCauldron === 'function') {
+        initCauldron();
+    }
 }
 
 function applyChanges() {
@@ -341,6 +391,7 @@ function handleComboIconClick(e) {
         filterCombobox();
         updateComboIcon();
         input.focus();
+        updateURL();
     } else {
         toggleCombobox();
     }
@@ -679,7 +730,7 @@ function openDrillDown(item, rate) {
 function translateText() {
     const selectors = [
         '.panel h3', '.section-header',
-        '.input-group label', '.checkbox-row label', '.stat-label',
+        '.input-group label', '.checkbox-row label', '.checkbox-row span', '.stat-label',
         '.tab-btn', '.split-btn', '.save-btn', '.reset-btn', '.info'
     ].join(',');
 
@@ -692,18 +743,33 @@ function translateText() {
     if (input) input.placeholder = t("Select or Type...", "ui");
 }
 
-function updateURL() {
+function toggleLanguage() {
+    if (window.ALCHEMY_I18N.enabled === undefined) window.ALCHEMY_I18N.enabled = true;
+    window.ALCHEMY_I18N.enabled = !window.ALCHEMY_I18N.enabled;
+    const url = new URL(window.location.href);
+    if (!window.ALCHEMY_I18N.enabled) url.searchParams.set('lang', 'en');
+    else url.searchParams.delete('lang');    
+    window.location.href = url.toString();
+}
+
+function updateURL(tabName = '') {
+    const isEn = window.ALCHEMY_I18N.enabled === false;
     const item = document.getElementById('targetItemInput').value;
     const rate = document.getElementById('targetRate').value;
     //const fuel = document.getElementById('fuelSelect').value;
     //const fert = document.getElementById('fertSelect').value;
     
     const params = new URLSearchParams();
-    if (item) params.set('item', item);
-    if (rate) params.set('rate', Number(rate));
-    // Maybe enable in future if user needs?
-    //if (fuel) params.set('fuel', fuel);
-    //if (fert) params.set('fert', fert);
+    if (isEn) params.set('lang', 'en');
+    if (tabName === 'cauldron') {
+        params.set('tab', 'cauldron');        
+    }
+    else if (item && rate) {
+        params.set('item', item);
+        params.set('rate', Number(rate));
+        //if (fuel) params.set('fuel', fuel);
+        //if (fert) params.set('fert', fert);
+    }
 
     const newUrl = window.location.pathname + '?' + params.toString();
     if (isHandlingPopstate || item == lastUrlItem) {        

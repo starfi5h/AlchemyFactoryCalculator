@@ -25,14 +25,16 @@
     <header>
         <div style="display:flex; align-items:baseline;">
             <h1>Alchemy Factory Calculator 炼金工厂计算器</h1>
-            <span style="margin-left: 20px;">
+            <span style="margin-left: 10px;">
+                <span id="ui-lang-toggle" style="cursor:pointer;" onclick="toggleLanguage()" title="EN/中文">🌐</span>
                 <a href="https://github.com/starfi5h/AlchemyFactoryCalculator" target="_blank" class="repo-link">GitHub Repo</a>
                 <span>Last Updated: </span>
-                <span id="last-updated-time-text">2025.01.03</span>
+                <span id="last-updated-time-text">2025.01.05</span>
             </span>
         </div>
         <div class="tabs">
             <div class="tab-btn active" onclick="switchTab('calc')">Calculator</div>
+            <div class="tab-btn" onclick="switchTab('cauldron')">Cauldron</div>
             <div class="tab-btn" onclick="switchTab('db')">Database Editor</div>
         </div>
     </header>
@@ -229,6 +231,73 @@
             </div>
         </div>
 
+        <div id="view-cauldron" class="view">
+            <div class="cauldron-grid">
+                <div class="panel scroll-panel">
+                    <h3>Settings & Candidates</h3>
+                    <div class="cauldron-tabs-row">
+                        <button id="cauldron-tab-0" class="tab-btn mini-tab active" onclick="switchCauldronProfile(0)">Profile 1</button>
+                        <button id="cauldron-tab-1" class="tab-btn mini-tab" onclick="switchCauldronProfile(1)">Profile 2</button>
+                        <button id="cauldron-tab-2" class="tab-btn mini-tab" onclick="switchCauldronProfile(2)">Profile 3</button>
+                    </div>
+                    <div class="input-group">
+                        <label>Filter Category</label>
+                        <select id="cauldron-cat-select" onchange="renderCandidatePool()"></select>
+                    </div>
+                    <div class="split-btn-container">
+                        <button class="split-btn" onclick="bulkToggleCandidates(true)">Select All</button>
+                        <button class="split-btn" onclick="bulkToggleCandidates(false)">Deselect All</button>
+                    </div>
+                    <div id="candidate-pool" class="candidate-list">
+                    </div>
+                </div>
+
+                <div class="cauldron-main">
+                    <div class="panel">
+                        <div style="display:flex; justify-content:space-between; align-items:center; border-bottom:1px solid #444; padding-bottom:10px; margin-bottom:10px;">
+                            <div style="display:flex; align-items:baseline; gap:10px;">
+                                <h3 style="border:none; margin:0;">Matching Results</h3>
+                                <span id="cauldron-progress" style="color:var(--accent); font-size:0.9em; font-weight:bold;"></span>
+                            </div>
+                            <button id="btn-run-cauldron" class="save-btn" style="width:auto; padding:5px 15px;" onclick="runCauldronSimulation()">Calculate All</button>
+                        </div>
+
+                        <div class="cauldron-filter-bar">
+                            <div class="filter-group">
+                                <div class="mini-picker" id="slot1" onclick="pickFilterItem(1)">Set Item 1</div>
+                                <button class="swap-btn" title="clear input 1" onclick="pickFilterItem(1,true); runCauldronSimulation();">×</button>
+                                <div class="mini-picker" id="slot2" onclick="pickFilterItem(2)">Set Item 2</div>
+                                <button class="swap-btn" title="clear input 2" onclick="pickFilterItem(2,true); runCauldronSimulation();">×</button>
+                            </div>
+                            <div class="filter-group">
+                                <div class="checkbox-row"><input type="checkbox" id="f-ratio-100" checked onchange="runCauldronSimulation()"><label style="display:flex; font-size: 1.0em;">3 Diff</label></div>
+                                <div class="checkbox-row"><input type="checkbox" id="f-ratio-065" checked onchange="runCauldronSimulation()"><label style="display:flex; font-size: 1.0em;">2 Same</label></div>
+                                <div class="checkbox-row"><input type="checkbox" id="f-ratio-050" checked onchange="runCauldronSimulation()"><label style="display:flex; font-size: 1.0em;">3 Same</label></div>
+                            </div>
+                        </div>
+                        
+                        <div id="cauldron-results"></div>
+
+                        <div id="unattainable-section" style="margin-top:20px; display:none;">
+                            <h3 style="color:var(--danger); border-bottom:1px solid var(--danger); font-size:0.9em; margin-bottom:10px;">Unattainable Targets</h3>
+                            <div id="unattainable-list" class="picker-grid compact-grid"></div>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="panel scroll-panel">
+                    <h3>Saved Recipes</h3>
+                        <div class="split-btn-container" style="margin-bottom: 10px;">
+                            <button class="split-btn" onclick="importCauldronFavorites()" style="font-size:0.9em;">Import</button>
+                            <button class="split-btn" onclick="exportCauldronFavorites()" style="font-size:0.9em;">Export</button>
+                            <button class="split-btn" onclick="syncCauldronToMainDB(true)" style="font-size:0.9em; color:white;">Sync DB</button>
+                        </div>
+                    <div id="cauldron-favorites" class="fav-list">
+                    </div>
+                </div>
+            </div>
+        </div>
+
         <div id="view-db" class="view">
             <div class="editor-container">
                 <div class="editor-toolbar">
@@ -248,6 +317,7 @@
     </main>
 
     <script src="alchemy_ui.js"></script>
-    <script src="alchemy_calc.js"></script>
+    <script src="alchemy_calc.js"></script>    
+    <script src="alchemy_cauldron.js"></script>
 </body>
 </html>

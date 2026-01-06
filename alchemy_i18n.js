@@ -108,6 +108,7 @@ window.ALCHEMY_I18N = {
         // --- 0. Title ---
         "Alchemy Factory Planner": "炼金工厂計算器",
         "Calculator": "計算器",
+        "Cauldron": "炼金锅",
         "Database Editor": "数据库",
         "New database version available": "发现新版本数据库",
         "Current local version:": "您的本地版本为:",
@@ -195,7 +196,28 @@ window.ALCHEMY_I18N = {
 
         // --- 7. Data Editor ---
         "Apply Changes": "应用更改",
-        "Export to File": "导出到文件"        
+        "Export to File": "导出到文件",
+
+        // --- Cauldron ---
+        "Settings & Candidates": "设置与候选",
+        "Profile 1": "配置1",
+        "Profile 2": "配置2",
+        "Profile 3": "配置3",
+        "Filter Category": "筛选分类",
+        "Select All": "全选",
+        "Deselect All": "取消全选",
+        "Matching Results": "匹配结果",        
+        "Calculate All": "计算全部",
+        "Set Item": "指定物品",
+        "3 Diff": "3件不同",
+        "2 Same": "2件相同",
+        "3 Same": "3件相同",
+        "Unattainable Targets": "无法达成的目标",
+        "Saved Recipes": "已保存配方",
+        "Import": "导入",
+        "Export": "导出",
+        "Sync DB": "同步数据库",
+        "No saved recipes yet.": "暂无保存的配方。",
     },
     "items": {
         // Game version: 0.4.1.3800
@@ -213,12 +235,12 @@ window.ALCHEMY_I18N = {
         "Meteorite": "陨石",
 
         // --- SEEDS ---        
-        "Flax Seed": "亚麻种子",
-        "Sage Seed": "鼠尾草种子",
-        "Red Currant Seed": "紅醋栗种子",
-        "Lavender Seed": "薰衣草种子",
-        "Chamomile Seed": "洋甘菊种子",        
-        "Gentian Seed": "龙胆花种子",
+        "Flax Seeds": "亚麻种子",
+        "Sage Seeds": "鼠尾草种子",
+        "Redcurrant Seeds": "紅醋栗种子",
+        "Lavender Seeds": "薰衣草种子",
+        "Chamomile Seeds": "洋甘菊种子",        
+        "Gentian Seeds": "龙胆花种子",
         "World Tree Seed": "世界树种子",
 
         // --- HERBS ---
@@ -413,6 +435,7 @@ window.ALCHEMY_I18N = {
     },
     "categories": {
         "Raw Materials": "原材料", "Seeds": "种子", "Herbs": "草药", "Fuel": "燃料", "Fertilizer": "肥料", "Solid": "固体", "Mash": "研磨物", "Component": "零件",
-        "Liquid": "液体", "Potion": "药水", "Catalyst": "催化剂", "Magic": "魔法", "Jewelry": "珠宝", "Relic": "圣物", "Currency": "货币", "Misc" : "杂项"
+        "Liquid": "液体", "Potion": "药水", "Catalyst": "催化剂", "Magic": "魔法", "Jewelry": "珠宝", "Relic": "圣物", "Currency": "货币", "Misc" : "杂项", "Other": "其他",
+        "[All]": "[ 全部 ]", "[Include]": "[ 选取 ]", "[Exclude]": "[ 排除 ]"
     }
 };
