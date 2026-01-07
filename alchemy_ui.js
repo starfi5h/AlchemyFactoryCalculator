@@ -595,19 +595,32 @@ function closeModal(id) { document.getElementById(id).style.display = 'none'; }
  * Opens the item picker modal and populates it with categorized items.
  */
 function openItemPicker() {
+    document.getElementById('ui-picker-title').innerText = t('Select Item', 'ui');
+    document.getElementById('ui-picker-expand-all').innerText = t('Expand All', 'ui');
+    document.getElementById('ui-picker-collapse-all').innerText = t('Collapse All', 'ui');
+    document.getElementById('ui-picker-saleable-only').innerText = t('Goods', 'ui');
+    document.getElementById('picker-modal').style.display = 'flex';
+    renderItemPicker();
+}
+
+function renderItemPicker() {
     const body = document.getElementById('picker-body');
-    body.innerHTML = ''; 
+    body.innerHTML = '';
 
     const categories = {};
     const itemKeys = Object.keys(DB.items);
     const currentItem = document.getElementById('targetItemInput').value;
     const productOnly = document.getElementById('productFilterToggle').checked;
+    const filterInput = document.getElementById('itmePickerInput').value.trim().toLowerCase();
 
     // Grouping logic
     itemKeys.forEach(key => {
         const item = DB.items[key];
         // FILTER LOGIC: If Product Only is ON, item must have sellPrice > 0
         if (productOnly && !(item.sellPrice > 0)) {
+            return; // Skip this item
+        }
+        if (filterInput.length > 0 && key.toLowerCase().indexOf(filterInput) < 0) {
             return; // Skip this item
         }
         const cat = item.category || "Other";
@@ -655,12 +668,6 @@ function openItemPicker() {
         catContainer.appendChild(grid);
         body.appendChild(catContainer);
     });
-
-    document.getElementById('ui-picker-title').innerText = t('Select Item', 'ui');
-    document.getElementById('ui-picker-expand-all').innerText = t('Expand All', 'ui');
-    document.getElementById('ui-picker-collapse-all').innerText = t('Collapse All', 'ui');
-    document.getElementById('ui-picker-saleable-only').innerText = t('Saleable Only', 'ui');
-    document.getElementById('picker-modal').style.display = 'flex';
 }
 
 function toggleAllCategories(shouldCollapse) {
@@ -740,7 +747,7 @@ function openDrillDown(item, rate) {
    ========================================================================== */
 function translateText() {
     const selectors = [
-        '.panel h3', '.section-header',
+        'h1', '.panel h3', '.section-header',
         '.input-group label', '.checkbox-row label', '.checkbox-row span', '.stat-label',
         '.tab-btn', '.split-btn', '.save-btn', '.reset-btn', '.info'
     ].join(',');
@@ -752,6 +759,7 @@ function translateText() {
 
     const input = document.getElementById('targetItemInput');
     if (input) input.placeholder = t("Select or Type...", "ui");
+    document.title = t("Alchemy Factory Calculator", "ui");
 }
 
 function toggleLanguage() {

@@ -1,6 +1,6 @@
 window.ALCHEMY_DB = {
-    "version": 22,
-    "date": "2025.01.05",
+    "version": 23,
+    "date": "2025.01.06",
     "gameVersion": "0.4.1.3800",
     "items": {
         // --- 1. RAW RESOURCES ---
@@ -33,8 +33,7 @@ window.ALCHEMY_DB = {
         "Gentian Nectar": { "id": 802, "category": "Herbs", "nutrientCost": 6000, "cauldronCost": 420 },
         "World Tree Leaf": { "id": 27, "category": "Herbs", "nutrientCost": 30000, "cauldronCost": 2500 },
         "World Tree Core": { "id": 28, "category": "Herbs", "nutrientCost": 3000000, "cauldronCost": 250000 },
-        "Gloom Fungus": { "id": 509, "category": "Misc", "cauldronCost": 26 },
-
+        
         // --- 4. FUELS ---
         "Plank": { "id": 101, "category": "Fuel", "heat": 20, "maxStack": 200, "cauldronCost": 1, "cauldronMulti": 1, "cauldronTarget": 0.1 },
         "Charcoal": { "id": 403, "category": "Fuel", "heat": 40, "cauldronCost": 2, "cauldronMulti": 1, "cauldronTarget": 2 },
@@ -119,7 +118,7 @@ window.ALCHEMY_DB = {
         "Linseed Oil": { "id": 409, "category": "Liquid", "liquid": true, "cauldronCost": 0.04 },
         "Fruit Wine": { "id": 410, "category": "Liquid", "liquid": true, "cauldronCost": 1.2 },
         "Limewater": { "id": 411, "category": "Liquid", "liquid": true, "cauldronCost": 0.2 },
-        "Salt Water": { "id": 606, "category": "Liquid", "liquid": true, "cauldronCost": 3.25 },
+        "Brine": { "id": 606, "category": "Liquid", "liquid": true, "cauldronCost": 3.25 },
         "Lavender Essential Oil": { "id": 701, "category": "Liquid", "liquid": true, "cauldronCost": 37.88 },
         "Brandy": { "id": 702, "category": "Liquid", "liquid": true, "cauldronCost": 7.425 },
         "Sulfuric Acid": { "id": 703, "category": "Liquid", "liquid": true, "cauldronCost": 23.13 },
@@ -128,14 +127,14 @@ window.ALCHEMY_DB = {
         "Fairy Tear": { "id": 911, "category": "Liquid", "liquid": true, "cauldronCost": 3060 },
         "Moon Tear": { "id": 912, "category": "Liquid", "liquid": true, "cauldronCost": 97092 },
 
-	// --- 11. CATALYSTS ---		
+        // --- 11. CATALYSTS ---		
         "Yeast Powder": { "id": 507, "category": "Catalyst", "cauldronCost": 88, "cauldronMulti": 1, "cauldronTarget": 88 },
         "Gloom Spores": { "id": 510, "category": "Catalyst", "cauldronCost": 220, "cauldronMulti": 0.9, "cauldronTarget": 280 },
         "Unstable Catalyst": { "id": 616, "category": "Catalyst", "cauldronCost": 746, "cauldronMulti": 0.7, "cauldronTarget": 746 },
         "Resonant Catalyst": { "id": 815, "category": "Catalyst", "cauldronCost": 23869.44, "cauldronMulti": 0.3, "cauldronTarget": 22869.44 },
         "Eternal Catalyst": { "id": 908, "category": "Catalyst", "cauldronCost": 1193041.6 },
 
-	// --- 12. Magic ---
+        // --- 12. Magic ---
         "Philosopherˈs Stone": { "id": 33, "category": "Magic", "cauldronCost": 1000000, "cauldronMulti": 1, "cauldronTarget": 1000000 },
         "Oblivion Essence": { "id": 25, "category": "Magic", "cauldronCost": 600, "cauldronMulti": 1, "cauldronTarget": 600 },
         "Vitality Essence": { "id": 709, "category": "Magic", "cauldronCost": 900, "cauldronMulti": 1, "cauldronTarget": 900 },
@@ -148,6 +147,8 @@ window.ALCHEMY_DB = {
         "Copper Coin": { "id": 611, "category": "Currency", "sellPrice": 1, "cauldronCost": 0.6766666667 },
         "Silver Coin": { "id": 809, "category": "Currency", "sellPrice": 1000, "cauldronCost": 949.2 },
         "Gold Coin": { "id": 906, "category": "Currency", "sellPrice": 100000, "cauldronCost": 89722.6 },
+        
+        "Gloom Fungus": { "id": 509, "category": "Misc", "cauldronCost": 26 },
         "Mortar": { "id": 203, "category": "Misc", "sellPrice": 48, "cauldronCost": 18 },
         "Salt": { "id": 605, "category": "Misc", "sellPrice": 100, "cauldronCost": 65, "cauldronMulti": 1, "cauldronTarget": 65 },
         "Linen": { "id": 307, "category": "Misc", "sellPrice": 165, "cauldronCost": 60 },
@@ -341,11 +342,11 @@ window.ALCHEMY_DB = {
         { "id": "Salt", "machine": "Athanor", "inputs": { "Charcoal Powder": 6, "Quicklime Powder": 12 }, "outputs": { "Salt": 1, "Sand": 12 }, "baseTime": 18.0 },
         { "id": "Salt_Rock", "machine": "Stone Crusher", "inputs": { "Rock Salt": 1 }, "outputs": { "Salt": 100, "Sand": 100 }, "baseTime": 600.0 },
 
-		// --- LIQUIDS ---
-        { "id": "Salt Water", "machine": "Extractor", "inputs": { "Salt": 1 }, "outputs": { "Salt Water": 20 }, "baseTime": 4.0 },
+        // --- LIQUIDS ---
+        { "id": "Brine", "machine": "Extractor", "inputs": { "Salt": 1 }, "outputs": { "Brine": 20 }, "baseTime": 4.0 },
         { "id": "Lavender Essential Oil", "machine": "Alembic", "inputs": { "Lavender": 3, "Linseed Oil": 300 }, "outputs": { "Lavender Essential Oil": 15 }, "baseTime": 3.0 },
         { "id": "Brandy", "machine": "Alembic", "inputs": { "Coke Powder": 5, "Fruit Wine": 100 }, "outputs": { "Brandy": 40 }, "baseTime": 5.0 },
-        { "id": "Sulfuric Acid", "machine": "Alembic", "inputs": { "Sulfur Powder": 1, "Salt Water": 60 }, "outputs": { "Sulfuric Acid": 20 }, "baseTime": 4.0 },
+        { "id": "Sulfuric Acid", "machine": "Alembic", "inputs": { "Sulfur Powder": 1, "Brine": 60 }, "outputs": { "Sulfuric Acid": 20 }, "baseTime": 4.0 },
         { "id": "Quicksilver", "machine": "Advanced Alembic", "inputs": { "Crude Silver Powder": 1, "Vitality Essence": 1, "Sulfuric Acid": 80 }, "outputs": { "Quicksilver": 10 }, "baseTime": 8.0 },
         { "id": "Aqua Vitae", "machine": "Advanced Alembic", "inputs": { "Gentian Nectar": 1, "World Tree Leaf": 1, "Brandy": 200 }, "outputs": { "Aqua Vitae": 10 }, "baseTime": 8.0 },
         { "id": "Fairy Tear", "machine": "Extractor", "inputs": { "Fairy Dust": 1 }, "outputs": { "Fairy Tear": 1 }, "baseTime": 4.0 },
@@ -355,14 +356,14 @@ window.ALCHEMY_DB = {
         { "id": "Healing Potion", "machine": "Assembler", "inputs": { "Sage Powder": 6, "Flax Fiber": 6 }, "outputs": { "Healing Potion": 1 }, "baseTime": 6.0 },
         { "id": "Vitality Potion", "machine": "Blender", "inputs": { "Quicklime Powder": 4, "Fruit Wine": 80 }, "outputs": { "Vitality Potion": 1 }, "baseTime": 8.0 },
         { "id": "Transformation Potion", "machine": "Assembler", "inputs": { "Coke Powder": 2, "Gloom Spores": 1 }, "outputs": { "Transformation Potion": 1 }, "baseTime": 6.0 },
-        { "id": "Growth Potion", "machine": "Advanced Blender", "inputs": { "Chamomile Powder": 2, "Clay Powder": 6, "Salt Water": 80 }, "outputs": { "Growth Potion": 1 }, "baseTime": 6.0 },
+        { "id": "Growth Potion", "machine": "Advanced Blender", "inputs": { "Chamomile Powder": 2, "Clay Powder": 6, "Brine": 80 }, "outputs": { "Growth Potion": 1 }, "baseTime": 6.0 },
         { "id": "Blast Potion", "machine": "Advanced Blender", "inputs": { "Oblivion Essence": 1, "Black Powder": 2, "Brandy": 40 }, "outputs": { "Blast Potion": 1 }, "baseTime": 6.0 },
         { "id": "Panacea Potion", "machine": "Advanced Blender", "inputs": { "Fertile Catalyst": 3, "Blast Potion": 3, "Aqua Vitae": 12 }, "outputs": { "Panacea Potion": 1 }, "baseTime": 6.0 },
 
         // --- ESSENCES & CATALYSTS ---
         { "id": "Basic Fertilizer", "machine": "Assembler", "inputs": { "Plant Ash": 1, "Quicklime Powder": 1 }, "outputs": { "Basic Fertilizer": 1 }, "baseTime": 4.0 },
         { "id": "Advanced Fertilizer", "machine": "Assembler", "inputs": { "Basic Fertilizer": 1, "Gloom Fungus": 1 }, "outputs": { "Advanced Fertilizer": 1 }, "baseTime": 4.0 },
-		{ "id": "Fertile Catalyst", "machine": "Advanced Blender", "inputs": { "Unstable Catalyst": 1, "Vitality Essence": 1, "Lavender Essential Oil": 18 }, "outputs": { "Fertile Catalyst": 1 }, "baseTime": 8.0 },
+        { "id": "Fertile Catalyst", "machine": "Advanced Blender", "inputs": { "Unstable Catalyst": 1, "Vitality Essence": 1, "Lavender Essential Oil": 18 }, "outputs": { "Fertile Catalyst": 1 }, "baseTime": 8.0 },
         { "id": "Unstable Catalyst", "machine": "Advanced Assembler", "inputs": { "Chamomile Powder": 1, "Gloom Spores": 1, "Sulfur Powder": 1 }, "outputs": { "Unstable Catalyst": 1 }, "baseTime": 4.0 },
         { "id": "Oblivion Essence Limestone", "machine": "Paradox Crucible", "inputs": { "Limestone": 1 }, "outputs": { "Oblivion Essence": 1 }, "baseTime": 3.3 },
         { "id": "Oblivion Essence Gentian Nectar", "machine": "Paradox Crucible", "inputs": { "Gentian Nectar": 1 }, "outputs": { "Oblivion Essence": 1 }, "baseTime": 3.6 },

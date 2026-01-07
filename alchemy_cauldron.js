@@ -298,6 +298,7 @@ async function runCauldronSimulation() {
     .filter(name => DB.items[name].cauldronTarget !== undefined)
     .map(name => ({
         name: name,
+        id: DB.items[name].id || 3000,
         target: DB.items[name].cauldronTarget,
         mult: DB.items[name].cauldronMulti || 1,
         cost: DB.items[name].cauldronCost || 0
@@ -315,24 +316,25 @@ async function runCauldronSimulation() {
         const T = (c1 + c2 + c3) * ratio;
 
         let bestItem = null;
-        let bestCost = 0;
+        let bestValue = 0;
         let minDistance = Infinity;
-
+        //let lastTieDistance = 0;
         for (let target of validTargets) {
             const dist = Math.abs((T - target.target) * (target.mult));
-            
             if (dist < minDistance) {
                 minDistance = dist;
                 bestItem = target.name;
-                bestCost = target.cost;
+                bestValue = target.id;
             } else if (Math.abs(dist - minDistance) < 1e-7) {
-                // Tie-breaker: choose one with less cauldronCost
-                if (target.cost < bestCost) {
+                // Tie-breaker: choose one with less item id
+                if (target.id < bestValue) {
                     bestItem = target.name;
-                    bestCost = target.cost;
+                    bestValue = target.id;
                 }
+                //lastTieDistance = dist;
             }
         }
+        //if (minDistance == lastTieDistance) console.log(`${n1} + ${n2} + ${n3} = ${bestItem}`);
         return { output: bestItem, totalValue: (c1 + c2 + c3) };
     }       
     

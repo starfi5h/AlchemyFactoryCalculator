@@ -106,7 +106,7 @@ window.ALCHEMY_I18N = {
     "enabled": true,
     "ui": {
         // --- 0. Title ---
-        "Alchemy Factory Planner": "炼金工厂計算器",
+        "Alchemy Factory Calculator": "炼金工厂計算器",
         "Calculator": "計算器",
         "Cauldron": "炼金锅",
         "Database Editor": "数据库",
@@ -127,7 +127,7 @@ window.ALCHEMY_I18N = {
         "Select Item": "选择物品",
         "Expand All": "全部展开",
         "Collapse All": "全部收起",
-        "Saleable Only": "仅可销售",
+        "Goods": "仅可销售",
         "All Items": "所有物品",
         "Browse Items": "浏览物品清单",
 
@@ -340,7 +340,7 @@ window.ALCHEMY_I18N = {
         "Linseed Oil": "亚麻籽油",
         "Fruit Wine": "浆果酒",        
         "Limewater": "石灰水",        
-        "Salt Water": "盐水",
+        "Brine": "盐水",
         "Lavender Essential Oil": "薰衣草精油",
         "Brandy": "白兰地",
         "Sulfuric Acid": "硫酸",

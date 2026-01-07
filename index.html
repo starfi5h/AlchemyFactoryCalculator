@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>炼金工厂计算器</title>
+    <title>Alchemy Factory Calculator</title>
     <script src="alchemy_db.js"></script> 
     <script src="alchemy_constants.js"></script> 
     <script src="alchemy_i18n.js"></script>
@@ -24,11 +24,10 @@
 
     <header>
         <div style="display:flex; align-items:baseline;">
-            <h1>Alchemy Factory Calculator 炼金工厂计算器</h1>
+            <h1>Alchemy Factory Calculator</h1>
             <span style="margin-left: 10px;">
                 <span id="ui-lang-toggle" style="cursor:pointer;" onclick="toggleLanguage()" title="EN/中文">🌐</span>
                 <a href="https://github.com/starfi5h/AlchemyFactoryCalculator" target="_blank" class="repo-link">GitHub Repo</a>
-                <span>Last Updated: </span>
                 <span id="last-updated-time-text">2025.01.06</span>
             </span>
         </div>
@@ -60,11 +59,12 @@
                         <div class="picker-controls">
                             <button id="ui-picker-expand-all" class="split-btn" onclick="toggleAllCategories(false)">Expand All</button>
                             <button id="ui-picker-collapse-all" class="split-btn" onclick="toggleAllCategories(true)">Collapse All</button>
-                            <span id="ui-picker-saleable-only" style="font-size:0.75em; font-weight:bold;">Saleable Only</span>
+                            <span id="ui-picker-saleable-only" style="font-size:0.75em; font-weight:bold;">Goods</span>
                             <label class="switch">
                                 <input type="checkbox" id="productFilterToggle" onchange="openItemPicker()">
                                 <span class="slider-switch"></span>
                             </label>
+                            <span><input type="text" id="itmePickerInput" placeholder="Search items..." autocomplete="off" oninput="renderItemPicker()"></span>
                         </div>
                     </div>
                     <button class="close-modal" onclick="closeModal('picker-modal')">&times;</button>

@@ -105,6 +105,7 @@
 - 中文化介面和物品名称
 - 支援自定义翻译, 在数据库或alchemy_i18n.js内可以修改
 - 数据库更新时会在上方横幅先提醒，让玩家自行选择是否更新
+- 炼金锅页面
 
 This calculator is a fork from the version made by the original author JoeJoesGit, and includes the following new features:
 - Chinese interface and item names
