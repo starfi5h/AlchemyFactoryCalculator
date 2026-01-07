@@ -655,7 +655,7 @@ function renderItemPicker() {
         categories[catName].forEach(item => {
             const itemBtn = document.createElement('div');
             itemBtn.className = 'picker-item' + (item.name === currentItem ? ' active' : '');
-            itemBtn.innerHTML = `<span>${item.name}</span>`;
+            itemBtn.innerHTML = `<img src="img/item${item.id ?? 0}.png" width="24" height="24" loading="lazy"><span>${item.name}</span>`;
             itemBtn.onclick = (e) => {
                 e.stopPropagation(); // Prevent trigger header toggle
                 selectItem(item.name);

@@ -475,6 +475,7 @@ function calculatePass(p, isGhost) {
             ${arrowHtml}
             <span class="row-id" onclick="toggleNode(this, '${pathKey}')">${myRowID})</span>
             <span class="qty">${formatVal(rate)}/m</span>
+            <img src="img/item${DB.items[item]?.id ?? 0}.png" width="24" height="24" loading="lazy">
             <span class="item-link" onclick="openDrillDown('${item}', ${rate})"><strong>${item}</strong></span>
             ${swapBtn}
             ${detailsTag}
@@ -581,84 +582,127 @@ function calculatePass(p, isGhost) {
         }
     }
 
+    const createNodeItemHTML = (label, qty, colorVar = 'default', suffix = '') => `
+        <div class="node-content" style="margin-bottom:5px;">
+            <span class="qty" style="color:var(--${colorVar})">${qty}</span>
+            <img src="img/item${DB.items[label]?.id ?? 0}.png" width="${DB.items[label] ? 24 : 1}" height="24" loading="lazy">
+            <strong>${label}</strong> ${suffix}
+        </div>`;
+
     if (!isGhost) {
-        // --- SUMMARY & EXTERNALS ---
-        const extH = document.createElement('div'); extH.className = 'section-header'; extH.innerText = `--- External Inputs ---`; treeContainer.appendChild(extH);
-        const extDiv = document.createElement('div'); extDiv.className = 'node';
-        let extHTML = `<div class="node-content" style="margin-bottom:5px;"><span class="qty" style="color:var(--gold)">${Math.ceil(globalCostPerMin).toLocaleString()} G/m</span><strong>${t('Raw Material Cost')}</strong></div>`;
-        if (!p.selfFuel && globalFuelDemandItems > Number.EPSILON) { 
-            extHTML += `<div class="node-content" style="margin-bottom:5px;"><span class="qty" style="color:var(--fuel)">${globalFuelDemandItems.toFixed(2)}/m</span><strong>${p.selectedFuel}</strong> (${t('Fuel Import')})`;
-            if (p.showFuelCost && p.fuelCost > Number.EPSILON) extHTML += `<span class="cost-tag">(${Math.ceil(globalFuelDemandItems * p.fuelCost - Number.EPSILON).toLocaleString()} G/m)</span>`;
-            extHTML += `</div>`;
+        // --- 1. 渲染外部輸入 (External Inputs) ---
+        renderExternalInputs();
+
+        // --- 2. 渲染副產品 (Byproducts) ---
+        renderByproducts();
+
+        // --- 3. 機器數據聚合 (Machine Stats) ---
+        const { flatMax, flatMin } = aggregateMachineStats(machineStats);
+
+        // --- 4. 計算熔爐數量 ---
+        const totalFurnaces = calculateTotalFurnaces(furnaceSlotDemand);
+
+        // --- 5. 更新 UI 組件 ---
+        updateConstructionList(flatMax, flatMin, totalFurnaces);
+        
+        // 計算最終成本並更新摘要
+        const finalCost = calculateFinalCost(globalCostPerMin, p, globalFuelDemandItems, globalFertDemandItems);
+        updateSummaryBox(p, globalHeatLoad, globalBioLoad, finalCost, globalFuelDemandItems, globalFertDemandItems);
+    }
+
+    // --- 以下為封裝的邏輯函式 ---
+
+    function renderExternalInputs() {
+        const extH = Object.assign(document.createElement('div'), {
+            className: 'section-header',
+            innerText: '--- External Inputs ---'
+        });
+        treeContainer.appendChild(extH);
+
+        let html = createNodeItemHTML(t('Raw Material Cost'), `${Math.ceil(globalCostPerMin).toLocaleString()} G/m`, 'gold');
+
+        // 燃料輸入
+        if (!p.selfFuel && globalFuelDemandItems > Number.EPSILON) {
+            let costTag = (p.showFuelCost && p.fuelCost > Number.EPSILON) 
+                ? `<span class="cost-tag">(${Math.ceil(globalFuelDemandItems * p.fuelCost).toLocaleString()} G/m)</span>` 
+                : '';
+            html += createNodeItemHTML(p.selectedFuel, `${globalFuelDemandItems.toFixed(2)}/m`, 'fuel', `(${t('Fuel Import')}) ${costTag}`);
         }
-        if (!p.selfFert && globalFertDemandItems > Number.EPSILON) { 
-            extHTML += `<div class="node-content" style="margin-bottom:5px;"><span class="qty" style="color:var(--bio)">${globalFertDemandItems.toFixed(2)}/m</span><strong>${p.selectedFert}</strong> (${t('Fertilizer Import')})`; 
-            if (p.showFertCost && p.fertCost > Number.EPSILON) extHTML += `<span class="cost-tag">(${Math.ceil(globalFertDemandItems * p.fertCost - Number.EPSILON).toLocaleString()} G/m)</span>`;
-            extHTML += `</div>`;
+
+        // 肥料輸入
+        if (!p.selfFert && globalFertDemandItems > Number.EPSILON) {
+            let costTag = (p.showFertCost && p.fertCost > Number.EPSILON) 
+                ? `<span class="cost-tag">(${Math.ceil(globalFertDemandItems * p.fertCost).toLocaleString()} G/m)</span>` 
+                : '';
+            html += createNodeItemHTML(p.selectedFert, `${globalFertDemandItems.toFixed(2)}/m`, 'bio', `(${t('Fertilizer Import')}) ${costTag}`);
         }
-        Object.keys(globalForcedItems).forEach(itemName => {
-            const rate = globalForcedItems[itemName];
-            extHTML += `
-                <div class="node-content" style="margin-bottom:5px;">
-                    <span class="qty">${formatVal(rate)}/m</span>
-                    <strong>${itemName}</strong> 
-                    (${t('External Input')})
-                </div>`;
+
+        // 強制項目
+        Object.entries(globalForcedItems).forEach(([name, rate]) => {
+            html += createNodeItemHTML(name, `${formatVal(rate)}/m`, 'default', `(${t('External Input')})`);
         });
 
-        extDiv.innerHTML = extHTML; treeContainer.appendChild(extDiv);
+        const extDiv = Object.assign(document.createElement('div'), { className: 'node', innerHTML: html });
+        treeContainer.appendChild(extDiv);
+    }
 
-        const bypHeader = document.createElement('div'); bypHeader.className = 'section-header'; bypHeader.innerText = `--- BYPRODUCTS ---`; treeContainer.appendChild(bypHeader);
-        const bypDiv = document.createElement('div'); bypDiv.className = 'node';
-        let bypHTML = '';
-        const sortedByproducts = Object.keys(totalByproducts).sort();
-        if (sortedByproducts.length > 0) {
-            sortedByproducts.forEach(item => {
-                let remaining = globalByproducts[item] || 0; 
-                let note = "";
-                if (remaining < totalByproducts[item]) {
-                    note = ` <span style="font-size:0.8em; color:#888;">(${formatVal(totalByproducts[item] - remaining)} ${t(`recycled`, `ui`)})</span>`;
-                }
-                bypHTML += `<div class="node-content"><span class="qty" style="color:var(--byproduct)">${formatVal(remaining)}/m</span><strong>${item}</strong>${note}</div>`;
+    function renderByproducts() {
+        const bypHeader = Object.assign(document.createElement('div'), {
+            className: 'section-header',
+            innerText: '--- BYPRODUCTS ---'
+        });
+        treeContainer.appendChild(bypHeader);
+
+        const sortedNames = Object.keys(totalByproducts).sort();
+        let html = '';
+
+        if (sortedNames.length > 0) {
+            sortedNames.forEach(name => {
+                const remaining = globalByproducts[name] || 0;
+                const total = totalByproducts[name];
+                const recycledNote = remaining < total 
+                    ? ` <span style="font-size:0.8em; color:#888;">(${formatVal(total - remaining)} ${t('recycled')})</span>` 
+                    : '';
+                html += createNodeItemHTML(name, `${formatVal(remaining)}/m`, 'byproduct', recycledNote);
             });
         } else {
-            bypHTML = `<div class="node-content"><span class="details" style="font-style:italic">${t('None')}</span></div>`;
+            html = `<div class="node-content"><span class="details" style="font-style:italic">${t('None')}</span></div>`;
         }
-        bypDiv.innerHTML = bypHTML; treeContainer.appendChild(bypDiv);
 
-        // --- FLATTEN AGGREGATION FOR UI ---
-        let flatMax = {};
-        let flatMin = {};
+        const bypDiv = Object.assign(document.createElement('div'), { className: 'node', innerHTML: html });
+        treeContainer.appendChild(bypDiv);
+    }
+
+    function aggregateMachineStats(stats) {
+        const flatMax = {};
+        const flatMin = {};
         
-        Object.keys(machineStats).forEach(mName => {
+        for (const [mName, outputs] of Object.entries(stats)) {
             let totalIntMax = 0;
             let totalCeiledMin = 0;
             
-            Object.keys(machineStats[mName]).forEach(outItem => {
-                const data = machineStats[mName][outItem];
+            for (const data of Object.values(outputs)) {
                 totalIntMax += data.nodeSumInt;
                 totalCeiledMin += Math.ceil(data.rawFloat - 0.0001);
-            });
-            
+            }
             flatMax[mName] = totalIntMax;
             flatMin[mName] = totalCeiledMin;
-        });
+        }
+        return { flatMax, flatMin };
+    }
 
-        // CALCULATE FINAL FURNACE COUNT FROM SLOTS
-        let totalFurnaces = 0;
-        Object.keys(furnaceSlotDemand).forEach(parentName => {
-            const parentDef = DB.machines[parentName];
-            if (parentDef) {
-                totalFurnaces += Math.ceil((furnaceSlotDemand[parentName] - 0.0001) / (parentDef.slots || 3));
-            }
-        });
+    function calculateTotalFurnaces(demand) {
+        return Object.entries(demand).reduce((sum, [name, qty]) => {
+            const slots = DB.machines[name]?.slots || 3;
+            return sum + Math.ceil((qty - 0.0001) / slots);
+        }, 0);
+    }
 
-        updateConstructionList(flatMax, flatMin, totalFurnaces);
-        
-        // Pass the actual simulated fuel/fert demand items to the summary
-        if (p.fuelCost > Number.EPSILON) globalCostPerMin += p.fuelCost * globalFuelDemandItems;
-        if (p.fertCost > Number.EPSILON) globalCostPerMin += p.fertCost * globalFertDemandItems;
-        updateSummaryBox(p, globalHeatLoad, globalBioLoad, globalCostPerMin, globalFuelDemandItems, globalFertDemandItems);
+    function calculateFinalCost(baseCost, p, fuelQty, fertQty) {
+        let extra = 0;
+        if (p.fuelCost > Number.EPSILON) extra += p.fuelCost * fuelQty;
+        if (p.fertCost > Number.EPSILON) extra += p.fertCost * fertQty;
+        return baseCost + extra;
     }
 }
 
@@ -742,8 +786,8 @@ function updateConstructionList(maxCounts, minCounts, furnaces) {
             const slotsNeeded = Math.ceil(qty / stackSize);
             totalSlots += slotsNeeded;
             totalHtml += `
-                <div class="total-mat-item">
-                    <span>${mat}</span> 
+                <div class="total-mat-item">                    
+                    <span><img src="img/item${itemDef?.id ?? 0}.png" width="18" height="18" loading="lazy"> ${mat}</span> 
                     <strong>
                         ${qty} 
                         <span style="color:#888; font-size:0.85em; margin-left:4px; font-weight:normal;"> [${slotsNeeded}]</span>

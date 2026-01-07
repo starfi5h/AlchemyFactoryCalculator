@@ -235,7 +235,7 @@ input:checked + .slider-switch:before { transform: translateX(16px); }
     SECTION: CSS - TREE NODES
     ========================================================================== */
 .node { margin-left: 15px; padding: 4px 0; border-left: 2px solid #555; position: relative; min-width: 300; }
-.node-content { display: flex; align-items: center; gap: 8px; background: #222; padding: 6px 10px; border-radius: 4px; border: 1px solid #333; }
+.node-content { display: flex; align-items: center; gap: 4px; background: #222; padding: 6px 10px; border-radius: 4px; border: 1px solid #333; }
 .tree-arrow { display: inline-block; width: 14px; cursor: pointer; transition: transform 0.1s; user-select: none; font-size: 0.8em; color: #888; text-align:center; }
 .row-id { color: var(--row-id); font-family: monospace; font-weight: bold; min-width: 20px; font-size: 0.9em; cursor: pointer; }
 .node.collapsed .node-children { display: none; }
@@ -348,11 +348,11 @@ button.reset-btn:hover { background: var(--danger); color: white; }
 /* ==========================================================================
     SECTION: CAULDRON VIEW STYLES
     ========================================================================== */
-.cauldron-grid { display: grid; grid-template-columns: 280px 1fr 320px; gap: 15px; height: 100%; }
+.cauldron-grid { display: grid; grid-template-columns: 280px 1fr 350px; gap: 15px; height: 100%; }
 .scroll-panel { display: flex; flex-direction: column; max-height: 100%; }
 .candidate-list { flex: 1; overflow-y: auto; margin-top: 10px; border: 1px solid #444; background: #222; padding: 5px; }
 .candidate-item { display: flex; align-items: center; padding: 4px 8px; border-bottom: 1px solid #333; font-size: 0.9em; }
-.cand-name { flex: 1; margin-left: 8px; }
+.cand-name { flex: 1; margin-left: 4px; }
 .cand-cost { color: var(--gold); font-family: monospace; }
 .cauldron-tabs-row {
     display: flex;
@@ -387,7 +387,7 @@ button.reset-btn:hover { background: var(--danger); color: white; }
 
 .cauldron-recipe-row { display: flex; justify-content: space-between; align-items: center; padding: 6px 12px; background: #2a2a2a; border-bottom: 1px solid #333; font-size: 0.9em; }
 .cauldron-recipe-row:hover { background: #333; }
-.recipe-text { display: flex; align-items: center; gap: 5px; flex-wrap: wrap; }
+.recipe-text { display: flex; align-items: center; gap: 2px; flex-wrap: wrap; font-size:1.0em; }
 
 .fav-recipe-item { display: flex; justify-content: space-between; align-items: center; background: #333; padding: 8px; border-radius: 4px; margin-bottom: 5px; font-size: 0.9em; }
 
@@ -398,3 +398,5 @@ button.reset-btn:hover { background: var(--danger); color: white; }
 .btn-fav.active { background: var(--info); color: white; font-weight: bold; }
 
 .compact-grid { grid-template-columns: repeat(auto-fill, minmax(110px, 1fr)) !important; gap: 5px !important; }
+
+

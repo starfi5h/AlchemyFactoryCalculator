@@ -1,6 +1,6 @@
 window.ALCHEMY_DB = {
-    "version": 23,
-    "date": "2025.01.06",
+    "version": 24,
+    "date": "2025.01.07",
     "gameVersion": "0.4.1.3800",
     "items": {
         // --- 1. RAW RESOURCES ---
@@ -11,7 +11,8 @@ window.ALCHEMY_DB = {
         "Rock Salt": { "id": 22, "category": "Raw Materials", "buyPrice": 9000, "maxStack": -200, "cauldronCost": 35 },
         "Coal Ore": { "id": 21, "category": "Raw Materials", "buyPrice": 4800, "maxStack": -120, "heat": 30000, "cauldronCost": 37 },
         "Rotten Log": { "id": 20, "category": "Raw Materials", "buyPrice": 2000, "maxStack": -200, "cauldronCost": 6.5 },
-        "Quartz Ore": { "id": 25, "category": "Raw Materials", "buyPrice": 44000, "maxStack": -80, "cauldronCost": 230 },
+        // temp move Quartz Ore id from 25 to 24
+        "Quartz Ore": { "id": 24, "category": "Raw Materials", "buyPrice": 44000, "maxStack": -80, "cauldronCost": 230 },
         "Meteorite": { "id": 26, "category": "Raw Materials", "buyPrice": 2000000, "maxStack": -1000, "cauldronCost": 800 },
 
         // --- 2. SEEDS ---
@@ -97,7 +98,8 @@ window.ALCHEMY_DB = {
         "Crude Silver Powder": { "id": 803, "category": "Mash", "cauldronCost": 1273.5, "cauldronMulti": 0.7, "cauldronTarget": 1673.5 },
         "Impure Silver Powder": { "id": 804, "category": "Mash", "cauldronCost": 2547, "cauldronMulti": 0.7, "cauldronTarget": 3347 },
         "Silver Powder": { "id": 805, "category": "Mash", "cauldronCost": 4742, "cauldronMulti": 0.7, "cauldronTarget": 4742 },
-        "Volcanic Ash": { "id": 29, "category": "Mash", "cauldronCost": 5290 },
+        // temp move Volcanic Ash id from 29 to 807
+        "Volcanic Ash": { "id": 807, "category": "Mash", "cauldronCost": 5290 },
         "Crude Gold Dust": { "id": 901, "category": "Mash", "cauldronCost": 10805.325, "cauldronMulti": 0.5, "cauldronTarget": 13805.325 },
         "Impure Gold Dust": { "id": 902, "category": "Mash", "cauldronCost": 21610.65, "cauldronMulti": 0.5, "cauldronTarget": 27610.65 },
         "Gold Dust": { "id": 903, "category": "Mash", "cauldronCost": 42357.3, "cauldronMulti": 0.5, "cauldronTarget": 52357.3 },

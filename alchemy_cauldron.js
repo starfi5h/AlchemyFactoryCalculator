@@ -67,22 +67,24 @@ function syncCandidatesFromProfile() {
 function getPresetCandidates(poolType) {
     let candidateSet = new Set();
     try {
-
+        let inputSet = new Set();
         if (poolType === 'Herbs') {
             Object.entries(DB.items).forEach(([name, item]) => {
                 if (item.cauldronCost !== undefined && item.nutrientCost !== undefined) {
                     candidateSet.add(name);
+                    inputSet.add(name);
                 }
             });
         }
         else if (poolType === 'Gold') {
             Object.entries(DB.items).forEach(([name, item]) => {
                 if (item.cauldronCost !== undefined && (item.buyPrice !== undefined || item.category === 'Currency')) {
-                    candidateSet.add(name);
+                    inputSet.add(name);
+                    // Raw Materials has negative maxStack, it's not suitable for cauldron
+                    if (item.category !== 'Raw Materials' && item.cauldronCost !== 750) candidateSet.add(name);
                 }
             });
-        }
-        let inputSet = new Set(candidateSet);
+        }        
 
         for (let round = 0; round < 3; round++) {
             let outputSet = new Set();
@@ -157,7 +159,7 @@ function renderCandidatePool() {
                           (item.category === cauldronCatFilter);
 
         if (!isVisible) return;
-        array.push({name: name, cost:item.cauldronCost||0, target:item.cauldronTarget||0});
+        array.push({name: name, cost:item.cauldronCost||0, target:item.cauldronTarget||0, id:item.id||0});
     });
 
     if (sortFlag) array.sort((a, b) => ((a.cost) - (b.cost)));
@@ -168,6 +170,7 @@ function renderCandidatePool() {
         const isChecked = cauldronCandidates.has(item.name) ? 'checked' : '';
         div.innerHTML = `
             <input type="checkbox" ${isChecked} onchange="toggleCandidate('${item.name}')">
+            <img src="img/item${item.id ?? 0}.png" style="margin-left: 4px;" width="18" height="18" loading="lazy">
             <span class="cand-name" ${item.target > 0 ? 'style="color:#66ddff"' : ''}>${item.name}</span>
             <span class="cand-cost" >${item.cost.toFixed(2)}</span>
         `;
@@ -413,7 +416,8 @@ function renderCauldronResults(data) {
         card.innerHTML = `
             <div class="node-content compact-card" data-out="${outName}" onclick="toggleCauldronCard(this, this.parentElement)">
                 <span class="tree-arrow">▼</span>
-                <span class="item-link"><strong>${outName}</strong></span>
+                <img src="img/item${outputItem.id ?? 0}.png" width="24" height="24">
+                <span class="item-link"><strong>${outName}</strong></span>                
                 <span class="qty" style="font-size:0.9em;">(${recipes.length})</span>
                 <span class="info-tag">${stats.time.toFixed(1)}s</span>
                 <span class="heat-tag">${stats.heat.toFixed(1)}P/s</span>
@@ -442,32 +446,78 @@ function toggleCauldronCard(thisCard, cardElement) {
 
 function renderRecipeRows(outName, container) {
     const recipes = lastCauldronResults[outName];
-    if (!recipes) return;
+    if (!recipes) {
+        container.innerHTML = '';
+        return;
+    }
+
+    // 1. 排序 (在運算之前先做)
     recipes.sort((a, b) => a.totalValue - b.totalValue);
-    const rowsHtml = recipes.map(r => {
-        const isFav = isRecipeFavorite(r.inputs, outName);
-        let ratio = 1.0;
-        if (r.inputs[0] === r.inputs[1] && r.inputs[1] === r.inputs[2]) ratio = 0.5;
-        else if (r.inputs[0] === r.inputs[1] || r.inputs[1] === r.inputs[2] || r.inputs[1] === r.inputs[3]) ratio = 0.65;
 
-        return `
-        <div class="cauldron-recipe-row">
-            <span class="recipe-text">
-                ${r.inputs.map(n => `<span>${n} <small>(${Number(DB.items[n].cauldronCost.toFixed(2))})</small></span>`).join(' + ')} 
-                <span style="color:var(--info);">➔</span> ${Number(r.totalValue.toFixed(2))} ${ratio === 1.0 ? '' : '* ' + ratio}
-            </span>
-            <button class="btn-fav ${isFav ? 'active' : ''}" 
-                data-i1="${r.inputs[0]}"
-                data-i2="${r.inputs[1]}" 
-                data-i3="${r.inputs[2]}"
-                data-out="${outName}"
-                onclick="toggleFavoriteStar(event, this)">
-                ${isFav ? '★' : '☆'}
-            </button>
-        </div>`;
-    }).join('');
+    // 2. 清空容器並準備分批
+    container.innerHTML = '';
+    const CHUNK_SIZE = 50; // 每一幀渲染的數量，可以根據複雜度調整
+    let currentIndex = 0;
 
-    container.innerHTML = rowsHtml;
+    // 3. 定義分批執行函數
+    function renderChunk() {
+        const end = Math.min(currentIndex + CHUNK_SIZE, recipes.length);
+        let fragmentHtml = "";
+
+        for (let i = currentIndex; i < end; i++) {
+            fragmentHtml += createRecipeRowHtml(recipes[i], outName);
+        }
+
+        // 使用 insertAdjacentHTML 避免清空原有內容
+        container.insertAdjacentHTML('beforeend', fragmentHtml);
+        
+        currentIndex = end;
+
+        // 如果還沒畫完，請求下一幀繼續
+        if (currentIndex < recipes.length) {
+            requestAnimationFrame(renderChunk);
+        }
+    }
+
+    // 4. 事件委託 (只需綁定一次，建議放在外部初始化)
+    if (!container.dataset.hasListener) {
+        container.addEventListener('click', (e) => {
+            const btn = e.target.closest('.btn-fav');
+            if (btn) toggleFavoriteStar(e, btn);
+        });
+        container.dataset.hasListener = "true";
+    }
+
+    // 開始渲染
+    requestAnimationFrame(renderChunk);
+}
+
+function createRecipeRowHtml(r, outName) {
+    const { inputs, totalValue } = r;
+    const isFav = isRecipeFavorite(inputs, outName);
+    
+    let ratioTag = ``;
+    const [i0, i1, i2, i3] = inputs;
+    if (i0 === i1 && i1 === i2) ratioTag = `<span style="color:var(--danger);"> * 0.5</span>`;
+    else if (i0 === i1 || i1 === i2 || i2 === i3) ratioTag = `<span style="color:var(--warn);"> * 0.65</span>`;
+
+    const inputsHtml = inputs.map(n => {
+        const item = DB.items[n] || { id: 0, cauldronCost: 0 };
+        return `<img src="img/item${item.id ?? 0}.png" width="18" height="18" loading="lazy">${n} <small>(${Number(item.cauldronCost.toFixed(2))})</small>`;
+    }).join(' + ');
+
+    // 移除 inline onclick，改用 class 識別
+    return `
+    <div class="cauldron-recipe-row">
+        <span class="recipe-text">
+            ${inputsHtml} 
+            <span style="color:var(--info);">➔</span> ${totalValue.toFixed(2)} ${ratioTag}
+        </span>
+        <button class="btn-fav ${isFav ? 'active' : ''}" 
+            data-i1="${i0 || ''}" data-i2="${i1 || ''}" data-i3="${i2 || ''}" data-out="${outName}">
+            ${isFav ? '★' : '☆'}
+        </button>
+    </div>`;
 }
 
 function isRecipeFavorite(inputs, out) {
@@ -516,7 +566,7 @@ function checkUnattainableItems(producedData) {
         section.style.display = 'block';
         container.innerHTML = unattainableList.map(name => `
             <div class="picker-item" style="border-color:#444; padding:5px;">
-                <div style="font-size:1.0em;">${name}</div>
+                <div style="font-size:1.0em; display: flex; align-items: center;"><img src="img/item${DB.items[name]?.id ?? 0}.png" alt="icon" width="24" height="24">${name}</div>
                 <div style="font-size:0.9em; color:var(--warn);">T: ${DB.items[name].cauldronTarget}</div>
             </div>
         `).join('');
@@ -571,6 +621,7 @@ function renderCauldronFavorites() {
         card.innerHTML = `
             <div class="node-content compact-card" onclick="this.parentElement.classList.toggle('collapsed')">
                 <span class="tree-arrow">▼</span>
+                <img src="img/item${DB.items[outName]?.id ?? 0}.png" width="24" height="24">
                 <span class="item-link"><strong>${outName}</strong></span>
                 <span class="qty">(${items.length})</span>
                 <span class="info-tag">${itemPerMin > 0 ? itemPerMin.toFixed(1) + '/min' : ''}</span>
@@ -578,8 +629,10 @@ function renderCauldronFavorites() {
             <div class="node-children compact-children">
                 ${items.map(f => `
                     <div class="cauldron-recipe-row">
-                        <span class="recipe-text" style="font-size:0.9em;">
-                            ${f.inputs.join(' + ')}
+                        <span class="recipe-text">
+                            <img src="img/item${DB.items[f.inputs[0]]?.id ?? 0}.png" width="18" height="18">${f.inputs[0]} + 
+                            <img src="img/item${DB.items[f.inputs[1]]?.id ?? 0}.png" width="18" height="18">${f.inputs[1]} + 
+                            <img src="img/item${DB.items[f.inputs[2]]?.id ?? 0}.png" width="18" height="18">${f.inputs[2]}
                         </span>
                         <button class="swap-btn" style="color:var(--warn); border-color:var(--warn);" 
                                 onclick="toggleFavorite('${f.inputs[0]}','${f.inputs[1]}','${f.inputs[2]}','${outName}')">
