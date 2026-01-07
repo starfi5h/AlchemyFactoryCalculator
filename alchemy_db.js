@@ -1,18 +1,18 @@
 window.ALCHEMY_DB = {
-    "version": 21,
-    "date": "2025.01.03",
+    "version": 22,
+    "date": "2025.01.05",
     "gameVersion": "0.4.1.3800",
     "items": {
         // --- 1. RAW RESOURCES ---
-        "Logs": { "id": 1, "category": "Raw Materials", "buyPrice": 200, "heat": 2000, "cauldronCost": 0.8 },
-        "Limestone": { "id": 2, "category": "Raw Materials", "buyPrice": 600, "cauldronCost": 3 },
-        "Iron Ore": { "id": 3, "category": "Raw Materials", "buyPrice": 1200, "cauldronCost": 10 },
-        "Pyrite Ore": { "id": 23, "category": "Raw Materials", "buyPrice": 11000, "cauldronCost": 45 },
-        "Rock Salt": { "id": 22, "category": "Raw Materials", "buyPrice": 9000, "cauldronCost": 35 },
-        "Coal Ore": { "id": 21, "category": "Raw Materials", "buyPrice": 4800, "heat": 30000, "cauldronCost": 37 },
-        "Rotten Log": { "id": 20, "category": "Raw Materials", "buyPrice": 2000, "cauldronCost": 6.5 },
-        "Quartz Ore": { "id": 25, "category": "Raw Materials", "buyPrice": 44000, "cauldronCost": 230 },
-        "Meteorite": { "id": 26, "category": "Raw Materials", "buyPrice": 2000000, "cauldronCost": 800 },
+        "Logs": { "id": 1, "category": "Raw Materials", "buyPrice": 200, "maxStack": -200, "heat": 2000, "cauldronCost": 0.8 },
+        "Limestone": { "id": 2, "category": "Raw Materials", "buyPrice": 600, "maxStack": -150, "cauldronCost": 3 },
+        "Iron Ore": { "id": 3, "category": "Raw Materials", "buyPrice": 1200, "maxStack": -100, "cauldronCost": 10 },
+        "Pyrite Ore": { "id": 23, "category": "Raw Materials", "buyPrice": 11000, "maxStack": -160, "cauldronCost": 45 },
+        "Rock Salt": { "id": 22, "category": "Raw Materials", "buyPrice": 9000, "maxStack": -200, "cauldronCost": 35 },
+        "Coal Ore": { "id": 21, "category": "Raw Materials", "buyPrice": 4800, "maxStack": -120, "heat": 30000, "cauldronCost": 37 },
+        "Rotten Log": { "id": 20, "category": "Raw Materials", "buyPrice": 2000, "maxStack": -200, "cauldronCost": 6.5 },
+        "Quartz Ore": { "id": 25, "category": "Raw Materials", "buyPrice": 44000, "maxStack": -80, "cauldronCost": 230 },
+        "Meteorite": { "id": 26, "category": "Raw Materials", "buyPrice": 2000000, "maxStack": -1000, "cauldronCost": 800 },
 
         // --- 2. SEEDS ---
         "Flax Seeds": { "id":4, "category": "Seeds", "buyPrice": 280, "maxStack": 20, "cauldronCost": 115 },
@@ -136,7 +136,7 @@ window.ALCHEMY_DB = {
         "Eternal Catalyst": { "id": 908, "category": "Catalyst", "cauldronCost": 1193041.6 },
 
 	// --- 12. Magic ---
-        "Philosopher's Stone": { "id": 33, "category": "Magic", "cauldronCost": 1000000, "cauldronMulti": 1, "cauldronTarget": 1000000 },
+        "Philosopherˈs Stone": { "id": 33, "category": "Magic", "cauldronCost": 1000000, "cauldronMulti": 1, "cauldronTarget": 1000000 },
         "Oblivion Essence": { "id": 25, "category": "Magic", "cauldronCost": 600, "cauldronMulti": 1, "cauldronTarget": 600 },
         "Vitality Essence": { "id": 709, "category": "Magic", "cauldronCost": 900, "cauldronMulti": 1, "cauldronTarget": 900 },
         "Star Dust": { "id": 909, "category": "Magic", "cauldronCost": 4149, "cauldronMulti": 1, "cauldronTarget": 6149 },
@@ -170,13 +170,13 @@ window.ALCHEMY_DB = {
         "Crown": { "id": 907, "category": "Jewelry", "sellPrice": 1600000, "cauldronCost": 854167.8 },
 
         // --- 15. RELICS ---
-        "Jupiter": { "id": 502, "category": "Relic", "sellPrice": 30000, "cauldronCost": 34 },
-        "Saturn": { "id": 619, "category": "Relic", "sellPrice": 150000, "cauldronCost": 714 },
-        "Mars": { "id": 620, "category": "Relic", "sellPrice": 280000, "cauldronCost": 1678 },
-        "Venus": { "id": 710, "category": "Relic", "sellPrice": 1000000, "cauldronCost": 2549.6 },
-        "Mercury": { "id": 814, "category": "Relic", "sellPrice": 5200000, "cauldronCost": 26927.8 },
-        "Luna": { "id": 914, "category": "Relic", "sellPrice": 18500000, "cauldronCost": 187167.6 },
-        "Sol": { "id": 1001, "category": "Relic", "sellPrice": 42000000, "cauldronCost": 5587945.6 },
+        "Jupiter": { "id": 502, "category": "Relic", "sellPrice": 30000, "maxStack": -300, "cauldronCost": 34 },
+        "Saturn": { "id": 619, "category": "Relic", "sellPrice": 150000, "maxStack": -100, "cauldronCost": 714 },
+        "Mars": { "id": 620, "category": "Relic", "sellPrice": 280000, "maxStack": -75, "cauldronCost": 1678 },
+        "Venus": { "id": 710, "category": "Relic", "sellPrice": 1000000, "maxStack": -200, "cauldronCost": 2549.6 },
+        "Mercury": { "id": 814, "category": "Relic", "sellPrice": 5200000, "maxStack": -100, "cauldronCost": 26927.8 },
+        "Luna": { "id": 914, "category": "Relic", "sellPrice": 18500000, "maxStack": -75, "cauldronCost": 187167.6 },
+        "Sol": { "id": 1001, "category": "Relic", "sellPrice": 42000000, "maxStack": -5, "cauldronCost": 5587945.6 },
 
         // --- 16. OTHER ---
         "Portal Sigil": { "id": 2001, "category": "Other", "buyPrice": 1500, "cauldronCost": 750 },
@@ -211,7 +211,8 @@ window.ALCHEMY_DB = {
         "Advanced Shaper": { "buildCost": { "Steel Ingot": 8, "Steel Gear": 16 } },
         "Arcane Shaper": { "buildCost": { "Gold Ingot": 12, "Copper Bearing": 18, "Steel Gear": 24 } },
         "Paradox Crucible": { "heatCost": 1200.0, "parent": "Stone Furnace", "slotsRequired": 9, "buildCost": { "Bronze Rivet": 16, "Copper Ingot": 8, "Steel Ingot": 8 } },
-        "Cauldron": { "heatCost": 0, "parent": "Stone Furnace", "buildCost": { "Bronze Ingot": 30 } },
+        // Cauldron heatCost is depend on the recipe. Use a non-zero value as placeholder here
+        "Cauldron": { "heatCost": -1, "parent": "Stone Furnace", "buildCost": { "Bronze Ingot": 30 } },
         "Arcane Processor": { "buildCost": { "Steel Ingot": 6, "Steel Gear": 12, "Lapis Lazuli": 2 } },
         "Enhanced Grinder": { "buildCost": { "Plank": 12, "Steel Gear": 3 } },
         "Nursery": { "fertility": true, "buildCost": { "Iron Ingot": 12, "Clay": 6 } },
@@ -367,8 +368,9 @@ window.ALCHEMY_DB = {
         { "id": "Oblivion Essence Gentian Nectar", "machine": "Paradox Crucible", "inputs": { "Gentian Nectar": 1 }, "outputs": { "Oblivion Essence": 1 }, "baseTime": 3.6 },
         { "id": "Vitality Essence", "machine": "Paradox Crucible", "inputs": { "Oblivion Essence": 1 }, "outputs": { "Vitality Essence": 1 }, "baseTime": 5.0 },
         { "id": "Resonant Catalyst", "machine": "Advanced Blender", "inputs": { "Fertile Catalyst": 1, "Volcanic Ash": 1, "Aqua Vitae": 12 }, "outputs": { "Resonant Catalyst": 1 }, "baseTime": 8.0 },
-        { "id": "Eternal Catalyst", "machine": "Arcane Processor", "inputs": { "Resonant Catalyst": 15, "Philosopher's Stone": 1 }, "outputs": { "Eternal Catalyst": 1 }, "baseTime": 60.0 },
-        { "id": "Philosopher's Stone", "machine": "Advanced Assembler", "inputs": { "Ruby": 1, "Sapphire": 1, "Emerald": 1 }, "outputs": { "Philosopher's Stone": 1 }, "baseTime": 60.0 },
+        { "id": "Eternal Catalyst", "machine": "Arcane Processor", "inputs": { "Resonant Catalyst": 15, "Philosopherˈs Stone": 1 }, "outputs": { "Eternal Catalyst": 1 }, "baseTime": 60.0 },
+        // Note: ˈ is U+02C8, not ASCII 39
+        { "id": "Philosopherˈs Stone", "machine": "Advanced Assembler", "inputs": { "Ruby": 1, "Sapphire": 1, "Emerald": 1 }, "outputs": { "Philosopherˈs Stone": 1 }, "baseTime": 60.0 },
 
         // --- SHARDS & GEMS CHAIN ---
         { "id": "Crude Shard", "machine": "Stone Crusher", "inputs": { "Quartz Ore": 1 }, "outputs": { "Crude Shard": 80 }, "baseTime": 480.0 },
@@ -405,9 +407,9 @@ window.ALCHEMY_DB = {
             "outputs": { "Obsidian": 1, "Volcanic Ash": 1 }, 
             "baseTime": 12.0
         },
-        { "id": "Ruby", "machine": "Cauldron", "inputs": { "Diamond": 1, "Gold Dust": 1, "Resonant Catalyst": 1 }, "outputs": { "Ruby": 1 }, "baseTime": 30.9 },
-        { "id": "Sapphire", "machine": "Cauldron", "inputs": { "Perfect Diamond": 1, "World Tree Core": 1, "Unstable Catalyst": 1 }, "outputs": { "Sapphire": 1 }, "baseTime": 38.2 },
-        { "id": "Emerald", "machine": "Cauldron", "inputs": { "Moonlit Soap": 1, "Lapis Lazuli": 1, "Resonant Catalyst": 1 }, "outputs": { "Emerald": 1 }, "baseTime": 45.5 },
+        { "id": "Ruby", "machine": "Cauldron", "inputs": { "Diamond": 1, "Gold Dust": 1, "Resonant Catalyst": 1 }, "outputs": { "Ruby": 1 }, "baseTime": 30.9, "heatCost": 3131.3 },
+        { "id": "Sapphire", "machine": "Cauldron", "inputs": { "Perfect Diamond": 1, "World Tree Core": 1, "Unstable Catalyst": 1 }, "outputs": { "Sapphire": 1 }, "baseTime": 38.2, "heatCost": 4848.5  },
+        { "id": "Emerald", "machine": "Cauldron", "inputs": { "Moonlit Soap": 1, "Lapis Lazuli": 1, "Resonant Catalyst": 1 }, "outputs": { "Emerald": 1 }, "baseTime": 45.5, "heatCost": 6565.7 },
 
         // --- METEORITE MEGA-RECIPE ---
         { 
@@ -426,7 +428,7 @@ window.ALCHEMY_DB = {
         { "id": "Saturn", "machine": "Shaper", "inputs": { "Salt": 600, "Brick": 600, "Glass": 600 }, "outputs": { "Saturn": 1 }, "baseTime": 300.0 },
         { "id": "Mars", "machine": "Shaper", "inputs": { "Iron Nails": 600, "Steel Gear": 300, "Bronze Rivet": 600, "Copper Bearing": 300 }, "outputs": { "Mars": 1 }, "baseTime": 300.0 },
         { "id": "Venus", "machine": "Advanced Shaper", "inputs": { "Healing Potion": 200, "Vitality Potion": 200, "Transformation Potion": 200, "Growth Potion": 200, "Blast Potion": 200, "Sulfuric Acid": 4000 }, "outputs": { "Venus": 1 }, "baseTime": 1200.0 },
-        { "id": "Star Dust", "machine": "Arcane Processor", "inputs": { "Jupiter": 12, "Saturn": 4, "Mars": 3 }, "outputs": { "Star Dust": 2 }, "baseTime": 300.0 },
+        { "id": "Star Dust", "machine": "Arcane Processor", "inputs": { "Jupiter": 1, "Saturn": 1, "Mars": 1 }, "outputs": { "Star Dust": 50 }, "baseTime": 300.0 },
         { "id": "Fairy Dust", "machine": "Arcane Processor", "inputs": { "Chamomile Powder": 1, "Gentian Powder": 1, "World Tree Leaf": 1 }, "outputs": { "Fairy Dust": 1 }, "baseTime": 4.0 },
         { "id": "Luna", "machine": "Arcane Shaper", "inputs": { "Steel Ingot": 75, "Bronze Ingot": 75, "Copper Ingot": 75, "Silver Ingot": 75, "Gold Ingot": 75, "Moon Tear": 75 }, "outputs": { "Luna": 1 }, "baseTime": 600.0 },
         { "id": "Mercury", "machine": "Arcane Shaper", "inputs": { "Turquoise": 100, "Malachite": 100, "Topaz": 100, "Obsidian": 100, "Lapis Lazuli": 100, "Quicksilver": 1000 }, "outputs": { "Mercury": 1 }, "baseTime": 600.0 },

@@ -61,6 +61,7 @@ function syncCandidatesFromProfile() {
     const currentList = cauldronState.profiles[cauldronState.activeProfile].candidates || [];
     cauldronCandidates = new Set();
     currentList.forEach(key => {if(isVaildCandidate(key)) cauldronCandidates.add(key);});
+    cauldronState.profiles[cauldronState.activeProfile].candidates = Array.from(cauldronCandidates);
 }
 
 function getPresetCandidates(poolType) {
@@ -115,7 +116,7 @@ function populateCauldronCategories() {
     const cats = ["[All]", "[Include]", "[Exclude]"];
     const itemCats = new Set();
     Object.values(DB.items).forEach(i => { if(i.category) itemCats.add(i.category); });
-    const sortedCats = cats.concat(Array.from(itemCats).sort());
+    const sortedCats = cats.concat(Array.from(itemCats));
 
     sortedCats.forEach(cat => {
         let count = 0;
@@ -141,9 +142,11 @@ function populateCauldronCategories() {
 
 function renderCandidatePool() {
     cauldronCatFilter = document.getElementById('cauldron-cat-select').value;
+    const sortFlag = document.getElementById('cauldron-sort-by-cost').checked;
     const container = document.getElementById('candidate-pool');
     container.innerHTML = '';
 
+    let array = [];
     Object.keys(DB.items).forEach(name => {
         const item = DB.items[name];
         if (!isVaildCandidate(name)) return;
@@ -154,14 +157,19 @@ function renderCandidatePool() {
                           (item.category === cauldronCatFilter);
 
         if (!isVisible) return;
+        array.push({name: name, cost:item.cauldronCost||0, target:item.cauldronTarget||0});
+    });
 
+    if (sortFlag) array.sort((a, b) => ((a.cost) - (b.cost)));
+
+    array.forEach((item) => {
         const div = document.createElement('div');
         div.className = 'candidate-item';
-        const isChecked = cauldronCandidates.has(name) ? 'checked' : '';
+        const isChecked = cauldronCandidates.has(item.name) ? 'checked' : '';
         div.innerHTML = `
-            <input type="checkbox" ${isChecked} onchange="toggleCandidate('${name}')">
-            <span class="cand-name">${name}</span>
-            <span class="cand-cost">${item.cauldronCost.toFixed(2)}</span>
+            <input type="checkbox" ${isChecked} onchange="toggleCandidate('${item.name}')">
+            <span class="cand-name" ${item.target > 0 ? 'style="color:#66ddff"' : ''}>${item.name}</span>
+            <span class="cand-cost" >${item.cost.toFixed(2)}</span>
         `;
         container.appendChild(div);
     });
@@ -204,6 +212,7 @@ function bulkToggleCandidates(check) {
     renderCandidatePool();
     populateCauldronCategories();
     document.getElementById('cauldron-cat-select').value = cauldronCatFilter;
+    saveCauldronSettings();
 }
 
 /**
@@ -328,7 +337,6 @@ async function runCauldronSimulation() {
     }       
     
     const list = Array.from(cauldronCandidates);
-    if (list.length === 0) return;
     list.sort((a, b) => (DB.items[a].cauldronCost - DB.items[b].cauldronCost));
 
     const btn = document.getElementById('btn-run-cauldron');
@@ -337,7 +345,7 @@ async function runCauldronSimulation() {
 
     const resultsByOutput = {};
     const totalCombos = (list.length * (list.length + 1) * (list.length + 2)) / 6;
-    let count = 0;
+    let comboCount = 0; let recipeCount = 0;
     let lastUpdate = Date.now();
     let n0, n1, n2;
 
@@ -361,12 +369,13 @@ async function runCauldronSimulation() {
                         inputs: [n0, n1, n2],
                         totalValue: res.totalValue
                     });
+                    recipeCount++;
                 }
-                count++;
+                comboCount++;
             }
 
             if (Date.now() - lastUpdate > 150) {
-                progText.innerText = `${Math.round((count / totalCombos) * 100)}%`;
+                progText.innerText = `${Math.round((comboCount / totalCombos) * 100)}%`;
                 await new Promise(r => setTimeout(r, 0));
                 lastUpdate = Date.now();
             }
@@ -379,7 +388,7 @@ async function runCauldronSimulation() {
 
     renderCauldronResults(resultsByOutput);
     checkUnattainableItems(resultsByOutput);
-    progText.innerText = "Done";
+    progText.innerText = ` (${recipeCount}) `;
     btn.disabled = false;
 }
 
@@ -400,7 +409,7 @@ function renderCauldronResults(data) {
         card.id = `cauldron-out-${outName.replace(/\s+/g, '-')}`; // 方便定位
         
         card.innerHTML = `
-            <div class="node-content compact-card" onclick="toggleCauldronCard('${outName}', this.parentElement)">
+            <div class="node-content compact-card" data-out="${outName}" onclick="toggleCauldronCard(this, this.parentElement)">
                 <span class="tree-arrow">▼</span>
                 <span class="item-link"><strong>${outName}</strong></span>
                 <span class="qty" style="font-size:0.9em;">(${recipes.length})</span>
@@ -419,11 +428,12 @@ function renderCauldronResults(data) {
 /**
  * 点击标题行时的处理：切换显示并按需生成 DOM
  */
-function toggleCauldronCard(outName, cardElement) {
+function toggleCauldronCard(thisCard, cardElement) {
     const childrenContainer = cardElement.querySelector('.node-children');
     const isCollapsed = cardElement.classList.contains('collapsed');
     if (isCollapsed && childrenContainer.querySelector('.loading-placeholder')) {
-        renderRecipeRows(outName, childrenContainer);
+        const { out } = thisCard.dataset;
+        renderRecipeRows(out, childrenContainer);
     }
     cardElement.classList.toggle('collapsed');
 }
@@ -431,7 +441,6 @@ function toggleCauldronCard(outName, cardElement) {
 function renderRecipeRows(outName, container) {
     const recipes = lastCauldronResults[outName];
     if (!recipes) return;
-
     recipes.sort((a, b) => a.totalValue - b.totalValue);
     const rowsHtml = recipes.map(r => {
         const isFav = isRecipeFavorite(r.inputs, outName);
@@ -445,14 +454,18 @@ function renderRecipeRows(outName, container) {
                 ${r.inputs.map(n => `<span>${n} <small>(${Number(DB.items[n].cauldronCost.toFixed(2))})</small></span>`).join(' + ')} 
                 <span style="color:var(--info);">➔</span> ${Number(r.totalValue.toFixed(2))} ${ratio === 1.0 ? '' : '* ' + ratio}
             </span>
-            <button class="btn-fav ${isFav ? 'active' : ''}" onclick="event.stopPropagation(); toggleFavoriteStar('${r.inputs[0]}','${r.inputs[1]}','${r.inputs[2]}','${outName}', this)">
+            <button class="btn-fav ${isFav ? 'active' : ''}" 
+                data-i1="${r.inputs[0]}"
+                data-i2="${r.inputs[1]}" 
+                data-i3="${r.inputs[2]}"
+                data-out="${outName}"
+                onclick="toggleFavoriteStar(event, this)">
                 ${isFav ? '★' : '☆'}
             </button>
         </div>`;
     }).join('');
 
     container.innerHTML = rowsHtml;
-
 }
 
 function isRecipeFavorite(inputs, out) {
@@ -461,7 +474,9 @@ function isRecipeFavorite(inputs, out) {
     return favs.some(f => f.output === out && [...f.inputs].sort().join('|') === sortedIn.join('|'));
 }
 
-function toggleFavoriteStar(i1, i2, i3, out, btn) {
+function toggleFavoriteStar(event, btn) {
+    event.stopPropagation();
+    const { i1, i2, i3, out } = btn.dataset;
     const favs = cauldronState.favorites;
     const recipeInputs = [i1, i2, i3].sort();
     const idx = favs.findIndex(f => f.output === out && [...f.inputs].sort().join('|') === recipeInputs.join('|'));
@@ -692,7 +707,11 @@ function syncCauldronToMainDB(notify = false) {
         // 处理输入物品计数 (例如 [Plank, Plank, Stone] -> {Plank: 2, Stone: 1})
         const inputCounts = {};
         fav.inputs.forEach(name => {
-            inputCounts[name] = (inputCounts[name] || 0) + 1;
+            // 對於原料或聖物, 它們的maxStack是負數, 每次只會使用一小部分
+            const inputDef = DB.items[targetItem];
+            let inputCount = 1;
+            if (inputDef?.maxStack && inputDef.maxStack < 0) inputCount = 1.0 / (-inputDef.maxStack);
+            inputCounts[name] = (inputCounts[name] || 0) + inputCount;
         });
 
         const newRecipe = {

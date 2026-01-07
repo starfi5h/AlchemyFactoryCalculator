@@ -34,7 +34,7 @@ let allItemsList = [];
 let currentFocus = -1;
 
 // ITEM PICKER GLOBALS
-let pickerCollapsedStates = { "Raw Materials": true, "Seeds": true, "Herbs": true};
+let pickerCollapsedStates = { "Raw Materials": true, "Seeds": true};
 
 // URL STATES
 let lastUrlItem = ""; 
@@ -471,6 +471,17 @@ function setActive(items) {
 function selectItem(name) {
     const input = document.getElementById('targetItemInput'); input.value = name;
     document.getElementById('ghost-text').innerText = ""; closeCombobox(); updateComboIcon(); updateFromSlider(); 
+}
+
+function selectRate(rate) {
+    document.getElementById('targetRate').disabled = false;
+    document.getElementById('targetRate').value = rate;
+}
+
+function recalculate(item, rate) {
+    selectItem(item);
+    selectRate(rate);
+    calculate();
 }
 
 /* ==========================================================================

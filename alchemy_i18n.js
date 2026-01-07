@@ -206,6 +206,7 @@ window.ALCHEMY_I18N = {
         "Filter Category": "筛选分类",
         "Select All": "全选",
         "Deselect All": "取消全选",
+        "Sort by Value": "以炼金价值排序",
         "Matching Results": "匹配结果",        
         "Calculate All": "计算全部",
         "Set Item": "指定物品",
@@ -364,7 +365,7 @@ window.ALCHEMY_I18N = {
         "Eternal Catalyst": "永恒催化剂",        
         "Oblivion Essence": "湮灭精华",
         "Vitality Essence": "生命精华",
-        "Philosopher's Stone": "贤者之石",
+        "Philosopherˈs Stone": "贤者之石",
 
         // --- GEMS & SHARDS ---
         "Crude Shard": "粗劣的晶片",

@@ -279,7 +279,7 @@ input:checked + .slider-switch:before { transform: translateX(16px); }
 .byproduct-tag { color: var(--byproduct); font-size: 0.85em; margin-left: 3px; font-weight: bold; }
 .info-tag { color: var(--info); font-size: 0.85em; margin-left: 3px; }
 .fail-tag { color: var(--danger); font-size: 0.85em; margin-left: 3px; font-weight: bold; }
-.max-cap-tag { color: #888; font-size: 0.8em; margin-left: 3px; font-style: italic; }
+.max-cap-tag { color: #888; font-size: 0.8em; margin-left: 3px; font-style: italic; cursor:pointer; }
 .details { font-size: 0.9em; color: #ccc; }
 .output-tag { color: var(--info); font-size: 0.85em; margin-left: 10px; font-weight: bold; border-left: 1px solid #555; padding-left: 10px; }
 .recycle-tag { color: var(--byproduct); font-size: 0.85em; margin-left: 10px; font-weight: bold; }

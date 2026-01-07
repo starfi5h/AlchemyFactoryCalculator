@@ -271,42 +271,70 @@ function calculatePass(p, isGhost) {
                 detailsTag = `<span class="details">(${t('External Input')})</span>`;
             }
         }
-        else if (itemDef.category === "Herbs" && itemDef.nutrientCost) {
-            // Nursery Logic
-            const fertilitySpeed = (fertDef.maxFertility || 12); const timePerItem = itemDef.nutrientCost / fertilitySpeed; 
-            const calculatedSpeed = (60 / timePerItem) * p.speedMult; 
-            const isLiquid = (itemDef.liquid === true);
-            const itemsPerMinPerMachine = isLiquid ? calculatedSpeed : Math.min(calculatedSpeed, p.beltSpeed);
-            
-            machinesNeeded = netRate / itemsPerMinPerMachine;
-            if (Math.abs(Math.round(machinesNeeded) - machinesNeeded) < 0.0001) { machinesNeeded = Math.round(machinesNeeded); }
+        else if (itemDef.nutrientCost) {
+            // --- 1. 計算 Nursery 生產速率與機器需求 ---
+            let machineName = "Nursery";
+            let fertilitySpeed = fertDef.maxFertility || 12;
+            if (itemDef.nutrientCost >= 30000) {
+                // 世界樹的特例處理
+                machineName = "World Tree Nursery";
+                fertilitySpeed = 20000;
+            }
+            const timePerItem = itemDef.nutrientCost / fertilitySpeed;
 
-            if(!effectiveGhost) {
-                addMachineCount("Nursery", item, Math.ceil(machinesNeeded - 0.0001), machinesNeeded);
+            // 考慮玩家速度加成後的單機產量 (items/min)
+            const machineOutputRate = (60 / timePerItem) * p.speedMult;
+            const itemsPerMinPerMachine = Math.min(machineOutputRate, p.beltSpeed);
+
+            // 計算所需機器總數，並處理浮點數捨入問題 (靠近整數時自動校正)
+            let machinesNeeded = netRate / itemsPerMinPerMachine;
+            if (Math.abs(Math.round(machinesNeeded) - machinesNeeded) < 0.0001) {
+                machinesNeeded = Math.round(machinesNeeded);
             }
 
-            const totalNutrientsNeeded = netRate * itemDef.nutrientCost; const itemsNeeded = totalNutrientsNeeded / grossFertVal; 
-            
-            // FIX: Always track Global Load (Fixes Summary Box)
-            if (effectiveGhost || !isInternalModule || isInternalModule) {
-                globalFertDemandItems += itemsNeeded; 
-                globalBioLoad += (totalNutrientsNeeded / 60); 
-            }
-            
-            if(!effectiveGhost) {
-                let tooltipText = `Recipe: ${item} (Nursery)\nBase Time: ${(timePerItem * (60/p.speedMult)).toFixed(1)}s\nSpeed Mult: ${p.speedMult.toFixed(2)}x\nThroughput: ${itemsPerMinPerMachine.toFixed(2)} items/min`;
+            // --- 2. 全域負載與需求追蹤 ---
+            const totalNutrientsNeeded = netRate * itemDef.nutrientCost;
+            const itemsNeeded = totalNutrientsNeeded / grossFertVal;
+            globalFertDemandItems += itemsNeeded;
+            globalBioLoad += (totalNutrientsNeeded / 60);
+
+            // --- 3. 處理非 Ghost 模式下的顯示邏輯 (UI/Tags) ---
+            if (!effectiveGhost) {
+                // A. 記錄機器數量
+                addMachineCount(machineName, item, Math.ceil(machinesNeeded - 0.0001), machinesNeeded);
+
+                // B. 生成 Tooltip 資訊
+                const actualBaseTime = timePerItem * (60 / p.speedMult);
+                const tooltipText = [
+                    `Recipe: ${item} (${t(machineName, 'machines')})`,
+                    `Base Time: ${actualBaseTime.toFixed(1)}s`,
+                    `Speed Mult: ${p.speedMult.toFixed(2)}x`,
+                    `Throughput: ${itemsPerMinPerMachine.toFixed(2)} items/min`
+                ].join('\n');
+
+                // C. 生成機器標籤 (Machine Tag)
                 let capTag = "";
-                if(p.showMaxCap) {
+                if (p.showMaxCap) {
                     const maxOutput = Math.ceil(machinesNeeded) * itemsPerMinPerMachine;
-                    capTag = `<span class="max-cap-tag">(Max: ${formatVal(maxOutput)}/m)</span>`;
+                    const usageRatio = netRate / maxOutput;
+                    capTag = `<span class="max-cap-tag" onclick="recalculate('${p.targetItem}', ${p.targetRate / usageRatio})">(Max: ${formatVal(maxOutput)}/m)</span>`;
                 }
-                machineTag = `<span class="machine-tag" data-tooltip="${tooltipText}">${Math.ceil(machinesNeeded)} ${t('Nursery', 'machines')}${capTag}</span>`;
+                machineTag = `<span class="machine-tag" data-tooltip="${tooltipText}">${Math.ceil(machinesNeeded)} ${t(machineName, 'machines')}${capTag}</span>`;
 
+                // D. 生成生物/肥料標籤 (Bio Tag)
                 const fertRate = netRate * itemDef.nutrientCost / grossFertVal;
-                bioTag = `-${formatVal(fertRate)}/m ${p.selectedFert}`;
-                if (p.showHeatFert) bioTag += ` (${formatVal(netRate * itemDef.nutrientCost / grossFertVal)} V/s)`;
-                bioTag = `<span class="bio-tag">` + bioTag + `</span>`;
-                if (p.showFertCost && p.fertCost > Number.EPSILON) costTag += `<span class="cost-tag">(${Math.ceil(fertRate * p.fertCost - Number.EPSILON).toLocaleString()} G/m)</span>`;
+                let bioText = `-${formatVal(fertRate)}/m ${p.selectedFert}`;
+                
+                if (p.showHeatFert) {
+                    bioText += ` (${formatVal(fertRate)} V/s)`;
+                }
+                bioTag = `<span class="bio-tag">${bioText}</span>`;
+
+                // E. 生成成本標籤 (Cost Tag)
+                if (p.showFertCost && p.fertCost > Number.EPSILON) {
+                    const costPerMin = Math.ceil(fertRate * p.fertCost - Number.EPSILON);
+                    costTag += `<span class="cost-tag">(${costPerMin.toLocaleString()} G/m)</span>`;
+                }
             }
         } 
         else {
@@ -371,7 +399,7 @@ function calculatePass(p, isGhost) {
                     const mach = DB.machines[recipe.machine]; const parent = DB.machines[mach.parent];
                     const sReq = mach.slotsRequired || 1; const pSlots = mach.parentSlots || parent.slots || 3;
                     let activeHeat = mach.heatCost * p.speedMult;
-                    if (recipe.heatCost !== undefined) { activeHeat = recipe.heatCost * p.speedMult;} // Overwrite 
+                    if (mach.heatCost < 0) { activeHeat = (recipe.heatCost ?? 0) * p.speedMult; console.log(recipe.heatCost)} // Overwrite 
                     
                     // NOTE: This part of heat calculation is different from others
                     const nodeParentsNeeded = Math.ceil((machinesNeeded / (pSlots/sReq)) - 0.0001);
@@ -409,7 +437,8 @@ function calculatePass(p, isGhost) {
                     let capTag = "";
                     if(p.showMaxCap) {
                         const maxOutput = Math.ceil(machinesNeeded) * throughput;
-                        capTag = `<span class="max-cap-tag">(Max: ${formatVal(maxOutput)}/m)</span>`;
+                        const usageRatio = netRate / maxOutput;
+                        capTag = `<span class="max-cap-tag" onclick="recalculate('${p.targetItem}', ${p.targetRate / usageRatio})">(Max: ${formatVal(maxOutput)}/m)</span>`;
                     }
                     machineTag = `<span class="machine-tag" data-tooltip="${tooltipText}">${Math.ceil(machinesNeeded)} ${t(recipe.machine, 'machines')}${capTag}</span>`;
 
@@ -747,11 +776,13 @@ function updateSummaryBox(p, heat, bio, cost, actualFuelNeed, actualFertNeed) {
     if (selfFuel && targetItem === selectedFuel) usedRate += actualFuelNeed;
     if (selfFert && targetItem === selectedFert) usedRate += actualFertNeed;
     const netRate = targetRate - usedRate;
+    let refRate = targetRate;
+    if (netRate > 0) refRate = targetRate * (targetRate / netRate);
     const outputHtml = `
         <div class="stat-block">
             <span class="stat-label">${t('Gross Output')}</span>
             <span class="stat-value ${targetRate >= 0 ? 'net-positive' : 'net-warning'}">${targetRate.toFixed(1)} / min</span>
-            ${usedRate > Number.EPSILON ? `<span class="stat-sub">Net: ${netRate.toFixed(1)} / min <br>Used: ${usedRate.toFixed(1)} / min</span>` : ''}
+            ${usedRate > Number.EPSILON ? `<span class="stat-sub" onclick="recalculate('${targetItem}' , ${refRate})">Net: ${netRate.toFixed(1)} / min <br>Used: ${usedRate.toFixed(1)} / min</span>` : ''}
         </div>`;
 
     // --- Load Blocks ---
