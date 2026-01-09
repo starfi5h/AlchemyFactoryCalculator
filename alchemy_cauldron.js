@@ -144,7 +144,7 @@ function populateCauldronCategories() {
 
 function renderCandidatePool() {
     cauldronCatFilter = document.getElementById('cauldron-cat-select').value;
-    const sortFlag = document.getElementById('cauldron-sort-by-cost').checked;
+    const sortFlag = document.getElementById('cauldron-sort-by-cost').checked;    
     const container = document.getElementById('candidate-pool');
     container.innerHTML = '';
 
@@ -187,6 +187,7 @@ function switchCauldronProfile(index) {
     populateCauldronCategories();
     renderCandidatePool();
     saveCauldronSettings();
+    if (document.getElementById('cauldron-real-time-calculation')?.checked) runCauldronSimulation();
 }
 
 function toggleCandidate(name) {
@@ -195,6 +196,7 @@ function toggleCandidate(name) {
     populateCauldronCategories();
     document.getElementById('cauldron-cat-select').value = cauldronCatFilter;
     saveCauldronSettings();
+    if (document.getElementById('cauldron-real-time-calculation')?.checked) runCauldronSimulation();
 }
 
 function bulkToggleCandidates(check) {
@@ -216,6 +218,7 @@ function bulkToggleCandidates(check) {
     populateCauldronCategories();
     document.getElementById('cauldron-cat-select').value = cauldronCatFilter;
     saveCauldronSettings();
+    if (document.getElementById('cauldron-real-time-calculation')?.checked) runCauldronSimulation();
 }
 
 /**
@@ -341,8 +344,8 @@ async function runCauldronSimulation() {
         return { output: bestItem, totalValue: (c1 + c2 + c3) };
     }       
     
-    const list = Array.from(cauldronCandidates);
-    list.sort((a, b) => (DB.items[a].cauldronCost - DB.items[b].cauldronCost));
+    const list = [...cauldronCandidates].filter(isVaildCandidate);
+    list.sort((a, b) => (DB.items[b].cauldronCost - DB.items[a].cauldronCost)); // 由大至小
 
     const btn = document.getElementById('btn-run-cauldron');
     const progText = document.getElementById('cauldron-progress');
@@ -431,55 +434,45 @@ function renderCauldronResults(data) {
     });
 }
 
-/**
- * 点击标题行时的处理：切换显示并按需生成 DOM
- */
+// 1. 建立一個查找用的快取，避免渲染時反覆遍歷陣列
+function getFavoriteKey(out, inputs) {
+    return `${out}|${[...inputs].sort().join(',')}`;
+}
+
 function toggleCauldronCard(thisCard, cardElement) {
     const childrenContainer = cardElement.querySelector('.node-children');
     const isCollapsed = cardElement.classList.contains('collapsed');
+    
+    // 只有在展開且尚未加載內容時才渲染
     if (isCollapsed && childrenContainer.querySelector('.loading-placeholder')) {
-        const { out } = thisCard.dataset;
-        renderRecipeRows(out, childrenContainer);
+        const outName = thisCard.dataset.out;
+        renderRecipeRows(outName, childrenContainer);
     }
     cardElement.classList.toggle('collapsed');
 }
 
 function renderRecipeRows(outName, container) {
     const recipes = lastCauldronResults[outName];
-    if (!recipes) {
+    if (!recipes || recipes.length === 0) {
         container.innerHTML = '';
         return;
     }
 
-    // 1. 排序 (在運算之前先做)
+    // 排序一次
     recipes.sort((a, b) => a.totalValue - b.totalValue);
 
-    // 2. 清空容器並準備分批
+    // 預先處理「收藏夾」索引，將複雜度從 O(N*M) 降到 O(N)
+    const favSet = new Set(
+        cauldronState.favorites
+            .filter(f => f.output === outName)
+            .map(f => [...f.inputs].sort().join(','))
+    );
+
     container.innerHTML = '';
-    const CHUNK_SIZE = 50; // 每一幀渲染的數量，可以根據複雜度調整
+    const CHUNK_SIZE = 100; // 稍微調高，現代瀏覽器處理簡單 HTML 很快
     let currentIndex = 0;
 
-    // 3. 定義分批執行函數
-    function renderChunk() {
-        const end = Math.min(currentIndex + CHUNK_SIZE, recipes.length);
-        let fragmentHtml = "";
-
-        for (let i = currentIndex; i < end; i++) {
-            fragmentHtml += createRecipeRowHtml(recipes[i], outName);
-        }
-
-        // 使用 insertAdjacentHTML 避免清空原有內容
-        container.insertAdjacentHTML('beforeend', fragmentHtml);
-        
-        currentIndex = end;
-
-        // 如果還沒畫完，請求下一幀繼續
-        if (currentIndex < recipes.length) {
-            requestAnimationFrame(renderChunk);
-        }
-    }
-
-    // 4. 事件委託 (只需綁定一次，建議放在外部初始化)
+    // 事件委託改進：只需綁定一次（通常建議在頁面初始化時綁定在父容器，而非此處）
     if (!container.dataset.hasListener) {
         container.addEventListener('click', (e) => {
             const btn = e.target.closest('.btn-fav');
@@ -488,25 +481,48 @@ function renderRecipeRows(outName, container) {
         container.dataset.hasListener = "true";
     }
 
-    // 開始渲染
+    function renderChunk() {
+        const end = Math.min(currentIndex + CHUNK_SIZE, recipes.length);
+        const rows = [];
+
+        for (let i = currentIndex; i < end; i++) {
+            rows.push(createRecipeRowHtml(recipes[i], outName, favSet));
+        }
+
+        container.insertAdjacentHTML('beforeend', rows.join(''));
+        currentIndex = end;
+
+        if (currentIndex < recipes.length) {
+            requestAnimationFrame(renderChunk);
+        }
+    }
+
     requestAnimationFrame(renderChunk);
 }
 
-function createRecipeRowHtml(r, outName) {
+function createRecipeRowHtml(r, outName, favSet) {
     const { inputs, totalValue } = r;
-    const isFav = isRecipeFavorite(inputs, outName);
     
-    let ratioTag = ``;
+    // 使用預先計算好的 Set 進行查找，性能極大提升
+    const sortedKey = [...inputs].sort().join(',');
+    const isFav = favSet.has(sortedKey);
+    
+    // 最佳化比例標籤邏輯
+    let ratioTag = '';
     const [i0, i1, i2, i3] = inputs;
-    if (i0 === i1 && i1 === i2) ratioTag = `<span style="color:var(--danger);"> * 0.5</span>`;
-    else if (i0 === i1 || i1 === i2 || i2 === i3) ratioTag = `<span style="color:var(--warn);"> * 0.65</span>`;
+    if (i0 === i1 && i1 === i2) {
+        ratioTag = '<span style="color:var(--danger);"> * 0.5</span>';
+    } else if (i0 === i1 || i1 === i2 || i2 === i3) {
+        ratioTag = '<span style="color:var(--warn);"> * 0.65</span>';
+    }
 
+    // 預先處理 HTML 片段
     const inputsHtml = inputs.map(n => {
         const item = DB.items[n] || { id: 0, cauldronCost: 0 };
-        return `<img src="img/item${item.id ?? 0}.png" width="18" height="18" loading="lazy">${n} <small>(${Number(item.cauldronCost.toFixed(2))})</small>`;
+        return `<img src="img/item${item.id}.png" width="18" height="18" loading="lazy">
+                ${n} <small>(${item.cauldronCost.toFixed(2)})</small>`;
     }).join(' + ');
 
-    // 移除 inline onclick，改用 class 識別
     return `
     <div class="cauldron-recipe-row">
         <span class="recipe-text">
@@ -518,12 +534,6 @@ function createRecipeRowHtml(r, outName) {
             ${isFav ? '★' : '☆'}
         </button>
     </div>`;
-}
-
-function isRecipeFavorite(inputs, out) {
-    const favs = cauldronState.favorites;
-    const sortedIn = [...inputs].sort();
-    return favs.some(f => f.output === out && [...f.inputs].sort().join('|') === sortedIn.join('|'));
 }
 
 function toggleFavoriteStar(event, btn) {
@@ -538,7 +548,7 @@ function toggleFavoriteStar(event, btn) {
         btn.classList.remove('active');
         btn.innerText = '☆';
     } else {
-        favs.push({ inputs: recipeInputs, output: out });
+        favs.push({ inputs: [i1, i2, i3], output: out });
         btn.classList.add('active');
         btn.innerText = '★';
     }

@@ -207,6 +207,7 @@ window.ALCHEMY_I18N = {
         "Select All": "全选",
         "Deselect All": "取消全选",
         "Sort by Value": "以炼金价值排序",
+        "Real-time calculation": "实时计算",
         "Matching Results": "匹配结果",        
         "Calculate All": "计算全部",
         "Set Item": "指定物品",

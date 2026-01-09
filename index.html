@@ -248,9 +248,11 @@
                         <button class="split-btn" onclick="bulkToggleCandidates(true)">Select All</button>
                         <button class="split-btn" onclick="bulkToggleCandidates(false)">Deselect All</button>
                     </div>
-                    <div style="margin-top:10px;">
+                    <div class="checkbox-row" style="margin-top:10px;">
                         <input type="checkbox" id="cauldron-sort-by-cost" checked onchange="renderCandidatePool()">
-                        <label for="cauldron-sort-by-cost" style="display:inline; margin:0; cursor:pointer; font-size: 1.0em;">Sort by Value</label>
+                        <label for="cauldron-sort-by-cost" style="display:inline; margin:0; cursor:pointer; font-size: 1.0em;">Sort by Value</label>                        
+                        <input type="checkbox" id="cauldron-real-time-calculation" style="margin-left:auto;">
+                        <label for="cauldron-real-time-calculation" style="display:inline; margin:0; cursor:pointer; font-size: 1.0em;">Real-time calculation</label>
                     </div>
                     <div id="candidate-pool" class="candidate-list">
                     </div>
