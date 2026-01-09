@@ -106,7 +106,7 @@ function calculate() {
         // 1. Gather Inputs
         let rawInput = document.getElementById('targetItemInput').value.trim();
         let targetItem = Object.keys(DB.items).find(k => k.toLowerCase() === rawInput.toLowerCase()) || rawInput;
-        const targetRate = parseFloat(document.getElementById('targetRate').value) || 0;
+        let targetRate = parseFloat(document.getElementById('targetRate').value) || 0;
         
         // Settings
         const selectedFuel = document.getElementById('fuelSelect').value;
@@ -128,7 +128,25 @@ function calculate() {
         const lvlAlchemy = parseInt(document.getElementById('lvlAlchemy').value) || 0;
         const lvlFert = parseInt(document.getElementById('lvlFert').value) || 0;
         
+        const isMachineMode = document.getElementById('machineModeToggle').checked;
+        const recipe = getActiveRecipe(targetItem);
+        const machineName = recipe ? "(" + t(recipe.machine, 'machines') + ")" : "N/A";
+        document.getElementById('active-machine-name').innerText = machineName;        
 
+        if (recipe) {
+            let batchYield = recipe.outputs[targetItem] || 1;
+            if (["Extractor", "Alembic", "Advanced Alembic"].includes(recipe.machine)) batchYield *= getAlchemyMult(lvlAlchemy);            
+            const ratePerMachine = (60 / (recipe.baseTime || 1)) * getSpeedMult(lvlSpeed) * batchYield;
+            if (isMachineMode) {
+                const machineCount = parseFloat(document.getElementById('targetMachine').value) || 0;
+                targetRate = machineCount * ratePerMachine;            
+                document.getElementById('targetRate').value = Number(targetRate.toFixed(2));
+            }
+            else {
+                const machineCount = targetRate / ratePerMachine;
+                document.getElementById('targetMachine').value = Number(machineCount.toFixed(2));
+            }
+        }
 
         const params = {
             targetItem, targetRate, 

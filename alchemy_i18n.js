@@ -120,6 +120,8 @@ window.ALCHEMY_I18N = {
         "Production Goal": "生产目标",
         "Target Item": "目标物品",
         "Select or Type...": "选择或输入...",
+        "Set by Machine Count": "按机器数量设置",
+        "Machine Count": "机器数量",
         "Belt Load Fraction": "传送带负载比例",
         "Belt": "带",
         "Custom Rate": "自定义速率",
