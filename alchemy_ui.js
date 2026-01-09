@@ -575,15 +575,35 @@ function resetToDefault() {
     } 
 }
 
-function adjustInput(id, delta) { const el = document.getElementById(id); let val = parseInt(el.value) || 0; el.value = Math.max(0, val + delta); }
+function toggleControlMode(shouldCalculate = false) {
+    const isMachineMode = document.getElementById('machineModeToggle').checked;    
+    const rateInputs = document.querySelectorAll('.rate-ctrl, #targetRate');
+    const machineInputs = document.querySelectorAll('.machine-ctrl, #targetMachine');
+    rateInputs.forEach(el => el.disabled = isMachineMode);
+    machineInputs.forEach(el => el.disabled = !isMachineMode);
+    document.getElementById('group-rate').style.opacity = isMachineMode ? "0.5" : "1";
+    document.getElementById('group-machine').style.opacity = isMachineMode ? "1" : "0.5";
+    if (shouldCalculate) calculate();
+}
+
+function adjustMachine(delta) {
+    const el = document.getElementById('targetMachine');
+    if (el.disabled) return;
+    let val = parseFloat(el.value) || 0;
+    el.value = Math.max(0, (Math.round((val + delta) * 10) / 10)).toFixed(1);
+    calculate();
+}
+
 function adjustRate(delta) { 
     const el = document.getElementById('targetRate'); 
     if(el.disabled) return; 
     let val = parseFloat(el.value) || 0; 
-    // Fix floating point errors (e.g. 0.1 + 0.2 = 0.300000004)
     el.value = (Math.round((val + delta) * 10) / 10).toFixed(1); 
     calculate(); 
 }
+
+function adjustInput(id, delta) { const el = document.getElementById(id); let val = parseInt(el.value) || 0; el.value = Math.max(0, val + delta); }
+
 
 /* ==========================================================================
    SECTION: MODAL LOGIC
