@@ -149,12 +149,15 @@ window.ALCHEMY_I18N = {
 
         // --- 3. Tree & Nodes ---
         "Gross Output": "总产出",
-        "Load": "负载",
+        "Total Load": "总负载",
+        "Unit Cost": "单位成本",
+        "Unit Value": "单位价值",        
+        "Coin": "铜币",
         "Heat": "热值",
-        "Nutr": "肥力",        
-        "Estimated Value": "预计价值",
-        "Cost": "成本",
-        "Profit": "利润",
+        "Nutr": "肥力",
+        "Conversion Cost": "换算成本",
+        "Retail Price   ": "零售价格",
+        "Wholesale Price": "批发价格",
 
         "Primary Production Chain": "主生产链",
         "Select Recipe": "选择配方",
@@ -185,8 +188,8 @@ window.ALCHEMY_I18N = {
 
         // --- 5. Upgrades ---
         "Upgrades (Levels)": "升级",
-        "Belt Speed": "传送带速度",
-        "Factory Speed": "工厂速度",
+        "Logistics Efficiency": "物流效率",
+        "Factory Efficiency": "工厂效率",
         "Alchemy Skill": "炼金技术",
         "Fuel Efficiency": "燃料效率",
         "Fert Efficiency": "肥料效率",

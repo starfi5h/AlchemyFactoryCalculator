@@ -223,7 +223,7 @@ input:checked + .slider-switch:before { transform: translateX(16px); }
 /* ==========================================================================
     SECTION: CSS - SUMMARY BOX
     ========================================================================== */
-.summary-box { background: #252525; border-left: 4px solid var(--accent); padding: 12px; margin-bottom: 20px; display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 10px; }
+.summary-box { background: #252525; border-left: 4px solid var(--accent); padding: 12px; margin-bottom: 20px; display: grid; grid-template-columns: 1fr 1fr 1fr 1fr; gap: 10px; }
 .stat-block { display: flex; flex-direction: column; padding-right: 10px; border-right: 1px solid #444; }
 .stat-block:last-child { border-right: none; }
 .stat-label { font-size: 0.75em; color: #aaa; text-transform: uppercase; letter-spacing: 1px; }
@@ -241,6 +241,21 @@ input:checked + .slider-switch:before { transform: translateX(16px); }
 .node.collapsed .node-children { display: none; }
 .node.collapsed .tree-arrow { transform: rotate(-90deg); }
 .node-children { margin-left: 0; }
+
+/* ==========================================================================
+   SECTION: PRODUCTION CHAIN DEPTH COLORS (Evolving Biome)
+   ========================================================================== */
+
+.node[data-depth="0"] { border-left-color: #1A237E; }
+.node[data-depth="1"] { border-left-color: #0D2D84; }
+.node[data-depth="2"] { border-left-color: #00378A; }
+.node[data-depth="3"] { border-left-color: #004D85; }
+.node[data-depth="4"] { border-left-color: #005A79; }
+.node[data-depth="5"] { border-left-color: #00666C; }
+.node[data-depth="6"] { border-left-color: #00705E; }
+.node[data-depth="7"] { border-left-color: #00774D; }
+.node[data-depth="8"] { border-left-color: #007D3A; }
+.node[data-depth="9"] { border-left-color: #1B8127; }
 
 .qty { color: var(--accent); font-weight: bold; }
 .item-link { cursor: pointer; text-decoration: none; color: inherit; transition: 0.2s; }
@@ -281,8 +296,8 @@ input:checked + .slider-switch:before { transform: translateX(16px); }
 .fail-tag { color: var(--danger); font-size: 0.85em; margin-left: 3px; font-weight: bold; }
 .max-cap-tag { color: #888; font-size: 0.8em; margin-left: 3px; font-style: italic; cursor:pointer; }
 .details { font-size: 0.9em; color: #ccc; }
-.output-tag { color: var(--info); font-size: 0.85em; margin-left: 10px; font-weight: bold; border-left: 1px solid #555; padding-left: 10px; }
-.recycle-tag { color: var(--byproduct); font-size: 0.85em; margin-left: 10px; font-weight: bold; }
+.output-tag { color: var(--info); font-size: 0.85em; margin-left: 3px; font-weight: bold; }
+.recycle-tag { color: var(--byproduct); font-size: 0.85em; margin-left: 3px; font-weight: bold; }
 .swap-btn { background: transparent; border: 1px solid #555; color: #888; width: 22px; height: 22px; border-radius: 50%; font-size: 11px; cursor: pointer; display: inline-flex; align-items: center; justify-content: center; padding: 0; line-height: 1; }
 .swap-btn:hover { background: #444; color: white; border-color: #fff; }
 

@@ -3,7 +3,6 @@
    Handles recursion, math, and tree node generation.
    ========================================================================== */
 
-let rowCounter = 0;
 let globalByproducts = {};
 
 const GLOBAL_CALC_STATE = {
@@ -103,95 +102,110 @@ function calculate() {
     try {
         if(!DB || !DB.recipes) return;
         
-        // 1. Gather Inputs
-        let rawInput = document.getElementById('targetItemInput').value.trim();
-        let targetItem = Object.keys(DB.items).find(k => k.toLowerCase() === rawInput.toLowerCase()) || rawInput;
-        let targetRate = parseFloat(document.getElementById('targetRate').value) || 0;
-        
-        // Settings
-        const selectedFuel = document.getElementById('fuelSelect').value;
-        const selfFuel = document.getElementById('selfFuel').checked;
-        const fuelCost = parseFloat(document.getElementById('fuelCostInput').value) || 0;
+        const params = gatherInputs();
 
-        const selectedFert = document.getElementById('fertSelect').value;
-        const selfFert = document.getElementById('selfFert').checked;
-        const fertCost = parseFloat(document.getElementById('fertCostInput').value) || 0;
-
-        const showFuelCost = document.getElementById('fuelCostEnable').checked;
-        const showFertCost = document.getElementById('fertCostEnable').checked;
-        const showMaxCap = document.getElementById('showMaxCap').checked;
-        const showHeatFert = document.getElementById('showHeatFert').checked;
-
-        const lvlSpeed = parseInt(document.getElementById('lvlSpeed').value) || 0;
-        const lvlBelt = parseInt(document.getElementById('lvlBelt').value) || 0;
-        const lvlFuel = parseInt(document.getElementById('lvlFuel').value) || 0;
-        const lvlAlchemy = parseInt(document.getElementById('lvlAlchemy').value) || 0;
-        const lvlFert = parseInt(document.getElementById('lvlFert').value) || 0;
-        
-        const isMachineMode = document.getElementById('machineModeToggle').checked;
-        const recipe = getActiveRecipe(targetItem);
-        const machineName = recipe ? "(" + t(recipe.machine, 'machines') + ")" : "N/A";
-        document.getElementById('active-machine-name').innerText = machineName;        
-
-        if (recipe) {
-            let batchYield = recipe.outputs[targetItem] || 1;
-            if (["Extractor", "Alembic", "Advanced Alembic"].includes(recipe.machine)) batchYield *= getAlchemyMult(lvlAlchemy);            
-            const ratePerMachine = (60 / (recipe.baseTime || 1)) * getSpeedMult(lvlSpeed) * batchYield;
-            if (isMachineMode) {
-                const machineCount = parseFloat(document.getElementById('targetMachine').value) || 0;
-                targetRate = machineCount * ratePerMachine;            
-                document.getElementById('targetRate').value = Number(targetRate.toFixed(2));
-            }
-            else {
-                const machineCount = targetRate / ratePerMachine;
-                document.getElementById('targetMachine').value = Number(machineCount.toFixed(2));
-            }
-        }
-
-        const params = {
-            targetItem, targetRate, 
-            selectedFuel, selfFuel, fuelCost, showFuelCost,
-            selectedFert, selfFert, fertCost, showFertCost,
-            showMaxCap, showHeatFert,
-            lvlSpeed, lvlBelt, lvlFuel, lvlAlchemy, lvlFert,
-            speedMult: getSpeedMult(lvlSpeed),
-            alchemyMult: getAlchemyMult(lvlAlchemy),
-            fuelMult: 1 + (lvlFuel * 0.10),
-            fertMult: 1 + (lvlFert * 0.10),
-            beltSpeed: getBeltSpeed(lvlBelt)
-        };
-
-        
-
-        try {
-            // --- UPDATE SMART LABEL ---
-            if (typeof getSmartLabel === 'function') {
-                const lbl = getSmartLabel(targetRate, params.beltSpeed);
-                document.getElementById('rateLabel').innerText = `${t('Rate (Items/Min)')}: ${lbl}`;
-            }
-            
-            const fuelDef = DB.items[selectedFuel] || {};
-            let netHeat = (fuelDef.heat || 0) * (1 + (lvlFuel * 0.10));
-            document.getElementById('fuelEfficiencyCost').innerText = (fuelCost == 0 || netHeat == 0) ? '' : (fuelCost/netHeat).toFixed(4) + ' G/P';
-
-            const fertDef = DB.items[selectedFert] || {};
-            let netNtur = (fertDef.nutrientValue || 0) * (1 + (lvlFert * 0.10));
-            document.getElementById('fertEfficiencyCost').innerText = (fertCost == 0 || netNtur == 0) ? '' : (fertCost/netNtur).toFixed(4) + ' G/V';
-
-        } catch(e) { console.error(e); }
+        updateLabels(params);
 
         // --- PASS 1: GHOST CALCULATION (Find Byproducts) ---
         globalByproducts = {}; 
         calculatePass(params, true); // True = Ghost Mode (No DOM, just Byproducts)
 
         // --- PASS 2: RENDER ---
-        rowCounter = 0;
         document.getElementById('tree').innerText = '';
         calculatePass(params, false); // False = Render Mode
 
         // --- PASS 3: TRANSLATION --- (extra)
         translateText();
         updateURL();
+
+    } catch(e) { console.error(e); }
+}
+
+
+function gatherInputs() {
+    // 1. Gather Inputs
+    let rawInput = document.getElementById('targetItemInput').value.trim();
+    let targetItem = Object.keys(DB.items).find(k => k.toLowerCase() === rawInput.toLowerCase()) || rawInput;
+    let targetRate = parseFloat(document.getElementById('targetRate').value) || 0;
+    
+    // Settings
+    const selectedFuel = document.getElementById('fuelSelect').value;
+    const selfFuel = document.getElementById('selfFuel').checked;
+    const fuelCost = parseFloat(document.getElementById('fuelCostInput').value) || 0;
+
+    const selectedFert = document.getElementById('fertSelect').value;
+    const selfFert = document.getElementById('selfFert').checked;
+    const fertCost = parseFloat(document.getElementById('fertCostInput').value) || 0;
+
+    const showFuelCost = document.getElementById('fuelCostEnable').checked;
+    const showFertCost = document.getElementById('fertCostEnable').checked;
+    const showMaxCap = document.getElementById('showMaxCap').checked;
+    const showHeatFert = document.getElementById('showHeatFert').checked;
+
+    const lvlSpeed = parseInt(document.getElementById('lvlSpeed').value) || 0;
+    const lvlBelt = parseInt(document.getElementById('lvlBelt').value) || 0;
+    const lvlFuel = parseInt(document.getElementById('lvlFuel').value) || 0;
+    const lvlAlchemy = parseInt(document.getElementById('lvlAlchemy').value) || 0;
+    const lvlFert = parseInt(document.getElementById('lvlFert').value) || 0;
+
+            
+    const isMachineMode = document.getElementById('machineModeToggle').checked;
+    const recipe = getActiveRecipe(targetItem);
+    const machineName = recipe ? "(" + t(recipe.machine, 'machines') + ")" : "N/A";
+    document.getElementById('active-machine-name').innerText = machineName;        
+
+    if (recipe) {
+        let batchYield = recipe.outputs[targetItem] || 1;
+        if (["Extractor", "Alembic", "Advanced Alembic"].includes(recipe.machine)) batchYield *= getAlchemyMult(lvlAlchemy);            
+        const ratePerMachine = (60 / (recipe.baseTime || 1)) * getSpeedMult(lvlSpeed) * batchYield;
+        if (isMachineMode) {
+            const machineCount = parseFloat(document.getElementById('targetMachine').value) || 0;
+            targetRate = machineCount * ratePerMachine;            
+            document.getElementById('targetRate').value = Number(targetRate.toFixed(2));
+        }
+        else {
+            const machineCount = targetRate / ratePerMachine;
+            document.getElementById('targetMachine').value = Number(machineCount.toFixed(2));
+        }
+    }
+    
+    return {
+        targetItem, targetRate, 
+        selectedFuel, selfFuel, fuelCost, showFuelCost,
+        selectedFert, selfFert, fertCost, showFertCost,
+        showMaxCap, showHeatFert,
+        lvlSpeed, lvlBelt, lvlFuel, lvlAlchemy, lvlFert,        
+        beltSpeed: getBeltSpeed(lvlBelt),
+        speedMult: getSpeedMult(lvlSpeed),
+        alchemyMult: getAlchemyMult(lvlAlchemy),
+        fuelMult: 1 + (lvlFuel * 0.10),
+        fertMult: 1 + (lvlFert * 0.10)
+    };
+}
+
+function updateLabels(params) {
+    try {
+        // --- UPDATE SMART LABEL ---
+        if (typeof getSmartLabel === 'function') {
+            const lbl = getSmartLabel(targetRate, params.beltSpeed);
+            document.getElementById('rateLabel').innerText = `${t('Rate (Items/Min)')}: ${lbl}`;
+        }
+
+        document.getElementById('lvlBelt-title').innerText = `${t('Logistics Efficiency')} (${(params.beltSpeed/60*100).toFixed(0)}%) ${params.beltSpeed}/min`;
+        document.getElementById('lvlSpeed-title').innerText = `${t('Factory Efficiency')} (${(params.speedMult*100).toFixed(0)}%)`;
+        document.getElementById('lvlAlchemy-title').innerText = `${t('Alchemy Skill')} (${(params.alchemyMult*100).toFixed(0)}%)`;
+        document.getElementById('lvlFuel-title').innerText = `${t('Fuel Efficiency')} (${(params.fuelMult*100).toFixed(0)}%)`;
+        document.getElementById('lvlFert-title').innerText = `${t('Fert Efficiency')} (${(params.fertMult*100).toFixed(0)}%)`;
+        
+        const fuelDef = DB.items[params.selectedFuel] || {};
+        const netHeat = (fuelDef.heat || 0) * params.fuelMult;
+        document.getElementById('fuelEfficiencyCostByHeat').innerText = (params.fuelCost == 0 || netHeat == 0) ? '' : (params.fuelCost/netHeat).toFixed(4) + ' G/P ';
+        document.getElementById('fuelEfficiencyHeatByCost').innerText = (params.fuelCost == 0 || netHeat == 0) ? '' : (netHeat/params.fuelCost).toFixed(2) + ' P/G ';
+
+        const fertDef = DB.items[params.selectedFert] || {};
+        const netNtur = (fertDef.nutrientValue || 0) * params.fertMult;
+        document.getElementById('fertEfficiencyCostByNutr').innerText = (params.fertCost == 0 || netNtur == 0) ? '' : (params.fertCost/netNtur).toFixed(4) + ' G/V ';
+        document.getElementById('fertEfficiencyNutrByCost').innerText = (params.fertCost == 0 || netNtur == 0) ? '' : (netNtur/params.fertCost).toFixed(2) + ' V/G ';
 
     } catch(e) { console.error(e); }
 }
@@ -209,7 +223,7 @@ function calculatePass(p, isGhost) {
     if(netFertVal <= 0) netFertVal = 0.1;
 
     let globalFuelDemandItems = 0; let globalFertDemandItems = 0; let globalHeatLoad = 0; let globalBioLoad = 0; let globalCostPerMin = 0;
-    let totalByproducts = {}; let globalForcedItems = {};
+    let totalByproducts = {}; let globalForcedItems = {}; let globalRawItems = {};
 
     // --- AGGREGATION STRUCTURES ---
     let machineStats = {};
@@ -227,7 +241,7 @@ function calculatePass(p, isGhost) {
     const treeContainer = document.getElementById('tree');
 
     // Recursive Builder
-    function buildNode(item, rate, isInternalModule, ancestors = [], forceGhost = false) {
+    function buildNode(item, rate, isInternalModule, ancestors = [], forceGhost = false, depth = 0) {
         const effectiveGhost = isGhost || forceGhost;
 
         // RECYCLING CHECK
@@ -250,19 +264,18 @@ function calculatePass(p, isGhost) {
         const itemDef = DB.items[item] || {}; 
         let ingredientChildren = []; 
         let currentPath = [...ancestors, item];
-        let myRowID = 0;
         
-        if (!effectiveGhost) { rowCounter++; myRowID = rowCounter; }
-
         let outputTag = ""; let machineTag = ""; let heatTag = ""; let swapBtn = ""; let byproductTag = "";
         let bioTag = ""; let costTag = ""; let detailsTag = ""; let recycleTag = ""; let externalTag = "";
         let machinesNeeded = 0; let hasChildren = false;
-
+        
+        /*
         let isFuel = (item === p.selectedFuel); let isFert = (item === p.selectedFert);
         if (p.showHeatFert) {
             if(isFuel) { outputTag = `<span class="output-tag">Output: ${formatVal((rate * (fuelDef.heat||10)*p.fuelMult)/60)} P/s</span>`; }
             else if (isFert) { outputTag = `<span class="output-tag">Output: ${formatVal((rate * fertDef.nutrientValue*p.fertMult)/60)} V/s</span>`; }
         }
+        */
 
         // --- RECYCLE UI ---
         if (canRecycle && !effectiveGhost) {
@@ -360,6 +373,8 @@ function calculatePass(p, isGhost) {
             if (!recipe) {
                 if(!effectiveGhost) {
                     if(itemDef.buyPrice) { 
+                        if (!globalRawItems[item]) globalRawItems[item] = 0;
+                        globalRawItems[item] += netRate;
                         let c = netRate * itemDef.buyPrice; 
                         globalCostPerMin += c; 
                         costTag = `<span class="cost-tag">-${Math.ceil(c - Number.EPSILON).toLocaleString()} G/m</span>`;
@@ -374,7 +389,10 @@ function calculatePass(p, isGhost) {
             } else {
                 hasChildren = true;
                 let batchYield = recipe.outputs[item] || 1;
-                if (recipe.machine === "Extractor" || recipe.machine === "Thermal Extractor" || recipe.machine === "Alembic" || recipe.machine === "Advanced Alembic") batchYield *= p.alchemyMult;
+                if (recipe.machine === "Extractor" || recipe.machine === "Thermal Extractor" || recipe.machine === "Alembic" || recipe.machine === "Advanced Alembic") { 
+                    batchYield *= p.alchemyMult;
+                    outputTag = `<span class="output-tag">${t('Yields')}: ${(p.alchemyMult*100).toFixed(0)}%</span>`
+                }
                 
                 const batchesPerMin = netRate / batchYield;
                 const maxBatchesPerMin = (60 / recipe.baseTime) * p.speedMult;
@@ -480,18 +498,17 @@ function calculatePass(p, isGhost) {
 
         if (effectiveGhost) {
             ingredientChildren.forEach(child => { 
-                buildNode(child.item, child.rate, isInternalModule, currentPath, effectiveGhost); 
+                buildNode(child.item, child.rate, isInternalModule, currentPath, effectiveGhost, depth + 1); 
             });
             return null; 
         }
 
         // --- RENDER DOM ---
-        const div = document.createElement('div'); div.className = 'node';
+        const div = document.createElement('div'); div.className = 'node'; div.setAttribute('data-depth', depth % 10);
         if (GLOBAL_CALC_STATE.collapsedNode.has(pathKey)) div.classList.add('collapsed');
         let arrowHtml = `<span class="tree-arrow" style="visibility:${hasChildren ? 'visible' : 'hidden'}" onclick="toggleNode(this, '${pathKey}')">▼</span>`;
         let nodeContent = `
             ${arrowHtml}
-            <span class="row-id" onclick="toggleNode(this, '${pathKey}')">${myRowID})</span>
             <span class="qty">${formatVal(rate)}/m</span>
             <img src="img/item${DB.items[item]?.id ?? 0}.png" width="24" height="24" loading="lazy">
             <span class="item-link" onclick="openDrillDown('${item}', ${rate})"><strong>${item}</strong></span>
@@ -513,7 +530,7 @@ function calculatePass(p, isGhost) {
             const childrenDiv = document.createElement('div');
             childrenDiv.className = 'node-children';
             ingredientChildren.forEach(child => { 
-                childrenDiv.appendChild(buildNode(child.item, child.rate, isInternalModule, currentPath, effectiveGhost)); 
+                childrenDiv.appendChild(buildNode(child.item, child.rate, isInternalModule, currentPath, effectiveGhost, depth + 1)); 
             });
             div.appendChild(childrenDiv);
         }
@@ -522,7 +539,7 @@ function calculatePass(p, isGhost) {
 
     // --- EXECUTE THE PASS ---
     if(p.targetItem) {
-        const root = buildNode(p.targetItem, grossRate, false, []);
+        const root = buildNode(p.targetItem, grossRate, false, [], 0);
         if(!isGhost) {
             const h = document.createElement('div'); h.className = 'section-header'; h.innerText = `--- ${t('Primary Production Chain')} (${p.targetItem}) ---`; treeContainer.appendChild(h); 
             treeContainer.appendChild(root);
@@ -554,11 +571,11 @@ function calculatePass(p, isGhost) {
                 let prevFert = stableFertDemand;
                 
                 if (p.selfFert && prevFert > 0) {
-                    buildNode(p.selectedFert, prevFert, true, [], true); 
+                    buildNode(p.selectedFert, prevFert, true, [], true, 0); 
                 }
                 
                 if (p.selfFuel && prevFuel > 0) {
-                    buildNode(p.selectedFuel, prevFuel, true, [], true); 
+                    buildNode(p.selectedFuel, prevFuel, true, [], true , 0); 
                 }
                 
                 let nextFuel = globalFuelDemandItems;
@@ -583,8 +600,8 @@ function calculatePass(p, isGhost) {
                 if (p.targetItem == p.selectedFert) {
                     // Do nothing
                 } else {
-                    const h = document.createElement('div'); h.className = 'section-header'; h.innerText = `--- ${t('Internal Nutrient Module')} (${p.selectedFert}) ---`; treeContainer.appendChild(h); rowCounter=0; 
-                    treeContainer.appendChild(buildNode(p.selectedFert, grossFertNeeded, true, []));
+                    const h = document.createElement('div'); h.className = 'section-header'; h.innerText = `--- ${t('Internal Nutrient Module')} (${p.selectedFert}) ---`; treeContainer.appendChild(h); 
+                    treeContainer.appendChild(buildNode(p.selectedFert, grossFertNeeded, true, [], 0));
                 }
             }
 
@@ -593,8 +610,8 @@ function calculatePass(p, isGhost) {
                 if (p.targetItem == p.selectedFuel) {
                     // Do nothing
                 } else {
-                    const h = document.createElement('div'); h.className = 'section-header'; h.innerText = `--- ${t('Internal Heat Module')} (${p.selectedFuel}) ---`; treeContainer.appendChild(h); rowCounter=0; 
-                    treeContainer.appendChild(buildNode(p.selectedFuel, grossFuelNeeded, true, []));
+                    const h = document.createElement('div'); h.className = 'section-header'; h.innerText = `--- ${t('Internal Heat Module')} (${p.selectedFuel}) ---`; treeContainer.appendChild(h); 
+                    treeContainer.appendChild(buildNode(p.selectedFuel, grossFuelNeeded, true, [], 0));
                 }
             }
         }
@@ -624,8 +641,7 @@ function calculatePass(p, isGhost) {
         updateConstructionList(flatMax, flatMin, totalFurnaces);
         
         // 計算最終成本並更新摘要
-        const finalCost = calculateFinalCost(globalCostPerMin, p, globalFuelDemandItems, globalFertDemandItems);
-        updateSummaryBox(p, globalHeatLoad, globalBioLoad, finalCost, globalFuelDemandItems, globalFertDemandItems);
+        updateSummaryBox(p, globalHeatLoad, globalBioLoad, globalCostPerMin, globalFuelDemandItems, globalFertDemandItems);
     }
 
     // --- 以下為封裝的邏輯函式 ---
@@ -714,13 +730,6 @@ function calculatePass(p, isGhost) {
             const slots = DB.machines[name]?.slots || 3;
             return sum + Math.ceil((qty - 0.0001) / slots);
         }, 0);
-    }
-
-    function calculateFinalCost(baseCost, p, fuelQty, fertQty) {
-        let extra = 0;
-        if (p.fuelCost > Number.EPSILON) extra += p.fuelCost * fuelQty;
-        if (p.fertCost > Number.EPSILON) extra += p.fertCost * fertQty;
-        return baseCost + extra;
     }
 }
 
@@ -829,17 +838,21 @@ function updateBuildModeLabel() {
     document.getElementById('build-mode-label').innerText = isMinMode ? "MIN" : "MAX";
 }
 
-function updateSummaryBox(p, heat, bio, cost, actualFuelNeed, actualFertNeed) {
-    const { targetItem, targetRate, selfFuel, selfFert, beltSpeed, selectedFuel, selectedFert } = p;
+function updateSummaryBox(p, heatPerSec, nutrPerSec, goldPerMin, actualFuelNeed, actualFertNeed) {
+    const { targetItem, targetRate, selfFuel, selfFert, selectedFuel, selectedFert, fuelCost, fertCost } = p;
     const targetItemDef = DB.items[targetItem] || {};
 
-    // --- Output Blocks ---
+    
     let usedRate = 0.0;
     if (selfFuel && targetItem === selectedFuel) usedRate += actualFuelNeed;
     if (selfFert && targetItem === selectedFert) usedRate += actualFertNeed;
+    if (selfFuel) heatPerSec = 0;
+    if (selfFert) nutrPerSec = 0;
     const netRate = targetRate - usedRate;
     let refRate = targetRate;
     if (netRate > 0) refRate = targetRate * (targetRate / netRate);
+
+    // --- Output Blocks ---
     const outputHtml = `
         <div class="stat-block">
             <span class="stat-label">${t('Gross Output')}</span>
@@ -848,37 +861,40 @@ function updateSummaryBox(p, heat, bio, cost, actualFuelNeed, actualFertNeed) {
         </div>`;
 
     // --- Load Blocks ---
-    const loadHtml = `
-        <div class="stat-block">
-            <span class="stat-label">${t('Load')}</span>
-            <span class="stat-value" style="color:var(--fuel);">${t('Heat')}: ${(heat * 60).toLocaleString()} P / min</span>
-            <span class="stat-value" style="color:var(--bio);">${t('Nutr')}: ${(bio * 60).toLocaleString()} V / min</span>
-        </div>`;
+    let loadHtml = `<div class="stat-block"><span class="stat-label">${t('Total Load')}</span>`;
+    if (goldPerMin > 0) loadHtml += `<span class="stat-value" style="color:var(--gold);">${t('Coin')}: ${Math.ceil(goldPerMin).toLocaleString()} G / min</span>`;
+    if (heatPerSec > 0) loadHtml += `<span class="stat-value" style="color:var(--fuel);">${t('Heat')}: ${(heatPerSec * 60).toLocaleString()} P / min</span>`;
+    if (nutrPerSec > 0) loadHtml += `<span class="stat-value" style="color:var(--bio);">${t('Nutr')}: ${(nutrPerSec * 60).toLocaleString()} V / min</span>`;
+    loadHtml += `</div>`;
 
     // --- Cost Block ---
-    let valueHtml = ``;
+    let costHtml = `<div class="stat-block"><span class="stat-label">${t('Unit Cost')}</span>`;
+    if (goldPerMin > 0) costHtml += `<span class="stat-value" style="color:var(--gold);">${t('Coin')}: ${Math.ceil(goldPerMin / netRate).toLocaleString()} G</span>`;
+    if (heatPerSec > 0) costHtml += `<span class="stat-value" style="color:var(--fuel);">${t('Heat')}: ${(heatPerSec * 60 / netRate).toLocaleString()} P</span>`;
+    if (nutrPerSec > 0) costHtml += `<span class="stat-value" style="color:var(--bio);">${t('Nutr')}: ${(nutrPerSec * 60 / netRate).toLocaleString()} V</span>`;
+    costHtml += `</div>`;
+
+    // --- Value Block ---
+    let valueHtml = `<div class="stat-block"><span class="stat-label">${t('Unit Value')}</span>`;
+    const convertedCost = (goldPerMin + fuelCost * actualFuelNeed + fertCost * actualFertNeed) / netRate;
+    valueHtml += `<span class="stat-value gold-profit">${t('Conversion Cost')}: ${(convertedCost).toLocaleString()}</span>`;
+    
     if (targetItemDef.sellPrice) {
-        const profit = (targetRate * targetItemDef.sellPrice) - cost;
-        const colorClass = profit >= 0 ? 'gold-profit' : 'gold-cost';
-        valueHtml = `
-            <div class="stat-block">
-                <span class="stat-label">${t('Estimated Value')}</span>
-                <span class="stat-value gold-cost">${t('Cost')}: ${Math.ceil(cost).toLocaleString()} G / min</span>
-                <span class="stat-value ${colorClass}">${t('Profit')}: ${Math.floor(profit).toLocaleString()} G / min</span>
-            </div>`;
-    } else {
-        valueHtml = `
-            <div class="stat-block">
-                <span class="stat-label">${t('Estimated Value')}</span>
-                <span class="stat-value gold-cost">${t('Cost')}: ${Math.ceil(cost).toLocaleString()} G / min</span>
-            </div>`;
+        const ratio = convertedCost > 0 ? targetItemDef.sellPrice  / convertedCost : 0;
+        valueHtml += `<span class="stat-value gold-profit">${t('Retail Price   ')}: ${targetItemDef.sellPrice.toLocaleString()} (${(ratio * 100).toFixed(1)}%)</span>`;
     }
+    if (targetItemDef.wholesalePrice) {
+        const ratio = convertedCost > 0 ? targetItemDef.wholesalePrice  / convertedCost : 0;
+        valueHtml += `<span class="stat-value gold-profit">${t('Wholesale Price')}: ${targetItemDef.wholesalePrice.toLocaleString()} (${(ratio * 100).toFixed(1)}%)</span>`;
+    }
+    valueHtml += `</div>`;
 
     // --- Combine ---
     document.getElementById('summary-container').innerHTML = `
         <div class="summary-box">
-            ${outputHtml}
+            ${outputHtml}            
             ${loadHtml}
+            ${costHtml}
             ${valueHtml}
         </div>`;
 }

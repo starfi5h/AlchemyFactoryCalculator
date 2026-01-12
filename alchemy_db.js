@@ -1,6 +1,6 @@
 window.ALCHEMY_DB = {
-    "version": 24,
-    "date": "2025.01.07",
+    "version": 25,
+    "date": "2025.01.11",
     "gameVersion": "0.4.1.3800",
     "items": {
         // --- 1. RAW RESOURCES ---
@@ -49,7 +49,7 @@ window.ALCHEMY_DB = {
         "Basic Fertilizer": { "id": 416, "category": "Fertilizer", "nutrientValue": 144, "maxFertility": 12, "cauldronCost": 14 },
         "Advanced Fertilizer": { "id": 511, "category": "Fertilizer", "nutrientValue": 720, "maxFertility": 144, "cauldronCost": 62 },        
         "Growth Potion": { "id": 615, "category": "Fertilizer", "sellPrice": 1224, "nutrientValue": 6480, "maxFertility": 2160, "cauldronCost": 500 },
-        "Fertile Catalyst": { "id": 706, "category": "Fertilizer", "nutrientValue": 24000, "maxFertility": 6000, "cauldronCost": 4067.84, "cauldronMulti": 0.5, "cauldronTarget": 3567.84 },
+        "Fertile Catalyst": { "id": 706, "category": "Fertilizer", "nutrientValue": 24000, "maxFertility": 6000, "wholesalePrice": 3000, "cauldronCost": 4067.84, "cauldronMulti": 0.5, "cauldronTarget": 3567.84 },
 
         // --- 6. POTIONS ---
         "Healing Potion": { "id": 306, "category": "Potion", "sellPrice": 85, "cauldronCost": 30 },
@@ -131,7 +131,7 @@ window.ALCHEMY_DB = {
 
         // --- 11. CATALYSTS ---		
         "Yeast Powder": { "id": 507, "category": "Catalyst", "cauldronCost": 88, "cauldronMulti": 1, "cauldronTarget": 88 },
-        "Gloom Spores": { "id": 510, "category": "Catalyst", "cauldronCost": 220, "cauldronMulti": 0.9, "cauldronTarget": 280 },
+        "Gloom Spores": { "id": 510, "category": "Catalyst", "cauldronCost": 220, "wholesalePrice": 360, "cauldronMulti": 0.9, "cauldronTarget": 280 },
         "Unstable Catalyst": { "id": 616, "category": "Catalyst", "cauldronCost": 746, "cauldronMulti": 0.7, "cauldronTarget": 746 },
         "Resonant Catalyst": { "id": 815, "category": "Catalyst", "cauldronCost": 23869.44, "cauldronMulti": 0.3, "cauldronTarget": 22869.44 },
         "Eternal Catalyst": { "id": 908, "category": "Catalyst", "cauldronCost": 1193041.6 },
@@ -154,21 +154,21 @@ window.ALCHEMY_DB = {
         "Mortar": { "id": 203, "category": "Misc", "sellPrice": 48, "cauldronCost": 18 },
         "Salt": { "id": 605, "category": "Misc", "sellPrice": 100, "cauldronCost": 65, "cauldronMulti": 1, "cauldronTarget": 65 },
         "Linen": { "id": 307, "category": "Misc", "sellPrice": 165, "cauldronCost": 60 },
-        "Bandage": { "id": 308, "category": "Misc", "sellPrice": 350, "cauldronCost": 120 },
+        "Bandage": { "id": 308, "category": "Misc", "sellPrice": 350, "wholesalePrice": 240, "cauldronCost": 120 },
         "Soap": { "id": 413, "category": "Misc", "sellPrice": 60, "cauldronCost": 23 },
         "Perfumed Soap": { "id": 707, "category": "Misc", "sellPrice": 2590, "cauldronCost": 1216.4 },
-        "Moonlit Soap": { "id": 913, "category": "Misc", "sellPrice": 995280, "cauldronCost": 487892.8 },
+        "Moonlit Soap": { "id": 913, "category": "Misc", "sellPrice": 995280, "wholesalePrice": 600000, "cauldronCost": 487892.8 },
 
         // --- 14. Jewelry ---
         "Ruby": { "id": 30, "category": "Jewelry", "sellPrice": 250000, "cauldronCost": 200000, "cauldronMulti": 1, "cauldronTarget": 200000 },
         "Sapphire": { "id": 31, "category": "Jewelry", "sellPrice": 480000, "cauldronCost": 400000, "cauldronMulti": 1, "cauldronTarget": 400000 },
         "Emerald": { "id": 32, "category": "Jewelry", "sellPrice": 700000, "cauldronCost": 600000, "cauldronMulti": 1, "cauldronTarget": 600000 },
         "Turquoise": { "id": 501, "category": "Jewelry", "sellPrice": 290, "cauldronCost": 108, "cauldronMulti": 1, "cauldronTarget": 108 },
-        "Pocket Watch": { "id": 617, "category": "Jewelry", "sellPrice": 900000, "cauldronCost": 789 },
+        "Pocket Watch": { "id": 617, "category": "Jewelry", "sellPrice": 1950, "wholesalePrice": 1300, "cauldronCost": 789 },
         "Malachite": { "id": 618, "category": "Jewelry", "sellPrice": 1020, "cauldronCost": 367, "cauldronMulti": 1, "cauldronTarget": 427 },        
         "Topaz": { "id": 704, "category": "Jewelry", "sellPrice": 2800, "cauldronCost": 1205.9, "cauldronMulti": 1, "cauldronTarget": 1405.9 },       
         "Obsidian": { "id": 806, "category": "Jewelry", "sellPrice": 11000, "cauldronCost": 5290, "cauldronMulti": 1, "cauldronTarget": 5290 },
-        "Silver Amulet": { "id": 810, "category": "Jewelry", "sellPrice": 48000, "cauldronCost": 25317 },
+        "Silver Amulet": { "id": 810, "category": "Jewelry", "sellPrice": 48000, "wholesalePrice": 34000, "cauldronCost": 25317 },
         "Lapis Lazuli": { "id": 813, "category": "Jewelry", "sellPrice": 32000, "maxStack": 50, "cauldronCost": 15825, "cauldronMulti": 1, "cauldronTarget": 18825 },
         "Crown": { "id": 907, "category": "Jewelry", "sellPrice": 1600000, "cauldronCost": 854167.8 },
 

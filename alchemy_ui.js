@@ -23,7 +23,7 @@ const DEFAULT_SETTINGS = {
     showHeatFert: false,
     preferredRecipes: {},
     activeRecyclers: {},
-    customCosts: { "Logs": 200, "Plank": 1, "Coal Ore": 4800, "Coal": 40 }
+    customCosts: { "Logs": 200, "Coal Ore": 4800 }
 };
 
 let isSelfFuel = false;

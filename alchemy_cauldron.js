@@ -424,6 +424,7 @@ function renderCauldronResults(data) {
                 <span class="qty" style="font-size:0.9em;">(${recipes.length})</span>
                 <span class="info-tag">${stats.time.toFixed(1)}s</span>
                 <span class="heat-tag">${stats.heat.toFixed(1)}P/s</span>
+                <span class="heat-tag">(${(stats.time * stats.heat).toFixed(1)}P)</span>
                 <div class="push-right details">T: ${outputItem.cauldronTarget}</div>
             </div>
             <div class="node-children" style="max-height: 300px; overflow-y: auto;">
@@ -621,9 +622,13 @@ function renderCauldronFavorites() {
     const sortedOutputs = Object.keys(grouped).sort();
     
     sortedOutputs.forEach(outName => {
-        let itemPerMin = 0;
+        let itemPerMin = 0; let heatPerItem = 0;
         const targetItem = DB.items[outName];
-        if (targetItem !== undefined && targetItem.cauldronTarget !== undefined) itemPerMin = 60 / getCauldronStats(targetItem.cauldronTarget).time;
+        if (targetItem !== undefined && targetItem.cauldronTarget !== undefined) {
+            const stat = getCauldronStats(targetItem.cauldronTarget);
+            itemPerMin = 60 / stat.time;
+            heatPerItem = stat.time * stat.heat;
+        }
         
         const items = grouped[outName];
         const card = document.createElement('div');        
@@ -634,7 +639,8 @@ function renderCauldronFavorites() {
                 <img src="img/item${DB.items[outName]?.id ?? 0}.png" width="24" height="24">
                 <span class="item-link"><strong>${outName}</strong></span>
                 <span class="qty">(${items.length})</span>
-                <span class="info-tag">${itemPerMin > 0 ? itemPerMin.toFixed(1) + '/min' : ''}</span>
+                <span class="info-tag">${itemPerMin > 0 ? itemPerMin.toFixed(2) + '/min' : ''}</span>
+                <span class="heat-tag">${heatPerItem > 0 ? heatPerItem.toFixed(1) + 'P' : ''}</span>
             </div>
             <div class="node-children compact-children">
                 ${items.map(f => `

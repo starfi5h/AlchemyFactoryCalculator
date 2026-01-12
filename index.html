@@ -138,7 +138,11 @@
                     <div class="panel">
                         <h3>Logistics</h3>
                         <div class="input-group">
-                            <div><label>Heat Source</label><span id="fuelEfficiencyCost" class="cost-tag">0.000 G/P</span></div>
+                            <div>
+                                <label>Heat Source</label>
+                                <span id="fuelEfficiencyCostByHeat" class="cost-tag">0.000 G/P</span> | 
+                                <span id="fuelEfficiencyHeatByCost" class="heat-tag" style="margin-left:auto">00.00 P/G</span>
+                            </div>
                             <select id="fuelSelect" onchange="updateDefaultButtonState(); calculate();"></select>
                             <input type="checkbox" id="selfFuel" style="display:none;">
                             <div class="split-btn-container">
@@ -152,7 +156,11 @@
                             </div>
                         </div>
                         <div class="input-group">
-                            <div><label>Fertilizer Source</label><span id="fertEfficiencyCost" class="cost-tag">0.000 G/V</span></div>
+                            <div>
+                                <label>Fertilizer Source</label>
+                                <span id="fertEfficiencyCostByNutr" class="cost-tag">0.000 G/V</span> | 
+                                <span id="fertEfficiencyNutrByCost" class="bio-tag" style="margin-left:auto">00.00 V/G</span>
+                            </div>
                             <select id="fertSelect" onchange="updateDefaultButtonState(); calculate();"></select>
                             <input type="checkbox" id="selfFert" style="display:none;">
                             <div class="split-btn-container">
@@ -178,6 +186,7 @@
 
                 <div id="results-area">
                     <div id="summary-container"></div>
+                    <div id="summary-icons"></div>
                     <div id="tree"></div>
                 </div>
 
@@ -202,7 +211,7 @@
                     <div class="panel">
                         <h3>Upgrades (Levels)</h3>
                         <div class="input-group">
-                            <label>Belt Speed</label>
+                            <label id="lvlBelt-title">Logistics Efficiency</label>
                             <div class="spinner-wrapper">
                                 <button class="spinner-btn left first" onclick="adjustInput('lvlBelt', -1); updateFromSlider();">-</button>
                                 <input type="number" id="lvlBelt" value="0" min="0" oninput="updateFromSlider()">
@@ -210,7 +219,7 @@
                             </div>
                         </div>
                         <div class="input-group">
-                            <label>Factory Speed</label>
+                            <label id="lvlSpeed-title">Factory Efficiency</label>
                             <div class="spinner-wrapper">
                                 <button class="spinner-btn left first" onclick="adjustInput('lvlSpeed', -1); calculate();">-</button>
                                 <input type="number" id="lvlSpeed" value="0" min="0" oninput="calculate()">
@@ -218,7 +227,7 @@
                             </div>
                         </div>
                         <div class="input-group">
-                            <label>Alchemy Skill</label>
+                            <label id="lvlAlchemy-title">Alchemy Skill</label>
                             <div class="spinner-wrapper">
                                 <button class="spinner-btn left first" onclick="adjustInput('lvlAlchemy', -1); calculate();">-</button>
                                 <input type="number" id="lvlAlchemy" value="0" min="0" oninput="calculate()">
@@ -226,7 +235,7 @@
                             </div>
                         </div>
                         <div class="input-group">
-                            <label>Fuel Efficiency</label>
+                            <label id="lvlFuel-title">Fuel Efficiency</label>
                             <div class="spinner-wrapper">
                                 <button class="spinner-btn left first" onclick="adjustInput('lvlFuel', -1); calculate();">-</button>
                                 <input type="number" id="lvlFuel" value="0" min="0" oninput="calculate()">
@@ -234,7 +243,7 @@
                             </div>
                         </div>
                         <div class="input-group">
-                            <label>Fert Efficiency</label>
+                            <label id="lvlFert-title">Fert Efficiency</label>
                             <div class="spinner-wrapper">
                                 <button class="spinner-btn left first" onclick="adjustInput('lvlFert', -1); calculate();">-</button>
                                 <input type="number" id="lvlFert" value="0" min="0" oninput="calculate()">
@@ -344,9 +353,9 @@
             </div>
         </div>
     </main>
-
+    
     <script src="alchemy_ui.js"></script>
-    <script src="alchemy_calc.js"></script>    
+    <script src="alchemy_calc.js"></script>       
     <script src="alchemy_cauldron.js"></script>
 </body>
 </html>
