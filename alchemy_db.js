@@ -1,6 +1,6 @@
 window.ALCHEMY_DB = {
-    "version": 25,
-    "date": "2025.01.11",
+    "version": 26,
+    "date": "2025.01.16",
     "gameVersion": "0.4.1.3800",
     "items": {
         // --- 1. RAW RESOURCES ---
@@ -70,15 +70,18 @@ window.ALCHEMY_DB = {
         "Copper Ingot": { "id": 610, "category": "Solid", "maxStack": 200, "cauldronCost": 300 },           
         "Silver Ingot": { "id": 808, "category": "Solid", "maxStack": 100, "cauldronCost": 4746 },
         "Gold Ingot": { "id": 905, "category": "Solid", "maxStack": 100, "cauldronCost": 87222.6 },
-        "Crude Shard": { "id": 627, "category": "Solid", "cauldronCost": 272, "cauldronMulti": 1, "cauldronTarget": 512 },
-        "Broken Shard": { "id": 628, "category": "Solid", "cauldronCost": 824, "cauldronMulti": 1, "cauldronTarget": 1024 },
-        "Dull Shard": { "id": 629, "category": "Solid", "cauldronCost": 1548, "cauldronMulti": 1, "cauldronTarget": 2048 },
-        "Shattered Crystal": { "id": 630, "category": "Solid", "cauldronCost": 3496, "cauldronMulti": 1, "cauldronTarget": 4096 },
-        "Crude Crystal": { "id": 631, "category": "Solid", "cauldronCost": 6692, "cauldronMulti": 1, "cauldronTarget": 8192 },
-        "Polished Crystal": { "id": 632, "category": "Solid", "cauldronCost": 14384, "cauldronMulti": 1, "cauldronTarget": 16384 },
-        "Adamant": { "id": 633, "category": "Solid", "cauldronCost": 30768, "cauldronMulti": 1, "cauldronTarget": 32768 },
-        "Diamond": { "id": 634, "category": "Solid", "sellPrice": 100000, "cauldronCost": 65536, "cauldronMulti": 1, "cauldronTarget": 65536 },
-        "Perfect Diamond": { "id": 635, "category": "Solid", "cauldronCost": 131072, "cauldronMulti": 1, "cauldronTarget": 131072 },
+
+
+        // --- Crystal ---
+        "Crude Shard": { "id": 627, "category": "Crystal", "cauldronCost": 272, "cauldronMulti": 1, "cauldronTarget": 512 },
+        "Broken Shard": { "id": 628, "category": "Crystal", "cauldronCost": 824, "cauldronMulti": 1, "cauldronTarget": 1024 },
+        "Dull Shard": { "id": 629, "category": "Crystal", "cauldronCost": 1548, "cauldronMulti": 1, "cauldronTarget": 2048 },
+        "Shattered Crystal": { "id": 630, "category": "Crystal", "cauldronCost": 3496, "cauldronMulti": 1, "cauldronTarget": 4096 },
+        "Crude Crystal": { "id": 631, "category": "Crystal", "cauldronCost": 6692, "cauldronMulti": 1, "cauldronTarget": 8192 },
+        "Polished Crystal": { "id": 632, "category": "Crystal", "cauldronCost": 14384, "cauldronMulti": 1, "cauldronTarget": 16384 },
+        "Adamant": { "id": 633, "category": "Crystal", "cauldronCost": 30768, "cauldronMulti": 1, "cauldronTarget": 32768 },
+        "Diamond": { "id": 634, "category": "Crystal", "sellPrice": 100000, "cauldronCost": 65536, "cauldronMulti": 1, "cauldronTarget": 65536 },
+        "Perfect Diamond": { "id": 635, "category": "Crystal", "cauldronCost": 131072, "cauldronMulti": 1, "cauldronTarget": 131072 },
 
         // --- 8. MASH ---
         "Sand": { "id": 202, "category": "Mash", "cauldronCost": 4.5 },

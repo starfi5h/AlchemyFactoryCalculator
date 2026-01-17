@@ -121,6 +121,7 @@ function populateCauldronCategories() {
     const sortedCats = cats.concat(Array.from(itemCats));
 
     sortedCats.forEach(cat => {
+        if (cat === "Liquid") return;
         let count = 0;
         let total = 0;
 
@@ -244,10 +245,10 @@ function pickFilterItem(slotIdx, clear = false) {
 }
 
 function updateFilterUI() {
-    for (let i = 1; i <= 2; i++) {
+    for (let i = 1; i <= 3; i++) {
         const el = document.getElementById(`slot${i}`);
         const val = cauldronFilterItems[i - 1];
-        el.innerText = val ? val : t('Set Item') + ` ${i}`;
+        el.innerText = val ? val : t('Set Input') + ` ${i}`;
         el.classList.toggle('active', !!val);
     }
 }
@@ -362,7 +363,7 @@ async function runCauldronSimulation() {
         for (let j = i; j < list.length; j++) {
             n1 = cauldronFilterItems[1] ?? list[j];
             for (let k = j; k < list.length; k++) {
-                n2 = list[k];
+                n2 = cauldronFilterItems[2] ?? list[k];
 
                 // 计算 Ratio
                 let ratio = 1.0;
@@ -380,6 +381,7 @@ async function runCauldronSimulation() {
                     recipeCount++;
                 }
                 comboCount++;
+                if (cauldronFilterItems[2] != null) break;
             }
 
             if (Date.now() - lastUpdate > 150) {
@@ -433,6 +435,15 @@ function renderCauldronResults(data) {
         `;
         container.appendChild(card);
     });
+
+    if (sortedOutputs.length === 1) {        
+        // 當只有一個產物時, 直接展開
+        const firstCardContent = container.querySelector('.node-content');
+        if (firstCardContent) {
+            // 直接呼叫函數，並模擬傳入 this (content) 和 parent (card)
+            toggleCauldronCard(firstCardContent, firstCardContent.parentElement);
+        }
+    }
 }
 
 // 1. 建立一個查找用的快取，避免渲染時反覆遍歷陣列
@@ -777,16 +788,18 @@ function syncCauldronToMainDB(notify = false) {
 
         // 处理输入物品计数 (例如 [Plank, Plank, Stone] -> {Plank: 2, Stone: 1})
         const inputCounts = {};
+        let itemIdString = "";
         fav.inputs.forEach(name => {
             // 對於原料或聖物, 它們的maxStack是負數, 每次只會使用一小部分
-            const inputDef = DB.items[targetItem];
+            const inputDef = DB.items[name];
             let inputCount = 1;
             if (inputDef?.maxStack && inputDef.maxStack < 0) inputCount = 1.0 / (-inputDef.maxStack);
             inputCounts[name] = (inputCounts[name] || 0) + inputCount;
+            itemIdString += `_${inputDef.id}`;
         });
 
         const newRecipe = {
-            id: `AUTO_GENERATED_CAULDRON_${index + 1}`,
+            id: `AUTO_GENERATED_CAULDRON` + itemIdString,
             machine: "Cauldron",
             inputs: inputCounts,
             outputs: { [targetItem]: 1 },

@@ -204,18 +204,18 @@ window.ALCHEMY_I18N = {
         "Export to File": "导出到文件",
 
         // --- Cauldron ---
-        "Settings & Candidates": "设置与候选",
-        "Profile 1": "配置1",
-        "Profile 2": "配置2",
-        "Profile 3": "配置3",
+        "Settings & Candidates": "炼金原料和设置",
+        "Profile 1": "设置1",
+        "Profile 2": "设置2",
+        "Profile 3": "设置3",
         "Filter Category": "筛选分类",
         "Select All": "全选",
         "Deselect All": "取消全选",
         "Sort by Value": "以炼金价值排序",
         "Real-time calculation": "实时计算",
-        "Matching Results": "匹配结果",        
+        "Matching Results": "炼金产物匹配结果",        
         "Calculate All": "计算全部",
-        "Set Item": "指定物品",
+        "Set Input": "指定原料",
         "3 Diff": "3件不同",
         "2 Same": "2件相同",
         "3 Same": "3件相同",
@@ -441,7 +441,7 @@ window.ALCHEMY_I18N = {
         "Knowledge Altar": "知识祭坛"
     },
     "categories": {
-        "Raw Materials": "原材料", "Seeds": "种子", "Herbs": "草药", "Fuel": "燃料", "Fertilizer": "肥料", "Solid": "固体", "Mash": "研磨物", "Component": "零件",
+        "Raw Materials": "原材料", "Seeds": "种子", "Herbs": "草药", "Fuel": "燃料", "Fertilizer": "肥料", "Solid": "固体", "Crystal": "晶石", "Mash": "研磨物", "Component": "零件",
         "Liquid": "液体", "Potion": "药水", "Catalyst": "催化剂", "Magic": "魔法", "Jewelry": "珠宝", "Relic": "圣物", "Currency": "货币", "Misc" : "杂项", "Other": "其他",
         "[All]": "[ 全部 ]", "[Include]": "[ 选取 ]", "[Exclude]": "[ 排除 ]"
     }

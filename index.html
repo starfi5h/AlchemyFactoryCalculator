@@ -28,7 +28,7 @@
             <span style="margin-left: 10px;">
                 <span id="ui-lang-toggle" style="cursor:pointer;" onclick="toggleLanguage()" title="EN/中文">🌐</span>
                 <a href="https://github.com/starfi5h/AlchemyFactoryCalculator" target="_blank" class="repo-link">GitHub Repo</a>
-                <span id="last-updated-time-text">2025.01.08</span>
+                <span id="last-updated-time-text">2025.01.16</span>
             </span>
         </div>
         <div class="tabs">
@@ -302,10 +302,12 @@
 
                         <div class="cauldron-filter-bar">
                             <div class="filter-group">
-                                <div class="mini-picker" id="slot1" onclick="pickFilterItem(1)">Set Item 1</div>
+                                <div class="mini-picker" id="slot1" onclick="pickFilterItem(1)">Set Input 1</div>
                                 <button class="swap-btn" title="clear input 1" onclick="pickFilterItem(1,true); runCauldronSimulation();">×</button>
-                                <div class="mini-picker" id="slot2" onclick="pickFilterItem(2)">Set Item 2</div>
+                                <div class="mini-picker" id="slot2" onclick="pickFilterItem(2)">Set Input 2</div>
                                 <button class="swap-btn" title="clear input 2" onclick="pickFilterItem(2,true); runCauldronSimulation();">×</button>
+                                <div class="mini-picker" id="slot3" onclick="pickFilterItem(3)">Set Input 3</div>
+                                <button class="swap-btn" title="clear input 3" onclick="pickFilterItem(3,true); runCauldronSimulation();">×</button>
                             </div>
                             <div class="filter-group">
                                 <div class="checkbox-row"><input type="checkbox" id="f-ratio-100" checked onchange="runCauldronSimulation()"><label style="display:flex; font-size: 1.0em;">3 Diff</label></div>
