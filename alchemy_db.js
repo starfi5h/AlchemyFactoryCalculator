@@ -202,7 +202,7 @@ window.ALCHEMY_DB = {
         "Kiln": { "heatCost": 15.0, "parent": "Stone Furnace", "slotsRequired": 6, "buildCost": { "Stone": 20, "Clay": 10 } },
         "Iron Smelter": { "heatCost": 9.0, "parent": "Stone Furnace", "slotsRequired": 9, "buildCost": { "Stone": 15 } },
         "Stackable Crucible": { "heatCost": 6.0, "parent": "Stone Furnace", "slotsRequired": 3, "buildCost": { "Stone": 6, "Steel Ingot": 2, "Bronze Rivet": 4 } },
-        "Thermal Extractor": { "heatCost": 80.0, "parent": "Stone Furnace", "slotsRequired": 6, "buildCost": { "Steel Ingot": 5, "Glass": 5 } },
+        "Thermal Extractor": { "heatCost": 80.0, "parent": "Stone Furnace", "slotsRequired": 1, "buildCost": { "Steel Ingot": 5, "Glass": 5 } },
         "Refiner": { "buildCost": { "Plank": 8, "Steel Gear": 5 } },
         "Processor": { "buildCost": { "Plank": 12, "Large Wooden Gear": 3 } },
         "Assembler": { "buildCost": { "Plank": 10, "Large Wooden Gear": 5, "Small Wooden Gear": 15 } },
@@ -497,6 +497,14 @@ window.ALCHEMY_DB = {
         { "id": "Charcoal Powder_Enhanced", "machine": "Enhanced Grinder", "inputs": { "Charcoal": 1 }, "outputs": { "Charcoal Powder": 1 }, "baseTime": 2.0 },
         { "id": "Coke Powder_Enhanced", "machine": "Enhanced Grinder", "inputs": { "Coke": 1 }, "outputs": { "Coke Powder": 1 }, "baseTime": 6.0 },
         { "id": "Iron Sand_Enhanced", "machine": "Enhanced Grinder", "inputs": { "Iron Ingot": 1 }, "outputs": { "Iron Sand": 1 }, "baseTime": 15.0 },
-        { "id": "Sulfur Powder_Enhanced", "machine": "Enhanced Grinder", "inputs": { "Sulfur": 1 }, "outputs": { "Sulfur Powder": 1 }, "baseTime": 3.0 }
+        { "id": "Sulfur Powder_Enhanced", "machine": "Enhanced Grinder", "inputs": { "Sulfur": 1 }, "outputs": { "Sulfur Powder": 1 }, "baseTime": 3.0 },
+
+        // --- THERMAL EXTRACTOR ALTERNATE RECIPES ---
+        // (Production Bonus + 200% when build on height >256)
+        { "id": "Linseed Oil_Thermal", "machine": "Thermal Extractor", "inputs": { "Flax": 1 }, "outputs": { "Linseed Oil": 50 }, "baseTime": 2.0 },
+        { "id": "Fruit Wine_Thermal", "machine": "Thermal Extractor", "inputs": { "Redcurrant": 1 }, "outputs": { "Fruit Wine": 10 }, "baseTime": 6.0 },
+        { "id": "Limewater_Thermal", "machine": "Thermal Extractor", "inputs": { "Quicklime Powder": 1 }, "outputs": { "Limewater": 30 }, "baseTime": 3.0 },
+        { "id": "Brine_Thermal", "machine": "Thermal Extractor", "inputs": { "Salt": 1 }, "outputs": { "Brine": 20 }, "baseTime": 4.0 },
+        { "id": "Fairy Tear_Thermal", "machine": "Thermal Extractor", "inputs": { "Fairy Dust": 1 }, "outputs": { "Fairy Tear": 1 }, "baseTime": 4.0 }
     ]
 };

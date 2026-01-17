@@ -3,8 +3,6 @@
    Handles recursion, math, and tree node generation.
    ========================================================================== */
 
-let globalByproducts = {};
-
 const GLOBAL_CALC_STATE = {
     activeRecyclers: new Set(),
     forcedExternals: new Set(),
@@ -27,11 +25,19 @@ function getActiveRecipe(item) {
     return candidates[0];
 }
 
+function applyAlchemyMult(machineName, batchYield, alchemyMult) {
+    if (["Extractor", "Thermal Extractor", "Alembic", "Advanced Alembic"].includes(machineName)) {
+        batchYield *= alchemyMult;
+        if (machineName === "Thermal Extractor") batchYield *= 3;
+    }
+    return batchYield;
+}
+
 function getProductionHeatCost(item, speedMult, alchemyMult) {
     let cost = 0; const recipe = getActiveRecipe(item);
     if (recipe && recipe.outputs[item]) {
          let batchYield = recipe.outputs[item];
-         if (recipe.machine === "Extractor" || recipe.machine === "Thermal Extractor" || recipe.machine === "Alembic" || recipe.machine === "Advanced Alembic") batchYield *= alchemyMult;
+         batchYield = applyAlchemyMult(recipe.machine, batchYield, alchemyMult);
          if (DB.machines[recipe.machine] && DB.machines[recipe.machine].heatCost) {
             const mach = DB.machines[recipe.machine]; const parent = DB.machines[mach.parent];
             const slotsReq = mach.slotsRequired || 1; const pSlots = mach.parentSlots || parent.slots || 3;
@@ -51,7 +57,7 @@ function getProductionFertCost(item, fertVal, fertSpeed, speedMult, alchemyMult)
     const recipe = getActiveRecipe(item);
     if (recipe && recipe.outputs[item]) {
         let batchYield = recipe.outputs[item];
-        if (recipe.machine === "Extractor" || recipe.machine === "Thermal Extractor" || recipe.machine === "Alembic" || recipe.machine === "Advanced Alembic") batchYield *= alchemyMult;
+        batchYield = applyAlchemyMult(recipe.machine, batchYield, alchemyMult);
         Object.keys(recipe.inputs).forEach(k => { 
             cost += getProductionFertCost(k, fertVal, fertSpeed, speedMult, alchemyMult) * (recipe.inputs[k] / batchYield); 
         });
@@ -106,13 +112,52 @@ function calculate() {
 
         updateLabels(params);
 
-        // --- PASS 1: GHOST CALCULATION (Find Byproducts) ---
-        globalByproducts = {}; 
-        calculatePass(params, true); // True = Ghost Mode (No DOM, just Byproducts)
+        // 先找到不回收時的所有副產物
+        let globalAvilByproducts = {}; let globalTotalByproducts = {};
+        calculatePass(params, true, globalAvilByproducts, globalTotalByproducts); // True = Ghost Mode (No DOM, just Byproducts)        
+        
+
+        // 再計算第一次回收後剩下的所有副產物
+        globalAvilByproducts = {...globalTotalByproducts};
+        globalTotalByproducts = {};
+        calculatePass(params, true, globalAvilByproducts, globalTotalByproducts);
+        let byproductSnapShot = {...globalTotalByproducts};
+
+        // 迴圈計算產物是否穩定, 最多30次
+        for (let i = 0; i < 30; i++) {
+            globalAvilByproducts = {...byproductSnapShot};
+            globalTotalByproducts = {};
+            calculatePass(params, true, globalAvilByproducts, globalTotalByproducts);
+            
+            let maxDiff = 0;
+            const allKeys = [...new Set([...Object.keys(byproductSnapShot), ...Object.keys(globalTotalByproducts)])];
+            for (const key of allKeys) {
+                const valA = byproductSnapShot[key] || 0;
+                const valB = globalTotalByproducts[key] || 0;
+
+                if (Math.abs(valA - valB) > maxDiff) {
+                    maxDiff = Math.abs(valA - valB);
+                }
+            }
+            console.log(`第 ${i} 次迭代, 偏差:${maxDiff}`)
+            if (maxDiff < 0.0001) break;
+
+            for (const key of allKeys) {
+                const valA = byproductSnapShot[key] || 0;
+                const valB = globalTotalByproducts[key] || 0;
+                
+                // 計算新值: A + (B - A) * 0.5
+                const newValue = valA + (valB - valA) * 0.5;
+                byproductSnapShot[key] = newValue;
+            }
+        }
+
 
         // --- PASS 2: RENDER ---
         document.getElementById('tree').innerText = '';
-        calculatePass(params, false); // False = Render Mode
+        globalAvilByproducts = {...globalTotalByproducts};
+        globalTotalByproducts = {};
+        calculatePass(params, false, globalAvilByproducts, globalTotalByproducts); // False = Render Mode
 
         // --- PASS 3: TRANSLATION --- (extra)
         translateText();
@@ -156,7 +201,7 @@ function gatherInputs() {
 
     if (recipe) {
         let batchYield = recipe.outputs[targetItem] || 1;
-        if (["Extractor", "Alembic", "Advanced Alembic"].includes(recipe.machine)) batchYield *= getAlchemyMult(lvlAlchemy);            
+        batchYield = applyAlchemyMult(recipe.machine, batchYield, getAlchemyMult(lvlAlchemy));          
         const ratePerMachine = (60 / (recipe.baseTime || 1)) * getSpeedMult(lvlSpeed) * batchYield;
         if (isMachineMode) {
             const machineCount = parseFloat(document.getElementById('targetMachine').value) || 0;
@@ -210,7 +255,7 @@ function updateLabels(params) {
     } catch(e) { console.error(e); }
 }
 
-function calculatePass(p, isGhost) {
+function calculatePass(p, isGhost, globalAvilByproducts, globalTotalByproducts) {
     // Re-calc basic inputs derived from params
     const fuelDef = DB.items[p.selectedFuel] || {};
     let netFuelEnergy = (fuelDef.heat || 10) * p.fuelMult; const grossFuelEnergy = netFuelEnergy; 
@@ -223,7 +268,7 @@ function calculatePass(p, isGhost) {
     if(netFertVal <= 0) netFertVal = 0.1;
 
     let globalFuelDemandItems = 0; let globalFertDemandItems = 0; let globalHeatLoad = 0; let globalBioLoad = 0; let globalCostPerMin = 0;
-    let totalByproducts = {}; let globalForcedItems = {}; let globalRawItems = {};
+    let globalForcedItems = {}; let globalRawItems = {};
 
     // --- AGGREGATION STRUCTURES ---
     let machineStats = {};
@@ -250,13 +295,11 @@ function calculatePass(p, isGhost) {
         let canRecycle = false;
         const isExternalInput = GLOBAL_CALC_STATE.forcedExternals.has(pathKey);
         
-        if (!effectiveGhost) {
-            if (globalByproducts[item] && globalByproducts[item] > 0.01) {
-                canRecycle = true;
-                if (GLOBAL_CALC_STATE.activeRecyclers.has(pathKey)) {
-                    deduction = Math.min(rate, globalByproducts[item]);
-                    globalByproducts[item] -= deduction; 
-                }
+        if (globalAvilByproducts[item] && globalAvilByproducts[item] > 0.001) {
+            canRecycle = true;
+            if (GLOBAL_CALC_STATE.activeRecyclers.has(pathKey)) {
+                deduction = Math.min(rate, globalAvilByproducts[item]);
+                globalAvilByproducts[item] -= deduction; 
             }
         }
 
@@ -284,7 +327,7 @@ function calculatePass(p, isGhost) {
                 let label = `♻️ ${formatVal(deduction)} ${t('Used')}`;
                 recycleTag = `<div><button class="recycle-btn ${activeClass}" onclick="toggleRecycle('${pathKey}')">${label}</button></div>`;
             } else {
-                let label = `♻️ ${formatVal(globalByproducts[item])} ${t('Avail')}`;
+                let label = `♻️ ${formatVal(globalAvilByproducts[item])} ${t('Avail')}`;
                 recycleTag = `<div><button class="recycle-btn" onclick="toggleRecycle('${pathKey}')">${label}</button></div>`;
             }
         }
@@ -390,8 +433,9 @@ function calculatePass(p, isGhost) {
                 hasChildren = true;
                 let batchYield = recipe.outputs[item] || 1;
                 if (recipe.machine === "Extractor" || recipe.machine === "Thermal Extractor" || recipe.machine === "Alembic" || recipe.machine === "Advanced Alembic") { 
-                    batchYield *= p.alchemyMult;
-                    outputTag = `<span class="output-tag">${t('Yields')}: ${(p.alchemyMult*100).toFixed(0)}%</span>`
+                    const ratio = recipe.machine === "Thermal Extractor" ? p.alchemyMult * 3 : p.alchemyMult;
+                    batchYield *= ratio;
+                    outputTag = `<span class="output-tag">${t('Yields')}: ${(ratio*100).toFixed(0)}%</span>`
                 }
                 
                 const batchesPerMin = netRate / batchYield;
@@ -411,16 +455,14 @@ function calculatePass(p, isGhost) {
                 Object.keys(recipe.outputs).forEach(outKey => {
                     if (outKey !== item) {
                         let yieldPerBatch = recipe.outputs[outKey];
-                        let totalByproduct = batchesPerMin * yieldPerBatch; 
-                        
-                        if(effectiveGhost) {
-                            if(!globalByproducts[outKey]) globalByproducts[outKey] = 0;
-                            globalByproducts[outKey] += totalByproduct;
-                        } 
-                        
+                        let totalByproduct = batchesPerMin * yieldPerBatch;
+
+                        // 累積紀錄Total Byproduct
+                        if(!globalTotalByproducts[outKey]) globalTotalByproducts[outKey] = 0;
+                        globalTotalByproducts[outKey] += totalByproduct;
+
                         if (!effectiveGhost) {
-                            if(!totalByproducts[outKey]) totalByproducts[outKey] = 0;
-                            totalByproducts[outKey] += totalByproduct;
+
                             byproductTag += `<span class="byproduct-tag">+${formatVal(totalByproduct)}/m ${outKey}</span>`;                        
                         }
                     }
@@ -549,7 +591,7 @@ function calculatePass(p, isGhost) {
     if (!isGhost) {
         let stableFuelDemand = globalFuelDemandItems;
         let stableFertDemand = globalFertDemandItems;
-        let byproductSnapshot = {...globalByproducts}; 
+        let byproductSnapshot = {...globalAvilByproducts}; 
         
         let baseFuel = globalFuelDemandItems;
         let baseFert = globalFertDemandItems;
@@ -565,7 +607,7 @@ function calculatePass(p, isGhost) {
                 globalBioLoad = baseBio;
                 globalCostPerMin = baseCost;
                 
-                globalByproducts = {...byproductSnapshot}; 
+                globalAvilByproducts = {...byproductSnapshot}; 
                 
                 let prevFuel = stableFuelDemand;
                 let prevFert = stableFertDemand;
@@ -687,13 +729,13 @@ function calculatePass(p, isGhost) {
         });
         treeContainer.appendChild(bypHeader);
 
-        const sortedNames = Object.keys(totalByproducts).sort();
+        const sortedNames = Object.keys(globalTotalByproducts).sort();
         let html = '';
 
         if (sortedNames.length > 0) {
             sortedNames.forEach(name => {
-                const remaining = globalByproducts[name] || 0;
-                const total = totalByproducts[name];
+                const remaining = globalAvilByproducts[name] || 0;
+                const total = globalTotalByproducts[name];
                 const recycledNote = remaining < total 
                     ? ` <span style="font-size:0.8em; color:#888;">(${formatVal(total - remaining)} ${t('recycled')})</span>` 
                     : '';
