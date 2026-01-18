@@ -70,7 +70,7 @@ function getPresetCandidates(poolType) {
         let inputSet = new Set();
         if (poolType === 'Herbs') {
             Object.entries(DB.items).forEach(([name, item]) => {
-                if (item.cauldronCost !== undefined && item.nutrientCost !== undefined) {
+                if (item.cauldronCost !== undefined && item.nutrientCost !== undefined || item.category === 'Crystal') {
                     candidateSet.add(name);
                     inputSet.add(name);
                 }
@@ -78,7 +78,7 @@ function getPresetCandidates(poolType) {
         }
         else if (poolType === 'Gold') {
             Object.entries(DB.items).forEach(([name, item]) => {
-                if (item.cauldronCost !== undefined && (item.buyPrice !== undefined || item.category === 'Currency')) {
+                if (item.cauldronCost !== undefined && (item.buyPrice !== undefined || item.category === 'Currency' || item.category === 'Crystal')) {
                     inputSet.add(name);
                     // Raw Materials has negative maxStack, it's not suitable for cauldron
                     if (item.category !== 'Raw Materials' && item.cauldronCost !== 750) candidateSet.add(name);
@@ -373,12 +373,15 @@ async function runCauldronSimulation() {
                 // 提前过滤，减少后续计算压力
                 if (isRecipeMatch([n0, n1, n2], ratio)) {
                     const res = getCauldronResult(n0, n1, n2);
-                    if (!resultsByOutput[res.output]) resultsByOutput[res.output] = [];
-                    resultsByOutput[res.output].push({
-                        inputs: [n0, n1, n2],
-                        totalValue: res.totalValue
-                    });
-                    recipeCount++;
+                    // 輸入原料若包含輸出產物, 則跳過這個組合
+                    if (!([n0, n1, n2].includes(res.output))) { 
+                        if (!resultsByOutput[res.output]) resultsByOutput[res.output] = [];
+                        resultsByOutput[res.output].push({
+                            inputs: [n0, n1, n2],
+                            totalValue: res.totalValue
+                        });
+                        recipeCount++;
+                    }
                 }
                 comboCount++;
                 if (cauldronFilterItems[2] != null) break;

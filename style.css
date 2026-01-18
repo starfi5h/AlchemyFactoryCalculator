@@ -6,7 +6,7 @@
     --panel: #2d2d2d; --border: #444; --warn: #ff9800; 
     --gold: #ffd700; --info: #2196f3; --profit: #00e676; 
     --bio: #76ff03; --fuel: #ff5722; --danger: #f44336;
-    --row-id: #4fc3f7; --byproduct: #bd43d3;
+    --row-id: #4fc3f7; --byproduct: #d56de7;
     --thumb-size: 14px; /* Variable for slider thumb calculations */
 }
 * { box-sizing: border-box; }
@@ -223,7 +223,7 @@ input:checked + .slider-switch:before { transform: translateX(16px); }
 /* ==========================================================================
     SECTION: CSS - SUMMARY BOX
     ========================================================================== */
-.summary-box { background: #252525; border-left: 4px solid var(--accent); padding: 12px; margin-bottom: 20px; display: grid; grid-template-columns: 1fr 1fr 1fr 1fr; gap: 10px; }
+.summary-box { background: #252525; border-left: 4px solid var(--accent); padding: 12px; margin-bottom: 20px; display: grid; grid-template-columns: 1fr 2fr 2fr 1fr; gap: 10px; }
 .stat-block { display: flex; flex-direction: column; padding-right: 10px; border-right: 1px solid #444; }
 .stat-block:last-child { border-right: none; }
 .stat-label { font-size: 0.75em; color: #aaa; text-transform: uppercase; letter-spacing: 1px; }

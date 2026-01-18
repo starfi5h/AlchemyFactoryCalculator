@@ -128,7 +128,7 @@ function calculate() {
             globalAvilByproducts = {...byproductSnapShot};
             globalTotalByproducts = {};
             calculatePass(params, true, globalAvilByproducts, globalTotalByproducts);
-            
+
             let maxDiff = 0;
             const allKeys = [...new Set([...Object.keys(byproductSnapShot), ...Object.keys(globalTotalByproducts)])];
             for (const key of allKeys) {
@@ -338,7 +338,7 @@ function calculatePass(p, isGhost, globalAvilByproducts, globalTotalByproducts) 
         }
 
         // Logic branching based on Item Type
-        if (isExternalInput) {
+        if (isExternalInput || depth >= 20) {
             if (!effectiveGhost && netRate > 0) {
                 if (!globalForcedItems[item]) globalForcedItems[item] = 0;
                 globalForcedItems[item] += netRate;
@@ -684,6 +684,24 @@ function calculatePass(p, isGhost, globalAvilByproducts, globalTotalByproducts) 
         
         // 計算最終成本並更新摘要
         updateSummaryBox(p, globalHeatLoad, globalBioLoad, globalCostPerMin, globalFuelDemandItems, globalFertDemandItems);
+
+
+        let summaryLine = "";
+        Object.entries(globalRawItems).forEach(([name, rate]) => {
+            const qty = Number(rate.toFixed(2));
+            summaryLine += ` <span class="qty" style="color:var(--accent)">${qty}<img src="img/item${DB.items[name]?.id ?? 0}.png" title="${name}" width="24" height="24" style="vertical-align: middle; margin-bottom: 4px;"></span>`;
+        });
+        Object.entries(globalForcedItems).forEach(([name, rate]) => {
+            const qty = Number(rate.toFixed(2));
+            summaryLine += ` <span class="qty" style="color:var(--accent)">${qty}<img src="img/item${DB.items[name]?.id ?? 0}.png" title="${name}" width="24" height="24" style="vertical-align: middle; margin-bottom: 4px;"></span>`;
+        });
+        summaryLine += `<span style="color:var(--info);"> ➔ </span>`;
+        summaryLine += ` <span class="qty" style="color:var(--profit)">${Number(p.targetRate.toFixed(2))}<img src="img/item${DB.items[p.targetItem]?.id ?? 0}.png" title="${p.targetItem}" width="24" height="24" style="vertical-align: middle; margin-bottom: 4px;"></span>  `;
+        Object.entries(globalAvilByproducts).forEach(([name, rate]) => {
+            const qty = Number(rate.toFixed(2));
+            if (qty > 0.001) summaryLine += ` <span class="qty" style="color:var(--byproduct)">${qty}<img src="img/item${DB.items[name]?.id ?? 0}.png" title="${name}" width="24" height="24" style="vertical-align: middle; margin-bottom: 4px;"></span>`;
+        });
+        document.getElementById('summary-line').innerHTML = summaryLine;
     }
 
     // --- 以下為封裝的邏輯函式 ---
@@ -898,22 +916,42 @@ function updateSummaryBox(p, heatPerSec, nutrPerSec, goldPerMin, actualFuelNeed,
     const outputHtml = `
         <div class="stat-block">
             <span class="stat-label">${t('Gross Output')}</span>
-            <span class="stat-value ${targetRate >= 0 ? 'net-positive' : 'net-warning'}">${targetRate.toFixed(1)} / min</span>
+            <span class="stat-value net-positive">${targetRate.toFixed(1)} / min <img src="img/item${DB.items[targetItem]?.id ?? 0}.png" width="24" height="24" style="vertical-align: middle; margin-bottom: 4px;"></span>
             ${usedRate > Number.EPSILON ? `<span class="stat-sub" onclick="recalculate('${targetItem}' , ${refRate})">Net: ${netRate.toFixed(1)} / min <br>Used: ${usedRate.toFixed(1)} / min</span>` : ''}
         </div>`;
 
     // --- Load Blocks ---
     let loadHtml = `<div class="stat-block"><span class="stat-label">${t('Total Load')}</span>`;
     if (goldPerMin > 0) loadHtml += `<span class="stat-value" style="color:var(--gold);">${t('Coin')}: ${Math.ceil(goldPerMin).toLocaleString()} G / min</span>`;
-    if (heatPerSec > 0) loadHtml += `<span class="stat-value" style="color:var(--fuel);">${t('Heat')}: ${(heatPerSec * 60).toLocaleString()} P / min</span>`;
-    if (nutrPerSec > 0) loadHtml += `<span class="stat-value" style="color:var(--bio);">${t('Nutr')}: ${(nutrPerSec * 60).toLocaleString()} V / min</span>`;
+    if (heatPerSec > 0) {
+        loadHtml += `<span>`;
+        loadHtml += `<span class="stat-value" style="color:var(--fuel);">${t('Heat')}: ${(heatPerSec * 60).toLocaleString()} P / min</span>`;
+        loadHtml += ` ( ${(actualFuelNeed).toLocaleString()}<img src="img/item${DB.items[selectedFuel]?.id ?? 0}.png" alt="${selectedFuel}" width="24" height="24" style="vertical-align: middle; margin-bottom: 4px;">/min )`;
+        loadHtml += `</span>`;
+    }
+    if (nutrPerSec > 0) {
+        loadHtml += `<span>`;
+        loadHtml += `<span class="stat-value" style="color:var(--bio);">${t('Nutr')}: ${(nutrPerSec * 60).toLocaleString()} V / min</span>`;
+        loadHtml += `  ( ${(actualFertNeed).toLocaleString()}<img src="img/item${DB.items[selectedFert]?.id ?? 0}.png" alt="${selectedFert}" width="24" height="24" style="vertical-align: middle; margin-bottom: 4px;">/min )`;
+        loadHtml += `</span>`;
+    }
     loadHtml += `</div>`;
 
     // --- Cost Block ---
     let costHtml = `<div class="stat-block"><span class="stat-label">${t('Unit Cost')}</span>`;
-    if (goldPerMin > 0) costHtml += `<span class="stat-value" style="color:var(--gold);">${t('Coin')}: ${Math.ceil(goldPerMin / netRate).toLocaleString()} G</span>`;
-    if (heatPerSec > 0) costHtml += `<span class="stat-value" style="color:var(--fuel);">${t('Heat')}: ${(heatPerSec * 60 / netRate).toLocaleString()} P</span>`;
-    if (nutrPerSec > 0) costHtml += `<span class="stat-value" style="color:var(--bio);">${t('Nutr')}: ${(nutrPerSec * 60 / netRate).toLocaleString()} V</span>`;
+    if (goldPerMin > 0) costHtml += `<span class="stat-value" style="color:var(--gold);">${t('Coin')}: ${(goldPerMin / netRate).toLocaleString()} G</span>`;
+    if (heatPerSec > 0) {
+        costHtml += `<span>`
+        costHtml += `<span class="stat-value" style="color:var(--fuel);">${t('Heat')}: ${(heatPerSec * 60 / netRate).toLocaleString()} P</span>`;
+        costHtml += `  ( ${(actualFuelNeed/netRate).toLocaleString()}<img src="img/item${DB.items[selectedFuel]?.id ?? 0}.png" alt="${selectedFuel}" width="24" height="24" style="vertical-align: middle; margin-bottom: 4px;"> )`;
+        costHtml += `</span>`;
+    }
+    if (nutrPerSec > 0) { 
+        costHtml += `<span>`
+        costHtml += `<span class="stat-value" style="color:var(--bio);">${t('Nutr')}: ${(nutrPerSec * 60 / netRate).toLocaleString()} V</span>`;
+        costHtml += `  ( ${(actualFertNeed/netRate).toLocaleString()}<img src="img/item${DB.items[selectedFert]?.id ?? 0}.png" alt="${selectedFert}" width="24" height="24" style="vertical-align: middle; margin-bottom: 4px;"> )`;
+        costHtml += `</span>`;
+    }
     costHtml += `</div>`;
 
     // --- Value Block ---
