@@ -34,6 +34,7 @@
         <div class="tabs">
             <div class="tab-btn active" onclick="switchTab('calc')">Calculator</div>
             <div class="tab-btn" onclick="switchTab('cauldron')">Cauldron</div>
+            <div class="tab-btn" onclick="switchTab('recipes')">Recipes</div>
             <div class="tab-btn" onclick="switchTab('db')">Database Editor</div>
         </div>
     </header>
@@ -339,6 +340,90 @@
             </div>
         </div>
 
+        <div id="view-recipes" class="view">
+            <div class="recipe-container">
+                <!-- 頂部過濾器與升級項 -->
+                <div class="panel sticky-filter-bar">
+                    <div class="recipe-top-bar">
+                        <!-- 搜尋框 -->
+                        <div class="recipe-search-box">
+                            <input type="text" id="recipe-search-input" placeholder="Search Item..." oninput="renderRecipeTable()">
+                        </div>
+
+                        <!-- 三個升級項並列 -->
+                        <div class="recipe-upgrades-row">
+                            <div class="recipe-upgrade-item">
+                                <label id="recipe-lvlAlchemy-label">Alchemy Skill</label>
+                                <div class="spinner-wrapper">
+                                    <button class="spinner-btn" onclick="adjustRecipeLvl('recipe-lvlAlchemy', -1)">-</button>
+                                    <input type="number" id="recipe-lvlAlchemy" value="0" min="0" oninput="renderRecipeTable()">
+                                    <button class="spinner-btn" onclick="adjustRecipeLvl('recipe-lvlAlchemy', 1)">+</button>
+                                </div>
+                            </div>
+                            <div class="recipe-upgrade-item">
+                                <label id="recipe-lvlFuel-label">Fuel Efficiency</label>
+                                <div class="spinner-wrapper">
+                                    <button class="spinner-btn" onclick="adjustRecipeLvl('recipe-lvlFuel', -1)">-</button>
+                                    <input type="number" id="recipe-lvlFuel" value="0" min="0" oninput="renderRecipeTable()">
+                                    <button class="spinner-btn" onclick="adjustRecipeLvl('recipe-lvlFuel', 1)">+</button>
+                                </div>
+                            </div>
+                            <div class="recipe-upgrade-item">
+                                <label id="recipe-lvlFert-label">Fert Efficiency</label>
+                                <div class="spinner-wrapper">
+                                    <button class="spinner-btn" onclick="adjustRecipeLvl('recipe-lvlFert', -1)">-</button>
+                                    <input type="number" id="recipe-lvlFert" value="0" min="0" oninput="renderRecipeTable()">
+                                    <button class="spinner-btn" onclick="adjustRecipeLvl('recipe-lvlFert', 1)">+</button>
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- 新增：HPC -->
+                        <div class="recipe-upgrade-item">
+                            <label>Heat per Cost</label>
+                            <div class="spinner-wrapper">
+                                <button class="spinner-btn" onclick="adjustRecipeLvl('recipe-hpc', -1)">-</button>
+                                <input type="number" id="recipe-hpc" value="20" oninput="renderRecipeTable()">
+                                <button class="spinner-btn" onclick="adjustRecipeLvl('recipe-hpc', 1)">+</button>
+                            </div>
+                        </div>
+                        
+                        <!-- 新增：NPC -->
+                        <div class="recipe-upgrade-item">
+                            <label>Nutr per Cost</label>
+                            <div class="spinner-wrapper">
+                                <button class="spinner-btn" onclick="adjustRecipeLvl('recipe-npc', -1)">-</button>
+                                <input type="number" id="recipe-npc" value="20" oninput="renderRecipeTable()">
+                                <button class="spinner-btn" onclick="adjustRecipeLvl('recipe-npc', 1)">+</button>
+                            </div>
+                        </div>
+
+                        <!-- 切換與列選擇 -->
+                        <div class="recipe-controls">
+                            <div class="toggle-group">
+                                <button id="mode-batch" class="tab-btn mini-tab active" onclick="setRecipeMode('batch')">Batch</button>
+                                <button id="mode-min" class="tab-btn mini-tab" onclick="setRecipeMode('min')">Minute</button>
+                            </div>
+                            <div class="column-toggle-dropdown">
+                                <button class="split-btn" onclick="document.getElementById('col-selector').classList.toggle('show')">Cols ⚙️</button>
+                                <div id="col-selector" class="dropdown-content"></div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- 表格區域 -->
+                <div class="recipe-table-wrapper">
+                    <table class="recipe-table" id="recipe-table">
+                        <thead>
+                            <tr id="recipe-table-header"></tr>
+                        </thead>
+                        <tbody id="recipe-table-body"></tbody>
+                    </table>
+                </div>
+            </div>
+        </div>
+
         <div id="view-db" class="view">
             <div class="editor-container">
                 <div class="editor-toolbar">
@@ -358,7 +443,8 @@
     </main>
     
     <script src="alchemy_ui.js"></script>
-    <script src="alchemy_calc.js"></script>       
+    <script src="alchemy_calc.js"></script>
     <script src="alchemy_cauldron.js"></script>
+    <script src="alchemy_recipe.js"></script>
 </body>
 </html>

@@ -264,8 +264,9 @@ function switchTab(tabName) {
     let btnIndex = 0;
     switch (tabName) {
         case 'calc': btnIndex = 0; break;
-        case 'cauldron': btnIndex = 1; break;
-        case 'db': btnIndex = 2; break;
+        case 'cauldron': btnIndex = 1; break;        
+        case 'recipes': btnIndex = 2; break;
+        case 'db': btnIndex = 3; break;
         default: return;
     }
     document.querySelectorAll('.view').forEach(el => el.classList.remove('active'));
@@ -275,6 +276,9 @@ function switchTab(tabName) {
     updateURL(tabName);
     if (tabName === 'cauldron' && typeof initCauldron === 'function') {
         initCauldron();
+    }
+    if (tabName === 'recipes') {
+        initRecipePage();
     }
 }
 

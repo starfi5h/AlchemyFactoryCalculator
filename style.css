@@ -415,3 +415,128 @@ button.reset-btn:hover { background: var(--danger); color: white; }
 .compact-grid { grid-template-columns: repeat(auto-fill, minmax(110px, 1fr)) !important; gap: 5px !important; }
 
 
+/* ==========================================================================
+    SECTION: RECIPES VIEW STYLES
+    ========================================================================== */
+
+.recipe-table {
+    width: 100%;
+    border-collapse: collapse;
+    background: #1e1e1e;
+    color: #ddd;
+}
+
+.recipe-table th {
+    position: sticky;
+    top: 0;
+    background: #252525;
+    padding: 12px 8px;
+    text-align: left;
+    border-bottom: 2px solid var(--border);
+    z-index: 10;
+}
+
+.recipe-table td {
+    padding: 10px 8px;
+    border-bottom: 1px solid #333;
+    white-space: nowrap;
+}
+
+.recipe-table tr:hover {
+    background: #2a2a2a;
+}
+
+.sticky-filter-bar {
+    position: sticky;
+    top: 0;
+    z-index: 20;
+    background: var(--panel);
+    border-bottom: 1px solid var(--border);
+}
+
+.column-toggle-dropdown {
+    position: relative;
+    display: inline-block;
+}
+
+.dropdown-content {
+    display: none;
+    position: absolute;
+    right: 0;
+    background-color: #2d2d2d;
+    min-width: 180px;
+    box-shadow: 0px 8px 16px 0px rgba(0,0,0,0.5);
+    z-index: 100;
+    border: 1px solid #444;
+    border-radius: 4px;
+}
+
+.dropdown-content.show { display: block; }
+
+.recipe-flow-cell {
+    display: flex;
+    align-items: center;
+    gap: 3px;
+    background: #111;
+    padding: 4px;
+    border-radius: 4px;
+}
+
+.arrow-divider {
+    color: var(--accent);
+    font-weight: bold;
+    margin: 0 4px;
+}
+
+/* 讓表格單元格內容垂直居中，並支援 Flex 佈局 */
+.recipe-table td {
+    vertical-align: middle;
+}
+
+/* 確保 Recipe Flow 的容器不會因為內部組件換行 */
+.recipe-flow-cell {
+    white-space: nowrap;
+}
+
+/* 讓排序標題有視覺反饋 */
+.recipe-table th:hover {
+    background: #333;
+    color: var(--accent);
+}
+
+.recipe-container {
+    display: flex;
+    flex-direction: column;
+    height: 100%;
+}
+
+.recipe-top-bar {
+    display: flex;
+    align-items: center;
+    gap: 20px;
+    padding: 10px;
+    flex-wrap: wrap;
+}
+
+.recipe-upgrades-row {
+    display: flex;
+    gap: 15px;
+}
+
+.recipe-upgrade-item {
+    width: 140px;
+}
+
+.recipe-table-wrapper {
+    flex: 1;
+    overflow-y: auto; /* 必須要有這個，thead 的 sticky 才會生效 */
+    border: 1px solid var(--border);
+}
+
+.recipe-table thead th {
+    position: sticky;
+    top: 0;
+    background: #252525;
+    z-index: 10;
+    box-shadow: 0 2px 2px -1px rgba(0,0,0,0.4);
+}
