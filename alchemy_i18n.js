@@ -130,7 +130,6 @@ window.ALCHEMY_I18N = {
         "Select Item": "选择物品",
         "Expand All": "全部展开",
         "Collapse All": "全部收起",
-        "Goods": "仅可销售",
         "All Items": "所有物品",
         "Browse Items": "浏览物品清单",
 
@@ -450,8 +449,8 @@ window.ALCHEMY_I18N = {
         "Bank Portal": "银行传送门"
     },
     "categories": {
-        "Raw Materials": "原材料", "Seeds": "种子", "Herbs": "草药", "Fuel": "燃料", "Fertilizer": "肥料", "Solid": "固体", "Crystal": "晶石", "Mash": "研磨物", "Component": "零件",
-        "Liquid": "液体", "Potion": "药水", "Catalyst": "催化剂", "Magic": "魔法", "Jewelry": "珠宝", "Relic": "圣物", "Currency": "货币", "Misc" : "杂项", "Other": "其他",
+        "Raw Materials": "原材料", "Seeds": "种子", "Herbs": "草药", "Fuel": "燃料", "Fertilizer": "肥料", "Solid": "固体", "Crystal": "晶石", "Component": "零件", "Liquid": "液体",
+        "Mash": "研磨物", "Metal Mash": "金属粉", "Potion": "药水", "Catalyst": "催化剂", "Magic": "魔法", "Jewelry": "珠宝", "Relic": "圣物", "Currency": "货币", "Misc" : "杂项", "Other": "其他",
         "[All]": "[ 全部 ]", "[Include]": "[ 选取 ]", "[Exclude]": "[ 排除 ]"
     }
 };

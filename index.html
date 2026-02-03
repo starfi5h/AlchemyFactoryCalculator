@@ -53,27 +53,27 @@
 
         <!-- Item Picker Modal -->
         <div id="picker-modal" class="modal-overlay" onclick="closeModal('picker-modal')">
-            <div class="modal-content picker-modal-content" style="width: 800px; max-width: 95vw;" onclick="event.stopPropagation()">
+            <div class="modal-content picker-modal-content" onclick="event.stopPropagation()">
                 <div class="modal-header">
-                    <div style="display:flex; align-items:center; gap:15px;">
-                        <h2 id="ui-picker-title" style="margin:0;">Select Target Item</h2>
-                        <!-- New toggle buttons -->
-                        <div class="picker-controls">
-                            <button id="ui-picker-expand-all" class="split-btn" onclick="toggleAllCategories(false)">Expand All</button>
-                            <button id="ui-picker-collapse-all" class="split-btn" onclick="toggleAllCategories(true)">Collapse All</button>
-                            <span id="ui-picker-saleable-only" style="font-size:0.75em; font-weight:bold;">Goods</span>
-                            <label class="switch">
-                                <input type="checkbox" id="productFilterToggle" onchange="openItemPicker()">
-                                <span class="slider-switch"></span>
-                            </label>
-                            <span><input type="text" id="itmePickerInput" placeholder="Search items..." autocomplete="off" oninput="renderItemPicker()"></span>
-                        </div>
-                    </div>
+                    <h2 id="ui-picker-title" style="margin:0;">Select Target Item</h2>
                     <button class="close-modal" onclick="closeModal('picker-modal')">&times;</button>
                 </div>
-                <!-- Scrollable area is separate from header -->
+
+                <!-- 1. 最上方分類過濾列 -->
+                <div id="picker-category-bar" class="picker-filter-bar">
+                    <!-- 分類按鈕會由 JS 動態生成 -->
+                </div>
+
+                <!-- 2. 輸入框 -->
+                <div class="picker-search-container">
+                    <input type="text" id="itemPickerSearch" placeholder="Search items..." autocomplete="off" oninput="renderItemPicker()">
+                </div>
+
+                <!-- 3. 兩排物品列表區域 -->
                 <div id="picker-body" class="picker-scroll-area">
-                    <!-- Categories will be injected here -->
+                    <div id="picker-items-grid" class="picker-grid-two-column">
+                        <!-- 物品卡片會由 JS 生成 -->
+                    </div>
                 </div>
             </div>
         </div>

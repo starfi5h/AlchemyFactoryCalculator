@@ -1,5 +1,5 @@
 window.ALCHEMY_DB = {
-    "version": 27,
+    "version": 28,
     "date": "2025.02.02",
     "gameVersion": "0.4.2.3946",
     "items": {
@@ -83,31 +83,6 @@ window.ALCHEMY_DB = {
         "Diamond": { "id": 634, "category": "Crystal", "sellPrice": 100000, "cauldronCost": 65536, "cauldronMulti": 1, "cauldronTarget": 65536 },
         "Perfect Diamond": { "id": 635, "category": "Crystal", "cauldronCost": 131072, "cauldronMulti": 1, "cauldronTarget": 131072 },
 
-        // --- 8. MASH ---
-        "Sand": { "id": 202, "category": "Mash", "cauldronCost": 4.5 },
-        "Flax Fiber": { "id": 204, "category": "Mash", "cauldronCost": 2.5 },
-        "Iron Sand": { "id": 303, "category": "Mash", "cauldronCost": 15.5, "cauldronMulti": 1, "cauldronTarget": 15 },
-        "Plant Ash": { "id": 304, "category": "Mash", "cauldronCost": 4 },
-        "Sage Powder": { "id": 305, "category": "Mash", "cauldronCost": 3.5 },
-        "Quicklime Powder": { "id": 402, "category": "Mash", "cauldronCost": 7 },
-        "Clay Powder": { "id": 407, "category": "Mash", "cauldronCost": 22 },
-        "Soap Powder": { "id": 414, "category": "Mash", "cauldronCost": 24 },
-        "Chamomile Powder": { "id": 601, "category": "Mash", "cauldronCost": 57 },
-        "Sulfur Powder": { "id": 603, "category": "Mash", "cauldronCost": 200 },
-        "Impure Copper Powder": { "id": 607, "category": "Mash", "cauldronCost": 150, "cauldronMulti": 1, "cauldronTarget": 180 },
-        "Copper Powder": { "id": 608, "category": "Mash", "cauldronCost": 290, "cauldronMulti": 1, "cauldronTarget": 350 },
-        "Perfumed Soap Powder": { "id": 708, "category": "Mash", "cauldronCost": 1216.4 },
-        "Gentian Powder": { "id": 801, "category": "Mash", "cauldronCost": 430 },
-        "Crude Silver Powder": { "id": 803, "category": "Mash", "cauldronCost": 1273.5, "cauldronMulti": 0.7, "cauldronTarget": 1673.5 },
-        "Impure Silver Powder": { "id": 804, "category": "Mash", "cauldronCost": 2547, "cauldronMulti": 0.7, "cauldronTarget": 3347 },
-        "Silver Powder": { "id": 805, "category": "Mash", "cauldronCost": 4742, "cauldronMulti": 0.7, "cauldronTarget": 4742 },
-        // temp move Volcanic Ash id from 29 to 807
-        "Volcanic Ash": { "id": 807, "category": "Mash", "cauldronCost": 5290 },
-        "Crude Gold Dust": { "id": 901, "category": "Mash", "cauldronCost": 10805.325, "cauldronMulti": 0.5, "cauldronTarget": 13805.325 },
-        "Impure Gold Dust": { "id": 902, "category": "Mash", "cauldronCost": 21610.65, "cauldronMulti": 0.5, "cauldronTarget": 27610.65 },
-        "Gold Dust": { "id": 903, "category": "Mash", "cauldronCost": 42357.3, "cauldronMulti": 0.5, "cauldronTarget": 52357.3 },
-        "Pure Gold Dust": { "id": 904, "category": "Mash", "cauldronCost": 84714.6, "cauldronMulti": 0.5, "cauldronTarget": 99714.6 },
-
         // --- 9. COMPONENTS ---
         "Linen Thread": { "id": 205, "category": "Component", "maxStack": 200, "cauldronCost": 9 },
         "Linen Rope": { "id": 206, "category": "Component", "sellPrice": 36, "maxStack": 200, "cauldronCost": 13 },
@@ -131,6 +106,33 @@ window.ALCHEMY_DB = {
         "Aqua Vitae": { "id": 812, "category": "Liquid", "liquid": true, "cauldronCost": 459.3 },
         "Fairy Tear": { "id": 911, "category": "Liquid", "liquid": true, "cauldronCost": 3060 },
         "Moon Tear": { "id": 912, "category": "Liquid", "liquid": true, "cauldronCost": 97092 },
+
+        // --- MASH ---
+        "Sand": { "id": 202, "category": "Mash", "cauldronCost": 4.5 },
+        "Flax Fiber": { "id": 204, "category": "Mash", "cauldronCost": 2.5 },        
+        "Plant Ash": { "id": 304, "category": "Mash", "cauldronCost": 4 },
+        "Sage Powder": { "id": 305, "category": "Mash", "cauldronCost": 3.5 },
+        "Quicklime Powder": { "id": 402, "category": "Mash", "cauldronCost": 7 },
+        "Clay Powder": { "id": 407, "category": "Mash", "cauldronCost": 22 },
+        "Soap Powder": { "id": 414, "category": "Mash", "cauldronCost": 24 },
+        "Chamomile Powder": { "id": 601, "category": "Mash", "cauldronCost": 57 },
+        "Sulfur Powder": { "id": 603, "category": "Mash", "cauldronCost": 200 },        
+        "Perfumed Soap Powder": { "id": 708, "category": "Mash", "cauldronCost": 1216.4 },
+        "Gentian Powder": { "id": 801, "category": "Mash", "cauldronCost": 430 },        
+        // temp move Volcanic Ash id from 29 to 807
+        "Volcanic Ash": { "id": 807, "category": "Mash", "cauldronCost": 5290 },        
+
+        // --- METAL MASH ---
+        "Iron Sand": { "id": 303, "category": "Metal Mash", "cauldronCost": 15.5, "cauldronMulti": 1, "cauldronTarget": 15 },
+        "Impure Copper Powder": { "id": 607, "category": "Metal Mash", "cauldronCost": 150, "cauldronMulti": 1, "cauldronTarget": 180 },
+        "Copper Powder": { "id": 608, "category": "Metal Mash", "cauldronCost": 290, "cauldronMulti": 1, "cauldronTarget": 350 },
+        "Crude Silver Powder": { "id": 803, "category": "Metal Mash", "cauldronCost": 1273.5, "cauldronMulti": 0.7, "cauldronTarget": 1673.5 },
+        "Impure Silver Powder": { "id": 804, "category": "Metal Mash", "cauldronCost": 2547, "cauldronMulti": 0.7, "cauldronTarget": 3347 },
+        "Silver Powder": { "id": 805, "category": "Metal Mash", "cauldronCost": 4742, "cauldronMulti": 0.7, "cauldronTarget": 4742 },
+        "Crude Gold Dust": { "id": 901, "category": "Metal Mash", "cauldronCost": 10805.325, "cauldronMulti": 0.5, "cauldronTarget": 13805.325 },
+        "Impure Gold Dust": { "id": 902, "category": "Metal Mash", "cauldronCost": 21610.65, "cauldronMulti": 0.5, "cauldronTarget": 27610.65 },
+        "Gold Dust": { "id": 903, "category": "Metal Mash", "cauldronCost": 42357.3, "cauldronMulti": 0.5, "cauldronTarget": 52357.3 },
+        "Pure Gold Dust": { "id": 904, "category": "Metal Mash", "cauldronCost": 84714.6, "cauldronMulti": 0.5, "cauldronTarget": 99714.6 },
 
         // --- 11. CATALYSTS ---		
         "Yeast Powder": { "id": 507, "category": "Catalyst", "cauldronCost": 88, "cauldronMulti": 1, "cauldronTarget": 88 },

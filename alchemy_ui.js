@@ -35,7 +35,7 @@ let allItemsList = [];
 let currentFocus = -1;
 
 // ITEM PICKER GLOBALS
-let pickerCollapsedStates = { "Raw Materials": true, "Seeds": true};
+let currentPickerCategory = "[All]";
 
 // URL STATES
 let lastUrlItem = ""; 
@@ -654,94 +654,75 @@ function closeModal(id) { document.getElementById(id).style.display = 'none'; }
  */
 function openItemPicker() {
     document.getElementById('ui-picker-title').innerText = t('Select Item', 'ui');
-    document.getElementById('ui-picker-expand-all').innerText = t('Expand All', 'ui');
-    document.getElementById('ui-picker-collapse-all').innerText = t('Collapse All', 'ui');
-    document.getElementById('ui-picker-saleable-only').innerText = t('Goods', 'ui');
-    document.getElementById('picker-modal').style.display = 'flex';
+    renderCategoryBar();
     renderItemPicker();
+    document.getElementById('picker-modal').style.display = 'flex';
 }
 
-function renderItemPicker() {
-    const body = document.getElementById('picker-body');
-    body.innerHTML = '';
-
-    const categories = {};
-    const itemKeys = Object.keys(DB.items);
-    const currentItem = document.getElementById('targetItemInput').value;
-    const productOnly = document.getElementById('productFilterToggle').checked;
-    const filterInput = document.getElementById('itmePickerInput').value.trim().toLowerCase();
-
-    // Grouping logic
-    itemKeys.forEach(key => {
-        const item = DB.items[key];
-        // FILTER LOGIC: If Product Only is ON, item must have sellPrice > 0
-        if (productOnly && !(item.sellPrice > 0)) {
-            return; // Skip this item
-        }
-        if (filterInput.length > 0 && key.toLowerCase().indexOf(filterInput) < 0) {
-            return; // Skip this item
-        }
-        const cat = item.category || "Other";
-        if (!categories[cat]) categories[cat] = [];
-        categories[cat].push({ name: key, ...item });
-    });
-
-    Object.keys(categories).forEach(catName => {
-        const catContainer = document.createElement('div');
-        catContainer.className = 'picker-category';
-        
-        // Restore collapse state from memory (default to expanded if undefined)
-        if (pickerCollapsedStates[catName] === true) {
-            catContainer.classList.add('collapsed');
-        }
-
-        const translatedCat = t(catName, 'categories');
-        
-        const header = document.createElement('div');
-        header.className = 'picker-cat-header';
-        header.innerHTML = `<span>${translatedCat} (${categories[catName].length})</span> <span class="arrow">▼</span>`;
-        
-        header.onclick = () => {
-            const isCollapsed = catContainer.classList.toggle('collapsed');
-            // Save state to session memory
-            pickerCollapsedStates[catName] = isCollapsed;
-        };
-        
-        const grid = document.createElement('div');
-        grid.className = 'picker-grid';
-        
-        categories[catName].forEach(item => {
-            const itemBtn = document.createElement('div');
-            itemBtn.className = 'picker-item' + (item.name === currentItem ? ' active' : '');
-            itemBtn.innerHTML = `<img src="img/item${item.id ?? 0}.png" width="24" height="24" loading="lazy"><span>${item.name}</span>`;
-            itemBtn.onclick = (e) => {
-                e.stopPropagation(); // Prevent trigger header toggle
-                selectItem(item.name);
-                closeModal('picker-modal');
-            };
-            grid.appendChild(itemBtn);
-        });
-
-        catContainer.appendChild(header);
-        catContainer.appendChild(grid);
-        body.appendChild(catContainer);
-    });
-}
-
-function toggleAllCategories(shouldCollapse) {
-    const categories = document.querySelectorAll('.picker-category');
-    categories.forEach(el => {
-        if (shouldCollapse) el.classList.add('collapsed');
-        else el.classList.remove('collapsed');
-    });
-
-    // Update all states in memory
-    const catNames = Object.keys(pickerCollapsedStates);
-    // If memory is empty, find names from the data
-    const targetNames = catNames.length > 0 ? catNames : Array.from(new Set(Object.values(DB.items).map(i => i.category)));
+// 渲染頂部的分類按鈕
+function renderCategoryBar() {
+    const bar = document.getElementById('picker-category-bar');
+    bar.innerHTML = '';
     
-    targetNames.forEach(name => {
-        pickerCollapsedStates[name] = shouldCollapse;
+    // 獲取所有存在的分類
+    const categories = new Set(["[All]"]);
+    Object.values(DB.items).forEach(item => {
+        if (item.category) categories.add(item.category);
+    });
+
+    Array.from(categories).forEach(cat => {
+        const btn = document.createElement('button');
+        btn.className = `category-btn ${currentPickerCategory === cat ? 'active' : ''}`;
+        btn.innerText = t(cat, 'categories');
+        btn.onclick = () => {
+            currentPickerCategory = cat;
+            renderCategoryBar(); // 刷新按鈕狀態
+            renderItemPicker();  // 刷新列表
+        };
+        bar.appendChild(btn);
+    });
+}
+
+// 渲染物品列表
+function renderItemPicker() {    
+    const grid = document.getElementById('picker-items-grid');
+    const filterText = document.getElementById('itemPickerSearch').value.toLowerCase();
+    grid.innerHTML = '';
+
+    // 將 DB.items 轉換為數組以保持順序（或按 ID 排序）
+    const itemsToShow = Object.entries(DB.items).filter(([name, data]) => {
+        const matchesCategory = (currentPickerCategory === "[All]" || data.category === currentPickerCategory);
+        const matchesSearch = name.toLowerCase().includes(filterText);
+        return matchesCategory && matchesSearch;
+    });
+
+    const showCauldronCost = document.getElementById('view-cauldron')?.classList.contains('active') ?? false;
+    const isGeneralCatagory = currentPickerCategory === "[All]";
+    itemsToShow.forEach(([name, data]) => {
+        const card = document.createElement('div');
+        card.className = 'picker-item-row';
+
+        card.innerHTML = `
+            <img src="img/item${data.id ?? 0}.png" loading="lazy">
+            <span class="picker-item-name">${name}</span>            
+        `;
+
+        if (showCauldronCost && data.cauldronCost) {
+            card.innerHTML += `<span class="cand-cost" >${Number(data.cauldronCost.toFixed(2))}</span>`;
+        }
+        else if (isGeneralCatagory) {
+            // 根據分類獲取標籤顏色類名
+            const tagClass = `tag-${data.category ? data.category.replace(/\s+/g, '') : 'Other'}`;
+            const translatedCat = t(data.category || "Other", 'categories');
+            card.innerHTML += `<span class="picker-item-tag ${tagClass}">${translatedCat}</span>`;
+        }
+
+        card.onclick = () => {
+            selectItem(name);
+            closeModal('picker-modal');
+        };
+
+        grid.appendChild(card);
     });
 }
 
