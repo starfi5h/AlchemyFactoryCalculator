@@ -285,6 +285,9 @@ function switchTab(tabName) {
     if (tabName === 'recipes') {
         initRecipePage();
     }
+    if (tabName === 'calc') {
+        syncCauldronToMainDB(); // 回到計算器頁面時, 嘗試同步煉金鍋配方
+    }
 }
 
 function applyChanges() {

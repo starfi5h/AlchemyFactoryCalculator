@@ -16,7 +16,7 @@ let cauldronState = {
 
 let cauldronCandidates = new Set(); // 存储被勾选的物品名
 let cauldronCatFilter = "[All]";
-let cauldronFilterItems = [null, null];
+let cauldronFilterItems = [null, null, null];
 
 function isVaildCandidate(itemName) {
     const item = DB.items[itemName];
@@ -44,10 +44,12 @@ function loadCauldronSettings() {
             console.error("Cauldron settings corrupt, using defaults.");
         }
     } else {
-        // 如果是第一次运行，默认Profile 1為草藥
-        cauldronState.profiles[0].candidates = Array.from(getPresetCandidates('Herbs'));
-        // 默认Profile 1為金幣
-        cauldronState.profiles[1].candidates = Array.from(getPresetCandidates('Gold'));
+        // 如果是第一次运行，默認Profile 1為全選
+        cauldronState.profiles[0].candidates = Object.keys(DB.items).filter(isVaildCandidate);        
+        // 默认Profile 2為植物+晶石基底
+        cauldronState.profiles[1].candidates = Array.from(getPresetCandidates('Herbs'));
+        // 默认Profile 3為金幣+晶石基底
+        cauldronState.profiles[2].candidates = Array.from(getPresetCandidates('Gold'));
     }
 }
 
@@ -91,7 +93,7 @@ function getPresetCandidates(poolType) {
             for (const { inputs, outputs, machine } of DB.recipes) {
                 const inKeys = Object.keys(inputs);
                 const outKeys = Object.keys(outputs);
-                if (machine === 'Planting') continue;
+                if (machine === 'Planting' || machine === 'Crucible' || machine === 'Kiln' || machine === 'Paradox Crucible') continue;
                 if (inKeys.length === 1 && outKeys.length === 1 && inputSet.has(inKeys[0]) && isVaildCandidate(outKeys[0])) {
                     outputSet.add(outKeys[0]);
                     //console.log(outKeys[0] + "," + round);
@@ -145,7 +147,8 @@ function populateCauldronCategories() {
 
 function renderCandidatePool() {
     cauldronCatFilter = document.getElementById('cauldron-cat-select').value;
-    const sortFlag = document.getElementById('cauldron-sort-by-cost').checked;    
+    const sortFlag = document.getElementById('cauldron-sort-by-cost').checked;
+    const cauldronSortDescending = document.getElementById('cauldron-sort-order-btn').innerText === '🔽';
     const container = document.getElementById('candidate-pool');
     container.innerHTML = '';
 
@@ -163,7 +166,7 @@ function renderCandidatePool() {
         array.push({name: name, cost:item.cauldronCost||0, target:item.cauldronTarget||0, id:item.id||0});
     });
 
-    if (sortFlag) array.sort((a, b) => ((a.cost) - (b.cost)));
+    if (sortFlag) array.sort((a, b) => (cauldronSortDescending ? (b.cost - a.cost) : (a.cost - b.cost)));
 
     array.forEach((item) => {
         const div = document.createElement('div');
@@ -189,6 +192,23 @@ function switchCauldronProfile(index) {
     renderCandidatePool();
     saveCauldronSettings();
     if (document.getElementById('cauldron-real-time-calculation')?.checked) runCauldronSimulation();
+}
+
+/**
+ * 將目前 Profile 的候選清單重置為「草藥/植物」預設組
+ */
+function applyHerbPreset() {
+    const herbSet = getPresetCandidates('Herbs');
+    cauldronCandidates = new Set(herbSet);
+    populateCauldronCategories();
+    document.getElementById('cauldron-cat-select').value = cauldronCatFilter;
+    renderCandidatePool();
+    if (document.getElementById('cauldron-real-time-calculation')?.checked) runCauldronSimulation();
+}
+
+function toggleCauldronSortOrder() {
+    document.getElementById('cauldron-sort-order-btn').innerText = document.getElementById('cauldron-sort-order-btn').innerText === '🔽' ? '🔼' : '🔽';
+    renderCandidatePool();
 }
 
 function toggleCandidate(name) {
@@ -246,11 +266,59 @@ function pickFilterItem(slotIdx, clear = false) {
 
 function updateFilterUI() {
     for (let i = 1; i <= 3; i++) {
-        const el = document.getElementById(`slot${i}`);
+        const slotEl = document.getElementById(`slot${i}`);
+        const ctrlEl = document.getElementById(`slot-ctrl-${i}`);
         const val = cauldronFilterItems[i - 1];
-        el.innerText = val ? val : t('Set Input') + ` ${i}`;
-        el.classList.toggle('active', !!val);
+        
+        // 更新上方 Picker 文字
+        slotEl.innerText = val ? val : t('Set Input') + ` ${i}`;
+        slotEl.classList.toggle('active', !!val);
+
+        // 更新下方控制列 HTML
+        if (val) {
+            const item = DB.items[val];
+            ctrlEl.innerHTML = `
+                <button class="swap-btn" onclick="shiftFilterItem(${i}, -1)">-</button>
+                <img src="img/item${item.id ?? 0}.png" width="18" height="18" title="${val}">
+                <span class="cand-cost">${Number(item.cauldronCost.toFixed(2))}</span>
+                <button class="swap-btn" onclick="shiftFilterItem(${i}, 1)">+</button>
+            `;
+            ctrlEl.style.visibility = 'visible';
+        } else {
+            // 如果沒選中物品，可以選擇隱藏或顯示空的提示
+            ctrlEl.innerHTML = `<button class="swap-btn" style="opacity:0.3" onclick="shiftFilterItem(${i}, 1)">+</button>`;
+            // 或者直接 ctrlEl.style.visibility = 'hidden';
+        }
     }
+}
+
+/**
+ * 切換選中物品到上一個或下一個
+ * @param {number} slotIdx 1, 2, 3
+ * @param {number} delta -1 或 1
+ */
+function shiftFilterItem(slotIdx, delta) {
+    const list = Object.keys(DB.items)
+        .filter(isVaildCandidate)
+        .sort((a, b) => DB.items[a].cauldronCost - DB.items[b].cauldronCost);
+
+    if (list.length === 0) return;
+
+    const currentItem = cauldronFilterItems[slotIdx - 1];
+    let nextIdx = 0;
+
+    if (currentItem) {
+        const currentIdx = list.indexOf(currentItem);
+        // 循環索引處理
+        nextIdx = (currentIdx + delta + list.length) % list.length;
+    } else {
+        // 如果原本是空的，點擊 + 則從第一個開始，點擊 - 則從最後一個開始
+        nextIdx = delta > 0 ? 0 : list.length - 1;
+    }
+
+    cauldronFilterItems[slotIdx - 1] = list[nextIdx];
+    updateFilterUI();
+    runCauldronSimulation();
 }
 
 /* ==========================================================================
@@ -373,8 +441,8 @@ async function runCauldronSimulation() {
                 // 提前过滤，减少后续计算压力
                 if (isRecipeMatch([n0, n1, n2], ratio)) {
                     const res = getCauldronResult(n0, n1, n2);
-                    // 輸入原料若包含輸出產物, 則跳過這個組合
-                    if (!([n0, n1, n2].includes(res.output))) { 
+                    // 輸入原料若包含輸出產物(且不是指定的原料), 則跳過這個組合
+                    if (!([n0, n1, n2].includes(res.output) && !cauldronFilterItems.includes(res.output))) { 
                         if (!resultsByOutput[res.output]) resultsByOutput[res.output] = [];
                         resultsByOutput[res.output].push({
                             inputs: [n0, n1, n2],
@@ -401,7 +469,7 @@ async function runCauldronSimulation() {
 
     renderCauldronResults(resultsByOutput);
     checkUnattainableItems(resultsByOutput);
-    progText.innerText = ` (${recipeCount}) `;
+    progText.innerText = `${t('Number of matching recipes')}: (${recipeCount}) `;
     btn.disabled = false;
 }
 
