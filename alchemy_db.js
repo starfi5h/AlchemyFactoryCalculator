@@ -1,7 +1,7 @@
 window.ALCHEMY_DB = {
-    "version": 26,
-    "date": "2025.01.16",
-    "gameVersion": "0.4.1.3800",
+    "version": 27,
+    "date": "2025.02.02",
+    "gameVersion": "0.4.2.3946",
     "items": {
         // --- 1. RAW RESOURCES ---
         "Logs": { "id": 1, "category": "Raw Materials", "buyPrice": 200, "maxStack": -200, "heat": 2000, "cauldronCost": 0.8 },
@@ -223,17 +223,25 @@ window.ALCHEMY_DB = {
         "Enhanced Grinder": { "buildCost": { "Plank": 12, "Steel Gear": 3 } },
         "Nursery": { "fertility": true, "buildCost": { "Iron Ingot": 12, "Clay": 6 } },
         "World Tree Nursery": { "fertility": true, "buildCost": { "Iron Ingot": 100, "Clay": 100  } },
-        "Knowledge Altar": { "buildCost": { "Stone": 24 } }
+        "Knowledge Altar": { "buildCost": { "Stone": 24 } },
+        "Purchasing Portal": { "buildCost": { "Plank": 5, "Portal Sigil": 1 } },
+        "Bank Portal": { "buildCost": { "Iron Ingot": 5, "Portal Sigil": 1 } }
     },
     
     "recipes": [
-        // --- HERBS & SEEDS ---
-        { "id": "Flax", "machine": "Planting", "inputs": { "Flax Seeds": 1 }, "outputs": { "Flax": 200 }, "baseTime": 400.0 },
-        { "id": "Sage", "machine": "Planting", "inputs": { "Sage Seeds": 1 }, "outputs": { "Sage": 180 }, "baseTime": 540.0 },
-        { "id": "Redcurrant", "machine": "Planting", "inputs": { "Redcurrant Seeds": 1 }, "outputs": { "Redcurrant": 150 }, "baseTime": 720.0 },
-        { "id": "Lavender", "machine": "Planting", "inputs": { "Lavender Seeds": 1 }, "outputs": { "Lavender": 120 }, "baseTime": 1440.0 },
-        { "id": "Chamomile", "machine": "Planting", "inputs": { "Chamomile Seeds": 1 }, "outputs": { "Chamomile": 140 }, "baseTime": 1120.0 },
-        { "id": "Gentian", "machine": "Planting", "inputs": { "Gentian Seeds": 1 }, "outputs": { "Gentian": 80, "Gentian Nectar": 80 }, "baseTime": 2160.0 },
+        // --- HERBS ---
+        { "id": "Flax", "machine": "Nursery", "buildCost": "Flax Seeds", "inputs": {}, "outputs": { "Flax": 1 }},
+        { "id": "Sage", "machine": "Nursery", "buildCost": "Sage Seeds", "inputs": {}, "outputs": { "Sage": 1 }},
+        { "id": "Redcurrant", "machine": "Nursery", "buildCost": "Redcurrant Seeds", "inputs": {}, "outputs": { "Redcurrant": 1 }},
+        { "id": "Lavender", "machine": "Nursery", "buildCost": "Lavender Seeds", "inputs": {}, "outputs": { "Lavender": 1 }},
+        { "id": "Chamomile", "machine": "Nursery", "buildCost": "Chamomile Seeds", "inputs": {}, "outputs": { "Chamomile": 1 }},
+        { "id": "Gentian_Dual", "machine": "Nursery", "buildCost": "Gentian Seeds", "inputs": {}, "outputs": { "Gentian": 1, "Gentian Nectar": 1 }},
+        { "id": "World Tree_Dual", "machine": "World Tree Nursery", "buildCost": "World Tree Seed", "inputs": {}, "outputs": { "World Tree Leaf": 99, "World Tree Core":1 }},
+
+        // --- CURRENCY ---
+        { "id": "Bank_Copper", "machine": "Bank Portal", "inputs": {}, "outputs": { "Copper Coin": 50 }, "baseTime": 1.0 },
+        { "id": "Bank_Silver", "machine": "Bank Portal", "inputs": {}, "outputs": { "Silver Coin": 50 }, "baseTime": 1.0 },
+        { "id": "Bank_Gold", "machine": "Bank Portal", "inputs": {}, "outputs": { "Gold Coin": 50 }, "baseTime": 1.0 },
 
         // --- BASICS ---
         { "id": "Plank", "machine": "Table Saw", "inputs": { "Logs": 1 }, "outputs": { "Plank": 200 }, "baseTime": 400.0 },
@@ -355,7 +363,7 @@ window.ALCHEMY_DB = {
         { "id": "Quicksilver", "machine": "Advanced Alembic", "inputs": { "Crude Silver Powder": 1, "Vitality Essence": 1, "Sulfuric Acid": 80 }, "outputs": { "Quicksilver": 10 }, "baseTime": 8.0 },
         { "id": "Aqua Vitae", "machine": "Advanced Alembic", "inputs": { "Gentian Nectar": 1, "World Tree Leaf": 1, "Brandy": 200 }, "outputs": { "Aqua Vitae": 10 }, "baseTime": 8.0 },
         { "id": "Fairy Tear", "machine": "Extractor", "inputs": { "Fairy Dust": 1 }, "outputs": { "Fairy Tear": 1 }, "baseTime": 4.0 },
-        { "id": "Moon Tear", "machine": "Advanced Blender", "inputs": { "Star Dust": 16, "Fairy Tear": 10 }, "outputs": { "Moon Tear": 1 }, "baseTime": 8.0 },
+        { "id": "Moon Tear", "machine": "Advanced Alembic", "inputs": { "Star Dust": 16, "Fairy Tear": 10 }, "outputs": { "Moon Tear": 1 }, "baseTime": 8.0 },
 
         // --- POTIONS ---
         { "id": "Healing Potion", "machine": "Assembler", "inputs": { "Sage Powder": 6, "Flax Fiber": 6 }, "outputs": { "Healing Potion": 1 }, "baseTime": 6.0 },

@@ -33,6 +33,23 @@ function applyAlchemyMult(machineName, batchYield, alchemyMult) {
     return batchYield;
 }
 
+function getRecipeNutrientCost(recipe) {
+    if (!recipe) return 0;
+    if (recipe.machine !== "Nursery" && recipe.machine !== "World Tree Nursery") {
+        return 0; // 非 Nursery 配方無營養成本
+    }
+    
+    let totalCost = 0;
+    Object.keys(recipe.outputs).forEach(itemName => {
+        const itemDef = DB.items[itemName] || {};
+        const quantity = recipe.outputs[itemName];
+        const nutrientCost = itemDef.nutrientCost || 0;
+        totalCost += quantity * nutrientCost;
+    });
+    
+    return totalCost;
+}
+
 function getProductionHeatCost(item, speedMult, alchemyMult) {
     let cost = 0; const recipe = getActiveRecipe(item);
     if (recipe && recipe.outputs[item]) {
@@ -258,17 +275,12 @@ function updateLabels(params) {
 function calculatePass(p, isGhost, globalAvilByproducts, globalTotalByproducts) {
     // Re-calc basic inputs derived from params
     const fuelDef = DB.items[p.selectedFuel] || {};
-    let netFuelEnergy = (fuelDef.heat || 10) * p.fuelMult; const grossFuelEnergy = netFuelEnergy; 
-    if (p.selfFuel) { netFuelEnergy -= getProductionHeatCost(p.selectedFuel, p.speedMult, p.alchemyMult); }
-    if(netFuelEnergy <= 0) netFuelEnergy = 0.1; 
-
+    const grossFuelEnergy = (fuelDef.heat || 1);    
     const fertDef = DB.items[p.selectedFert] || { nutrientValue: 144, maxFertility: 12 };
-    let netFertVal = fertDef.nutrientValue * p.fertMult; const grossFertVal = netFertVal;
-    if (p.selfFert) { netFertVal -= getProductionFertCost(p.selectedFert, netFertVal, fertDef.maxFertility, p.speedMult, p.alchemyMult); }
-    if(netFertVal <= 0) netFertVal = 0.1;
+    const grossFertVal = fertDef.nutrientValue * p.fertMult;
 
     let globalFuelDemandItems = 0; let globalFertDemandItems = 0; let globalHeatLoad = 0; let globalBioLoad = 0; let globalCostPerMin = 0;
-    let globalForcedItems = {}; let globalRawItems = {};
+    let globalForcedItems = {}; let globalRawItems = {}; let globalExtraBuildCosts = {};
 
     // --- AGGREGATION STRUCTURES ---
     let machineStats = {};
@@ -312,14 +324,6 @@ function calculatePass(p, isGhost, globalAvilByproducts, globalTotalByproducts) 
         let bioTag = ""; let costTag = ""; let detailsTag = ""; let recycleTag = ""; let externalTag = "";
         let machinesNeeded = 0; let hasChildren = false;
         
-        /*
-        let isFuel = (item === p.selectedFuel); let isFert = (item === p.selectedFert);
-        if (p.showHeatFert) {
-            if(isFuel) { outputTag = `<span class="output-tag">Output: ${formatVal((rate * (fuelDef.heat||10)*p.fuelMult)/60)} P/s</span>`; }
-            else if (isFert) { outputTag = `<span class="output-tag">Output: ${formatVal((rate * fertDef.nutrientValue*p.fertMult)/60)} V/s</span>`; }
-        }
-        */
-
         // --- RECYCLE UI ---
         if (canRecycle && !effectiveGhost) {
             if (GLOBAL_CALC_STATE.activeRecyclers.has(pathKey)) {
@@ -345,72 +349,6 @@ function calculatePass(p, isGhost, globalAvilByproducts, globalTotalByproducts) 
                 detailsTag = `<span class="details">(${t('External Input')})</span>`;
             }
         }
-        else if (itemDef.nutrientCost) {
-            // --- 1. 計算 Nursery 生產速率與機器需求 ---
-            let machineName = "Nursery";
-            let fertilitySpeed = fertDef.maxFertility || 12;
-            if (itemDef.nutrientCost >= 30000) {
-                // 世界樹的特例處理
-                machineName = "World Tree Nursery";
-                fertilitySpeed = 20000;
-            }
-            const timePerItem = itemDef.nutrientCost / fertilitySpeed;
-
-            // 考慮玩家速度加成後的單機產量 (items/min)
-            const machineOutputRate = (60 / timePerItem) * p.speedMult;
-            const itemsPerMinPerMachine = Math.min(machineOutputRate, p.beltSpeed);
-
-            // 計算所需機器總數，並處理浮點數捨入問題 (靠近整數時自動校正)
-            let machinesNeeded = netRate / itemsPerMinPerMachine;
-            if (Math.abs(Math.round(machinesNeeded) - machinesNeeded) < 0.0001) {
-                machinesNeeded = Math.round(machinesNeeded);
-            }
-
-            // --- 2. 全域負載與需求追蹤 ---
-            const totalNutrientsNeeded = netRate * itemDef.nutrientCost;
-            const itemsNeeded = totalNutrientsNeeded / grossFertVal;
-            globalFertDemandItems += itemsNeeded;
-            globalBioLoad += (totalNutrientsNeeded / 60);
-
-            // --- 3. 處理非 Ghost 模式下的顯示邏輯 (UI/Tags) ---
-            if (!effectiveGhost) {
-                // A. 記錄機器數量
-                addMachineCount(machineName, item, Math.ceil(machinesNeeded - 0.0001), machinesNeeded);
-
-                // B. 生成 Tooltip 資訊
-                const actualBaseTime = timePerItem * (60 / p.speedMult);
-                const tooltipText = [
-                    `Recipe: ${item} (${t(machineName, 'machines')})`,
-                    `Base Time: ${actualBaseTime.toFixed(1)}s`,
-                    `Speed Mult: ${p.speedMult.toFixed(2)}x`,
-                    `Throughput: ${itemsPerMinPerMachine.toFixed(2)} items/min`
-                ].join('\n');
-
-                // C. 生成機器標籤 (Machine Tag)
-                let capTag = "";
-                if (p.showMaxCap) {
-                    const maxOutput = Math.ceil(machinesNeeded) * itemsPerMinPerMachine;
-                    const usageRatio = netRate / maxOutput;
-                    capTag = `<span class="max-cap-tag" onclick="recalculate('${p.targetItem}', ${p.targetRate / usageRatio})">(Max: ${formatVal(maxOutput)}/m)</span>`;
-                }
-                machineTag = `<span class="machine-tag" data-tooltip="${tooltipText}">${Math.ceil(machinesNeeded)} ${t(machineName, 'machines')}${capTag}</span>`;
-
-                // D. 生成生物/肥料標籤 (Bio Tag)
-                const fertRate = netRate * itemDef.nutrientCost / grossFertVal;
-                let bioText = `-${formatVal(fertRate)}/m ${p.selectedFert}`;
-                
-                if (p.showHeatFert) {
-                    bioText += ` (${formatVal(fertRate)} V/s)`;
-                }
-                bioTag = `<span class="bio-tag">${bioText}</span>`;
-
-                // E. 生成成本標籤 (Cost Tag)
-                if (p.showFertCost && p.fertCost > Number.EPSILON) {
-                    const costPerMin = Math.ceil(fertRate * p.fertCost - Number.EPSILON);
-                    costTag += `<span class="cost-tag">(${costPerMin.toLocaleString()} G/m)</span>`;
-                }
-            }
-        } 
         else {
             const recipe = getActiveRecipe(item);
             if (!recipe) {
@@ -430,22 +368,34 @@ function calculatePass(p, isGhost, globalAvilByproducts, globalTotalByproducts) 
                     }                    
                 }
             } else {
-                hasChildren = true;
+                hasChildren = recipe.inputs !== undefined;
+                if(recipe.machine === "Bank Portal") {
+                    let c = netRate * itemDef.sellPrice; 
+                    globalCostPerMin += c; 
+                    costTag = `<span class="cost-tag">-${Math.ceil(c - Number.EPSILON).toLocaleString()} G/m</span>`;
+                }
+
                 let batchYield = recipe.outputs[item] || 1;
                 if (recipe.machine === "Extractor" || recipe.machine === "Thermal Extractor" || recipe.machine === "Alembic" || recipe.machine === "Advanced Alembic") { 
                     const ratio = recipe.machine === "Thermal Extractor" ? p.alchemyMult * 3 : p.alchemyMult;
                     batchYield *= ratio;
                     outputTag = `<span class="output-tag">${t('Yields')}: ${(ratio*100).toFixed(0)}%</span>`
                 }
+                const batchesPerMin = netRate / batchYield;                
                 
-                const batchesPerMin = netRate / batchYield;
-                const maxBatchesPerMin = (60 / recipe.baseTime) * p.speedMult;
+                let recipeTime = recipe.baseTime || 1;
+                const recipeNtrientCost = getRecipeNutrientCost(recipe);
+                if (recipeNtrientCost > 0) {
+                    let fertilitySpeed = fertDef.maxFertility || 1;
+                    if (recipe.machine === "World Tree Nursery") fertilitySpeed = 30000;
+                    recipeTime =  recipeNtrientCost / fertilitySpeed;
+                }
+                let machineOutputRate  = (60 / (recipeTime || 1)) * p.speedMult;
+                let effectiveBatchesPerMin = machineOutputRate;
                 const isLiquid = (itemDef.liquid === true);
-                let effectiveBatchesPerMin = maxBatchesPerMin;
-                
                 if (!isLiquid) {
-                    const maxItemsPerMin = maxBatchesPerMin * batchYield;
-                    if (maxItemsPerMin > p.beltSpeed) { effectiveBatchesPerMin = p.beltSpeed / batchYield; }
+                    const maxItemsPerMinPerMachine = machineOutputRate * batchYield;
+                    if (maxItemsPerMinPerMachine > p.beltSpeed) { effectiveBatchesPerMin = p.beltSpeed / batchYield; }
                 }
                 
                 let rawMachines = batchesPerMin / effectiveBatchesPerMin;
@@ -468,8 +418,14 @@ function calculatePass(p, isGhost, globalAvilByproducts, globalTotalByproducts) 
                     }
                 });
 
+                // Machine Usage Stats
                 if(!effectiveGhost) {
-                    addMachineCount(recipe.machine, item, Math.ceil(machinesNeeded - 0.0001), machinesNeeded);
+                    addMachineCount(recipe.machine, item, Math.ceil(machinesNeeded - 0.0001), machinesNeeded);                    
+                    if (recipe.buildCost) {
+                        const mat = t(recipe.buildCost, 'items');
+                        if (!globalExtraBuildCosts[mat]) globalExtraBuildCosts[mat] = 0;
+                        globalExtraBuildCosts[mat] += Math.ceil(machinesNeeded - 0.0001);
+                    }
                 }
 
                 // HEAT CALCULATION
@@ -505,12 +461,38 @@ function calculatePass(p, isGhost, globalAvilByproducts, globalTotalByproducts) 
                     }
                 }
 
+                // NUTR CALCULAION
+                if (!effectiveGhost && (recipe.machine === "Nursery" || recipe.machine === "World Tree Nursery")) {
+                    const totalNutrientsNeeded = netRate * getRecipeNutrientCost(recipe) / batchYield;
+                    const itemsNeeded = totalNutrientsNeeded / grossFertVal;
+                    globalFertDemandItems += itemsNeeded;
+                    globalBioLoad += (totalNutrientsNeeded / 60);
+                    
+                    // 生成 Bio Tag
+                    const fertRate = itemsNeeded;
+                    let bioText = `-${formatVal(fertRate)}/m ${p.selectedFert}`;
+                    if (p.showHeatFert) {
+                        bioText += ` (${formatVal(totalNutrientsNeeded/60)} V/s)`;
+                    }
+                    bioTag = `<span class="bio-tag">${bioText}</span>`;
+                    
+                    // 生成 Cost Tag
+                    if (p.showFertCost && p.fertCost > Number.EPSILON) {
+                        const costPerMin = Math.ceil(fertRate * p.fertCost - Number.EPSILON);
+                        costTag += `<span class="cost-tag">(${costPerMin.toLocaleString()} G/m)</span>`;
+                        globalCostPerMin += costPerMin;
+                    }
+                }
+
                 if(!effectiveGhost) {
                     let inputsStr = Object.keys(recipe.inputs).map(k => `${recipe.inputs[k]} ${k}`).join(', ');
                     let outputsStr = Object.keys(recipe.outputs).map(k => `${recipe.outputs[k]} ${k}`).join(', ');
-                    let cycleTime = recipe.baseTime / p.speedMult;
                     let throughput = effectiveBatchesPerMin * batchYield;
-                    let tooltipText = `Recipe: ${inputsStr} -> ${outputsStr}\nBase Time: ${recipe.baseTime}s\nSpeed Mult: ${p.speedMult.toFixed(2)}x\nCycle Time: ${cycleTime.toFixed(2)}s\nThroughput: ${throughput.toFixed(2)} items/min per machine`;
+                    let tooltipText = "";
+                    tooltipText += `${t('Recipe')}: ${inputsStr} -> ${outputsStr}\n`;
+                    tooltipText += `${t('Base Time')}: ${recipeTime} s\n`;
+                    tooltipText += `${t('Speed Mult')}: ${p.speedMult.toFixed(2)}x\n`;
+                    tooltipText += `${t('Throughput')}: ${throughput.toFixed(2)}/min`;
 
                     let capTag = "";
                     if(p.showMaxCap) {
@@ -680,7 +662,7 @@ function calculatePass(p, isGhost, globalAvilByproducts, globalTotalByproducts) 
         const totalFurnaces = calculateTotalFurnaces(furnaceSlotDemand);
 
         // --- 5. 更新 UI 組件 ---
-        updateConstructionList(flatMax, flatMin, totalFurnaces);
+        updateConstructionList(flatMax, flatMin, totalFurnaces, globalExtraBuildCosts);
         
         // 計算最終成本並更新摘要
         updateSummaryBox(p, globalHeatLoad, globalBioLoad, globalCostPerMin, globalFuelDemandItems, globalFertDemandItems);
@@ -796,7 +778,7 @@ function calculatePass(p, isGhost, globalAvilByproducts, globalTotalByproducts) 
 /* ==========================================================================
    SECTION: JS - DOM RENDERING
    ========================================================================== */
-function updateConstructionList(maxCounts, minCounts, furnaces) {
+function updateConstructionList(maxCounts, minCounts, furnaces, extraBuildCosts) {
     const buildList = document.getElementById('construction-list'); buildList.innerHTML = '';
     const totalMatsContainer = document.getElementById('total-mats-container'); totalMatsContainer.innerHTML = '';
     
@@ -868,6 +850,21 @@ function updateConstructionList(maxCounts, minCounts, furnaces) {
 
         Object.keys(totalConstructionMaterials).sort().forEach(mat => {
             const qty = totalConstructionMaterials[mat];
+            const itemDef = DB.items[mat] || {};
+            const stackSize = itemDef.maxStack || 200;
+            const slotsNeeded = Math.ceil(qty / stackSize);
+            totalSlots += slotsNeeded;
+            totalHtml += `
+                <div class="total-mat-item">                    
+                    <span><img src="img/item${itemDef?.id ?? 0}.png" width="18" height="18" loading="lazy"> ${mat}</span> 
+                    <strong>
+                        ${qty} 
+                        <span style="color:#888; font-size:0.85em; margin-left:4px; font-weight:normal;"> [${slotsNeeded}]</span>
+                    </strong>
+                </div>`;
+        });
+        Object.keys(extraBuildCosts).forEach(mat => {
+            const qty = extraBuildCosts[mat];
             const itemDef = DB.items[mat] || {};
             const stackSize = itemDef.maxStack || 200;
             const slotsNeeded = Math.ceil(qty / stackSize);

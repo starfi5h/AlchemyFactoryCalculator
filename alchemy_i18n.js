@@ -169,6 +169,10 @@ window.ALCHEMY_I18N = {
         "Raw Input": "原料输入",
         "External Input": "外部输入",
 
+        "Recipe": "配方",
+        "Base Time": "原始时间",
+        "Speed Mult": "速度倍率",
+        "Throughput": "单设备产量",
         "Internal Nutrient Module": "内部肥料模块",
         "Internal Heat Module": "内部燃料模块",
 
@@ -438,7 +442,9 @@ window.ALCHEMY_I18N = {
         "Arcane Shaper": "奥术雕刻机",      
         "Nursery": "育苗圃",
         "World Tree Nursery": "世界树育苗圃",   
-        "Knowledge Altar": "知识祭坛"
+        "Knowledge Altar": "知识祭坛",
+        "Purchasing Portal": "进货传送门",
+        "Bank Portal": "银行传送门"
     },
     "categories": {
         "Raw Materials": "原材料", "Seeds": "种子", "Herbs": "草药", "Fuel": "燃料", "Fertilizer": "肥料", "Solid": "固体", "Crystal": "晶石", "Mash": "研磨物", "Component": "零件",
