@@ -8,6 +8,7 @@ const BACKUP_KEY = "alchemy_source_backup_v1";
 const I18N_DATA_KEY = "alchemy_i18n_source_v1";
 const I18N_BACKUP_KEY = "alchemy_i18n_source_backup_v1";
 const SETTINGS_KEY = "alchemy_settings_v1";
+const SETTINGS_BACKUP_KEY = "alchemy_settings_backup_v1";
 
 const DEFAULT_SETTINGS = {
     lvlBelt: 0,
@@ -174,6 +175,8 @@ function init() {
     calculate();
     
     if (urlTab) switchTab(urlTab);
+
+    document.getElementById('db-gameversion-text').innerText = t("Game version : ") + DB.gameVersion ?? 0;
 }
 
 /* ==========================================================================
@@ -257,6 +260,8 @@ function loadEditorContent() {
         case 'db_backup': editor.value = localStorage.getItem(BACKUP_KEY) ?? ""; break;
         case 'i18n': editor.value = JSON.stringify(window.ALCHEMY_I18N, null, 2); break;
         case 'i18n_backup': editor.value = localStorage.getItem(I18N_BACKUP_KEY) ?? ""; break;
+        case 'settings': editor.value = JSON.stringify(DB.settings, null, 2); break;
+        case 'settings_backup': editor.value = localStorage.getItem(SETTINGS_BACKUP_KEY) ?? ""; break;
     }
 }
 
@@ -309,8 +314,14 @@ function applyChanges() {
                 if (localStorage.getItem(I18N_DATA_KEY)) localStorage.setItem(I18N_BACKUP_KEY, localStorage.getItem(I18N_DATA_KEY));
                 localStorage.setItem(I18N_DATA_KEY, JSON.stringify(window.ALCHEMY_I18N));
                 location.reload();
-        }        
-        alert("Applied " + (target === 'db' || target === 'db_backup' ? "Database" : "Translations") + " safely!");
+            case 'settings':
+            case 'settings_backup':
+                DB.settings = parsedData;
+                if (localStorage.getItem(SETTINGS_KEY)) localStorage.setItem(SETTINGS_BACKUP_KEY, localStorage.getItem(SETTINGS_KEY));
+                localStorage.setItem(SETTINGS_KEY, JSON.stringify(DB.settings));
+                init();
+        } 
+        alert("Applied " + target + " safely!");
     } catch(e) {
         alert("JSON Parsing Error: " + e.message + "\n\nNote: Please ensure the data uses double quotes and no trailing commas.");
     }
@@ -566,15 +577,38 @@ function updateDefaultButtonState() {
     document.getElementById('fertCostInput').value = DB.settings.customCosts[curFert] || 0;        
 }
 
-function saveSettings() { ['lvlBelt','lvlSpeed','lvlAlchemy','lvlFuel','lvlFert'].forEach(k => { DB.settings[k] = parseInt(document.getElementById(k).value) || 0; }); persist(); alert("Settings Saved!"); }
-function resetToDefault() {
+function saveSettings() { ['lvlBelt','lvlSpeed','lvlAlchemy','lvlFuel','lvlFert'].forEach(k => { DB.settings[k] = parseInt(document.getElementById(k).value) || 0; }); persist(); }
+
+function resetRecips() {
+    if(confirm(t('Reset Recipes', 'ui') + "?")) {
+        console.log("Reset Recipes");
+        const localSourceData = localStorage.getItem(SOURCE_KEY);
+        localStorage.removeItem(SOURCE_KEY);
+        if (localSourceData) localStorage.setItem(BACKUP_KEY, localSourceData);
+        location.reload();
+    } 
+}
+
+function resetTranslations() {
+    if(confirm(t('Reset Translations', 'ui') + "?")) {
+        console.log("Reset Translations");
+        const localSourceI18NData = localStorage.getItem(I18N_DATA_KEY);
+        localStorage.removeItem(I18N_DATA_KEY);
+        if (localSourceI18NData) localStorage.setItem(I18N_BACKUP_KEY, localSourceI18NData);
+        location.reload();
+    } 
+}
+
+function resetAllData() {
     if(confirm(t('Reset All Database?', 'ui'))) {
         console.log("Reset All Database");
         const localSourceData = localStorage.getItem(SOURCE_KEY);
         const localSourceI18NData = localStorage.getItem(I18N_DATA_KEY);
+        const localSettingsData = localStorage.getItem(SETTINGS_KEY);
         localStorage.clear();
         if (localSourceData) localStorage.setItem(BACKUP_KEY, localSourceData);
         if (localSourceI18NData) localStorage.setItem(I18N_BACKUP_KEY, localSourceI18NData);
+        if (localSettingsData) localStorage.setItem(SETTINGS_BACKUP_KEY, localSettingsData);
         location.reload();
     } 
 }

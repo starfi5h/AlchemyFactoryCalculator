@@ -107,6 +107,7 @@ window.ALCHEMY_I18N = {
     "ui": {
         // --- 0. Title ---
         "Alchemy Factory Calculator": "炼金工厂計算器",
+        "Game version : ": "游戏版本 : ",
         "Calculator": "計算器",
         "Cauldron": "炼金锅",
         "Database Editor": "数据库",
@@ -201,7 +202,9 @@ window.ALCHEMY_I18N = {
         // --- 6. Save/Reset ---
         "Save/Reset": "保存/重置",
         "Save Upgrades": "保存设置",
-        "Factory Reset": "恢复出厂设置",
+        "Reset Recipes": "重置配方数据",
+        "Reset Translations": "重置翻译",
+        "All Data Reset": "全部重置",
 
         // --- 7. Data Editor ---
         "Apply Changes": "应用更改",
