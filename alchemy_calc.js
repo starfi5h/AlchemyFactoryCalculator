@@ -218,16 +218,28 @@ function gatherInputs() {
 
     if (recipe) {
         let batchYield = recipe.outputs[targetItem] || 1;
-        batchYield = applyAlchemyMult(recipe.machine, batchYield, getAlchemyMult(lvlAlchemy));          
-        const ratePerMachine = (60 / (recipe.baseTime || 1)) * getSpeedMult(lvlSpeed) * batchYield;
+        batchYield = applyAlchemyMult(recipe.machine, batchYield, getAlchemyMult(lvlAlchemy));
+        let recipeTime = recipe.baseTime || 1;
+        const recipeNtrientCost = getRecipeNutrientCost(recipe);
+        if (recipeNtrientCost > 0) {
+            let fertilitySpeed = DB.items[selectedFert]?.maxFertility || 1;
+            if (recipe.machine === "World Tree Nursery") fertilitySpeed = 30000;
+            recipeTime =  recipeNtrientCost / fertilitySpeed;
+        }
+        let ratePerMachine = (60 / (recipeTime || 1)) * getSpeedMult(lvlSpeed) * batchYield;        
+        if (!(DB.items[targetItem].liquid)) {
+            ratePerMachine = Math.min(ratePerMachine, getBeltSpeed(lvlBelt))
+        }
         if (isMachineMode) {
             const machineCount = parseFloat(document.getElementById('targetMachine').value) || 0;
             targetRate = machineCount * ratePerMachine;            
             document.getElementById('targetRate').value = Number(targetRate.toFixed(2));
+            document.getElementById('rateLabel').innerText = `${(targetRate/getBeltSpeed(lvlBelt)*100).toFixed(1)}%`;
         }
         else {
             const machineCount = targetRate / ratePerMachine;
             document.getElementById('targetMachine').value = Number(machineCount.toFixed(2));
+            document.getElementById('rateLabel').innerText = `${(targetRate/getBeltSpeed(lvlBelt)*100).toFixed(1)}%`;
         }
     }
     
@@ -247,12 +259,6 @@ function gatherInputs() {
 
 function updateLabels(params) {
     try {
-        // --- UPDATE SMART LABEL ---
-        if (typeof getSmartLabel === 'function') {
-            const lbl = getSmartLabel(targetRate, params.beltSpeed);
-            document.getElementById('rateLabel').innerText = `${t('Rate (Items/Min)')}: ${lbl}`;
-        }
-
         document.getElementById('lvlBelt-title').innerText = `${t('Logistics Efficiency')} (${(params.beltSpeed/60*100).toFixed(0)}%) ${params.beltSpeed}/min`;
         document.getElementById('lvlSpeed-title').innerText = `${t('Factory Efficiency')} (${(params.speedMult*100).toFixed(0)}%)`;
         document.getElementById('lvlAlchemy-title').innerText = `${t('Alchemy Skill')} (${(params.alchemyMult*100).toFixed(0)}%)`;
@@ -275,7 +281,7 @@ function updateLabels(params) {
 function calculatePass(p, isGhost, globalAvilByproducts, globalTotalByproducts) {
     // Re-calc basic inputs derived from params
     const fuelDef = DB.items[p.selectedFuel] || {};
-    const grossFuelEnergy = (fuelDef.heat || 1);    
+    const grossFuelEnergy = (fuelDef.heat || 1) * p.fuelMult;;    
     const fertDef = DB.items[p.selectedFert] || { nutrientValue: 144, maxFertility: 12 };
     const grossFertVal = fertDef.nutrientValue * p.fertMult;
 

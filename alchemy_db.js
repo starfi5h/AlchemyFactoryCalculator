@@ -1,7 +1,7 @@
 window.ALCHEMY_DB = {
-    "version": 28,
-    "date": "2025.02.02",
-    "gameVersion": "0.4.2.3946",
+    "version": 29,
+    "date": "2025.02.04",
+    "gameVersion": "0.4.3.4049",
     "items": {
         // --- 1. RAW RESOURCES ---
         "Logs": { "id": 1, "category": "Raw Materials", "buyPrice": 200, "maxStack": -200, "heat": 2000, "cauldronCost": 0.8 },
@@ -36,7 +36,7 @@ window.ALCHEMY_DB = {
         "World Tree Core": { "id": 28, "category": "Herbs", "nutrientCost": 3000000, "cauldronCost": 250000 },
         
         // --- 4. FUELS ---
-        "Plank": { "id": 101, "category": "Fuel", "heat": 20, "maxStack": 200, "cauldronCost": 1, "cauldronMulti": 1, "cauldronTarget": 0.1 },
+        "Plank": { "id": 101, "category": "Fuel", "heat": 20, "maxStack": 600, "cauldronCost": 1, "cauldronMulti": 1, "cauldronTarget": 0.1 },
         "Charcoal": { "id": 403, "category": "Fuel", "heat": 40, "cauldronCost": 2, "cauldronMulti": 1, "cauldronTarget": 2 },
         "Charcoal Powder": { "id": 404, "category": "Fuel", "heat": 48, "cauldronCost": 2.5 },
         "Coke": { "id": 503, "category": "Fuel", "heat": 600, "cauldronCost": 29, "cauldronMulti": 1, "cauldronTarget": 30 },
@@ -58,7 +58,7 @@ window.ALCHEMY_DB = {
         "Panacea Potion": { "id": 816, "category": "Potion", "nutrientValue": 200000, "maxFertility": 20000, "heat": 320000, "sellPrice": 30000, "cauldronCost": 15306.12 },
 
         // --- 7. SOLIDS ---        
-        "Stone": { "id": 201, "category": "Solid", "maxStack": 200, "cauldronCost": 4, "cauldronMulti": 1, "cauldronTarget": 4 },
+        "Stone": { "id": 201, "category": "Solid", "maxStack": 600, "cauldronCost": 4, "cauldronMulti": 1, "cauldronTarget": 4 },
         "Iron Ingot": { "id": 301, "category": "Solid", "maxStack": 200, "cauldronCost": 15 },
         "Quicklime": { "id": 401, "category": "Solid", "cauldronCost": 6, "cauldronMulti": 1, "cauldronTarget": 6 },
         "Clay": { "id": 406, "category": "Solid", "maxStack": 200, "cauldronCost": 21, "cauldronMulti": 1, "cauldronTarget": 20 },
@@ -88,7 +88,7 @@ window.ALCHEMY_DB = {
         "Linen Rope": { "id": 206, "category": "Component", "sellPrice": 36, "maxStack": 200, "cauldronCost": 13 },
         "Large Wooden Gear": { "id": 102, "category": "Component", "sellPrice": 5, "maxStack": 100, "cauldronCost": 1.5 },
         "Small Wooden Gear": { "id": 207, "category": "Component", "sellPrice": 8, "maxStack": 200, "cauldronCost": 0.3333333333 },
-        "Iron Nails": { "id": 302, "category": "Component", "sellPrice": 16, "maxStack": 200, "cauldronCost": 5 },
+        "Iron Nails": { "id": 302, "category": "Component", "sellPrice": 16, "maxStack": 600, "cauldronCost": 5 },
         "Wooden Pulley": { "id": 405, "category": "Component", "sellPrice": 44, "maxStack": 50, "cauldronCost": 14 },
         "Steel Gear": { "id": 506, "category": "Component", "sellPrice": 450, "maxStack": 200, "cauldronCost": 170 },
         "Copper Bearing": { "id": 612, "category": "Component", "sellPrice": 300, "maxStack": 200, "cauldronCost": 136.5 },
@@ -436,7 +436,7 @@ window.ALCHEMY_DB = {
                 "Shattered Crystal": 60, "Obsidian": 30, "Adamant": 7,
                 "Ruby": 1, "Sapphire": 1, "Emerald": 1 
             }, 
-            "baseTime": 1200.0 
+            "baseTime": 3000.0 
         },
 
         // --- RELICS ---

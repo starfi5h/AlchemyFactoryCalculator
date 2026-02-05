@@ -223,7 +223,7 @@ input:checked + .slider-switch:before { transform: translateX(16px); }
 /* ==========================================================================
     SECTION: CSS - SUMMARY BOX
     ========================================================================== */
-.summary-box { background: #252525; border-left: 4px solid var(--accent); padding: 12px; margin-bottom: 20px; display: grid; grid-template-columns: 1fr 2fr 2fr 1fr; gap: 10px; }
+.summary-box { background: #252525; border-left: 4px solid var(--accent); padding: 12px; margin-bottom: 20px; display: grid; grid-template-columns: 1fr 2fr 2fr 1fr; gap: 10px; min-width: 330px; }
 .stat-block { display: flex; flex-direction: column; padding-right: 10px; border-right: 1px solid #444; }
 .stat-block:last-child { border-right: none; }
 .stat-label { font-size: 0.75em; color: #aaa; text-transform: uppercase; letter-spacing: 1px; }
@@ -389,9 +389,9 @@ button.reset-btn:hover { background: var(--danger); color: white; }
 
 .cauldron-filter-bar { display: flex; gap: 15px; align-items: center; background: #252525; padding: 8px; border-radius: 4px; margin-bottom: 10px; }
 .filter-group { display: flex; gap: 10px; align-items: center; }
-.mini-picker { background: #333; border: 1px solid #555; padding: 4px 10px; border-radius: 4px; font-size: 0.9em; cursor: pointer; min-width: 110px; text-align: center; }
+.mini-picker { background: #333; border: 1px solid #555; padding: 4px 10px; border-radius: 4px; font-size: 0.9em; cursor: pointer; min-width: 100px; text-align: center; }
 .mini-picker.active { border-color: var(--info); color: var(--info); background: rgba(33, 150, 243, 0.1); }
-.filter-slot-wrapper { display: flex; flex-direction: column; gap: 4px; min-width: 140px; }
+.filter-slot-wrapper { display: flex; flex-direction: column; gap: 4px; min-width: 130px; }
 .filter-main-row { display: flex; align-items: center; gap: 5px; }
 .filter-control-row { display: flex; align-items: center; justify-content: center; gap: 8px; background: rgba(0,0,0,0.2); border-radius: 4px; padding: 2px 4px; min-height: 26px; }
 .filter-control-row .cand-cost { font-size: 0.85em; min-width: 45px; text-align: center; }

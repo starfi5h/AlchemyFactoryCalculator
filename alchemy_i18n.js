@@ -155,9 +155,9 @@ window.ALCHEMY_I18N = {
         "Coin": "铜币",
         "Heat": "热值",
         "Nutr": "肥力",
-        "Conversion Cost": "换算成本",
-        "Retail Price   ": "零售价格",
-        "Wholesale Price": "批发价格",
+        "Conversion Cost": "总成本",
+        "Retail Price   ": "零售价",
+        "Wholesale Price": "批发价",
 
         "Primary Production Chain": "主生产链",
         "Select Recipe": "选择配方",
