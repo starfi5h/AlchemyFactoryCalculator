@@ -1,39 +1,39 @@
 window.ALCHEMY_DB = {
-    "version": 29,
-    "date": "2025.02.04",
-    "gameVersion": "0.4.3.4049",
+    "version": 30,
+    "date": "2025.02.05",
+    "gameVersion": "0.4.3.4071",
     "items": {
         // --- 1. RAW RESOURCES ---
-        "Logs": { "id": 1, "category": "Raw Materials", "buyPrice": 200, "maxStack": -200, "heat": 2000, "cauldronCost": 0.8 },
-        "Limestone": { "id": 2, "category": "Raw Materials", "buyPrice": 600, "maxStack": -150, "cauldronCost": 3 },
-        "Iron Ore": { "id": 3, "category": "Raw Materials", "buyPrice": 1200, "maxStack": -100, "cauldronCost": 10 },
-        "Pyrite Ore": { "id": 23, "category": "Raw Materials", "buyPrice": 11000, "maxStack": -160, "cauldronCost": 45 },
-        "Rock Salt": { "id": 22, "category": "Raw Materials", "buyPrice": 9000, "maxStack": -200, "cauldronCost": 35 },
-        "Coal Ore": { "id": 21, "category": "Raw Materials", "buyPrice": 4800, "maxStack": -120, "heat": 30000, "cauldronCost": 37 },
-        "Rotten Log": { "id": 20, "category": "Raw Materials", "buyPrice": 2000, "maxStack": -200, "cauldronCost": 6.5 },
+        "Logs": { "id": 1, "category": "Raw Materials", "buyPrice": 200, "maxStack": -200, "heat": 2000, "cauldronCost": 0.8, "tier": 1 },
+        "Limestone": { "id": 2, "category": "Raw Materials", "buyPrice": 600, "maxStack": -150, "cauldronCost": 3, "tier": 2 },
+        "Iron Ore": { "id": 3, "category": "Raw Materials", "buyPrice": 1200, "maxStack": -100, "cauldronCost": 10, "tier": 3 },
+        "Pyrite Ore": { "id": 23, "category": "Raw Materials", "buyPrice": 11000, "maxStack": -160, "cauldronCost": 45, "tier": 6 },
+        "Rock Salt": { "id": 22, "category": "Raw Materials", "buyPrice": 9000, "maxStack": -200, "cauldronCost": 35, "tier": 6 },
+        "Coal Ore": { "id": 21, "category": "Raw Materials", "buyPrice": 4800, "maxStack": -120, "heat": 30000, "cauldronCost": 37, "tier": 5 },
+        "Rotten Log": { "id": 20, "category": "Raw Materials", "buyPrice": 2000, "maxStack": -200, "cauldronCost": 6.5, "tier": 5 },
         // temp move Quartz Ore id from 25 to 24
-        "Quartz Ore": { "id": 24, "category": "Raw Materials", "buyPrice": 44000, "maxStack": -80, "cauldronCost": 230 },
-        "Meteorite": { "id": 26, "category": "Raw Materials", "buyPrice": 2000000, "maxStack": -1000, "cauldronCost": 800 },
+        "Quartz Ore": { "id": 24, "category": "Raw Materials", "buyPrice": 44000, "maxStack": -80, "cauldronCost": 230, "tier": 7 },
+        "Meteorite": { "id": 26, "category": "Raw Materials", "buyPrice": 2000000, "maxStack": -1000, "cauldronCost": 800, "tier": 9 },
 
         // --- 2. SEEDS ---
-        "Flax Seeds": { "id":4, "category": "Seeds", "buyPrice": 280, "maxStack": 20, "cauldronCost": 115 },
-        "Sage Seeds": {  "id":7, "category": "Seeds", "buyPrice": 360, "maxStack": 20, "cauldronCost": 175 },
-        "Redcurrant Seeds": { "id":12, "category": "Seeds", "buyPrice": 1300, "maxStack": 20, "cauldronCost": 650 },
-        "Lavender Seeds": { "id":14, "category": "Seeds", "buyPrice": 16000, "maxStack": 20, "cauldronCost": 6000 },
-        "Chamomile Seeds": { "id":16, "category": "Seeds", "buyPrice": 6000, "maxStack": 20, "cauldronCost": 2300 },
-        "Gentian Seeds": { "id":19, "category": "Seeds", "buyPrice": 64000, "maxStack": 20, "cauldronCost": 29000},
-        "World Tree Seed": { "id":29, "category": "Seeds", "buyPrice": 5000000, "maxStack": 20, "cauldronCost": 5000000 },
+        "Flax Seeds": { "id":4, "category": "Seeds", "buyPrice": 280, "maxStack": 20, "cauldronCost": 115, "tier": 2 },
+        "Sage Seeds": {  "id":7, "category": "Seeds", "buyPrice": 360, "maxStack": 20, "cauldronCost": 175, "tier": 3 },
+        "Redcurrant Seeds": { "id":12, "category": "Seeds", "buyPrice": 1300, "maxStack": 20, "cauldronCost": 650, "tier": 4 },
+        "Chamomile Seeds": { "id":16, "category": "Seeds", "buyPrice": 6000, "maxStack": 20, "cauldronCost": 2300, "tier": 6 },
+        "Lavender Seeds": { "id":14, "category": "Seeds", "buyPrice": 16000, "maxStack": 20, "cauldronCost": 6000, "tier": 7 },
+        "Gentian Seeds": { "id":19, "category": "Seeds", "buyPrice": 64000, "maxStack": 20, "cauldronCost": 29000, "tier": 8 },
+        "World Tree Seed": { "id":29, "category": "Seeds", "buyPrice": 5000000, "maxStack": 20, "cauldronCost": 5000000, "tier": 8 },
 
         // --- 3. HERBS ---
-        "Flax": { "id": 5, "category": "Herbs", "nutrientCost": 24, "cauldronCost": 2 },
-        "Sage": { "id": 6, "category": "Herbs", "nutrientCost": 36, "cauldronCost": 3 },
-        "Redcurrant": { "id": 11, "category": "Herbs", "nutrientCost": 144, "cauldronCost": 12 },
-        "Lavender": { "id": 13, "category": "Herbs", "nutrientCost": 2160, "cauldronCost": 180 },
-        "Chamomile": { "id": 15, "category": "Herbs", "nutrientCost": 720, "cauldronCost": 55 },
-        "Gentian": { "id": 17, "category": "Herbs", "nutrientCost": 6000, "cauldronCost": 400 },
-        "Gentian Nectar": { "id": 802, "category": "Herbs", "nutrientCost": 6000, "cauldronCost": 420 },
-        "World Tree Leaf": { "id": 27, "category": "Herbs", "nutrientCost": 30000, "cauldronCost": 2500 },
-        "World Tree Core": { "id": 28, "category": "Herbs", "nutrientCost": 3000000, "cauldronCost": 250000 },
+        "Flax": { "id": 5, "category": "Herbs", "nutrientCost": 24, "cauldronCost": 2, "tier": 2 },
+        "Sage": { "id": 6, "category": "Herbs", "nutrientCost": 36, "cauldronCost": 3, "tier": 3 },
+        "Redcurrant": { "id": 11, "category": "Herbs", "nutrientCost": 144, "cauldronCost": 12, "tier": 4 },        
+        "Chamomile": { "id": 15, "category": "Herbs", "nutrientCost": 720, "cauldronCost": 55, "tier": 6 },
+        "Lavender": { "id": 13, "category": "Herbs", "nutrientCost": 2160, "cauldronCost": 180, "tier": 7 },
+        "Gentian": { "id": 17, "category": "Herbs", "nutrientCost": 6000, "cauldronCost": 400, "tier": 8 },
+        "Gentian Nectar": { "id": 802, "category": "Herbs", "nutrientCost": 6000, "cauldronCost": 420, "tier": 8 },
+        "World Tree Leaf": { "id": 27, "category": "Herbs", "nutrientCost": 30000, "cauldronCost": 2500, "tier": 8 },
+        "World Tree Core": { "id": 28, "category": "Herbs", "nutrientCost": 3000000, "cauldronCost": 250000, "tier": 8 },
         
         // --- 4. FUELS ---
         "Plank": { "id": 101, "category": "Fuel", "heat": 20, "maxStack": 600, "cauldronCost": 1, "cauldronMulti": 1, "cauldronTarget": 0.1 },
@@ -187,8 +187,8 @@ window.ALCHEMY_DB = {
         "Sol": { "id": 1001, "category": "Relic", "sellPrice": 42000000, "maxStack": -5, "cauldronCost": 5587945.6 },
 
         // --- 16. OTHER ---
-        "Portal Sigil": { "id": 2001, "category": "Other", "buyPrice": 1500, "cauldronCost": 750 },
-        "Gelatinous Gridlock": { "id": 2002, "category": "Other", "buyPrice": 100, "cauldronCost": 100 },
+        "Portal Sigil": { "id": 2001, "category": "Other", "buyPrice": 1500, "cauldronCost": 750, "tier": 4 },
+        "Gelatinous Gridlock": { "id": 2002, "category": "Other", "buyPrice": 100, "cauldronCost": 100, "tier": 1 },
         //"Automatic Cashier": { "id": 2003, "category": "Other", "buyPrice": 3000, "cauldronCost": 1400 }
     },
     
@@ -308,6 +308,7 @@ window.ALCHEMY_DB = {
         
         // --- IRON / STEEL / SULFUR ---
         { "id": "Iron Ingot", "machine": "Iron Smelter", "inputs": { "Iron Ore": 1 }, "outputs": { "Iron Ingot": 100 }, "baseTime": 600.0 },
+        { "id": "Iron Ingot 2", "machine": "Crucible", "inputs": { "Iron Sand": 1 }, "outputs": { "Iron Ingot": 1 }, "baseTime": 6.0 },
         { "id": "Iron Sand", "machine": "Grinder", "inputs": { "Iron Ingot": 1 }, "outputs": { "Iron Sand": 1 }, "baseTime": 30.0 },
         // --- STEEL BATCH (Converted from 25% fail rate) ---
         {
@@ -328,6 +329,7 @@ window.ALCHEMY_DB = {
             "outputs": { "Copper Powder": 1, "Impure Copper Powder": 1 },
             "baseTime": 12.0
         },
+        { "id": "Copper Powder 2", "machine": "Grinder", "inputs": { "Copper Ingot": 1 }, "outputs": { "Copper Powder": 1 }, "baseTime": 12.0 },
         { "id": "Copper Ingot", "machine": "Crucible", "inputs": { "Copper Powder": 1 }, "outputs": { "Copper Ingot": 1 }, "baseTime": 12.0 },
         { "id": "Bronze Ingot", "machine": "Crucible", "inputs": { "Impure Copper Powder": 1 }, "outputs": { "Bronze Ingot": 1 }, "baseTime": 12.0 },
         { "id": "Copper Coin", "machine": "Processor", "inputs": { "Copper Ingot": 1 }, "outputs": { "Copper Coin": 300 }, "baseTime": 12.0 },
@@ -343,6 +345,7 @@ window.ALCHEMY_DB = {
         },
         { "id": "Silver Ingot", "machine": "Crucible", "inputs": { "Silver Powder": 1 }, "outputs": { "Silver Ingot": 1 }, "baseTime": 16.0 },
         { "id": "Silver Coin", "machine": "Processor", "inputs": { "Silver Ingot": 1 }, "outputs": { "Silver Coin": 5 }, "baseTime": 16.0 },
+        { "id": "Silver Powder 2", "machine": "Grinder", "inputs": { "Silver Ingot": 1 }, "outputs": { "Silver Powder": 1 }, "baseTime": 16.0 },
 
         // --- GOLD ---
         { "id": "Impure Gold Dust", "machine": "Refiner", "inputs": { "Crude Gold Dust": 2 }, "outputs": { "Impure Gold Dust": 1 }, "baseTime": 10.0 },
@@ -350,6 +353,7 @@ window.ALCHEMY_DB = {
         // --- GOLD DUST BATCH (10%) ---
         { "id": "Gold Dust", "machine": "Advanced Athanor", "inputs": { "Silver Powder": 10, "Volcanic Ash": 10, "Fertile Catalyst": 10, "Quicksilver": 120 }, "outputs": { "Gold Dust": 1, "Crude Gold Dust": 4, "Impure Gold Dust": 5 }, "baseTime": 80.0 },
         { "id": "Pure Gold Dust", "machine": "Refiner", "inputs": { "Gold Dust": 2 }, "outputs": { "Pure Gold Dust": 1 }, "baseTime": 10.0 },
+        { "id": "Pure Gold Dust 2", "machine": "Grinder", "inputs": { "Gold Ingot": 1 }, "outputs": { "Pure Gold Dust": 1 }, "baseTime": 40.0 },
         { "id": "Gold Ingot", "machine": "Crucible", "inputs": { "Pure Gold Dust": 1 }, "outputs": { "Gold Ingot": 1 }, "baseTime": 40.0 },
         { "id": "Gold Coin", "machine": "Processor", "inputs": { "Gold Ingot": 1 }, "outputs": { "Gold Coin": 1 }, "baseTime": 40.0 },
 
@@ -494,20 +498,24 @@ window.ALCHEMY_DB = {
         },
         // --- ENHANCED GRINDER ALTERNATE RECIPES ---
         // (Base times are halved to represent 2x Machine Speed)
-        { "id": "Sand_Enhanced", "machine": "Enhanced Grinder", "inputs": { "Stone": 1 }, "outputs": { "Sand": 1 }, "baseTime": 6.0 },
-        { "id": "Quicklime Powder_Enhanced", "machine": "Enhanced Grinder", "inputs": { "Quicklime": 1 }, "outputs": { "Quicklime Powder": 1 }, "baseTime": 4.5 },
-        { "id": "Clay Powder_Enhanced", "machine": "Enhanced Grinder", "inputs": { "Clay": 1 }, "outputs": { "Clay Powder": 1 }, "baseTime": 2.0 },
-        { "id": "Flax Fiber_Enhanced", "machine": "Enhanced Grinder", "inputs": { "Flax": 1 }, "outputs": { "Flax Fiber": 1 }, "baseTime": 1.5 },
-        { "id": "Sage Powder_Enhanced", "machine": "Enhanced Grinder", "inputs": { "Sage": 1 }, "outputs": { "Sage Powder": 1 }, "baseTime": 1.5 },
-        { "id": "Chamomile Powder_Enhanced", "machine": "Enhanced Grinder", "inputs": { "Chamomile": 1 }, "outputs": { "Chamomile Powder": 1 }, "baseTime": 1.5 },
-        { "id": "Gentian Powder_Enhanced", "machine": "Enhanced Grinder", "inputs": { "Gentian": 1 }, "outputs": { "Gentian Powder": 1 }, "baseTime": 1.5 },
-        { "id": "Soap Powder_Enhanced", "machine": "Enhanced Grinder", "inputs": { "Soap": 1 }, "outputs": { "Soap Powder": 1 }, "baseTime": 3.0 },
-        { "id": "Perfumed Soap Powder_Enhanced", "machine": "Enhanced Grinder", "inputs": { "Perfumed Soap": 1 }, "outputs": { "Perfumed Soap Powder": 1 }, "baseTime": 4.0 },
-        { "id": "Large Wooden Gear_Enhanced", "machine": "Enhanced Grinder", "inputs": { "Plank": 1 }, "outputs": { "Large Wooden Gear": 1 }, "baseTime": 3.0 },
-        { "id": "Charcoal Powder_Enhanced", "machine": "Enhanced Grinder", "inputs": { "Charcoal": 1 }, "outputs": { "Charcoal Powder": 1 }, "baseTime": 2.0 },
-        { "id": "Coke Powder_Enhanced", "machine": "Enhanced Grinder", "inputs": { "Coke": 1 }, "outputs": { "Coke Powder": 1 }, "baseTime": 6.0 },
-        { "id": "Iron Sand_Enhanced", "machine": "Enhanced Grinder", "inputs": { "Iron Ingot": 1 }, "outputs": { "Iron Sand": 1 }, "baseTime": 15.0 },
-        { "id": "Sulfur Powder_Enhanced", "machine": "Enhanced Grinder", "inputs": { "Sulfur": 1 }, "outputs": { "Sulfur Powder": 1 }, "baseTime": 3.0 },
+        { "id": "Sand (Enhanced)", "machine": "Enhanced Grinder", "inputs": { "Stone": 1 }, "outputs": { "Sand": 1 }, "baseTime": 6.0 },
+        { "id": "Quicklime Powder (Enhanced)", "machine": "Enhanced Grinder", "inputs": { "Quicklime": 1 }, "outputs": { "Quicklime Powder": 1 }, "baseTime": 4.5 },
+        { "id": "Clay Powder (Enhanced)", "machine": "Enhanced Grinder", "inputs": { "Clay": 1 }, "outputs": { "Clay Powder": 1 }, "baseTime": 2.0 },
+        { "id": "Flax Fiber (Enhanced)", "machine": "Enhanced Grinder", "inputs": { "Flax": 1 }, "outputs": { "Flax Fiber": 1 }, "baseTime": 1.5 },
+        { "id": "Sage Powder (Enhanced)", "machine": "Enhanced Grinder", "inputs": { "Sage": 1 }, "outputs": { "Sage Powder": 1 }, "baseTime": 1.5 },
+        { "id": "Chamomile Powder (Enhanced)", "machine": "Enhanced Grinder", "inputs": { "Chamomile": 1 }, "outputs": { "Chamomile Powder": 1 }, "baseTime": 1.5 },
+        { "id": "Gentian Powder (Enhanced)", "machine": "Enhanced Grinder", "inputs": { "Gentian": 1 }, "outputs": { "Gentian Powder": 1 }, "baseTime": 1.5 },
+        { "id": "Soap Powder (Enhanced)", "machine": "Enhanced Grinder", "inputs": { "Soap": 1 }, "outputs": { "Soap Powder": 1 }, "baseTime": 3.0 },
+        { "id": "Perfumed Soap Powder (Enhanced)", "machine": "Enhanced Grinder", "inputs": { "Perfumed Soap": 1 }, "outputs": { "Perfumed Soap Powder": 1 }, "baseTime": 4.0 },
+        { "id": "Large Wooden Gear (Enhanced)", "machine": "Enhanced Grinder", "inputs": { "Plank": 1 }, "outputs": { "Large Wooden Gear": 1 }, "baseTime": 3.0 },
+        { "id": "Charcoal Powder (Enhanced)", "machine": "Enhanced Grinder", "inputs": { "Charcoal": 1 }, "outputs": { "Charcoal Powder": 1 }, "baseTime": 2.0 },
+        { "id": "Coke Powder (Enhanced)", "machine": "Enhanced Grinder", "inputs": { "Coke": 1 }, "outputs": { "Coke Powder": 1 }, "baseTime": 6.0 },
+        { "id": "Iron Sand (Enhanced)", "machine": "Enhanced Grinder", "inputs": { "Iron Ingot": 1 }, "outputs": { "Iron Sand": 1 }, "baseTime": 15.0 },
+        { "id": "Sulfur Powder (Enhanced)", "machine": "Enhanced Grinder", "inputs": { "Sulfur": 1 }, "outputs": { "Sulfur Powder": 1 }, "baseTime": 3.0 },
+        { "id": "Copper Powder 2 (Enhanced)", "machine": "Enhanced Grinder", "inputs": { "Copper Ingot": 1 }, "outputs": { "Copper Powder": 1 }, "baseTime": 6.0 },
+        { "id": "Silver Powder 2 (Enhanced)", "machine": "Enhanced Grinder", "inputs": { "Silver Ingot": 1 }, "outputs": { "Silver Powder": 1 }, "baseTime": 8.0 },
+        { "id": "Pure Gold Dust 2 (Enhanced)", "machine": "Enhanced Grinder", "inputs": { "Gold Ingot": 1 }, "outputs": { "Pure Gold Dust": 1 }, "baseTime": 20.0 },
+
 
         // --- THERMAL EXTRACTOR ALTERNATE RECIPES ---
         // (Production Bonus + 200% when build on height >256)
