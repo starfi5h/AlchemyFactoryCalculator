@@ -426,6 +426,15 @@ async function runCauldronSimulation() {
     let lastUpdate = Date.now();
     let n0, n1, n2;
 
+    if (list.length === 0) {
+        // 特例: 在完全沒有候選物品時, 若有指定物品, 則將指定物品設為候選物品
+        for (let i = 0; i < 3; i++) {
+            if (cauldronFilterItems[i]) {
+                list.push(cauldronFilterItems[i]);
+            }
+        }
+    }
+
     for (let i = 0; i < list.length; i++) {        
         n0 = cauldronFilterItems[0] ?? list[i];
         for (let j = i; j < list.length; j++) {

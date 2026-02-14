@@ -228,7 +228,8 @@ function gatherInputs() {
         }
         let ratePerMachine = (60 / (recipeTime || 1)) * getSpeedMult(lvlSpeed) * batchYield;        
         if (!(DB.items[targetItem].liquid)) {
-            ratePerMachine = Math.min(ratePerMachine, getBeltSpeed(lvlBelt))
+            const beltSpeed = DB.items[targetItem].category === "Currency" ? 50 * getBeltSpeed(lvlBelt) : getBeltSpeed(lvlBelt); // 貨幣輸出為50個1堆疊
+            ratePerMachine = Math.min(ratePerMachine, beltSpeed);
         }
         if (isMachineMode) {
             const machineCount = parseFloat(document.getElementById('targetMachine').value) || 0;
@@ -401,7 +402,8 @@ function calculatePass(p, isGhost, globalAvilByproducts, globalTotalByproducts) 
                 const isLiquid = (itemDef.liquid === true);
                 if (!isLiquid) {
                     const maxItemsPerMinPerMachine = machineOutputRate * batchYield;
-                    if (maxItemsPerMinPerMachine > p.beltSpeed) { effectiveBatchesPerMin = p.beltSpeed / batchYield; }
+                    const beltSpeed = itemDef.category === "Currency" ? 50 * p.beltSpeed : p.beltSpeed; // 貨幣輸出為50個1堆疊
+                    if (maxItemsPerMinPerMachine > beltSpeed) { effectiveBatchesPerMin = beltSpeed / batchYield; }
                 }
                 
                 let rawMachines = batchesPerMin / effectiveBatchesPerMin;

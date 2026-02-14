@@ -2,14 +2,9 @@
 // Holds configuration data for UI elements
 
 const BELT_FRACTIONS = [
-    // Low end precision (powers of 2 and 10)
-    { n: 1, d: 64, label: null },      // ~0.015
-    { n: 1, d: 32, label: "1/32" },    // ~0.031
-    { n: 1, d: 24, label: null },      // ~0.041
-    { n: 1, d: 20, label: null },      // 0.05
-    { n: 1, d: 16, label: "1/16" },    // 0.0625
-    { n: 1, d: 12, label: null },      // ~0.083
-    { n: 1, d: 10, label: null },      // 0.1
+    // Low end precision
+    { n: 1, d: 12, label: "1/12" },      // ~0.083
+    { n: 1, d: 10, label: "1/10" },      // 0.1
     
     // Mid range (Standard factory ratios)
     { n: 1, d: 8,  label: "1/8" },     // 0.125
@@ -24,9 +19,8 @@ const BELT_FRACTIONS = [
     { n: 3, d: 5,  label: null },      // 0.6
     { n: 2, d: 3,  label: "2/3" },     // ~0.666
     { n: 3, d: 4,  label: "3/4" },     // 0.75
-    { n: 4, d: 5,  label: null },      // 0.8
+    { n: 4, d: 5,  label: "4/5" },     // 0.8
     { n: 5, d: 6,  label: "5/6" },     // ~0.833 (Unhidden per request)
-    { n: 7, d: 8,  label: null },      // 0.875 (Hidden per request)
     { n: 1, d: 1,  label: "Full" }     // 1.0
 ];
 

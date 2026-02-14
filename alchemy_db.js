@@ -1,6 +1,6 @@
 window.ALCHEMY_DB = {
-    "version": 30,
-    "date": "2025.02.05",
+    "version": 31,
+    "date": "2025.02.14",
     "gameVersion": "0.4.3.4071",
     "items": {
         // --- 1. RAW RESOURCES ---
@@ -46,8 +46,8 @@ window.ALCHEMY_DB = {
         "Blast Potion": { "id": 705, "category": "Fuel", "heat": 24000, "sellPrice": 2557, "cauldronCost": 1197 },
 
         // --- 5. FERTILIZERS ---
-        "Basic Fertilizer": { "id": 416, "category": "Fertilizer", "nutrientValue": 144, "maxFertility": 12, "cauldronCost": 14 },
-        "Advanced Fertilizer": { "id": 511, "category": "Fertilizer", "nutrientValue": 720, "maxFertility": 144, "cauldronCost": 62 },        
+        "Basic Fertilizer": { "id": 416, "category": "Fertilizer", "nutrientValue": 144, "maxFertility": 12, "cauldronCost": 10 },
+        "Advanced Fertilizer": { "id": 511, "category": "Fertilizer", "nutrientValue": 720, "maxFertility": 144, "cauldronCost": 56 },        
         "Growth Potion": { "id": 615, "category": "Fertilizer", "sellPrice": 1224, "nutrientValue": 6480, "maxFertility": 2160, "cauldronCost": 500 },
         "Fertile Catalyst": { "id": 706, "category": "Fertilizer", "nutrientValue": 24000, "maxFertility": 6000, "wholesalePrice": 3000, "cauldronCost": 4067.84, "cauldronMulti": 0.5, "cauldronTarget": 3567.84 },
 
@@ -358,8 +358,8 @@ window.ALCHEMY_DB = {
         { "id": "Gold Coin", "machine": "Processor", "inputs": { "Gold Ingot": 1 }, "outputs": { "Gold Coin": 1 }, "baseTime": 40.0 },
 
         // --- SALT BATCH (33%) ---
-        { "id": "Salt", "machine": "Athanor", "inputs": { "Charcoal Powder": 6, "Quicklime Powder": 12 }, "outputs": { "Salt": 1, "Sand": 12 }, "baseTime": 18.0 },
-        { "id": "Salt_Rock", "machine": "Stone Crusher", "inputs": { "Rock Salt": 1 }, "outputs": { "Salt": 100, "Sand": 100 }, "baseTime": 600.0 },
+        { "id": "Salt_Rock", "machine": "Stone Crusher", "inputs": { "Rock Salt": 1 }, "outputs": { "Salt": 100, "Sand": 100 }, "baseTime": 600.0 },
+        { "id": "Salt", "machine": "Athanor", "inputs": { "Charcoal Powder": 6, "Quicklime Powder": 12 }, "outputs": { "Salt": 1, "Sand": 12 }, "baseTime": 18.0 },        
 
         // --- LIQUIDS ---
         { "id": "Brine", "machine": "Extractor", "inputs": { "Salt": 1 }, "outputs": { "Brine": 20 }, "baseTime": 4.0 },
@@ -384,13 +384,17 @@ window.ALCHEMY_DB = {
         { "id": "Advanced Fertilizer", "machine": "Assembler", "inputs": { "Basic Fertilizer": 1, "Gloom Fungus": 1 }, "outputs": { "Advanced Fertilizer": 1 }, "baseTime": 4.0 },
         { "id": "Fertile Catalyst", "machine": "Advanced Blender", "inputs": { "Unstable Catalyst": 1, "Vitality Essence": 1, "Lavender Essential Oil": 18 }, "outputs": { "Fertile Catalyst": 1 }, "baseTime": 8.0 },
         { "id": "Unstable Catalyst", "machine": "Advanced Assembler", "inputs": { "Chamomile Powder": 1, "Gloom Spores": 1, "Sulfur Powder": 1 }, "outputs": { "Unstable Catalyst": 1 }, "baseTime": 4.0 },
-        { "id": "Oblivion Essence Limestone", "machine": "Paradox Crucible", "inputs": { "Limestone": 1 }, "outputs": { "Oblivion Essence": 1 }, "baseTime": 3.3 },
-        { "id": "Oblivion Essence Gentian Nectar", "machine": "Paradox Crucible", "inputs": { "Gentian Nectar": 1 }, "outputs": { "Oblivion Essence": 1 }, "baseTime": 3.6 },
-        { "id": "Vitality Essence", "machine": "Paradox Crucible", "inputs": { "Oblivion Essence": 1 }, "outputs": { "Vitality Essence": 1 }, "baseTime": 5.0 },
         { "id": "Resonant Catalyst", "machine": "Advanced Blender", "inputs": { "Fertile Catalyst": 1, "Volcanic Ash": 1, "Aqua Vitae": 12 }, "outputs": { "Resonant Catalyst": 1 }, "baseTime": 8.0 },
         { "id": "Eternal Catalyst", "machine": "Arcane Processor", "inputs": { "Resonant Catalyst": 15, "Philosopherˈs Stone": 1 }, "outputs": { "Eternal Catalyst": 1 }, "baseTime": 60.0 },
         // Note: ˈ is U+02C8, not ASCII 39
         { "id": "Philosopherˈs Stone", "machine": "Advanced Assembler", "inputs": { "Ruby": 1, "Sapphire": 1, "Emerald": 1 }, "outputs": { "Philosopherˈs Stone": 1 }, "baseTime": 60.0 },
+
+        // --- Paradox Crucible ---
+        { "id": "Oblivion Essence (Sage Seeds)", "machine": "Paradox Crucible", "inputs": { "Sage Seeds": 1 }, "outputs": { "Oblivion Essence": 1 }, "baseTime": 8.6 },
+        { "id": "Oblivion Essence (Limestone)", "machine": "Paradox Crucible", "inputs": { "Limestone": 1 }, "outputs": { "Oblivion Essence": 1 }, "baseTime": 3.3 },
+        { "id": "Oblivion Essence (Gentian)", "machine": "Paradox Crucible", "inputs": { "Gentian": 1 }, "outputs": { "Oblivion Essence": 1 }, "baseTime": 3.8 },
+        { "id": "Oblivion Essence (Gentian Nectar)", "machine": "Paradox Crucible", "inputs": { "Gentian Nectar": 1 }, "outputs": { "Oblivion Essence": 1 }, "baseTime": 3.6 },
+        { "id": "Vitality Essence", "machine": "Paradox Crucible", "inputs": { "Oblivion Essence": 1 }, "outputs": { "Vitality Essence": 1 }, "baseTime": 5.0 },
 
         // --- SHARDS & GEMS CHAIN ---
         { "id": "Crude Shard", "machine": "Stone Crusher", "inputs": { "Quartz Ore": 1 }, "outputs": { "Crude Shard": 80 }, "baseTime": 480.0 },

@@ -71,6 +71,7 @@ function init() {
         window.ALCHEMY_I18N = JSON.parse(JSON.stringify(window.ALCHEMY_I18N));
     }
     if (urlLang === 'en') window.ALCHEMY_I18N.enabled = false;
+    else ALCHEMY_I18N.enabled = true;
 
     const fileDB = window.ALCHEMY_DB;
     if (localData) {
