@@ -1,6 +1,6 @@
 window.ALCHEMY_DB = {
-    "version": 31,
-    "date": "2025.02.14",
+    "version": 32,
+    "date": "2025.02.21",
     "gameVersion": "0.4.3.4071",
     "items": {
         // --- 1. RAW RESOURCES ---
@@ -486,18 +486,18 @@ window.ALCHEMY_DB = {
         },
         // --- Reverse Crafting (Coins -> Ingots) ---
         { 
-            "id": "CopperIngot_Alt", "machine": "Crucible", 
+            "id": "CopperIngot_Alt", "machine": "Kiln", 
             "inputs": { "Copper Coin": 400 }, "outputs": { "Copper Ingot": 1 }, 
             "baseTime": 12.0 
         },
         { 
-            "id": "SilverIngot_Alt", "machine": "Crucible", 
+            "id": "SilverIngot_Alt", "machine": "Kiln", 
             "inputs": { "Silver Coin": 6 }, "outputs": { "Silver Ingot": 1 }, 
             "baseTime": 16.0 
         },
         { 
-            "id": "GoldIngot_Alt", "machine": "Crucible", 
-            "inputs": { "Gold Coin": 3 }, "outputs": { "Gold Ingot": 1 }, 
+            "id": "GoldIngot_Alt", "machine": "Kiln", 
+            "inputs": { "Gold Coin": 3 }, "outputs": { "Gold Ingot": 2 }, 
             "baseTime": 40.0 
         },
         // --- ENHANCED GRINDER ALTERNATE RECIPES ---

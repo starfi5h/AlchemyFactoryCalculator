@@ -106,9 +106,9 @@ window.ALCHEMY_I18N = {
     "enabled": true,
     "ui": {
         // --- 0. Title ---
-        "Alchemy Factory Calculator": "炼金工厂計算器",
+        "Alchemy Factory Calculator": "炼金工厂计算器",
         "Game version : ": "游戏版本 : ",
-        "Calculator": "計算器",
+        "Calculator": "计算器",
         "Cauldron": "炼金锅",
         "Database Editor": "数据库",
         "New database version available": "发现新版本数据库",
@@ -151,7 +151,7 @@ window.ALCHEMY_I18N = {
         "Gross Output": "总产出",
         "Total Load": "总负载",
         "Unit Cost": "单位成本",
-        "Unit Value": "单位价值",        
+        "Unit Value": "单位价值",
         "Coin": "铜币",
         "Heat": "热值",
         "Nutr": "肥力",
@@ -231,13 +231,13 @@ window.ALCHEMY_I18N = {
         "Import": "导入",
         "Export": "导出",
         "Sync DB": "同步数据库",
-        "No saved recipes yet.": "暂无保存的配方。",
+        "No saved recipes yet.": "暂无保存的配方。"
     },
     "items": {
-        // Game version: 0.4.1.3800
+        // Game version: 0.4.3.4071
         // Group by meaning
 
-        // --- RAW RESOURCES ---        
+        // --- RAW RESOURCES ---
         "Logs": "原木",
         "Limestone": "石灰石",
         "Iron Ore": "铁矿石",
@@ -248,31 +248,31 @@ window.ALCHEMY_I18N = {
         "Rotten Log": "腐烂原木",
         "Meteorite": "陨石",
 
-        // --- SEEDS ---        
+        // --- SEEDS ---
         "Flax Seeds": "亚麻种子",
         "Sage Seeds": "鼠尾草种子",
-        "Redcurrant Seeds": "紅醋栗种子",
+        "Redcurrant Seeds": "红醋栗种子",
         "Lavender Seeds": "薰衣草种子",
-        "Chamomile Seeds": "洋甘菊种子",        
+        "Chamomile Seeds": "洋甘菊种子",
         "Gentian Seeds": "龙胆花种子",
         "World Tree Seed": "世界树种子",
 
         // --- HERBS ---
         "Flax": "亚麻",
         "Sage": "鼠尾草",
-        "Redcurrant": "紅醋栗",
+        "Redcurrant": "红醋栗",
         "Lavender": "薰衣草",
-        "Chamomile": "洋甘菊",        
+        "Chamomile": "洋甘菊",
         "Gentian": "龙胆花",
         "Gentian Nectar": "龙胆花蜜",
         "World Tree Leaf": "世界树之叶",
-        "World Tree Core": "世界树核心",        
+        "World Tree Core": "世界树核心",
         "Gloom Fungus": "幽暗菇",
 
-        // --- FUELS & FERTILIZERS---        
+        // --- FUELS & FERTILIZERS---
         "Plank": "木材",
         "Charcoal": "木炭",
-        "Charcoal Powder": "木炭粉",        
+        "Charcoal Powder": "木炭粉",
         "Coke": "焦炭",
         "Coke Powder": "焦炭粉",
         "Coal": "煤炭",
@@ -280,7 +280,7 @@ window.ALCHEMY_I18N = {
         "Basic Fertilizer": "初级肥料",
         "Advanced Fertilizer": "高级肥料",
 
-        // --- SOLIDS & MATERIALS ---        
+        // --- SOLIDS & MATERIALS ---
         "Stone": "碎石",
         "Sand": "沙子",
         "Clay": "粘土",
@@ -295,10 +295,10 @@ window.ALCHEMY_I18N = {
         "Plant Ash": "植物灰",
         "Quicklime": "生石灰",
         "Quicklime Powder": "石灰粉",
-        "Clay Powder": "粘土粉",        
+        "Clay Powder": "粘土粉",
         "Sulfur Powder": "硫磺粉",
         "Chamomile Powder": "洋甘菊粉",
-        "Gentian Powder": "龙胆花粉",        
+        "Gentian Powder": "龙胆花粉",
         "Yeast Powder": "酵母粉",
         "Soap Powder": "肥皂粉",
         "Perfumed Soap Powder": "香皂粉",
@@ -308,7 +308,7 @@ window.ALCHEMY_I18N = {
 
         // --- METALS ---
         "Iron Sand": "铁砂",
-        "Iron Ingot": "铁锭",        
+        "Iron Ingot": "铁锭",
         "Steel Ingot": "钢锭",
         "Impure Copper Powder": "不纯的铜粉",
         "Bronze Ingot": "青铜锭",
@@ -316,7 +316,7 @@ window.ALCHEMY_I18N = {
         "Copper Ingot": "铜锭",
         "Crude Silver Powder": "粗劣的银粉",
         "Impure Silver Powder": "不纯的银粉",
-        "Silver Powder": "银粉",  
+        "Silver Powder": "银粉",
         "Silver Ingot": "银锭",
         "Crude Gold Dust": "粗劣的砂金",
         "Impure Gold Dust": "不纯的砂金",
@@ -335,7 +335,7 @@ window.ALCHEMY_I18N = {
         "Copper Bearing": "铜轴承",
         "Bronze Rivet": "青铜铆钉",
 
-        // --- GOODS & CURRENCY ---        
+        // --- GOODS & CURRENCY ---
         "Mortar": "研钵",
         "Linen": "麻布",
         "Bandage": "绷带",
@@ -351,8 +351,8 @@ window.ALCHEMY_I18N = {
 
         // --- LIQUIDS ---
         "Linseed Oil": "亚麻籽油",
-        "Fruit Wine": "浆果酒",        
-        "Limewater": "石灰水",        
+        "Fruit Wine": "浆果酒",
+        "Limewater": "石灰水",
         "Brine": "盐水",
         "Lavender Essential Oil": "薰衣草精油",
         "Brandy": "白兰地",
@@ -360,22 +360,22 @@ window.ALCHEMY_I18N = {
         "Quicksilver": "水银",
         "Aqua Vitae": "生命之水",
         "Fairy Tear": "精灵之泪",
-        "Moon Tear": "月之泪",        
+        "Moon Tear": "月之泪",
 
         // --- POTIONS ---
         "Healing Potion": "治疗药水",
         "Vitality Potion": "活力药水",
-        "Transformation Potion": "变形药水",        
+        "Transformation Potion": "变形药水",
         "Blast Potion": "爆炸药水",
-        "Growth Potion": "成長藥水",
+        "Growth Potion": "成长药水",
         "Panacea Potion": "万灵药",
 
-        // --- CATALYSTS & MAGIC ---        
+        // --- CATALYSTS & MAGIC ---
         "Gloom Spores": "幽暗孢子",
         "Unstable Catalyst": "不稳定催化剂",
         "Fertile Catalyst": "丰饶催化剂",
         "Resonant Catalyst": "共振催化剂",
-        "Eternal Catalyst": "永恒催化剂",        
+        "Eternal Catalyst": "永恒催化剂",
         "Oblivion Essence": "湮灭精华",
         "Vitality Essence": "生命精华",
         "Philosopherˈs Stone": "贤者之石",
@@ -386,13 +386,13 @@ window.ALCHEMY_I18N = {
         "Dull Shard": "暗淡的晶片",
         "Shattered Crystal": "碎裂的晶石",
         "Crude Crystal": "粗糙的晶石",
-        "Polished Crystal": "抛光的晶石",        
+        "Polished Crystal": "抛光的晶石",
         "Adamant": "金刚石",
         "Diamond": "钻石",
         "Perfect Diamond": "完美的钻石",
         "Turquoise": "绿松石",
         "Malachite": "孔雀石",
-        "Topaz": "黄玉",        
+        "Topaz": "黄玉",
         "Obsidian": "黑曜石",
         "Lapis Lazuli": "青金石",
         "Ruby": "红宝石",
@@ -403,7 +403,7 @@ window.ALCHEMY_I18N = {
         "Jupiter": "木星",
         "Saturn": "土星",
         "Mars": "火星",
-        "Venus": "金星",        
+        "Venus": "金星",
         "Mercury": "水星",
         "Luna": "月曜",
         "Sol": "日耀",
@@ -411,7 +411,7 @@ window.ALCHEMY_I18N = {
         // --- SPECIAL ---
         "Portal Sigil": "传送门印章",
         "Gelatinous Gridlock": "格姆胶",
-        "Automatic Cashier": "自动收銀機"
+        "Automatic Cashier": "自动收银机"
     },
     "machines": {
         "Table Saw": "锯木机",
@@ -419,18 +419,18 @@ window.ALCHEMY_I18N = {
         "Planting": "种植地块",
         "Grinder": "研磨机",
         "Enhanced Grinder": "强化研磨机",
-        "Extractor": "萃取机",        
+        "Extractor": "萃取机",
         "Thermal Extractor": "热能萃取机",
         "Stone Furnace": "石炉",
         "Blast Furnace": "高温炉",
         "Crucible": "坩埚",
         "Stackable Crucible": "可堆叠坩埚",
         "Paradox Crucible": "悖论坩埚",
-        "Cauldron": "炼金锅",  
+        "Cauldron": "炼金锅",
         "Kiln": "土窑",
-        "Iron Smelter": "炼铁炉",        
+        "Iron Smelter": "炼铁炉",
         "Refiner": "精炼机",
-        "Processor": "加工机",        
+        "Processor": "加工机",
         "Arcane Processor": "奥术加工机",
         "Assembler": "组装机",
         "Advanced Assembler": "高级组装机",
@@ -442,9 +442,9 @@ window.ALCHEMY_I18N = {
         "Advanced Athanor": "高级炼金炉",
         "Shaper": "雕刻机",
         "Advanced Shaper": "高级雕刻机",
-        "Arcane Shaper": "奥术雕刻机",      
+        "Arcane Shaper": "奥术雕刻机",
         "Nursery": "育苗圃",
-        "World Tree Nursery": "世界树育苗圃",   
+        "World Tree Nursery": "世界树育苗圃",
         "Knowledge Altar": "知识祭坛",
         "Purchasing Portal": "进货传送门",
         "Bank Portal": "银行传送门"

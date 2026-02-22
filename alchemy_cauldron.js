@@ -612,14 +612,14 @@ function createRecipeRowHtml(r, outName, favSet) {
     const inputsHtml = inputs.map(n => {
         const item = DB.items[n] || { id: 0, cauldronCost: 0 };
         return `<img src="img/item${item.id}.png" width="18" height="18" loading="lazy">
-                ${n} <small>(${item.cauldronCost.toFixed(2)})</small>`;
+                ${n} <small>(${item.cauldronCost.toFixed(1)})</small>`;
     }).join(' + ');
 
     return `
     <div class="cauldron-recipe-row">
         <span class="recipe-text">
             ${inputsHtml} 
-            <span style="color:var(--info);">➔</span> ${totalValue.toFixed(2)} ${ratioTag}
+            <span style="color:var(--info);">➔</span> ${totalValue.toFixed(1)} ${ratioTag}
         </span>
         <button class="btn-fav ${isFav ? 'active' : ''}" 
             data-i1="${i0 || ''}" data-i2="${i1 || ''}" data-i3="${i2 || ''}" data-out="${outName}">
@@ -737,12 +737,14 @@ function renderCauldronFavorites() {
                 ${items.map(f => `
                     <div class="cauldron-recipe-row">
                         <span class="recipe-text">
-                            <img src="img/item${DB.items[f.inputs[0]]?.id ?? 0}.png" width="18" height="18">${f.inputs[0]} + 
-                            <img src="img/item${DB.items[f.inputs[1]]?.id ?? 0}.png" width="18" height="18">${f.inputs[1]} + 
-                            <img src="img/item${DB.items[f.inputs[2]]?.id ?? 0}.png" width="18" height="18">${f.inputs[2]}
+                            ${f.inputs.map(name => 
+                                DB.items[name] 
+                                    ? `<img src="img/item${DB.items[name].id}.png" width="18" height="18">${name}` 
+                                    : `<span style="color:var(--warn);" title="找不到的物品名称">⚠️${name}</span>`
+                            ).join(' + ')}
                         </span>
                         <button class="swap-btn" style="color:var(--warn); border-color:var(--warn);" 
-                                onclick="toggleFavorite('${f.inputs[0]}','${f.inputs[1]}','${f.inputs[2]}','${outName}')">
+                                onclick="toggleFavorite(${f.inputs.map(n => `'${n}'`).join(',')}, '${outName}')">
                             ×
                         </button>
                     </div>
@@ -858,10 +860,14 @@ function syncCauldronToMainDB(notify = false) {
     DB.recipes = DB.recipes.filter(r => !r.id.startsWith("AUTO_GENERATED_CAULDRON"));
 
     // 2. 转换并导入
+    let importedCount = 0;
     favs.forEach((fav, index) => {
         const targetItem = fav.output;
         const targetDef = DB.items[targetItem];
-        if (!targetDef) return;
+        // 檢查目標物品是否存在, 檢查 inputs 陣列中的所有名稱是否都在 DB 中
+        const isValid = targetDef !== undefined && 
+                        fav.inputs.every(name => DB.items[name] !== undefined);
+        if (!isValid) return;        
 
         // 计算插值数据
         const stats = getCauldronStats(targetDef.cauldronTarget || 0);
@@ -875,7 +881,7 @@ function syncCauldronToMainDB(notify = false) {
             let inputCount = 1;
             if (inputDef?.maxStack && inputDef.maxStack < 0) inputCount = 1.0 / (-inputDef.maxStack);
             inputCounts[name] = (inputCounts[name] || 0) + inputCount;
-            itemIdString += `_${inputDef.id}`;
+            itemIdString += `_${inputDef?.id ?? 0}`;
         });
 
         const newRecipe = {
@@ -891,7 +897,8 @@ function syncCauldronToMainDB(notify = false) {
         };
 
         DB.recipes.push(newRecipe);
+        importedCount++;
     });
-    console.log(`Synced ${favs.length} recipes from cauldron`);
-    if (notify) alert(`Synced ${favs.length} recipes to the Production Tab! You can now select them in the calculator.`);
+    console.log(`Synced ${importedCount} recipes from cauldron`);
+    if (notify) alert(`Synced ${importedCount} recipes to the Production Tab! You can now select them in the calculator.`);
 }
