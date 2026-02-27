@@ -134,7 +134,7 @@ function renderRecipeTable() {
         if (item.buyPrice > 0) {
             const virtualRecipe = {
                 baseTime: 1.0, 
-                machine: "Portal",
+                machine: "Purchasing Portal",
                 inputs: {}, 
                 outputs: { [name]: 1 }
             };
@@ -143,7 +143,7 @@ function renderRecipeTable() {
                 type: 'portal',
                 id: 'portal_' + name,
                 raw: virtualRecipe,
-                machine: "Portal",
+                machine: "Purchasing Portal",
                 outputs: virtualRecipe.outputs,
                 inputs: virtualRecipe.inputs,
                 stats: stats

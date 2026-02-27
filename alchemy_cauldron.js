@@ -344,8 +344,8 @@ function getCauldronStats(target) {
         if (target >= t[i] && target <= t[i+1]) {
             const p = (target - t[i]) / (t[i+1] - t[i]); // 百分比
             return {
-                time: (times[i] + p * (times[i+1] - times[i])),
-                heat: (heats[i] + p * (heats[i+1] - heats[i]))
+                time: Math.round((times[i] + p * (times[i+1] - times[i]))*10)/10,
+                heat: Math.round((heats[i] + p * (heats[i+1] - heats[i]))*10)/10
             };
         }
     }

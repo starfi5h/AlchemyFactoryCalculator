@@ -42,6 +42,9 @@ h1 { color: var(--accent); margin: 0; font-size: 1.1em; }
     background: #222; border: 1px solid var(--border); 
     color: #888; padding: 6px 12px; cursor: pointer; 
     border-radius: 4px; font-size: 0.9em; 
+    overflow-x: auto;
+    white-space: nowrap;
+    -webkit-overflow-scrolling: touch;
 }
 .tab-btn:hover { background: #333; color: #fff; }
 .tab-btn.active { background: var(--accent); color: white; border-color: var(--accent); font-weight: bold; }

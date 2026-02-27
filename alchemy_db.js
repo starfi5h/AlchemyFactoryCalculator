@@ -1,6 +1,6 @@
 window.ALCHEMY_DB = {
-    "version": 32,
-    "date": "2025.02.21",
+    "version": 33,
+    "date": "2025.02.27",
     "gameVersion": "0.4.3.4071",
     "items": {
         // --- 1. RAW RESOURCES ---
@@ -387,7 +387,7 @@ window.ALCHEMY_DB = {
         { "id": "Resonant Catalyst", "machine": "Advanced Blender", "inputs": { "Fertile Catalyst": 1, "Volcanic Ash": 1, "Aqua Vitae": 12 }, "outputs": { "Resonant Catalyst": 1 }, "baseTime": 8.0 },
         { "id": "Eternal Catalyst", "machine": "Arcane Processor", "inputs": { "Resonant Catalyst": 15, "Philosopherˈs Stone": 1 }, "outputs": { "Eternal Catalyst": 1 }, "baseTime": 60.0 },
         // Note: ˈ is U+02C8, not ASCII 39
-        { "id": "Philosopherˈs Stone", "machine": "Advanced Assembler", "inputs": { "Ruby": 1, "Sapphire": 1, "Emerald": 1 }, "outputs": { "Philosopherˈs Stone": 1 }, "baseTime": 60.0 },
+        { "id": "Philosopherˈs Stone", "machine": "Cauldron", "inputs": { "Ruby": 1, "Sapphire": 1, "Emerald": 1 }, "outputs": { "Philosopherˈs Stone": 1 }, "baseTime": 60.0, "heatCost": 10000.0 },
 
         // --- Paradox Crucible ---
         { "id": "Oblivion Essence (Sage Seeds)", "machine": "Paradox Crucible", "inputs": { "Sage Seeds": 1 }, "outputs": { "Oblivion Essence": 1 }, "baseTime": 8.6 },
