@@ -117,6 +117,42 @@ function toggleExternal(pathKey) {
     calculate();
 }
 
+/**
+ * 批量切換標題下方節點的狀態
+ */
+function toggleNodesInSection(headerElement, shouldCollapse) {
+    let sectionContainer = headerElement.closest('div');
+    let next = sectionContainer.nextElementSibling;
+    // 遍歷直到遇到下一個 section-header 或結束
+    while (next && !next.classList.contains('section-header')) {
+        if (next.classList.contains('node')) {
+            const isCurrentlyCollapsed = next.classList.contains('collapsed');
+            if (shouldCollapse !== isCurrentlyCollapsed) {
+                const arrow = next.querySelector('.tree-arrow');
+                if (arrow) arrow.click(); // 觸發現有的 toggleNode 邏輯以同步 GLOBAL_CALC_STATE
+            }
+        }
+        next = next.nextElementSibling;
+    }
+}
+
+function jumpToNode(pathKey) {
+    let target = document.querySelector(`[data-path="${pathKey}"]`);
+    if (!target) {
+        // TODO: 展開折疊的父節點
+        return;
+    }
+
+    // 捲動到目標節點
+    target.scrollIntoView({ behavior: 'smooth', block: 'center' });
+
+    // 高亮視覺反饋
+    const content = target.querySelector('.node-content');
+    if (content) {
+        content.classList.add('jump-highlight');
+        setTimeout(() => content.classList.remove('jump-highlight'), 2000);
+    }
+}
 
 /* ==========================================================================
    SECTION: CALCULATION ENGINE
@@ -292,6 +328,7 @@ function calculatePass(p, isGhost, globalAvilByproducts, globalTotalByproducts) 
     // --- AGGREGATION STRUCTURES ---
     let machineStats = {};
     let furnaceSlotDemand = {}; 
+    let commonNodesMap = {}; // 用於收集共同節點的 Map (Key: Item + MachineName)
 
     function addMachineCount(machineName, outputItem, countMax, countRaw) {
         if (!machineStats[machineName]) machineStats[machineName] = {};
@@ -437,6 +474,7 @@ function calculatePass(p, isGhost, globalAvilByproducts, globalTotalByproducts) 
                 }
 
                 // HEAT CALCULATION
+                let fuelRate = 0;
                 if (DB.machines[recipe.machine] && DB.machines[recipe.machine].heatCost) {
                     const mach = DB.machines[recipe.machine]; const parent = DB.machines[mach.parent];
                     const sReq = mach.slotsRequired || 1; const pSlots = mach.parentSlots || parent.slots || 3;
@@ -461,7 +499,7 @@ function calculatePass(p, isGhost, globalAvilByproducts, globalTotalByproducts) 
                     }
                     
                     if(!effectiveGhost) {
-                        const fuelRate = ((totalHeatPs * 60) / grossFuelEnergy);
+                        fuelRate = ((totalHeatPs * 60) / grossFuelEnergy);
                         heatTag = `-${formatVal(fuelRate)}/m ${p.selectedFuel}`;
                         if (p.showHeatFert) heatTag += ` (${formatVal(totalHeatPs)} P/s)`;
                         heatTag = `<span class="heat-tag">` + heatTag + `</span>`;
@@ -470,6 +508,7 @@ function calculatePass(p, isGhost, globalAvilByproducts, globalTotalByproducts) 
                 }
 
                 // NUTR CALCULAION
+                let fertRate = 0;
                 if (!effectiveGhost && (recipe.machine === "Nursery" || recipe.machine === "World Tree Nursery")) {
                     const totalNutrientsNeeded = netRate * getRecipeNutrientCost(recipe) / batchYield;
                     const itemsNeeded = totalNutrientsNeeded / grossFertVal;
@@ -477,7 +516,7 @@ function calculatePass(p, isGhost, globalAvilByproducts, globalTotalByproducts) 
                     globalBioLoad += (totalNutrientsNeeded / 60);
                     
                     // 生成 Bio Tag
-                    const fertRate = itemsNeeded;
+                    fertRate = itemsNeeded;
                     let bioText = `-${formatVal(fertRate)}/m ${p.selectedFert}`;
                     if (p.showHeatFert) {
                         bioText += ` (${formatVal(totalNutrientsNeeded/60)} V/s)`;
@@ -514,6 +553,32 @@ function calculatePass(p, isGhost, globalAvilByproducts, globalTotalByproducts) 
                     if(alts.length > 1) { 
                         swapBtn = `<button class="swap-btn" onclick="openRecipeModal('${item}', this.parentElement)" title="Swap Recipe">🔄</button>`; 
                     }
+
+                    // RECORD COMMON NODES
+                    const commonKey = `${item}_${recipe.machine}`;
+                    if (!commonNodesMap[commonKey]) {
+                        commonNodesMap[commonKey] = {
+                            item: item,
+                            machine: recipe.machine,
+                            totalRate: 0,
+                            totalMachines: 0,
+                            tooltipText: tooltipText,
+                            totalFuelRate: 0,
+                            totalFertRate: 0,
+                            instances: []
+                        };
+                    }
+                    const entry = commonNodesMap[commonKey];
+                    entry.totalRate += netRate;
+                    entry.totalMachines += machinesNeeded;
+                    entry.totalFuelRate += fuelRate;
+                    entry.totalFertRate += fertRate;
+                    
+                    entry.instances.push({
+                        rate: netRate,
+                        machines: machinesNeeded,
+                        pathKey: pathKey
+                    });
                 }
                 
                 // RECURSE INPUTS
@@ -536,7 +601,7 @@ function calculatePass(p, isGhost, globalAvilByproducts, globalTotalByproducts) 
         }
 
         // --- RENDER DOM ---
-        const div = document.createElement('div'); div.className = 'node'; div.setAttribute('data-depth', depth % 10);
+        const div = document.createElement('div'); div.className = 'node'; div.setAttribute('data-depth', depth % 10); div.setAttribute('data-path', pathKey);
         if (GLOBAL_CALC_STATE.collapsedNode.has(pathKey)) div.classList.add('collapsed');
         let arrowHtml = `<span class="tree-arrow" style="visibility:${hasChildren ? 'visible' : 'hidden'}" onclick="toggleNode(this, '${pathKey}')">▼</span>`;
         let nodeContent = `
@@ -657,6 +722,9 @@ function calculatePass(p, isGhost, globalAvilByproducts, globalTotalByproducts) 
         </div>`;
 
     if (!isGhost) {
+        // --- 0. 渲染共同節點 ---
+        renderCommonNodes();
+
         // --- 1. 渲染外部輸入 (External Inputs) ---
         renderExternalInputs();
 
@@ -695,6 +763,76 @@ function calculatePass(p, isGhost, globalAvilByproducts, globalTotalByproducts) 
     }
 
     // --- 以下為封裝的邏輯函式 ---
+
+    /**
+     * 創建帶有摺疊/展開按鈕的區塊標題
+     */
+    function createSectionHeader(title) {
+        const div = document.createElement('div');
+        div.style.marginTop = '25px';
+        div.style.marginBottom = '8px';
+        div.style.paddingBottom = '4px';
+        div.style.borderBottom = '1px dashed #555';
+        div.innerHTML = `
+            <span class="section-header">${title}</span>
+            <span style="margin-left:auto; cursor:pointer;">
+                <span class="section-header" onclick="toggleNodesInSection(this, false)">[${t('Expand All')}]</span>
+                <span class="section-header" onclick="toggleNodesInSection(this, true)">[${t('Collapse All')}]</span>
+            </span>
+        `;
+        return div;
+    }
+
+    function renderCommonNodes() {
+        // 篩選出出現次數 > 1 的節點
+        const commonEntries = Object.values(commonNodesMap).filter(e => e.instances.length > 1);
+        if (commonEntries.length === 0) return;
+
+        treeContainer.appendChild(createSectionHeader(`--- ${t('Common Nodes')} ---`));
+
+
+        commonEntries.forEach(entry => {
+            const pathKey = `common_${entry.item}_${entry.machine}`;
+            const div = document.createElement('div');
+            div.className = 'node';
+            if (GLOBAL_CALC_STATE.collapsedNode.has(pathKey)) div.classList.add('collapsed');
+
+            const mName = t(entry.machine, 'machines');
+            const mLabel = `<span class="machine-tag" data-tooltip="${entry.tooltipText}">${Math.ceil(entry.totalMachines - 0.0001)} ${mName}</span>`;
+            const heatTag = entry.totalFuelRate > 0.0001 ? `<span class="heat-tag">-${formatVal(entry.totalFuelRate)}/m ${p.selectedFuel}</span>` : ``;
+            const bioTag = entry.totalFertRate > 0.0001 ? `<span class="bio-tag">-${formatVal(entry.totalFertRate)}/m ${p.selectedFert}</span>` : ``;            
+
+            // 主標題 HTML
+            let nodeContent = `
+                <span class="tree-arrow" onclick="toggleNode(this, '${pathKey}')">▼</span>
+                <span class="qty">${formatVal(entry.totalRate)}/m</span>
+                <img src="img/item${DB.items[entry.item]?.id ?? 0}.png" width="24" height="24">
+                <strong>${entry.item}</strong>
+                ${mLabel}
+                ${heatTag}
+                ${bioTag}
+            `;
+
+            // 子項目 (Instances)
+            let childrenHtml = '';
+            entry.instances.forEach(inst => {
+                childrenHtml += `
+                    <div class="node-content" style="margin-bottom:2px; border-bottom:1px dashed #333; opacity:0.8;">
+                        <span class="qty" style="min-width:60px; display:inline-block;">${formatVal(inst.rate)}/m</span>
+                        <span style="font-size:0.85em; color: #FFF; margin-right:5px;">${Math.ceil(inst.machines - 0.0001)} ${mName}</span>
+                        <span class="details" style="font-size:0.85em; cursor:pointer;" onclick="jumpToNode('${inst.pathKey}')">[ ${inst.pathKey} ]</span>
+                    </div>
+                `;
+            });
+
+            div.innerHTML = `
+                <div class="node-content" style="background: rgba(76, 175, 80, 0.05); border-left: 3px solid var(--accent);">${nodeContent}</div>
+                <div class="node-children" style="margin-left: 20px; border-left: 1px solid #444;">${childrenHtml}</div>
+            `;
+            treeContainer.appendChild(div);
+        });
+    }
+
 
     function renderExternalInputs() {
         const extH = Object.assign(document.createElement('div'), {

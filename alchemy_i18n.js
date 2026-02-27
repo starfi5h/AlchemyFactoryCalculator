@@ -176,6 +176,8 @@ window.ALCHEMY_I18N = {
         "Internal Nutrient Module": "内部肥料模块",
         "Internal Heat Module": "内部燃料模块",
 
+        "Common Nodes": "共同节点",
+
         "--- External Inputs ---": "--- 外部输入 ---",
         "Raw Material Cost": "原料成本",
         "Fuel Import": "燃料输入",

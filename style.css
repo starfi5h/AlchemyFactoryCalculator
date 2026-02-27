@@ -260,6 +260,17 @@ input:checked + .slider-switch:before { transform: translateX(16px); }
 .node[data-depth="8"] { border-left-color: #007D3A; }
 .node[data-depth="9"] { border-left-color: #1B8127; }
 
+@keyframes highlight-fade {
+    0% { background-color: var(--accent); color: white; outline: 2px solid white; }
+    100% { background-color: #222; }
+}
+
+.jump-highlight {
+    animation: highlight-fade 2s ease-out;
+    position: relative;
+    z-index: 10;
+}
+
 .qty { color: var(--accent); font-weight: bold; }
 .item-link { cursor: pointer; text-decoration: none; color: inherit; transition: 0.2s; }
 .item-link:hover { color: var(--info); text-decoration: underline; }
