@@ -6,7 +6,7 @@
 const GLOBAL_CALC_STATE = {
     activeRecyclers: new Set(),
     forcedExternals: new Set(),
-    collapsedNode: new Set()
+    collapsedNode: new Set(['ext_gold', 'ext_fuel', 'ext_fert'])
 };
 
 /* ==========================================================================
@@ -329,6 +329,11 @@ function calculatePass(p, isGhost, globalAvilByproducts, globalTotalByproducts) 
     let machineStats = {};
     let furnaceSlotDemand = {}; 
     let commonNodesMap = {}; // 用於收集共同節點的 Map (Key: Item + MachineName)
+    let byproductProducersMap = {};
+    let rawMaterialSourceMap = []; // 紀錄金幣購買來源
+    let fuelSourceMap = [];        // 紀錄燃料消耗來源
+    let fertSourceMap = [];        // 紀錄肥料消耗來源
+    let externalSourceMap = {};    // 紀錄強制外部輸入來源 (按物品名稱分組)
 
     function addMachineCount(machineName, outputItem, countMax, countRaw) {
         if (!machineStats[machineName]) machineStats[machineName] = {};
@@ -391,6 +396,8 @@ function calculatePass(p, isGhost, globalAvilByproducts, globalTotalByproducts) 
                 if (!globalForcedItems[item]) globalForcedItems[item] = 0;
                 globalForcedItems[item] += netRate;
                 detailsTag = `<span class="details">(${t('External Input')})</span>`;
+                if (!externalSourceMap[item]) externalSourceMap[item] = [];
+                externalSourceMap[item].push({ rate: netRate, pathKey });
             }
         }
         else {
@@ -404,11 +411,14 @@ function calculatePass(p, isGhost, globalAvilByproducts, globalTotalByproducts) 
                         globalCostPerMin += c; 
                         costTag = `<span class="cost-tag">-${Math.ceil(c - Number.EPSILON).toLocaleString()} G/m</span>`;
                         detailsTag = `<span class="details">(${t('Raw Input')})</span>`;
+                        rawMaterialSourceMap.push({ item, gold: c, pathKey });
                     }
                     else {
                         if (!globalForcedItems[item]) globalForcedItems[item] = 0;
                         globalForcedItems[item] += netRate;
                         detailsTag = `<span class="details">(${t('External Input')})</span>`;
+                        if (!externalSourceMap[item]) externalSourceMap[item] = [];
+                        externalSourceMap[item].push({ rate: netRate, pathKey });
                     }                    
                 }
             } else {
@@ -417,6 +427,7 @@ function calculatePass(p, isGhost, globalAvilByproducts, globalTotalByproducts) 
                     let c = netRate * itemDef.sellPrice; 
                     globalCostPerMin += c; 
                     costTag = `<span class="cost-tag">-${Math.ceil(c - Number.EPSILON).toLocaleString()} G/m</span>`;
+                    rawMaterialSourceMap.push({ item, gold: c, pathKey });
                 }
 
                 let batchYield = recipe.outputs[item] || 1;
@@ -457,11 +468,31 @@ function calculatePass(p, isGhost, globalAvilByproducts, globalTotalByproducts) 
                         globalTotalByproducts[outKey] += totalByproduct;
 
                         if (!effectiveGhost) {
-
                             byproductTag += `<span class="byproduct-tag">+${formatVal(totalByproduct)}/m ${outKey}</span>`;                        
+                        }
+
+                         // --- 新增：收集來源資訊 (僅在 Rendering Mode) ---
+                        if (!effectiveGhost) {
+                            if (!byproductProducersMap[outKey]) byproductProducersMap[outKey] = [];
+                            byproductProducersMap[outKey].push({
+                                rate: totalByproduct,
+                                recipe: recipe,
+                                machineCount: machinesNeeded,
+                                pathKey: pathKey,                                
+                            });
                         }
                     }
                 });
+                // 收集回收利用的
+                if (!effectiveGhost && deduction > 0.0001) {
+                    if (!byproductProducersMap[item]) byproductProducersMap[item] = [];
+                    byproductProducersMap[item].push({
+                        rate: -deduction,
+                        recipe: recipe,
+                        machineCount: machinesNeeded,
+                        pathKey: pathKey,                                
+                    });
+                }
 
                 // Machine Usage Stats
                 if(!effectiveGhost) {
@@ -579,6 +610,9 @@ function calculatePass(p, isGhost, globalAvilByproducts, globalTotalByproducts) 
                         machines: machinesNeeded,
                         pathKey: pathKey
                     });
+
+                    if (fuelRate > 0.0001) fuelSourceMap.push({ rate: fuelRate, item: item, machine: recipe.machine, count: machinesNeeded, pathKey });
+                    if (fertRate > 0.0001) fertSourceMap.push({ rate: fertRate, item: item, machine: recipe.machine, count: machinesNeeded, pathKey });
                 }
                 
                 // RECURSE INPUTS
@@ -722,14 +756,15 @@ function calculatePass(p, isGhost, globalAvilByproducts, globalTotalByproducts) 
         </div>`;
 
     if (!isGhost) {
-        // --- 0. 渲染共同節點 ---
-        renderCommonNodes();
 
-        // --- 1. 渲染外部輸入 (External Inputs) ---
+        // --- 渲染外部輸入 (External Inputs) ---
         renderExternalInputs();
 
-        // --- 2. 渲染副產品 (Byproducts) ---
+        // --- 渲染副產品 (Byproducts) ---
         renderByproducts();
+
+        // --- 渲染共同節點 ---
+        renderCommonNodes();
 
         // --- 3. 機器數據聚合 (Machine Stats) ---
         const { flatMax, flatMin } = aggregateMachineStats(machineStats);
@@ -833,66 +868,156 @@ function calculatePass(p, isGhost, globalAvilByproducts, globalTotalByproducts) 
         });
     }
 
-
     function renderExternalInputs() {
-        const extH = Object.assign(document.createElement('div'), {
-            className: 'section-header',
-            innerText: '--- External Inputs ---'
-        });
-        treeContainer.appendChild(extH);
+        treeContainer.appendChild(createSectionHeader('--- External Inputs ---'));
 
-        let html = createNodeItemHTML(t('Raw Material Cost'), `${Math.ceil(globalCostPerMin).toLocaleString()} G/m`, 'gold');
+        // --- 輔助函式：建立外部輸入節點 ---
+        const createExtNode = (label, qty, colorVar, pathKey, producersHtml, mainIconHtml = "") => {
+            const div = document.createElement('div');
+            div.className = 'node';
+            if (GLOBAL_CALC_STATE.collapsedNode.has(pathKey)) div.classList.add('collapsed');
 
-        // 燃料輸入
-        if (!p.selfFuel && globalFuelDemandItems > Number.EPSILON) {
-            let costTag = (p.showFuelCost && p.fuelCost > Number.EPSILON) 
-                ? `<span class="cost-tag">(${Math.ceil(globalFuelDemandItems * p.fuelCost).toLocaleString()} G/m)</span>` 
-                : '';
-            html += createNodeItemHTML(p.selectedFuel, `${globalFuelDemandItems.toFixed(2)}/m`, 'fuel', `(${t('Fuel Import')}) ${costTag}`);
+            div.innerHTML = `
+                <div class="node-content" style="background: rgba(255, 255, 255, 0.02); border-left: 3px solid var(--${colorVar});">
+                    <span class="tree-arrow" onclick="toggleNode(this, '${pathKey}')">▼</span>
+                    <span class="qty" style="color:var(--${colorVar})">${qty}</span>
+                    ${mainIconHtml}
+                    <strong>${label}</strong>
+                </div>
+                <div class="node-children" style="margin-left: 20px; border-left: 1px solid #444;">${producersHtml}</div>
+            `;
+            treeContainer.appendChild(div);
+        };
+
+        // 1. 原料成本 (Gold)
+        if (globalCostPerMin > 0) {
+            let producersHtml = ''; let sourceCount = 0;
+            rawMaterialSourceMap.forEach(src => {
+                producersHtml += `
+                    <div class="node-content" style="opacity:0.8;">
+                        <span class="qty" style="color:var(--gold); min-width:80px; display:inline-block;">${Math.ceil(src.gold).toLocaleString()} G/m</span>
+                        <img src="img/item${DB.items[src.item]?.id ?? 0}.png" width="20" height="20">
+                        <span class="details" style="font-size:0.85em; cursor:pointer;" onclick="jumpToNode('${src.pathKey}')">[ ${src.pathKey} ]</span>
+                    </div>`;
+                sourceCount++;
+            });
+            createExtNode(t('Raw Material Cost') + ` (${sourceCount})`, `${Math.ceil(globalCostPerMin).toLocaleString()} G/m`, 'gold', 'ext_gold', producersHtml);
         }
 
-        // 肥料輸入
-        if (!p.selfFert && globalFertDemandItems > Number.EPSILON) {
-            let costTag = (p.showFertCost && p.fertCost > Number.EPSILON) 
-                ? `<span class="cost-tag">(${Math.ceil(globalFertDemandItems * p.fertCost).toLocaleString()} G/m)</span>` 
-                : '';
-            html += createNodeItemHTML(p.selectedFert, `${globalFertDemandItems.toFixed(2)}/m`, 'bio', `(${t('Fertilizer Import')}) ${costTag}`);
+        // 2. 燃料輸入 (Fuel)
+        if (!p.selfFuel && globalFuelDemandItems > 0.001) {
+            let producersHtml = ''; let sourceCount = 0;
+            fuelSourceMap.forEach(src => {
+                producersHtml += `
+                    <div class="node-content" style="opacity:0.8;">
+                        <span class="qty" style="color:var(--fuel); min-width:60px; display:inline-block;">${formatVal(src.rate)}/m</span>
+                        <span class="machine-tag">${Math.ceil(src.count - 0.0001)} ${t(src.machine, 'machines')}</span>
+                        <span class="details" style="font-size:0.85em; cursor:pointer;" onclick="jumpToNode('${src.pathKey}')">[ ${src.pathKey} ]</span>
+                        <img src="img/item${DB.items[src.item]?.id ?? 0}.png" width="20" height="20">
+                    </div>`;
+                sourceCount++;
+            });
+            const fuelIcon = `<img src="img/item${DB.items[p.selectedFuel]?.id ?? 0}.png" width="24" height="24"> `;
+            createExtNode(p.selectedFuel + ` (${sourceCount})`, `${globalFuelDemandItems.toFixed(2)}/m`, 'fuel', 'ext_fuel', producersHtml, fuelIcon);
         }
 
-        // 強制項目
-        Object.entries(globalForcedItems).forEach(([name, rate]) => {
-            html += createNodeItemHTML(name, `${formatVal(rate)}/m`, 'default', `(${t('External Input')})`);
-        });
+        // 3. 肥料輸入 (Fertilizer)
+        if (!p.selfFert && globalFertDemandItems > 0.001) {
+            let producersHtml = ''; let sourceCount = 0;
+            fertSourceMap.forEach(src => {
+                producersHtml += `
+                    <div class="node-content" style="opacity:0.8;">
+                        <span class="qty" style="color:var(--bio); min-width:60px; display:inline-block;">${formatVal(src.rate)}/m</span>
+                        <span class="machine-tag">${Math.ceil(src.count - 0.0001)} ${t(src.machine, 'machines')}</span>
+                        <span class="details" style="font-size:0.85em; cursor:pointer;" onclick="jumpToNode('${src.pathKey}')">[ ${src.pathKey} ]</span>
+                        <img src="img/item${DB.items[src.item]?.id ?? 0}.png" width="20" height="20">
+                    </div>`;
+                sourceCount++;
+            });
+            const fertIcon = `<img src="img/item${DB.items[p.selectedFert]?.id ?? 0}.png" width="24" height="24"> `;
+            createExtNode(p.selectedFert + ` (${sourceCount})`, `${globalFertDemandItems.toFixed(2)}/m`, 'bio', 'ext_fert', producersHtml, fertIcon);
+        }
 
-        const extDiv = Object.assign(document.createElement('div'), { className: 'node', innerHTML: html });
-        treeContainer.appendChild(extDiv);
+        // 4. 強制外部輸入 (External Forced)
+        Object.entries(externalSourceMap).forEach(([itemName, sources]) => {
+            let producersHtml = '';
+            let totalRate = 0;
+            sources.forEach(src => {
+                totalRate += src.rate;
+                producersHtml += `
+                    <div class="node-content" style="opacity:0.8;">
+                        <span class="qty" style="color:var(--default); min-width:60px; display:inline-block;">${formatVal(src.rate)}/m</span>
+                        <span class="details" style="font-size:0.85em; cursor:pointer;" onclick="jumpToNode('${src.pathKey}')">[ ${src.pathKey} ]</span>
+                    </div>`;
+            });
+            const itemIcon = `<img src="img/item${DB.items[itemName]?.id ?? 0}.png" width="24" height="24"> `;
+            createExtNode(itemName, `${formatVal(totalRate)}/m`, 'default', `ext_forced_${itemName}`, producersHtml, itemIcon);
+        });
     }
 
     function renderByproducts() {
-        const bypHeader = Object.assign(document.createElement('div'), {
-            className: 'section-header',
-            innerText: '--- BYPRODUCTS ---'
-        });
-        treeContainer.appendChild(bypHeader);
+        treeContainer.appendChild(createSectionHeader('--- BYPRODUCTS ---'));
 
         const sortedNames = Object.keys(globalTotalByproducts).sort();
-        let html = '';
-
-        if (sortedNames.length > 0) {
-            sortedNames.forEach(name => {
-                const remaining = globalAvilByproducts[name] || 0;
-                const total = globalTotalByproducts[name];
-                const recycledNote = remaining < total 
-                    ? ` <span style="font-size:0.8em; color:#888;">(${formatVal(total - remaining)} ${t('recycled')})</span>` 
-                    : '';
-                html += createNodeItemHTML(name, `${formatVal(remaining)}/m`, 'byproduct', recycledNote);
+        if (sortedNames.length === 0) {
+            const emptyDiv = Object.assign(document.createElement('div'), {
+                className: 'node',
+                innerHTML: `<div class="node-content"><span class="details" style="font-style:italic">${t('None')}</span></div>`
             });
-        } else {
-            html = `<div class="node-content"><span class="details" style="font-style:italic">${t('None')}</span></div>`;
+            treeContainer.appendChild(emptyDiv);
+            return;
         }
 
-        const bypDiv = Object.assign(document.createElement('div'), { className: 'node', innerHTML: html });
-        treeContainer.appendChild(bypDiv);
+        sortedNames.forEach(name => {
+            const remaining = globalAvilByproducts[name] || 0;
+            const totalGenerated = globalTotalByproducts[name];
+            const producers = byproductProducersMap[name] || [];
+            const pathKey = `byp_${name}`; // 唯一的摺疊 Key
+
+            const div = document.createElement('div');
+            div.className = 'node';
+            if (GLOBAL_CALC_STATE.collapsedNode.has(pathKey)) div.classList.add('collapsed');
+
+            // 父節點：[加總qty] [物品圖片] [物品名稱]
+            // 注意：這裡顯示的是回收後剩餘的數量 (Available)
+            const recycledNote = remaining < totalGenerated 
+                ? ` <span style="font-size:0.8em; color:#888;">(${formatVal(totalGenerated - remaining)} ${t('recycled')})</span>` 
+                : '';
+
+            let nodeContent = `
+                <span class="tree-arrow" onclick="toggleNode(this, '${pathKey}')">▼</span>
+                <span class="qty" style="color:var(--byproduct)">${formatVal(remaining)}/m</span>
+                <img src="img/item${DB.items[name]?.id ?? 0}.png" width="24" height="24" loading="lazy">
+                <strong>${name}</strong>
+                ${recycledNote}
+            `;
+
+            // 子節點：[qty] [加總機器數量+名稱] [pathKey]
+            let childrenHtml = '';
+            producers.forEach(inst => {
+                const recipe = inst.recipe;
+                let inputsStr = Object.keys(recipe.inputs).map(k => `${recipe.inputs[k]} ${k}`).join(', ');
+                let outputsStr = Object.keys(recipe.outputs).map(k => `${recipe.outputs[k]} ${k}`).join(', ');
+                let tooltipText = "";
+                tooltipText += `${t('Recipe')}: ${inputsStr} -> ${outputsStr}\n`;
+                if (recipe.baseTime) tooltipText += `${t('Base Time')}: ${recipe.baseTime} s\n`;
+                machineTag = `<span class="machine-tag" data-tooltip="${tooltipText}">${Math.ceil(inst.machineCount)} ${t(recipe.machine, 'machines')}</span>`;
+
+                childrenHtml += `
+                    <div class="node-content" style="margin-bottom:2px; opacity:0.8;">
+                        <span class="qty" style="min-width:60px; display:inline-block; ${inst.rate > 0.0001 ? 'color:var(--byproduct);' : ''}">${formatVal(inst.rate)}/m</span>
+                        ${machineTag}
+                        <span class="details" style="font-size:0.85em; cursor:pointer;" onclick="jumpToNode('${inst.pathKey}')">[ ${inst.pathKey} ]</span>
+                    </div>
+                `;
+            });
+
+            div.innerHTML = `
+                <div class="node-content" style="background: rgba(213, 109, 231, 0.03); border-left: 3px solid var(--byproduct);">${nodeContent}</div>
+                <div class="node-children" style="margin-left: 20px; border-left: 1px solid #444;">${childrenHtml}</div>
+            `;
+            treeContainer.appendChild(div);
+        });
     }
 
     function aggregateMachineStats(stats) {
