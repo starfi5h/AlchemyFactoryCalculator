@@ -134,6 +134,20 @@ function setAllRecycling(enable) {
     calculate(); // 重新計算以套用變更
 }
 
+function toggleFirstLevel() {
+    const sectionNodes = document.querySelectorAll('.node');
+    const level1Nodes = Array.from(sectionNodes).filter(n => {
+        const path = n.getAttribute('data-path') || "";
+        const segments = path.split('>').filter(s => s.trim().length > 0);
+        return segments.length === 2;
+    });
+    if (level1Nodes.length === 0) return;
+
+    // 根據第一個符合項目的狀態決定「全部展開」或「全部摺疊」
+    const isCurrentlyCollapsed = level1Nodes[0].classList.contains('collapsed');
+    const shouldCollapse = !isCurrentlyCollapsed;
+    level1Nodes.forEach(n => n.classList.toggle('collapsed', shouldCollapse));
+}
 
 /**
  * 批量切換標題下方節點的狀態
@@ -700,6 +714,7 @@ function calculatePass(p, isGhost, globalAvilByproducts, globalTotalByproducts) 
                 <span style="margin-left:auto; cursor:pointer;">
                     <span class="section-header" onclick="setAllRecycling(true)">[${t('Recycle All')}]</span>
                     <span class="section-header" onclick="setAllRecycling(false)">[${t('Un-recycle All')}]</span>
+                    <span class="section-header" onclick="toggleFirstLevel()" title="Toggle First Level" style="margin-right:10px;">💠</span>
                 </span>
             `;        
             treeContainer.appendChild(div); 

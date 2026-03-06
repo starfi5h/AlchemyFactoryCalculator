@@ -1,7 +1,7 @@
 window.ALCHEMY_DB = {
-    "version": 34,
-    "date": "2025.03.05",
-    "gameVersion": "0.4.3.4071",
+    "version": 35,
+    "date": "2025.03.06",
+    "gameVersion": "0.4.3.4137",
     "items": {
         // --- 1. RAW RESOURCES ---
         "Logs": { "id": 1, "category": "Raw Materials", "buyPrice": 200, "maxStack": -200, "heat": 2000, "cauldronCost": 0.8, "tier": 1 },
@@ -220,7 +220,7 @@ window.ALCHEMY_DB = {
         "Arcane Shaper": { "buildCost": { "Gold Ingot": 12, "Copper Bearing": 18, "Steel Gear": 24 } },
         "Paradox Crucible": { "heatCost": 1200.0, "parent": "Stone Furnace", "slotsRequired": 9, "buildCost": { "Bronze Rivet": 16, "Copper Ingot": 8, "Steel Ingot": 8 } },
         // Cauldron heatCost is depend on the recipe. Use a non-zero value as placeholder here
-        "Cauldron": { "heatCost": -1, "parent": "Stone Furnace", "buildCost": { "Bronze Ingot": 30 } },
+        "Cauldron": { "heatCost": -1, "parent": "Stone Furnace", "buildCost": { "Bronze Ingot": 20 } },
         "Arcane Processor": { "buildCost": { "Steel Ingot": 6, "Steel Gear": 12, "Lapis Lazuli": 2 } },
         "Enhanced Grinder": { "buildCost": { "Plank": 12, "Steel Gear": 3 } },
         "Nursery": { "fertility": true, "buildCost": { "Iron Ingot": 12, "Clay": 6 } },
@@ -395,6 +395,7 @@ window.ALCHEMY_DB = {
         { "id": "Philosopherˈs Stone", "machine": "Cauldron", "inputs": { "Ruby": 1, "Sapphire": 1, "Emerald": 1 }, "outputs": { "Philosopherˈs Stone": 1 }, "baseTime": 60.0, "heatCost": 10000.0 },
 
         // --- Paradox Crucible ---
+        { "id": "Oblivion Essence (Silver Coin x2)", "machine": "Paradox Crucible", "inputs": { "Silver Coin": 2 }, "outputs": { "Oblivion Essence": 1 }, "baseTime": 0.79 },
         { "id": "Oblivion Essence (Silver Coin)", "machine": "Paradox Crucible", "inputs": { "Silver Coin": 1 }, "outputs": { "Oblivion Essence": 1 }, "baseTime": 1.6 },
         { "id": "Oblivion Essence (Limestone)", "machine": "Paradox Crucible", "inputs": { "Limestone": 1 }, "outputs": { "Oblivion Essence": 1 }, "baseTime": 3.3 },
         { "id": "Oblivion Essence (Gentian)", "machine": "Paradox Crucible", "inputs": { "Gentian": 1 }, "outputs": { "Oblivion Essence": 1 }, "baseTime": 3.8 },
