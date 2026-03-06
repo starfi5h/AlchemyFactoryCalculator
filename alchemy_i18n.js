@@ -160,6 +160,8 @@ window.ALCHEMY_I18N = {
         "Wholesale Price": "批发价",
 
         "Primary Production Chain": "主生产链",
+        "Recycle All": "全部回收",
+        "Un-recycle All": "全部不回收",
         "Select Recipe": "选择配方",
         "Select Recipe for ": "切换配方 ",
         "Input": "输入",

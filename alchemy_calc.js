@@ -118,6 +118,24 @@ function toggleExternal(pathKey) {
 }
 
 /**
+ * 控制主生產鏈中所有可回收節點的狀態
+ * @param {boolean} enable - true 為全部回收, false 為全部不回收
+ */
+function setAllRecycling(enable) {
+    // 尋找畫面上所有現有的「回收按鈕」，將其 pathKey 加入/移除 Set
+    const buttons = document.querySelectorAll('.recycle-btn');
+    buttons.forEach(btn => {
+        const onclickAttr = btn.getAttribute('onclick');
+        const match = onclickAttr.match(/'([^']+)'/);
+        if (match && match[1]) {
+            enable ? GLOBAL_CALC_STATE.activeRecyclers.add(match[1]) : GLOBAL_CALC_STATE.activeRecyclers.delete(match[1]);
+        }
+    });
+    calculate(); // 重新計算以套用變更
+}
+
+
+/**
  * 批量切換標題下方節點的狀態
  */
 function toggleNodesInSection(headerElement, shouldCollapse) {
@@ -510,7 +528,7 @@ function calculatePass(p, isGhost, globalAvilByproducts, globalTotalByproducts) 
                     const mach = DB.machines[recipe.machine]; const parent = DB.machines[mach.parent];
                     const sReq = mach.slotsRequired || 1; const pSlots = mach.parentSlots || parent.slots || 3;
                     let activeHeat = mach.heatCost * p.speedMult;
-                    if (mach.heatCost < 0) { activeHeat = (recipe.heatCost ?? 0) * p.speedMult; console.log(recipe.heatCost)} // Overwrite 
+                    if (mach.heatCost < 0) { activeHeat = (recipe.heatCost ?? 0) * p.speedMult;} // Overwrite 
                     
                     // NOTE: This part of heat calculation is different from others
                     const nodeParentsNeeded = Math.ceil((machinesNeeded / (pSlots/sReq)) - 0.0001);
@@ -672,7 +690,19 @@ function calculatePass(p, isGhost, globalAvilByproducts, globalTotalByproducts) 
     if(p.targetItem) {
         const root = buildNode(p.targetItem, grossRate, false, [], 0);
         if(!isGhost) {
-            const h = document.createElement('div'); h.className = 'section-header'; h.innerText = `--- ${t('Primary Production Chain')} (${p.targetItem}) ---`; treeContainer.appendChild(h); 
+            const div = document.createElement('div');
+            div.style.marginTop = '25px';
+            div.style.marginBottom = '8px';
+            div.style.paddingBottom = '4px';
+            div.style.borderBottom = '1px dashed #555';
+            div.innerHTML = `
+                <span class="section-header">--- ${t('Primary Production Chain')} (${p.targetItem}) ---</span>
+                <span style="margin-left:auto; cursor:pointer;">
+                    <span class="section-header" onclick="setAllRecycling(true)">[${t('Recycle All')}]</span>
+                    <span class="section-header" onclick="setAllRecycling(false)">[${t('Un-recycle All')}]</span>
+                </span>
+            `;        
+            treeContainer.appendChild(div); 
             treeContainer.appendChild(root);
         }
     }

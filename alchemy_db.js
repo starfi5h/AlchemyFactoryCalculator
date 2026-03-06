@@ -1,6 +1,6 @@
 window.ALCHEMY_DB = {
-    "version": 33,
-    "date": "2025.02.27",
+    "version": 34,
+    "date": "2025.03.05",
     "gameVersion": "0.4.3.4071",
     "items": {
         // --- 1. RAW RESOURCES ---
@@ -297,6 +297,11 @@ window.ALCHEMY_DB = {
         { "id": "Charcoal", "machine": "Crucible", "inputs": { "Plank": 1 }, "outputs": { "Charcoal": 1 }, "baseTime": 4.0 },
         { "id": "Charcoal Powder", "machine": "Grinder", "inputs": { "Charcoal": 1 }, "outputs": { "Charcoal Powder": 1 }, "baseTime": 4.0 },
         { "id": "Coal", "machine": "Stone Crusher", "inputs": { "Coal Ore": 1 }, "outputs": { "Coal": 120 }, "baseTime": 360.0 },
+        { 
+            "id": "Coke_Alt", "machine": "Crucible", 
+            "inputs": { "Coal": 1 }, "outputs": { "Coke": 1 }, 
+            "baseTime": 6.0 
+        },
         // --- COKE BATCH (Converted from 50% fail rate) ---
         { 
             "id": "Coke", "machine": "Athanor", 
@@ -390,10 +395,12 @@ window.ALCHEMY_DB = {
         { "id": "Philosopherˈs Stone", "machine": "Cauldron", "inputs": { "Ruby": 1, "Sapphire": 1, "Emerald": 1 }, "outputs": { "Philosopherˈs Stone": 1 }, "baseTime": 60.0, "heatCost": 10000.0 },
 
         // --- Paradox Crucible ---
-        { "id": "Oblivion Essence (Sage Seeds)", "machine": "Paradox Crucible", "inputs": { "Sage Seeds": 1 }, "outputs": { "Oblivion Essence": 1 }, "baseTime": 8.6 },
+        { "id": "Oblivion Essence (Silver Coin)", "machine": "Paradox Crucible", "inputs": { "Silver Coin": 1 }, "outputs": { "Oblivion Essence": 1 }, "baseTime": 1.6 },
         { "id": "Oblivion Essence (Limestone)", "machine": "Paradox Crucible", "inputs": { "Limestone": 1 }, "outputs": { "Oblivion Essence": 1 }, "baseTime": 3.3 },
         { "id": "Oblivion Essence (Gentian)", "machine": "Paradox Crucible", "inputs": { "Gentian": 1 }, "outputs": { "Oblivion Essence": 1 }, "baseTime": 3.8 },
         { "id": "Oblivion Essence (Gentian Nectar)", "machine": "Paradox Crucible", "inputs": { "Gentian Nectar": 1 }, "outputs": { "Oblivion Essence": 1 }, "baseTime": 3.6 },
+        { "id": "Oblivion Essence (Lavender)", "machine": "Paradox Crucible", "inputs": { "Lavender": 1 }, "outputs": { "Oblivion Essence": 1 }, "baseTime": 8.3 },
+        { "id": "Oblivion Essence (Sage Seeds)", "machine": "Paradox Crucible", "inputs": { "Sage Seeds": 1 }, "outputs": { "Oblivion Essence": 1 }, "baseTime": 8.6 },
         { "id": "Vitality Essence", "machine": "Paradox Crucible", "inputs": { "Oblivion Essence": 1 }, "outputs": { "Vitality Essence": 1 }, "baseTime": 5.0 },
 
         // --- SHARDS & GEMS CHAIN ---
@@ -463,11 +470,6 @@ window.ALCHEMY_DB = {
             "id": "VolcanicAsh_Alt", "machine": "Refiner", 
             "inputs": { "Obsidian": 1 }, "outputs": { "Volcanic Ash": 1 }, 
             "baseTime": 24.0 
-        },
-        { 
-            "id": "Coke_Alt", "machine": "Crucible", 
-            "inputs": { "Coal": 1 }, "outputs": { "Coke": 1 }, 
-            "baseTime": 6.0 
         },
         { 
             "id": "CopperPowder2_Alt", "machine": "Refiner", 
