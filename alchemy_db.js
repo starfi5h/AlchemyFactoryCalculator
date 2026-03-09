@@ -1,6 +1,6 @@
 window.ALCHEMY_DB = {
-    "version": 35,
-    "date": "2025.03.06",
+    "version": 36,
+    "date": "2025.03.09",
     "gameVersion": "0.4.3.4137",
     "items": {
         // --- 1. RAW RESOURCES ---
@@ -238,7 +238,7 @@ window.ALCHEMY_DB = {
         { "id": "Lavender", "machine": "Nursery", "buildCost": "Lavender Seeds", "inputs": {}, "outputs": { "Lavender": 1 }},
         { "id": "Chamomile", "machine": "Nursery", "buildCost": "Chamomile Seeds", "inputs": {}, "outputs": { "Chamomile": 1 }},
         { "id": "Gentian_Dual", "machine": "Nursery", "buildCost": "Gentian Seeds", "inputs": {}, "outputs": { "Gentian": 1, "Gentian Nectar": 1 }},
-        { "id": "World Tree_Dual", "machine": "World Tree Nursery", "buildCost": "World Tree Seed", "inputs": {}, "outputs": { "World Tree Leaf": 99, "World Tree Core":1 }},
+        { "id": "World Tree_Dual", "machine": "World Tree Nursery", "buildCost": "World Tree Seed", "inputs": {}, "outputs": { "World Tree Leaf": 99, "World Tree Core":1 }, "baseTime": 300.0},
 
         // --- CURRENCY ---
         { "id": "Bank_Copper", "machine": "Bank Portal", "inputs": {}, "outputs": { "Copper Coin": 50 }, "baseTime": 1.0 },

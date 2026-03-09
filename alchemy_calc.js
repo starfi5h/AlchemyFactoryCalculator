@@ -289,9 +289,8 @@ function gatherInputs() {
         batchYield = applyAlchemyMult(recipe.machine, batchYield, getAlchemyMult(lvlAlchemy));
         let recipeTime = recipe.baseTime || 1;
         const recipeNtrientCost = getRecipeNutrientCost(recipe);
-        if (recipeNtrientCost > 0) {
+        if (recipeNtrientCost > 0 && recipe.machine === "Nursery") {
             let fertilitySpeed = DB.items[selectedFert]?.maxFertility || 1;
-            if (recipe.machine === "World Tree Nursery") fertilitySpeed = 30000;
             recipeTime =  recipeNtrientCost / fertilitySpeed;
         }
         let ratePerMachine = (60 / (recipeTime || 1)) * getSpeedMult(lvlSpeed) * batchYield;        
@@ -472,9 +471,8 @@ function calculatePass(p, isGhost, globalAvilByproducts, globalTotalByproducts) 
                 
                 let recipeTime = recipe.baseTime || 1;
                 const recipeNtrientCost = getRecipeNutrientCost(recipe);
-                if (recipeNtrientCost > 0) {
+                if (recipeNtrientCost > 0 && recipe.machine === "Nursery") {
                     let fertilitySpeed = fertDef.maxFertility || 1;
-                    if (recipe.machine === "World Tree Nursery") fertilitySpeed = 30000;
                     recipeTime =  recipeNtrientCost / fertilitySpeed;
                 }
                 let machineOutputRate  = (60 / (recipeTime || 1)) * p.speedMult;
