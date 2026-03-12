@@ -22,6 +22,7 @@ const DEFAULT_SETTINGS = {
     fertCostEnable: true,
     showMaxCap: false,
     showHeatFert: false,
+    showBeltCount: false,
     preferredRecipes: {},
     activeRecyclers: {},
     customCosts: { "Logs": 200, "Coal Ore": 4800 }
@@ -624,6 +625,7 @@ function loadSettingsToUI() {
         if(DB.settings.fertCostEnable) document.getElementById('fertCostEnable').checked = DB.settings.fertCostEnable;
         if(DB.settings.showMaxCap) document.getElementById('showMaxCap').checked = DB.settings.showMaxCap;
         if(DB.settings.showHeatFert) document.getElementById('showHeatFert').checked = DB.settings.showHeatFert;
+        if(DB.settings.showBeltCount) document.getElementById('showBeltCount').checked = DB.settings.showBeltCount;
     }
     updateDefaultButtonState();
 }
@@ -673,6 +675,7 @@ function onLogisticsChange() {
     DB.settings.customCosts[tItem] = parseFloat(document.getElementById('fertCostInput').value) || 0;
     DB.settings.showMaxCap = document.getElementById('showMaxCap').checked;
     DB.settings.showHeatFert = document.getElementById('showHeatFert').checked;    
+    DB.settings.showBeltCount = document.getElementById('showBeltCount').checked;
     persist();
     calculate();
 }

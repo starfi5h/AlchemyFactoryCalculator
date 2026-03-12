@@ -292,6 +292,7 @@ function gatherInputs() {
     const showFertCost = document.getElementById('fertCostEnable').checked;
     const showMaxCap = document.getElementById('showMaxCap').checked;
     const showHeatFert = document.getElementById('showHeatFert').checked;
+    const showBeltCount = document.getElementById('showBeltCount').checked;
 
     const lvlSpeed = parseInt(document.getElementById('lvlSpeed').value) || 0;
     const lvlBelt = parseInt(document.getElementById('lvlBelt').value) || 0;
@@ -340,7 +341,7 @@ function gatherInputs() {
         targetItem, targetRate, // 為了相容部分單產物邏輯
         selectedFuel, selfFuel, fuelCost, showFuelCost,
         selectedFert, selfFert, fertCost, showFertCost,
-        showMaxCap, showHeatFert,
+        showMaxCap, showHeatFert, showBeltCount,
         lvlSpeed, lvlBelt, lvlFuel, lvlAlchemy, lvlFert,        
         beltSpeed: getBeltSpeed(lvlBelt),
         speedMult: getSpeedMult(lvlSpeed),
@@ -417,11 +418,11 @@ function calculatePass(p, isGhost, globalAvilByproducts, globalTotalByproducts) 
         }
 
         const netRate = Math.max(0, rate - deduction);
-        const itemDef = DB.items[item] || {}; 
+        const itemDef = DB.items[item] || {};
         let ingredientChildren = []; 
         let currentPath = [...ancestors, item];
         
-        let outputTag = ""; let machineTag = ""; let heatTag = ""; let swapBtn = ""; let byproductTag = "";
+        let beltCountTag = "", outputTag = ""; let machineTag = ""; let heatTag = ""; let swapBtn = ""; let byproductTag = "";
         let bioTag = ""; let costTag = ""; let detailsTag = ""; let recycleTag = ""; let externalTag = "";
         let machinesNeeded = 0; let hasChildren = false;
         
@@ -688,10 +689,17 @@ function calculatePass(p, isGhost, globalAvilByproducts, globalTotalByproducts) 
         // --- RENDER DOM ---
         const div = document.createElement('div'); div.className = 'node'; div.setAttribute('data-depth', depth % 10); div.setAttribute('data-path', pathKey);
         if (GLOBAL_CALC_STATE.collapsedNode.has(pathKey)) div.classList.add('collapsed');
+        if (p.showBeltCount && itemDef) {
+            if (itemDef.category !== "Liquid") {
+                const ratio = itemDef.category === "Currency" ? rate / (50 * p.beltSpeed) : rate / p.beltSpeed;
+                beltCountTag = `<span class="belt-count">(${Number(ratio.toFixed(2))})</span>`;
+            }
+        }
         let arrowHtml = `<span class="tree-arrow" style="visibility:${hasChildren ? 'visible' : 'hidden'}" onclick="toggleNode(this, '${pathKey}')">▼</span>`;
         let nodeContent = `
             ${arrowHtml}
             <span class="qty">${formatVal(rate)}/m</span>
+            ${beltCountTag}
             <img src="img/item${DB.items[item]?.id ?? 0}.png" width="24" height="24" loading="lazy">
             <span class="item-link" onclick="openDrillDown('${item}', ${rate})"><strong>${item}</strong></span>
             ${swapBtn}

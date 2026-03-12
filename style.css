@@ -6,7 +6,7 @@
     --panel: #2d2d2d; --border: #444; --warn: #ff9800; 
     --gold: #ffd700; --info: #2196f3; --profit: #00e676; 
     --bio: #76ff03; --fuel: #ff5722; --danger: #f44336;
-    --row-id: #4fc3f7; --byproduct: #d56de7;
+    --belt-count: #4fc3f7; --byproduct: #d56de7;
     --thumb-size: 14px; /* Variable for slider thumb calculations */
 }
 * { box-sizing: border-box; }
@@ -279,7 +279,7 @@ input:checked + .slider-switch:before { transform: translateX(16px); }
 .node { margin-left: 15px; padding: 4px 0; border-left: 2px solid #555; position: relative; min-width: 300; }
 .node-content { display: flex; align-items: center; gap: 4px; background: #222; padding: 6px 10px; border-radius: 4px; border: 1px solid #333; }
 .tree-arrow { display: inline-block; width: 14px; cursor: pointer; transition: transform 0.1s; user-select: none; font-size: 0.8em; color: #888; text-align:center; }
-.row-id { color: var(--row-id); font-family: monospace; font-weight: bold; min-width: 20px; font-size: 0.9em; cursor: pointer; }
+.belt-count { color: var(--belt-count); font-family: monospace; font-weight: bold; font-size: 0.9em; }
 .node.collapsed .node-children { display: none; }
 .node.collapsed .tree-arrow { transform: rotate(-90deg); }
 .node-children { margin-left: 0; }

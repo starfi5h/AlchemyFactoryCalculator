@@ -150,6 +150,7 @@ window.ALCHEMY_I18N = {
         "Cost (G/item):" : "成本设置(每个):",
         "Show Machine Max Cap": "显示机器产能上限",
         "Show Machine Heat & Nutr": "显示机器热值&肥力用量",
+        "Show Belt Count": "显示传送带需求",
 
         // --- 3. Tree & Nodes ---
         "Gross Output": "总产出",
