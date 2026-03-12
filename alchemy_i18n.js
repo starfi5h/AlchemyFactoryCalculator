@@ -119,6 +119,10 @@ window.ALCHEMY_I18N = {
 
         // --- 1. Production Goal ---
         "Production Goal": "生产目标",
+        "MULTI": "多产物",
+        "+ Add Item": "+ 添加需求物品",
+        "💾 Save List": "💾 保存列表",
+        "📂 Load List": "📂 加载列表",
         "Target Item": "目标物品",
         "Select or Type...": "选择或输入...",
         "Set by Machine Count": "按机器数量设置",
@@ -159,7 +163,7 @@ window.ALCHEMY_I18N = {
         "Retail Price   ": "零售价",
         "Wholesale Price": "批发价",
 
-        "Primary Production Chain": "主生产链",
+        "Production Chain": "生产链",
         "Recycle All": "全部回收",
         "Un-recycle All": "全部不回收",
         "Select Recipe": "选择配方",

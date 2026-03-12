@@ -253,10 +253,31 @@ function calculate() {
 
 
 function gatherInputs() {
-    // 1. Gather Inputs
-    let rawInput = document.getElementById('targetItemInput').value.trim();
-    let targetItem = Object.keys(DB.items).find(k => k.toLowerCase() === rawInput.toLowerCase()) || rawInput;
-    let targetRate = parseFloat(document.getElementById('targetRate').value) || 0;
+
+    const isMulti = document.getElementById('modeToggle').checked;
+    let targets = [];
+    let targetItem = "", targetRate = 0.0;
+
+    if (!isMulti) {
+        // 單產物模式
+        let rawInput = document.getElementById('targetItemInput').value.trim();
+        targetItem = Object.keys(DB.items).find(k => k.toLowerCase() === rawInput.toLowerCase()) || rawInput;
+        targetRate = parseFloat(document.getElementById('targetRate').value) || 0;
+        targets.push({
+            item: targetItem,
+            rate: targetRate
+        });
+    }
+    else {
+        // 多產物模式：遍歷 DOM 中的每一列
+        document.querySelectorAll('.multi-target-row').forEach(row => {
+            const item = row.dataset.item;
+            const rate = parseFloat(row.querySelector('.multi-rate-input').value) || 0;
+            if (item && rate > 0) {
+                targets.push({ item, rate });
+            }
+        });
+    }
     
     // Settings
     const selectedFuel = document.getElementById('fuelSelect').value;
@@ -300,19 +321,23 @@ function gatherInputs() {
         }
         if (isMachineMode) {
             const machineCount = parseFloat(document.getElementById('targetMachine').value) || 0;
-            targetRate = machineCount * ratePerMachine;            
+            targetRate = machineCount * ratePerMachine;
+            targets[0].rate = targetRate;
             document.getElementById('targetRate').value = Number(targetRate.toFixed(2));
-            document.getElementById('rateLabel').innerText = `${(targetRate/getBeltSpeed(lvlBelt)*100).toFixed(1)}%`;
+            document.getElementById('rateLabel').textContent = `${(targetRate/getBeltSpeed(lvlBelt)*100).toFixed(1)}%`;
         }
         else {
             const machineCount = targetRate / ratePerMachine;
             document.getElementById('targetMachine').value = Number(machineCount.toFixed(2));
-            document.getElementById('rateLabel').innerText = `${(targetRate/getBeltSpeed(lvlBelt)*100).toFixed(1)}%`;
+            document.getElementById('rateLabel').textContent = `${(targetRate/getBeltSpeed(lvlBelt)*100).toFixed(1)}%`;
+            console.log(`${(targetRate/getBeltSpeed(lvlBelt)*100).toFixed(1)}%`);
         }
     }
     
     return {
-        targetItem, targetRate, 
+        targets,
+        isMulti,
+        targetItem, targetRate, // 為了相容部分單產物邏輯
         selectedFuel, selfFuel, fuelCost, showFuelCost,
         selectedFert, selfFert, fertCost, showFertCost,
         showMaxCap, showHeatFert,
@@ -371,11 +396,7 @@ function calculatePass(p, isGhost, globalAvilByproducts, globalTotalByproducts) 
         if (!machineStats[machineName][outputItem]) machineStats[machineName][outputItem] = { rawFloat: 0, nodeSumInt: 0 };
         machineStats[machineName][outputItem].rawFloat += countRaw;
         machineStats[machineName][outputItem].nodeSumInt += countMax;
-    }
-
-    let grossRate = p.targetRate;
-
-    const treeContainer = document.getElementById('tree');
+    }   
 
     // Recursive Builder
     function buildNode(item, rate, isInternalModule, ancestors = [], forceGhost = false, depth = 0) {
@@ -699,8 +720,11 @@ function calculatePass(p, isGhost, globalAvilByproducts, globalTotalByproducts) 
     }
 
     // --- EXECUTE THE PASS ---
-    if(p.targetItem) {
-        const root = buildNode(p.targetItem, grossRate, false, [], 0);
+    const treeContainer = document.getElementById('tree');
+    p.targets.forEach((target, idx) => {        
+        if (!DB.items[target.item]) return;
+        // 核心：所有目標共用同一個 globalAvilByproducts 池實現回收抵充
+        const root = buildNode(target.item, target.rate, false, [], 0);
         if(!isGhost) {
             const div = document.createElement('div');
             div.style.marginTop = '25px';
@@ -708,7 +732,7 @@ function calculatePass(p, isGhost, globalAvilByproducts, globalTotalByproducts) 
             div.style.paddingBottom = '4px';
             div.style.borderBottom = '1px dashed #555';
             div.innerHTML = `
-                <span class="section-header">--- ${t('Primary Production Chain')} (${p.targetItem}) ---</span>
+                <span class="section-header">--- ${t('Production Chain')} (${target.item}) ---</span>
                 <span style="margin-left:auto; cursor:pointer;">
                     <span class="section-header" onclick="setAllRecycling(true)">[${t('Recycle All')}]</span>
                     <span class="section-header" onclick="setAllRecycling(false)">[${t('Un-recycle All')}]</span>
@@ -718,7 +742,7 @@ function calculatePass(p, isGhost, globalAvilByproducts, globalTotalByproducts) 
             treeContainer.appendChild(div); 
             treeContainer.appendChild(root);
         }
-    }
+    });
 
     if (!isGhost) {
         let stableFuelDemand = globalFuelDemandItems;
@@ -1212,7 +1236,6 @@ function updateBuildModeLabel() {
 function updateSummaryBox(p, heatPerSec, nutrPerSec, goldPerMin, actualFuelNeed, actualFertNeed) {
     const { targetItem, targetRate, selfFuel, selfFert, selectedFuel, selectedFert, fuelCost, fertCost } = p;
     const targetItemDef = DB.items[targetItem] || {};
-
     
     let usedRate = 0.0;
     if (selfFuel && targetItem === selectedFuel) usedRate += actualFuelNeed;
@@ -1224,12 +1247,21 @@ function updateSummaryBox(p, heatPerSec, nutrPerSec, goldPerMin, actualFuelNeed,
     if (netRate > 0) refRate = targetRate * (targetRate / netRate);
 
     // --- Output Blocks ---
-    const outputHtml = `
-        <div class="stat-block">
-            <span class="stat-label">${t('Gross Output')}</span>
-            <span class="stat-value net-positive">${targetRate.toFixed(1)} / min <img src="img/item${DB.items[targetItem]?.id ?? 0}.png" width="24" height="24" style="vertical-align: middle; margin-bottom: 4px;"></span>
+    let outputHtml = `<div class="stat-block"><span class="stat-label">${t('Gross Output')}</span>`;
+    if (!p.isMulti) {
+        outputHtml += `<span class="stat-value net-positive">${targetRate.toFixed(1)} / min <img src="img/item${DB.items[targetItem]?.id ?? 0}.png" width="24" height="24" style="vertical-align: middle; margin-bottom: 4px;"></span>
             ${usedRate > Number.EPSILON ? `<span class="stat-sub" onclick="recalculate('${targetItem}' , ${refRate})">Net: ${netRate.toFixed(1)} / min <br>Used: ${usedRate.toFixed(1)} / min</span>` : ''}
-        </div>`;
+            </div>`;
+    } else {
+        p.targets.forEach((target) => {
+            if (!DB.items[target.item]) return;
+            outputHtml += `<span class="stat-value net-positive">
+            ${target.rate.toFixed(1)} / min 
+            <img src="img/item${DB.items[target.item]?.id ?? 0}.png" width="24" height="24" style="vertical-align: middle; margin-bottom: 4px;">
+            </span>`
+        });
+        outputHtml += `</div>`;
+    }
 
     // --- Load Blocks ---
     let loadHtml = `<div class="stat-block"><span class="stat-label">${t('Total Load')}</span>`;
@@ -1247,36 +1279,40 @@ function updateSummaryBox(p, heatPerSec, nutrPerSec, goldPerMin, actualFuelNeed,
         loadHtml += `</span>`;
     }
     loadHtml += `</div>`;
-
+    
     // --- Cost Block ---
     let costHtml = `<div class="stat-block"><span class="stat-label">${t('Unit Cost')}</span>`;
-    if (goldPerMin > 0) costHtml += `<span class="stat-value" style="color:var(--gold);">${t('Coin')}: ${(goldPerMin / netRate).toLocaleString()} G</span>`;
-    if (heatPerSec > 0) {
-        costHtml += `<span>`
-        costHtml += `<span class="stat-value" style="color:var(--fuel);">${t('Heat')}: ${(heatPerSec * 60 / netRate).toLocaleString()} P</span>`;
-        costHtml += `  ( ${(actualFuelNeed/netRate).toLocaleString()}<img src="img/item${DB.items[selectedFuel]?.id ?? 0}.png" alt="${selectedFuel}" width="24" height="24" style="vertical-align: middle; margin-bottom: 4px;"> )`;
-        costHtml += `</span>`;
-    }
-    if (nutrPerSec > 0) { 
-        costHtml += `<span>`
-        costHtml += `<span class="stat-value" style="color:var(--bio);">${t('Nutr')}: ${(nutrPerSec * 60 / netRate).toLocaleString()} V</span>`;
-        costHtml += `  ( ${(actualFertNeed/netRate).toLocaleString()}<img src="img/item${DB.items[selectedFert]?.id ?? 0}.png" alt="${selectedFert}" width="24" height="24" style="vertical-align: middle; margin-bottom: 4px;"> )`;
-        costHtml += `</span>`;
+    if (!p.isMulti) {
+        if (goldPerMin > 0) costHtml += `<span class="stat-value" style="color:var(--gold);">${t('Coin')}: ${(goldPerMin / netRate).toLocaleString()} G</span>`;
+        if (heatPerSec > 0) {
+            costHtml += `<span>`
+            costHtml += `<span class="stat-value" style="color:var(--fuel);">${t('Heat')}: ${(heatPerSec * 60 / netRate).toLocaleString()} P</span>`;
+            costHtml += `  ( ${(actualFuelNeed/netRate).toLocaleString()}<img src="img/item${DB.items[selectedFuel]?.id ?? 0}.png" alt="${selectedFuel}" width="24" height="24" style="vertical-align: middle; margin-bottom: 4px;"> )`;
+            costHtml += `</span>`;
+        }
+        if (nutrPerSec > 0) { 
+            costHtml += `<span>`
+            costHtml += `<span class="stat-value" style="color:var(--bio);">${t('Nutr')}: ${(nutrPerSec * 60 / netRate).toLocaleString()} V</span>`;
+            costHtml += `  ( ${(actualFertNeed/netRate).toLocaleString()}<img src="img/item${DB.items[selectedFert]?.id ?? 0}.png" alt="${selectedFert}" width="24" height="24" style="vertical-align: middle; margin-bottom: 4px;"> )`;
+            costHtml += `</span>`;
+        }
     }
     costHtml += `</div>`;
 
     // --- Value Block ---
     let valueHtml = `<div class="stat-block"><span class="stat-label">${t('Unit Value')}</span>`;
-    const convertedCost = (goldPerMin + fuelCost * actualFuelNeed + fertCost * actualFertNeed) / netRate;
-    valueHtml += `<span class="stat-value gold-profit">${t('Conversion Cost')}: ${(convertedCost).toLocaleString()}</span>`;
-    
-    if (targetItemDef.sellPrice) {
-        const ratio = convertedCost > 0 ? targetItemDef.sellPrice  / convertedCost : 0;
-        valueHtml += `<span class="stat-value gold-profit">${t('Retail Price   ')}: ${targetItemDef.sellPrice.toLocaleString()} (${(ratio * 100).toFixed(1)}%)</span>`;
-    }
-    if (targetItemDef.wholesalePrice) {
-        const ratio = convertedCost > 0 ? targetItemDef.wholesalePrice  / convertedCost : 0;
-        valueHtml += `<span class="stat-value gold-profit">${t('Wholesale Price')}: ${targetItemDef.wholesalePrice.toLocaleString()} (${(ratio * 100).toFixed(1)}%)</span>`;
+    if (!p.isMulti) {
+        const convertedCost = (goldPerMin + fuelCost * actualFuelNeed + fertCost * actualFertNeed) / netRate;
+        valueHtml += `<span class="stat-value gold-profit">${t('Conversion Cost')}: ${(convertedCost).toLocaleString()}</span>`;
+        
+        if (targetItemDef.sellPrice) {
+            const ratio = convertedCost > 0 ? targetItemDef.sellPrice  / convertedCost : 0;
+            valueHtml += `<span class="stat-value gold-profit">${t('Retail Price   ')}: ${targetItemDef.sellPrice.toLocaleString()} (${(ratio * 100).toFixed(1)}%)</span>`;
+        }
+        if (targetItemDef.wholesalePrice) {
+            const ratio = convertedCost > 0 ? targetItemDef.wholesalePrice  / convertedCost : 0;
+            valueHtml += `<span class="stat-value gold-profit">${t('Wholesale Price')}: ${targetItemDef.wholesalePrice.toLocaleString()} (${(ratio * 100).toFixed(1)}%)</span>`;
+        }
     }
     valueHtml += `</div>`;
 

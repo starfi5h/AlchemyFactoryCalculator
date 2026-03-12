@@ -28,7 +28,7 @@
             <span style="margin-left: 10px;">
                 <span id="ui-lang-toggle" style="cursor:pointer; margin-right: 10px;" onclick="toggleLanguage()" title="EN/中文">🌐EN/中文</span>
                 <a href="https://github.com/starfi5h/AlchemyFactoryCalculator" target="_blank" class="repo-link">GitHub Repo</a>
-                <span id="last-updated-time-text">2025.03.09</span>
+                <span id="last-updated-time-text">2025.03.12</span>
             </span>
         </div>
         <div class="tabs">
@@ -81,57 +81,79 @@
             <div class="app-grid">
                 <div>
                     <div class="panel">
-                        <h3>Production Goal</h3>
-                        <div class="input-group">
-                            <label>Target Item</label>
-                            <div class="combobox-container" id="targetCombobox">
-                                <div class="input-wrapper" onclick="toggleCombobox()">
-                                    <div id="ghost-text" class="ghost-input"></div>
-                                    <input type="text" id="targetItemInput" class="real-input" placeholder="Select or Type..." autocomplete="off" oninput="filterCombobox(); updateComboIcon();" onkeydown="handleComboKey(event)" onblur="closeComboboxDelayed()">
-                                    <div class="combo-arrow" onclick="openItemPicker()" title="Browse Items">☰</div>
-                                    <div id="combo-btn" class="combo-arrow" onclick="handleComboIconClick(event)">▼</div>
+                        <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:10px;">
+                            <h3 style="margin:0; border:none;">Production Goal</h3>
+                            <!-- 模式切換 Toggle -->
+                            <div style="display:flex; align-items:center; gap:8px;">
+                                <label id="ui-mode-label" style="font-size:0.8em; color:#aaa; font-weight:bold;">MULTI</label>
+                                <label class="switch">
+                                    <input type="checkbox" id="modeToggle" onchange="toggleCalcMode()">
+                                    <span class="slider-switch"></span>
+                                </label>
+                            </div>
+                        </div>
+
+                        <!-- 單產物 UI (保持不變，但在切換時會被隱藏) -->
+                        <div id="single-target-ui">
+                            <div class="input-group">
+                                <label>Target Item</label>
+                                <div class="combobox-container" id="targetCombobox">
+                                    <div class="input-wrapper" onclick="toggleCombobox()">
+                                        <div id="ghost-text" class="ghost-input"></div>
+                                        <input type="text" id="targetItemInput" class="real-input" placeholder="Select or Type..." autocomplete="off" oninput="filterCombobox(); updateComboIcon();" onkeydown="handleComboKey(event)" onblur="closeComboboxDelayed()">
+                                        <div class="combo-arrow" onclick="openItemPicker()" title="Browse Items">☰</div>
+                                        <div id="combo-btn" class="combo-arrow" onclick="handleComboIconClick(event)">▼</div>
+                                    </div>
+                                    <div id="combobox-list" class="combobox-list"></div>
                                 </div>
-                                <div id="combobox-list" class="combobox-list"></div>
+                            </div>
+                            <!-- 傳送帶/機器模式切換開關 -->
+                            <div class="checkbox-row" style="margin-bottom: 5px;">
+                                <input type="checkbox" id="machineModeToggle" onchange="toggleControlMode(true)">
+                                <label for="machineModeToggle" style="display:inline; margin:0; cursor:pointer; font-weight:bold; color:var(--accent);">
+                                    Set by Machine Count
+                                </label>
+                            </div>                            
+                            <!-- 機器數量輸入 -->
+                            <div class="input-group" style="opacity:0.5" id="group-machine" disabled>
+                                <label id="machineLabel">Machine Count</label> <label id="active-machine-name">(None)</label>
+                                <div class="spinner-wrapper">
+                                    <button class="spinner-btn left first" onclick="adjustMachine(-1)">-1</button>
+                                    <button class="spinner-btn left" onclick="adjustMachine(-0.1)">-0.1</button>
+                                    <input type="number" id="targetMachine" value="1" oninput="calculate()" disabled>
+                                    <button class="spinner-btn right" onclick="adjustMachine(0.1)">+0.1</button>
+                                    <button class="spinner-btn right last" onclick="adjustMachine(1)">+1</button>
+                                </div>
+                            </div>
+                            <!-- 速率輸入 -->
+                            <div class="input-group" id="group-rate">
+                                <label>Rate (Items/Min)</label>
+                                <div class="spinner-wrapper">
+                                    <button class="spinner-btn left first" onclick="adjustRate(-1)">-1</button>
+                                    <button class="spinner-btn left" onclick="adjustRate(-0.1)">-0.1</button>
+                                    <input type="number" id="targetRate" value="60" oninput="calculate()">
+                                    <button class="spinner-btn right" onclick="adjustRate(0.1)">+0.1</button>
+                                    <button class="spinner-btn right last" onclick="adjustRate(1)">+1</button>
+                                </div>
+                            </div>
+                            <div class="input-group" style="margin-bottom:20px;">
+                                <label>Belt Load Fraction</label> <label id="rateLabel">100%</label>
+                                <div class="slider-container">
+                                    <input type="range" id="beltSlider" min="0" max="100" step="1" oninput="updateFromSlider()">
+                                    <div id="sliderTicks" class="slider-ticks"></div>
+                                </div>
                             </div>
                         </div>
 
-                        <!-- 模式切換開關 -->
-                        <div class="checkbox-row" style="margin-bottom: 5px;">
-                            <input type="checkbox" id="machineModeToggle" onchange="toggleControlMode(true)">
-                            <label for="machineModeToggle" style="display:inline; margin:0; cursor:pointer; font-weight:bold; color:var(--accent);">
-                                Set by Machine Count
-                            </label>
-                        </div>
-                        
-                        <!-- 機器數量輸入 -->
-                        <div class="input-group" style="opacity:0.5" id="group-machine" disabled>
-                            <label id="machineLabel">Machine Count</label> <label id="active-machine-name">(None)</label>
-                            <div class="spinner-wrapper">
-                                <button class="spinner-btn left first" onclick="adjustMachine(-1)">-1</button>
-                                <button class="spinner-btn left" onclick="adjustMachine(-0.1)">-0.1</button>
-                                <input type="number" id="targetMachine" value="1" oninput="calculate()" disabled>
-                                <button class="spinner-btn right" onclick="adjustMachine(0.1)">+0.1</button>
-                                <button class="spinner-btn right last" onclick="adjustMachine(1)">+1</button>
+                        <!-- 多產物 UI (預設隱藏) -->
+                        <div id="multi-target-ui" style="display:none;">
+                            <div id="multi-target-list">
+                                <!-- 由 JS 動態生成項目 -->
                             </div>
-                        </div>
-
-                        <!-- 速率輸入 -->
-                        <div class="input-group" id="group-rate">
-                            <label>Rate (Items/Min)</label>
-                            <div class="spinner-wrapper">
-                                <button class="spinner-btn left first" onclick="adjustRate(-1)">-1</button>
-                                <button class="spinner-btn left" onclick="adjustRate(-0.1)">-0.1</button>
-                                <input type="number" id="targetRate" value="60" oninput="calculate()">
-                                <button class="spinner-btn right" onclick="adjustRate(0.1)">+0.1</button>
-                                <button class="spinner-btn right last" onclick="adjustRate(1)">+1</button>
-                            </div>
-                        </div>
-
-                        <div class="input-group" style="margin-bottom:20px;">
-                            <label>Belt Load Fraction</label> <label id="rateLabel">100%</label>
-                            <div class="slider-container">
-                                <input type="range" id="beltSlider" min="0" max="100" step="1" oninput="updateFromSlider()">
-                                <div id="sliderTicks" class="slider-ticks"></div>
+                            <button class="save-btn" style="margin-top:10px; background:var(--panel); border-style:dashed;" onclick="addMultiTargetRow()">+ Add Item</button>
+                            <div class="split-btn-container" style="margin-top:10px;">
+                                <button class="split-btn" onclick="saveMultiTargets(event)" title="Save to Browser">💾 Save List</button>
+                                <button class="split-btn" onclick="loadMultiTargets(event)" title="Load from Browser">📂 Load List</button>
                             </div>
                         </div>
                     </div>
@@ -148,7 +170,7 @@
                             <input type="checkbox" id="selfFuel" style="display:none;">
                             <div class="split-btn-container">
                                 <button id="btnSelfFuel" class="split-btn btn-inactive-red" onclick="toggleFuel()">Self-Fuel: OFF</button>
-                                <button id="btnDefFuel" class="split-btn" onclick="setDefaultFuel()">Make Default</button>
+                                <button id="btnDefFuel" class="split-btn" onclick="setDefaultFuel(event)">Make Default</button>
                             </div>
                             <div class="checkbox-row">
                                 <input type="checkbox" checked id="fuelCostEnable" onchange="onLogisticsChange()">
@@ -166,7 +188,7 @@
                             <input type="checkbox" id="selfFert" style="display:none;">
                             <div class="split-btn-container">
                                 <button id="btnSelfFert" class="split-btn btn-inactive-red" onclick="toggleFert()">Self-Fert: OFF</button>
-                                <button id="btnDefFert" class="split-btn" onclick="setDefaultFert()">Make Default</button>
+                                <button id="btnDefFert" class="split-btn" onclick="setDefaultFert(event)">Make Default</button>
                             </div>
                             <div class="checkbox-row">
                                 <input type="checkbox" checked id="fertCostEnable" onchange="onLogisticsChange()">
@@ -257,7 +279,7 @@
                     <div class="panel">
                         <h3>Save/Reset</h3>                        
                         <span id="db-gameversion-text"></span>
-                        <button class="save-btn" onclick="saveSettings()">Save Upgrades</button>
+                        <button class="save-btn" onclick="saveSettings(event)">Save Upgrades</button>
                         <button class="reset-btn" onclick="resetRecips()">Reset Recipes</button>
                         <button class="reset-btn" onclick="resetTranslations()">Reset Translations</button>
                         <button class="reset-btn" onclick="resetAllData()">All Data Reset</button>

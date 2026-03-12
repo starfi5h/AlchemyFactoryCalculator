@@ -78,6 +78,36 @@ select { width: 100%; padding: 6px; background: #333; border: 1px solid #555; co
 
 .small-num-input { background: #333; border: 1px inline-block #555; color: #fff; width: 60px; border-radius: 3px; margin-left: 6px; }
 
+.multi-target-row {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    background: #252525;
+    padding: 8px;
+    border-radius: 4px;
+    margin-bottom: 6px;
+    border: 1px solid #333;
+}
+.multi-target-row .mini-picker {
+    flex: 1;
+    cursor: pointer;
+    background: #333;
+    padding: 5px 8px;
+    border-radius: 4px;
+    font-size: 0.9em;
+    display: flex;
+    align-items: center;
+    gap: 5px;
+}
+.multi-target-row input[type="number"] {
+    width: 75px;
+    font-size: 1em;
+    padding: 4px;
+    flex: none;
+    border-radius: 4px;
+}
+
+
 /* ==========================================================================
     SECTION: CSS - SLIDER COMPONENTS
     ========================================================================== */
@@ -172,6 +202,15 @@ input:disabled { opacity: 0.5; cursor: not-allowed; background: #2a2a2a; color: 
 .btn-inactive-red { background: #333 !important; color: #aaa !important; }
 .checkbox-row { display: flex; align-items: center; margin-top: 8px; font-size: 0.9em; color: #ccc; }
 .checkbox-row input { margin-right: 8px; }
+
+/* 按鈕閃爍動畫：從綠色漸變回原本顏色 */
+@keyframes btn-flash-glow {
+    0% { background-color: var(--accent); color: white; border-color: white; }
+    100% { background-color: #333; }
+}
+.btn-flash {
+    animation: btn-flash-glow 0.6s ease-out;
+}
 
 /* ==========================================================================
     SECTION: CSS - TOGGLE SWITCH

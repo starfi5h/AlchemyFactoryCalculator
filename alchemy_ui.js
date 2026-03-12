@@ -504,6 +504,115 @@ function recalculate(item, rate) {
 }
 
 /* ==========================================================================
+   SECTION: JS - Multiple Inputs
+   ========================================================================== */
+
+function toggleCalcMode() {
+    const isMulti = document.getElementById('modeToggle').checked;
+    document.getElementById('single-target-ui').style.display = isMulti ? 'none' : 'block';
+    document.getElementById('multi-target-ui').style.display = isMulti ? 'block' : 'none';
+    
+    // 如果進入多產物模式且清單為空，先嘗試載入儲存的列表，沒找到再預設加一列
+    const list = document.getElementById('multi-target-list');
+    if (isMulti) {
+        if (list.children.length === 0) loadMultiTargets();
+        if (list.children.length === 0) addMultiTargetRow();
+    }    
+    calculate();
+}
+
+function addMultiTargetRow(itemName, rate = 0) {
+    const container = document.getElementById('multi-target-list');
+    const itemDef = DB.items[itemName] || { id: 0 };
+    if (!itemName) itemName = t('Target Item');
+    
+    const row = document.createElement('div');
+    row.className = 'multi-target-row';
+    // 使用 dataset 儲存當前選中的物品名稱，方便 gatherInputs 讀取
+    row.dataset.item = itemName;
+
+    if (rate === 0) {
+        const lvlBelt = parseInt(document.getElementById('lvlBelt').value) || 0;
+        rate = getBeltSpeed(lvlBelt);
+    }
+
+    row.innerHTML = `
+        <div class="mini-picker" onclick="pickMultiTargetRow(this)">
+            <img src="img/item${itemDef.id}.png" width="20" height="20">
+            <span class="item-name-label">${itemName}</span>
+        </div>
+        <input type="number" class="multi-rate-input" value="${rate}" oninput="calculate()">
+        <button class="swap-btn" onclick="this.parentElement.remove(); calculate();" style="color:var(--danger); border-color:var(--danger);">x</button>
+    `;
+    
+    container.appendChild(row);
+}
+
+function pickMultiTargetRow(pickerEl) {
+    const row = pickerEl.parentElement;
+    const label = pickerEl.querySelector('.item-name-label');
+    const img = pickerEl.querySelector('img');
+    
+    // 暫時重寫全域 selectItem，以便 Picker 選中時更新這一個 Row
+    const originalSelectItem = window.selectItem;
+    window.selectItem = (name) => {
+        const itemDef = DB.items[name] || { id: 0 };
+        row.dataset.item = name;
+        label.innerText = name;
+        img.src = `img/item${itemDef.id}.png`;
+        
+        window.selectItem = originalSelectItem; // 恢復原有的選擇邏輯
+        calculate();
+    };
+    
+    openItemPicker();
+}
+
+function saveMultiTargets(e) {
+    const targets = [];
+    const rows = document.querySelectorAll('.multi-target-row');    
+    rows.forEach(row => {
+        const item = row.dataset.item;
+        const rate = parseFloat(row.querySelector('.multi-rate-input').value) || 0;
+        if (item) {
+            targets.push({ item, rate });
+        }
+    });
+    if (targets.length === 0) {
+        console.log(t("List is empty, nothing to save.", "ui"));
+        return;
+    }
+    DB.settings.multiTargets = targets;
+    persist();
+    flashButton(e.currentTarget);
+}
+
+function loadMultiTargets(e) {
+    if (!DB.settings.multiTargets || DB.settings.multiTargets.length === 0) {
+        console.log(t("No saved list found.", "ui"));
+        return;
+    }
+    const container = document.getElementById('multi-target-list');
+    container.innerHTML = ''; // 清空目前清單
+    DB.settings.multiTargets.forEach(target => {
+        addMultiTargetRow(target.item, target.rate);
+    });
+    calculate(); // 重新計算
+    flashButton(e.currentTarget);
+}
+
+/**
+ * 讓按鈕閃爍一下的輔助函數
+ */
+function flashButton(el) {
+    if (!el) return;
+    el.classList.remove('btn-flash'); // 重置動畫
+    void el.offsetWidth;             // 觸發重繪 (Reflow) 以重啟動畫
+    el.classList.add('btn-flash');
+    setTimeout(() => el.classList.remove('btn-flash'), 600);
+}
+
+/* ==========================================================================
    SECTION: JS - UI HANDLERS (INPUTS/SETTINGS)
    ========================================================================== */
 function loadSettingsToUI() {
@@ -552,8 +661,8 @@ function toggleFert() {
     calculate();
 }
 
-function setDefaultFuel() { const c = document.getElementById('fuelSelect').value; DB.settings.defaultFuel = c; persist(); updateDefaultButtonState(); }
-function setDefaultFert() { const c = document.getElementById('fertSelect').value; DB.settings.defaultFert = c; persist(); updateDefaultButtonState(); }
+function setDefaultFuel(e) { const c = document.getElementById('fuelSelect').value; DB.settings.defaultFuel = c; persist(); updateDefaultButtonState(); flashButton(e.currentTarget); }
+function setDefaultFert(e) { const c = document.getElementById('fertSelect').value; DB.settings.defaultFert = c; persist(); updateDefaultButtonState(); flashButton(e.currentTarget); }
 
 function onLogisticsChange() {
     const fItem = document.getElementById('fuelSelect').value;
@@ -581,7 +690,7 @@ function updateDefaultButtonState() {
     document.getElementById('fertCostInput').value = DB.settings.customCosts[curFert] || 0;        
 }
 
-function saveSettings() { ['lvlBelt','lvlSpeed','lvlAlchemy','lvlFuel','lvlFert'].forEach(k => { DB.settings[k] = parseInt(document.getElementById(k).value) || 0; }); persist(); }
+function saveSettings(e) { ['lvlBelt','lvlSpeed','lvlAlchemy','lvlFuel','lvlFert'].forEach(k => { DB.settings[k] = parseInt(document.getElementById(k).value) || 0; }); persist(); flashButton(e.currentTarget); }
 
 function resetRecips() {
     if(confirm(t('Reset Recipes', 'ui') + "?")) {
@@ -803,6 +912,7 @@ function translateText() {
     const input = document.getElementById('targetItemInput');
     if (input) input.placeholder = t("Select or Type...", "ui");
     document.title = t("Alchemy Factory Calculator", "ui");
+    document.getElementById('ui-mode-label').innerText = t("MULTI", "ui");
 }
 
 function toggleLanguage() {
