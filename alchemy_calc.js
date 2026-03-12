@@ -833,38 +833,61 @@ function calculatePass(p, isGhost, globalAvilByproducts, globalTotalByproducts) 
         // --- 渲染共同節點 ---
         renderCommonNodes();
 
-        // --- 3. 機器數據聚合 (Machine Stats) ---
+        // --- 機器數據聚合 (Machine Stats) ---
         const { flatMax, flatMin } = aggregateMachineStats(machineStats);
 
-        // --- 4. 計算熔爐數量 ---
+        // --- 計算熔爐數量 ---
         const totalFurnaces = calculateTotalFurnaces(furnaceSlotDemand);
 
-        // --- 5. 更新 UI 組件 ---
+        // --- 更新 UI 組件 ---
         updateConstructionList(flatMax, flatMin, totalFurnaces, globalExtraBuildCosts);
         
-        // 計算最終成本並更新摘要
+        // --- 計算最終成本並更新摘要 ---
         updateSummaryBox(p, globalHeatLoad, globalBioLoad, globalCostPerMin, globalFuelDemandItems, globalFertDemandItems);
 
-
-        let summaryLine = "";
-        Object.entries(globalRawItems).forEach(([name, rate]) => {
-            const qty = Number(rate.toFixed(2));
-            summaryLine += ` <span class="qty" style="color:var(--accent)">${qty}<img src="img/item${DB.items[name]?.id ?? 0}.png" title="${name}" width="24" height="24" style="vertical-align: middle; margin-bottom: 4px;"></span>`;
-        });
-        Object.entries(globalForcedItems).forEach(([name, rate]) => {
-            const qty = Number(rate.toFixed(2));
-            summaryLine += ` <span class="qty" style="color:var(--accent)">${qty}<img src="img/item${DB.items[name]?.id ?? 0}.png" title="${name}" width="24" height="24" style="vertical-align: middle; margin-bottom: 4px;"></span>`;
-        });
-        summaryLine += `<span style="color:var(--info);"> ➔ </span>`;
-        summaryLine += ` <span class="qty" style="color:var(--profit)">${Number(p.targetRate.toFixed(2))}<img src="img/item${DB.items[p.targetItem]?.id ?? 0}.png" title="${p.targetItem}" width="24" height="24" style="vertical-align: middle; margin-bottom: 4px;"></span>  `;
-        Object.entries(globalAvilByproducts).forEach(([name, rate]) => {
-            const qty = Number(rate.toFixed(2));
-            if (qty > 0.001) summaryLine += ` <span class="qty" style="color:var(--byproduct)">${qty}<img src="img/item${DB.items[name]?.id ?? 0}.png" title="${name}" width="24" height="24" style="vertical-align: middle; margin-bottom: 4px;"></span>`;
-        });
-        document.getElementById('summary-line').innerHTML = summaryLine;
+        // --- 更新產物公式 ---
+        updateSummaryLine(p, globalRawItems, globalForcedItems, globalFuelDemandItems, globalFertDemandItems, globalAvilByproducts);
     }
 
     // --- 以下為封裝的邏輯函式 ---
+
+    function updateSummaryLine(p, globalRawItems, globalForcedItems, globalFuelDemandItems, globalFertDemandItems, globalAvilByproducts) {
+
+        function formattedText(name, qty, color) {
+            console.log(name);
+            return  ` <span class="qty" style="color:var(--${color})">${Number(qty.toFixed(2))}<img src="img/item${DB.items[name]?.id ?? 0}.png" title="${name}" width="24" height="24" style="vertical-align: middle; margin-bottom: 4px;"></span>`;
+        }
+
+        let summaryLine = "";
+        Object.entries(globalRawItems).forEach(([name, rate]) => summaryLine += formattedText(name, rate, 'accent'));
+        Object.entries(globalForcedItems).forEach(([name, rate]) => summaryLine += formattedText(name, rate, 'accent'));
+        // 自供燃料及肥料的用量不是外部輸入, 因此不顯示
+        if (p.selfFuel) globalFuelDemandItems = 0;
+        if (p.selfFert) globalFertDemandItems = 0;
+        const sumDemandItems = globalFuelDemandItems + globalFertDemandItems;
+        if (sumDemandItems > 0.0001) {
+            summaryLine += ` (`;
+            if (p.selectedFuel === p.selectedFert) summaryLine += formattedText(p.selectedFuel, sumDemandItems, 'gold');
+            else {
+                if (globalFuelDemandItems > 0.0001) summaryLine += formattedText(p.selectedFuel, globalFuelDemandItems, 'fuel');
+                if (globalFertDemandItems > 0.0001) summaryLine += formattedText(p.selectedFert, globalFertDemandItems, 'bio');
+            }
+            summaryLine += `) `;
+        }
+        summaryLine += `<span style="color:var(--info);"> ➔ </span>`;
+
+        p.targets.forEach(target => {
+            if (target.rate > 0.0001) summaryLine += formattedText(target.item, target.rate, 'profit');
+        });
+        
+        Object.entries(globalAvilByproducts).forEach(([name, rate]) => { 
+            if (rate > 0.0001) summaryLine += formattedText(name, rate, 'byproduct');
+        });
+
+        console.log(summaryLine);
+        document.getElementById('summary-line').innerHTML = summaryLine;
+    }
+
 
     /**
      * 創建帶有摺疊/展開按鈕的區塊標題

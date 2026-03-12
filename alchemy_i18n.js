@@ -424,7 +424,7 @@ window.ALCHEMY_I18N = {
     "machines": {
         "Table Saw": "锯木机",
         "Stone Crusher": "碎石机",
-        "Planting": "种植地块",
+        "Seed Plot": "种植地块",
         "Grinder": "研磨机",
         "Enhanced Grinder": "强化研磨机",
         "Extractor": "萃取机",

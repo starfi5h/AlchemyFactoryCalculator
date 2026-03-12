@@ -93,7 +93,7 @@ function getPresetCandidates(poolType) {
             for (const { inputs, outputs, machine } of DB.recipes) {
                 const inKeys = Object.keys(inputs);
                 const outKeys = Object.keys(outputs);
-                if (machine === 'Planting' || machine === 'Crucible' || machine === 'Kiln' || machine === 'Paradox Crucible') continue;
+                if (machine === 'Seed Plot' || machine === 'Crucible' || machine === 'Kiln' || machine === 'Paradox Crucible') continue;
                 if (inKeys.length === 1 && outKeys.length === 1 && inputSet.has(inKeys[0]) && isVaildCandidate(outKeys[0])) {
                     outputSet.add(outKeys[0]);
                     //console.log(outKeys[0] + "," + round);
