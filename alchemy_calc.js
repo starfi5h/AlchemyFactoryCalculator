@@ -33,23 +33,6 @@ function applyAlchemyMult(machineName, batchYield, alchemyMult) {
     return batchYield;
 }
 
-function getRecipeNutrientCost(recipe) {
-    if (!recipe) return 0;
-    if (recipe.machine !== "Nursery" && recipe.machine !== "World Tree Nursery") {
-        return 0; // 非 Nursery 配方無營養成本
-    }
-    
-    let totalCost = 0;
-    Object.keys(recipe.outputs).forEach(itemName => {
-        const itemDef = DB.items[itemName] || {};
-        const quantity = recipe.outputs[itemName];
-        const nutrientCost = itemDef.nutrientCost || 0;
-        totalCost += quantity * nutrientCost;
-    });
-    
-    return totalCost;
-}
-
 function getProductionHeatCost(item, speedMult, alchemyMult) {
     let cost = 0; const recipe = getActiveRecipe(item);
     if (recipe && recipe.outputs[item]) {
@@ -310,14 +293,16 @@ function gatherInputs() {
         let batchYield = recipe.outputs[targetItem] || 1;
         batchYield = applyAlchemyMult(recipe.machine, batchYield, getAlchemyMult(lvlAlchemy));
         let recipeTime = recipe.baseTime || 1;
-        const recipeNtrientCost = getRecipeNutrientCost(recipe);
+        const recipeNtrientCost = recipe.nutrientCost || 0;
         if (recipeNtrientCost > 0 && recipe.machine === "Nursery") {
             let fertilitySpeed = DB.items[selectedFert]?.maxFertility || 1;
             recipeTime =  recipeNtrientCost / fertilitySpeed;
         }
         let ratePerMachine = (60 / (recipeTime || 1)) * getSpeedMult(lvlSpeed) * batchYield;        
         if (!(DB.items[targetItem].liquid)) {
-            const beltSpeed = DB.items[targetItem].category === "Currency" ? 50 * getBeltSpeed(lvlBelt) : getBeltSpeed(lvlBelt); // 貨幣輸出為50個1堆疊
+            let beltSpeed = getBeltSpeed(lvlBelt);
+            if (DB.items[targetItem].category === "Currency") beltSpeed *= 50; // 貨幣輸出為50個1堆疊
+            else if (recipe.sharedOutputs) beltSpeed /= recipe.sharedOutputs; // 共用輸出口(龍膽花)
             ratePerMachine = Math.min(ratePerMachine, beltSpeed);
         }
         if (isMachineMode) {
@@ -492,7 +477,7 @@ function calculatePass(p, isGhost, globalAvilByproducts, globalTotalByproducts) 
                 const batchesPerMin = netRate / batchYield;                
                 
                 let recipeTime = recipe.baseTime || 1;
-                const recipeNtrientCost = getRecipeNutrientCost(recipe);
+                const recipeNtrientCost = recipe.nutrientCost || 0;
                 if (recipeNtrientCost > 0 && recipe.machine === "Nursery") {
                     let fertilitySpeed = fertDef.maxFertility || 1;
                     recipeTime =  recipeNtrientCost / fertilitySpeed;
@@ -502,8 +487,10 @@ function calculatePass(p, isGhost, globalAvilByproducts, globalTotalByproducts) 
                 const isLiquid = (itemDef.liquid === true);
                 if (!isLiquid) {
                     const maxItemsPerMinPerMachine = machineOutputRate * batchYield;
-                    const beltSpeed = itemDef.category === "Currency" ? 50 * p.beltSpeed : p.beltSpeed; // 貨幣輸出為50個1堆疊
-                    if (maxItemsPerMinPerMachine > beltSpeed) { effectiveBatchesPerMin = beltSpeed / batchYield; }
+                    let effectiveBeltSpeed = p.beltSpeed;
+                    if (itemDef.category === "Currency") effectiveBeltSpeed *= 50; // 貨幣輸出為50個1堆疊
+                    else if (recipe.sharedOutputs) effectiveBeltSpeed /= recipe.sharedOutputs; // 共用輸出口(龍膽花)
+                    if (maxItemsPerMinPerMachine > effectiveBeltSpeed) { effectiveBatchesPerMin = effectiveBeltSpeed / batchYield; }
                 }
                 
                 let rawMachines = batchesPerMin / effectiveBatchesPerMin;
@@ -593,7 +580,7 @@ function calculatePass(p, isGhost, globalAvilByproducts, globalTotalByproducts) 
                 // NUTR CALCULAION
                 let fertRate = 0;
                 if (!effectiveGhost && (recipe.machine === "Nursery" || recipe.machine === "World Tree Nursery")) {
-                    const totalNutrientsNeeded = netRate * getRecipeNutrientCost(recipe) / batchYield;
+                    const totalNutrientsNeeded = netRate * (recipe.nutrientCost || 0) / batchYield;
                     const itemsNeeded = totalNutrientsNeeded / grossFertVal;
                     globalFertDemandItems += itemsNeeded;
                     globalBioLoad += (totalNutrientsNeeded / 60);
@@ -862,7 +849,6 @@ function calculatePass(p, isGhost, globalAvilByproducts, globalTotalByproducts) 
     function updateSummaryLine(p, globalRawItems, globalForcedItems, globalFuelDemandItems, globalFertDemandItems, globalAvilByproducts) {
 
         function formattedText(name, qty, color) {
-            console.log(name);
             return  ` <span class="qty" style="color:var(--${color})">${Number(qty.toFixed(2))}<img src="img/item${DB.items[name]?.id ?? 0}.png" title="${name}" width="24" height="24" style="vertical-align: middle; margin-bottom: 4px;"></span>`;
         }
 
@@ -892,7 +878,6 @@ function calculatePass(p, isGhost, globalAvilByproducts, globalTotalByproducts) 
             if (rate > 0.0001) summaryLine += formattedText(name, rate, 'byproduct');
         });
 
-        console.log(summaryLine);
         document.getElementById('summary-line').innerHTML = summaryLine;
     }
 

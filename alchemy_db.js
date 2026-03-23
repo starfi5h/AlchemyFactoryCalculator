@@ -1,6 +1,6 @@
 window.ALCHEMY_DB = {
-    "version": 37,
-    "date": "2025.03.12",
+    "version": 38,
+    "date": "2026.03.22",
     "gameVersion": "0.4.3.4137",
     "items": {
         // --- 1. RAW RESOURCES ---
@@ -244,13 +244,13 @@ window.ALCHEMY_DB = {
     
     "recipes": [
         // --- HERBS ---
-        { "id": "Flax", "machine": "Nursery", "buildCost": "Flax Seeds", "inputs": {}, "outputs": { "Flax": 1 }},
-        { "id": "Sage", "machine": "Nursery", "buildCost": "Sage Seeds", "inputs": {}, "outputs": { "Sage": 1 }},
-        { "id": "Redcurrant", "machine": "Nursery", "buildCost": "Redcurrant Seeds", "inputs": {}, "outputs": { "Redcurrant": 1 }},
-        { "id": "Lavender", "machine": "Nursery", "buildCost": "Lavender Seeds", "inputs": {}, "outputs": { "Lavender": 1 }},
-        { "id": "Chamomile", "machine": "Nursery", "buildCost": "Chamomile Seeds", "inputs": {}, "outputs": { "Chamomile": 1 }},
-        { "id": "Gentian_Dual", "machine": "Nursery", "buildCost": "Gentian Seeds", "inputs": {}, "outputs": { "Gentian": 1, "Gentian Nectar": 1 }},
-        { "id": "World Tree_Dual", "machine": "World Tree Nursery", "buildCost": "World Tree Seed", "inputs": {}, "outputs": { "World Tree Leaf": 99, "World Tree Core":1 }, "baseTime": 300.0},
+        { "id": "Flax", "machine": "Nursery", "buildCost": "Flax Seeds", "inputs": {}, "outputs": { "Flax": 1 }, "nutrientCost": 24},
+        { "id": "Sage", "machine": "Nursery", "buildCost": "Sage Seeds", "inputs": {}, "outputs": { "Sage": 1 }, "nutrientCost": 36},
+        { "id": "Redcurrant", "machine": "Nursery", "buildCost": "Redcurrant Seeds", "inputs": {}, "outputs": { "Redcurrant": 1 }, "nutrientCost": 144},        
+        { "id": "Chamomile", "machine": "Nursery", "buildCost": "Chamomile Seeds", "inputs": {}, "outputs": { "Chamomile": 1 }, "nutrientCost": 720 },
+        { "id": "Lavender", "machine": "Nursery", "buildCost": "Lavender Seeds", "inputs": {}, "outputs": { "Lavender": 1 }, "nutrientCost": 2160},
+        { "id": "Gentian_Dual", "machine": "Nursery", "buildCost": "Gentian Seeds", "inputs": {}, "outputs": { "Gentian": 1, "Gentian Nectar": 1 }, "nutrientCost": 12000, "sharedOutputs": 2},
+        { "id": "World Tree_Dual", "machine": "World Tree Nursery", "buildCost": "World Tree Seed", "inputs": {}, "outputs": { "World Tree Leaf": 99, "World Tree Core":1 }, "baseTime": 300.0, "nutrientCost": 5970000},
 
         // --- CURRENCY ---
         { "id": "Bank_Copper", "machine": "Bank Portal", "inputs": {}, "outputs": { "Copper Coin": 50 }, "baseTime": 1.0 },
@@ -480,7 +480,7 @@ window.ALCHEMY_DB = {
 
         // --- 15. ALTERNATE RECIPES ---
         { 
-            "id": "VolcanicAsh_Alt", "machine": "Refiner", 
+            "id": "VolcanicAsh_Alt", "machine": "Grinder", 
             "inputs": { "Obsidian": 1 }, "outputs": { "Volcanic Ash": 1 }, 
             "baseTime": 24.0 
         },
