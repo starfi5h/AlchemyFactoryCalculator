@@ -12,57 +12,25 @@ const GLOBAL_CALC_STATE = {
 /* ==========================================================================
    SECTION: HELPER MATH FUNCTIONS
    ========================================================================== */
-function getBeltSpeed(lvl) { let s = 60; if(lvl>0) s += Math.min(lvl,12)*15; if(lvl>12) s += (lvl-12)*3; return s; }
-function getSpeedMult(lvl) { let m = 1.0; m += Math.min(lvl,12)*0.25; if(lvl>12) m += (lvl-12)*0.05; return m; }
-function getAlchemyMult(lvl) { if(lvl<=0) return 1.0; let p = 0; for(let i=1; i<=lvl; i++) { if(i<=2) p+=6; else if(i<=8) p+=8; else p+=10; } return 1.0 + (p/100); }
+function getBeltSpeed(lvl) { return AlchemyCalcEngine.getBeltSpeed(lvl); }
+function getSpeedMult(lvl) { return AlchemyCalcEngine.getSpeedMult(lvl); }
+function getAlchemyMult(lvl) { return AlchemyCalcEngine.getAlchemyMult(lvl); }
 
-function getRecipesFor(item) { if(!DB.recipes) return []; return DB.recipes.filter(r => r.outputs[item]); }
+function getRecipesFor(item) { return AlchemyCalcEngine.getRecipesFor(DB, item); }
 function getActiveRecipe(item) {
-    const candidates = getRecipesFor(item);
-    if(candidates.length === 0) return null; if(candidates.length === 1) return candidates[0];
-    const prefId = DB.settings.preferredRecipes[item];
-    if(prefId) { const found = candidates.find(r => r.id === prefId); if(found) return found; }
-    return candidates[0];
+    return AlchemyCalcEngine.getActiveRecipe(DB, { preferredRecipes: DB.settings.preferredRecipes }, item);
 }
 
 function applyAlchemyMult(machineName, batchYield, alchemyMult) {
-    if (["Extractor", "Thermal Extractor", "Alembic", "Advanced Alembic"].includes(machineName)) {
-        batchYield *= alchemyMult;
-        if (machineName === "Thermal Extractor") batchYield *= 3;
-    }
-    return batchYield;
+    return AlchemyCalcEngine.applyAlchemyMult(machineName, batchYield, alchemyMult);
 }
 
 function getProductionHeatCost(item, speedMult, alchemyMult) {
-    let cost = 0; const recipe = getActiveRecipe(item);
-    if (recipe && recipe.outputs[item]) {
-         let batchYield = recipe.outputs[item];
-         batchYield = applyAlchemyMult(recipe.machine, batchYield, alchemyMult);
-         if (DB.machines[recipe.machine] && DB.machines[recipe.machine].heatCost) {
-            const mach = DB.machines[recipe.machine]; const parent = DB.machines[mach.parent];
-            const slotsReq = mach.slotsRequired || 1; const pSlots = mach.parentSlots || parent.slots || 3;
-            const heatPs = (mach.heatCost * speedMult) + (parent.heatSelf / (pSlots/slotsReq)); 
-            cost += heatPs * ((recipe.baseTime / speedMult) / batchYield);
-        }
-        Object.keys(recipe.inputs).forEach(k => { 
-            cost += getProductionHeatCost(k, speedMult, alchemyMult) * (recipe.inputs[k] / batchYield); 
-        });
-    }
-    return cost;
+    return AlchemyCalcEngine.getProductionHeatCost(DB, { preferredRecipes: DB.settings.preferredRecipes }, item, speedMult, alchemyMult);
 }
 
 function getProductionFertCost(item, fertVal, fertSpeed, speedMult, alchemyMult) {
-    let cost = 0; const itemDef = DB.items[item] || {};
-    if (itemDef.category === "Herbs" && itemDef.nutrientCost) cost += itemDef.nutrientCost;
-    const recipe = getActiveRecipe(item);
-    if (recipe && recipe.outputs[item]) {
-        let batchYield = recipe.outputs[item];
-        batchYield = applyAlchemyMult(recipe.machine, batchYield, alchemyMult);
-        Object.keys(recipe.inputs).forEach(k => { 
-            cost += getProductionFertCost(k, fertVal, fertSpeed, speedMult, alchemyMult) * (recipe.inputs[k] / batchYield); 
-        });
-    }
-    return cost;
+    return AlchemyCalcEngine.getProductionFertCost(DB, { preferredRecipes: DB.settings.preferredRecipes }, item, fertVal, fertSpeed, speedMult, alchemyMult);
 }
 
 function formatVal(val) { if(val >= 1000000) return Number((val/1000000).toFixed(2)) + 'm'; if(val >= 10000) return Number((val/1000).toFixed(2)) + 'k'; return Number(val.toFixed(2)); }
@@ -177,55 +145,18 @@ function calculate() {
         if(!DB || !DB.recipes) return;
         
         const params = gatherInputs();
-
         updateLabels(params);
-
-        // 先找到不回收時的所有副產物
-        let globalAvilByproducts = {}; let globalTotalByproducts = {};
-        calculatePass(params, true, globalAvilByproducts, globalTotalByproducts); // True = Ghost Mode (No DOM, just Byproducts)        
-        
-
-        // 再計算第一次回收後剩下的所有副產物
-        globalAvilByproducts = {...globalTotalByproducts};
-        globalTotalByproducts = {};
-        calculatePass(params, true, globalAvilByproducts, globalTotalByproducts);
-        let byproductSnapShot = {...globalTotalByproducts};
-
-        // 迴圈計算產物是否穩定, 最多30次
-        for (let i = 0; i < 30; i++) {
-            globalAvilByproducts = {...byproductSnapShot};
-            globalTotalByproducts = {};
-            calculatePass(params, true, globalAvilByproducts, globalTotalByproducts);
-
-            let maxDiff = 0;
-            const allKeys = [...new Set([...Object.keys(byproductSnapShot), ...Object.keys(globalTotalByproducts)])];
-            for (const key of allKeys) {
-                const valA = byproductSnapShot[key] || 0;
-                const valB = globalTotalByproducts[key] || 0;
-
-                if (Math.abs(valA - valB) > maxDiff) {
-                    maxDiff = Math.abs(valA - valB);
-                }
+        const result = AlchemyCalcEngine.runCalculation({
+            db: DB,
+            params,
+            state: {
+                activeRecyclers: GLOBAL_CALC_STATE.activeRecyclers,
+                forcedExternals: GLOBAL_CALC_STATE.forcedExternals,
+                preferredRecipes: DB.settings.preferredRecipes
             }
-            console.log(`第 ${i} 次迭代, 偏差:${maxDiff}`)
-            if (maxDiff < 0.0001) break;
+        });
 
-            for (const key of allKeys) {
-                const valA = byproductSnapShot[key] || 0;
-                const valB = globalTotalByproducts[key] || 0;
-                
-                // 計算新值: A + (B - A) * 0.5
-                const newValue = valA + (valB - valA) * 0.5;
-                byproductSnapShot[key] = newValue;
-            }
-        }
-
-
-        // --- PASS 2: RENDER ---
-        document.getElementById('tree').innerText = '';
-        globalAvilByproducts = {...globalTotalByproducts};
-        globalTotalByproducts = {};
-        calculatePass(params, false, globalAvilByproducts, globalTotalByproducts); // False = Render Mode
+        renderCalculationResult(params, result);
 
         // --- PASS 3: TRANSLATION --- (extra)
         translateText();
@@ -355,6 +286,413 @@ function updateLabels(params) {
         document.getElementById('fertEfficiencyNutrByCost').innerText = (params.fertCost == 0 || netNtur == 0) ? '' : (netNtur/params.fertCost).toFixed(2) + ' V/G ';
 
     } catch(e) { console.error(e); }
+}
+
+function renderCalculationResult(params, result) {
+    const treeContainer = document.getElementById('tree');
+    treeContainer.innerText = '';
+
+    result.treeRoots.forEach(entry => {
+        const div = document.createElement('div');
+        div.style.marginTop = '25px';
+        div.style.marginBottom = '8px';
+        div.style.paddingBottom = '4px';
+        div.style.borderBottom = '1px dashed #555';
+        div.innerHTML = `
+            <span class="section-header">--- ${t('Production Chain')} (${entry.target.item}) ---</span>
+            <span style="margin-left:auto; cursor:pointer;">
+                <span class="section-header" onclick="setAllRecycling(true)">[${t('Recycle All')}]</span>
+                <span class="section-header" onclick="setAllRecycling(false)">[${t('Un-recycle All')}]</span>
+                <span class="section-header" onclick="toggleFirstLevel()" title="Toggle First Level" style="margin-right:10px;">💠</span>
+            </span>
+        `;
+        treeContainer.appendChild(div);
+        treeContainer.appendChild(renderTreeNode(params, entry.root));
+    });
+
+    result.internalModules.forEach(module => {
+        const h = document.createElement('div');
+        h.className = 'section-header';
+        h.innerText = module.type === 'fert'
+            ? `--- ${t('Internal Nutrient Module')} (${module.item}) ---`
+            : `--- ${t('Internal Heat Module')} (${module.item}) ---`;
+        treeContainer.appendChild(h);
+        treeContainer.appendChild(renderTreeNode(params, module.root));
+    });
+
+    renderExternalInputsSection(treeContainer, params, result.externalInputs);
+    renderByproductsSection(treeContainer, result.byproducts);
+    renderCommonNodesSection(treeContainer, params, result.commonNodes);
+
+    updateConstructionList(
+        result.construction.maxCounts,
+        result.construction.minCounts,
+        result.construction.furnaces,
+        result.construction.extraBuildCosts
+    );
+
+    updateSummaryBox(
+        params,
+        result.summary.heatLoad,
+        result.summary.bioLoad,
+        result.summary.goldPerMin,
+        result.summary.fuelDemandItems,
+        result.summary.fertDemandItems
+    );
+
+    updateSummaryLineFromResult(params, result.formulaLineData);
+}
+
+function createSectionHeader(title) {
+    const div = document.createElement('div');
+    div.style.marginTop = '25px';
+    div.style.marginBottom = '8px';
+    div.style.paddingBottom = '4px';
+    div.style.borderBottom = '1px dashed #555';
+    div.innerHTML = `
+        <span class="section-header">${title}</span>
+        <span style="margin-left:auto; cursor:pointer;">
+            <span class="section-header" onclick="toggleNodesInSection(this, false)">[${t('Expand All')}]</span>
+            <span class="section-header" onclick="toggleNodesInSection(this, true)">[${t('Collapse All')}]</span>
+        </span>
+    `;
+    return div;
+}
+
+function buildRecipeTooltip(tooltipData) {
+    if (!tooltipData) return '';
+    const inputsStr = tooltipData.inputs.map(entry => `${entry.qty} ${entry.item}`).join(', ');
+    const outputsStr = tooltipData.outputs.map(entry => `${entry.qty} ${entry.item}`).join(', ');
+    let tooltipText = `${t('Recipe')}: ${inputsStr} -> ${outputsStr}\n`;
+    tooltipText += `${t('Base Time')}: ${tooltipData.baseTime} s\n`;
+    tooltipText += `${t('Speed Mult')}: ${tooltipData.speedMult.toFixed(2)}x\n`;
+    tooltipText += `${t('Throughput')}: ${tooltipData.throughput.toFixed(2)}/min`;
+    return tooltipText;
+}
+
+function renderCostEntries(costEntries) {
+    return costEntries.map(entry => {
+        const amount = Math.ceil(entry.amount - Number.EPSILON).toLocaleString();
+        if (entry.type === 'gold') return `<span class="cost-tag">-${amount} G/m</span>`;
+        return `<span class="cost-tag">(${amount} G/m)</span>`;
+    }).join('');
+}
+
+function renderTreeNode(params, node) {
+    const itemDef = DB.items[node.item] || {};
+    const div = document.createElement('div');
+    div.className = 'node';
+    div.setAttribute('data-depth', node.depth % 10);
+    div.setAttribute('data-path', node.pathKey);
+    if (GLOBAL_CALC_STATE.collapsedNode.has(node.pathKey)) div.classList.add('collapsed');
+
+    const hasChildren = node.children.length > 0;
+    const arrowHtml = `<span class="tree-arrow" style="visibility:${hasChildren ? 'visible' : 'hidden'}" onclick="toggleNode(this, '${node.pathKey}')">▼</span>`;
+    const beltCountTag = node.tags.beltRatio !== null ? `<span class="belt-count">(${Number(node.tags.beltRatio.toFixed(2))})</span>` : '';
+
+    let detailsTag = '';
+    if (node.tags.detailsType === 'external') detailsTag = `<span class="details">(${t('External Input')})</span>`;
+    if (node.tags.detailsType === 'raw') detailsTag = `<span class="details">(${t('Raw Input')})</span>`;
+
+    let machineTag = '';
+    let swapBtn = '';
+    if (node.machine) {
+        const tooltipText = buildRecipeTooltip(node.recipeTooltipData);
+        let capTag = '';
+        if (params.showMaxCap && node.maxOutput) {
+            const usageRatio = node.maxOutput > 0 ? node.netRate / node.maxOutput : 0;
+            capTag = `<span class="max-cap-tag" onclick="recalculate('${params.targetItem}', ${params.targetRate / usageRatio})">(Max: ${formatVal(node.maxOutput)}/m)</span>`;
+        }
+        machineTag = `<span class="machine-tag" data-tooltip="${tooltipText}">${Math.ceil(node.machineCount - 0.0001)} ${t(node.machine, 'machines')}${capTag}</span>`;
+        if (getRecipesFor(node.item).length > 1) {
+            swapBtn = `<button class="swap-btn" onclick="openRecipeModal('${node.item}', this.parentElement)" title="Swap Recipe">🔄</button>`;
+        }
+    }
+
+    const byproductTag = node.tags.byproducts.map(entry => `<span class="byproduct-tag">+${formatVal(entry.rate)}/m ${entry.item}</span>`).join('');
+
+    let bioTag = '';
+    if (node.tags.bio) {
+        let bioText = `-${formatVal(node.tags.bio.rate)}/m ${params.selectedFert}`;
+        if (params.showHeatFert) bioText += ` (${formatVal(node.tags.bio.nutrientPerSec)} V/s)`;
+        bioTag = `<span class="bio-tag">${bioText}</span>`;
+    }
+
+    let heatTag = '';
+    if (node.tags.heat) {
+        let heatText = `-${formatVal(node.tags.heat.rate)}/m ${params.selectedFuel}`;
+        if (params.showHeatFert) heatText += ` (${formatVal(node.tags.heat.heatPerSec)} P/s)`;
+        heatTag = `<span class="heat-tag">${heatText}</span>`;
+    }
+
+    let outputTag = '';
+    if (node.tags.output) outputTag = `<span class="output-tag">${t('Yields')}: ${(node.tags.output.multiplier * 100).toFixed(0)}%</span>`;
+
+    let recycleTag = '';
+    if (node.canRecycle) {
+        if (node.recycleActive) {
+            recycleTag = `<div><button class="recycle-btn active" onclick="toggleRecycle('${node.pathKey}')">♻️ ${formatVal(node.deductionRate)} ${t('Used')}</button></div>`;
+        } else {
+            recycleTag = `<div><button class="recycle-btn" onclick="toggleRecycle('${node.pathKey}')">♻️ ${formatVal(node.recycleAvailable)} ${t('Avail')}</button></div>`;
+        }
+    }
+
+    const externalTag = `<div><input type="checkbox" ${node.isExternal ? 'checked':''} id="buildModeToggle" onchange="toggleExternal('${node.pathKey}');"></input></div>`;
+    const costTag = renderCostEntries(node.tags.costEntries);
+
+    div.innerHTML = `<div class="node-content" data-ancestors='${JSON.stringify(node.ancestors)}'>
+        ${arrowHtml}
+        <span class="qty">${formatVal(node.requestedRate)}/m</span>
+        ${beltCountTag}
+        <img src="img/item${itemDef?.id ?? 0}.png" width="24" height="24" loading="lazy">
+        <span class="item-link" onclick="openDrillDown('${node.item}', ${node.requestedRate})"><strong>${node.item}</strong></span>
+        ${swapBtn}
+        ${detailsTag}
+        ${machineTag}
+        ${byproductTag}
+        ${bioTag}
+        ${heatTag}
+        ${costTag}
+        ${outputTag}
+        <div class="push-right"></div>
+        ${recycleTag}
+        ${externalTag}
+    </div>`;
+
+    if (hasChildren) {
+        const childrenDiv = document.createElement('div');
+        childrenDiv.className = 'node-children';
+        node.children.forEach(child => childrenDiv.appendChild(renderTreeNode(params, child)));
+        div.appendChild(childrenDiv);
+    }
+
+    return div;
+}
+
+function renderCommonNodesSection(treeContainer, params, commonNodes) {
+    if (commonNodes.length === 0) return;
+    treeContainer.appendChild(createSectionHeader(`--- ${t('Common Nodes')} ---`));
+
+    commonNodes.forEach(entry => {
+        const pathKey = `common_${entry.item}_${entry.machine}`;
+        const div = document.createElement('div');
+        div.className = 'node';
+        if (GLOBAL_CALC_STATE.collapsedNode.has(pathKey)) div.classList.add('collapsed');
+
+        const machineLabel = `<span class="machine-tag" data-tooltip="${buildRecipeTooltip(entry.tooltipData)}">${Math.ceil(entry.totalMachines - 0.0001)} ${t(entry.machine, 'machines')}</span>`;
+        const heatTag = entry.totalFuelRate > 0.0001 ? `<span class="heat-tag">-${formatVal(entry.totalFuelRate)}/m ${params.selectedFuel}</span>` : '';
+        const bioTag = entry.totalFertRate > 0.0001 ? `<span class="bio-tag">-${formatVal(entry.totalFertRate)}/m ${params.selectedFert}</span>` : '';
+
+        let childrenHtml = '';
+        entry.instances.forEach(inst => {
+            childrenHtml += `
+                <div class="node-content" style="margin-bottom:2px; border-bottom:1px dashed #333; opacity:0.8;">
+                    <span class="qty" style="min-width:60px; display:inline-block;">${formatVal(inst.rate)}/m</span>
+                    <span style="font-size:0.85em; color: #FFF; margin-right:5px;">${Math.ceil(inst.machines - 0.0001)} ${t(entry.machine, 'machines')}</span>
+                    <span class="details" style="font-size:0.85em; cursor:pointer;" onclick="jumpToNode('${inst.pathKey}')">[ ${inst.pathKey} ]</span>
+                </div>
+            `;
+        });
+
+        div.innerHTML = `
+            <div class="node-content" style="background: rgba(76, 175, 80, 0.05); border-left: 3px solid var(--accent);">
+                <span class="tree-arrow" onclick="toggleNode(this, '${pathKey}')">▼</span>
+                <span class="qty">${formatVal(entry.totalRate)}/m</span>
+                <img src="img/item${DB.items[entry.item]?.id ?? 0}.png" width="24" height="24">
+                <strong>${entry.item}</strong>
+                ${machineLabel}
+                ${heatTag}
+                ${bioTag}
+            </div>
+            <div class="node-children" style="margin-left: 20px; border-left: 1px solid #444;">${childrenHtml}</div>
+        `;
+        treeContainer.appendChild(div);
+    });
+}
+
+function renderExternalInputsSection(treeContainer, params, externalInputs) {
+    treeContainer.appendChild(createSectionHeader('--- External Inputs ---'));
+
+    function createExtNode(label, qty, colorVar, pathKey, producersHtml, mainIconHtml = "") {
+        const div = document.createElement('div');
+        div.className = 'node';
+        if (GLOBAL_CALC_STATE.collapsedNode.has(pathKey)) div.classList.add('collapsed');
+        div.innerHTML = `
+            <div class="node-content" style="background: rgba(255, 255, 255, 0.02); border-left: 3px solid var(--${colorVar});">
+                <span class="tree-arrow" onclick="toggleNode(this, '${pathKey}')">▼</span>
+                <span class="qty" style="color:var(--${colorVar})">${qty}</span>
+                ${mainIconHtml}
+                <strong>${label}</strong>
+            </div>
+            <div class="node-children" style="margin-left: 20px; border-left: 1px solid #444;">${producersHtml}</div>
+        `;
+        treeContainer.appendChild(div);
+    }
+
+    if (externalInputs.rawMaterialCost.totalGoldPerMin > 0) {
+        let producersHtml = '';
+        externalInputs.rawMaterialCost.sources.forEach(src => {
+            producersHtml += `
+                <div class="node-content" style="opacity:0.8;">
+                    <span class="qty" style="color:var(--gold); min-width:80px; display:inline-block;">${Math.ceil(src.gold).toLocaleString()} G/m</span>
+                    <img src="img/item${DB.items[src.item]?.id ?? 0}.png" width="20" height="20">
+                    <span class="details" style="font-size:0.85em; cursor:pointer;" onclick="jumpToNode('${src.pathKey}')">[ ${src.pathKey} ]</span>
+                </div>`;
+        });
+        createExtNode(
+            `${t('Raw Material Cost')} (${externalInputs.rawMaterialCost.sources.length})`,
+            `${Math.ceil(externalInputs.rawMaterialCost.totalGoldPerMin).toLocaleString()} G/m`,
+            'gold',
+            'ext_gold',
+            producersHtml
+        );
+    }
+
+    if (externalInputs.fuel && externalInputs.fuel.totalRate > 0.001) {
+        let producersHtml = '';
+        externalInputs.fuel.sources.forEach(src => {
+            producersHtml += `
+                <div class="node-content" style="opacity:0.8;">
+                    <span class="qty" style="color:var(--fuel); min-width:60px; display:inline-block;">${formatVal(src.rate)}/m</span>
+                    <span class="machine-tag">${Math.ceil(src.count - 0.0001)} ${t(src.machine, 'machines')}</span>
+                    <span class="details" style="font-size:0.85em; cursor:pointer;" onclick="jumpToNode('${src.pathKey}')">[ ${src.pathKey} ]</span>
+                    <img src="img/item${DB.items[src.item]?.id ?? 0}.png" width="20" height="20">
+                </div>`;
+        });
+        createExtNode(
+            `${externalInputs.fuel.item} (${externalInputs.fuel.sources.length})`,
+            `${externalInputs.fuel.totalRate.toFixed(2)}/m`,
+            'fuel',
+            'ext_fuel',
+            producersHtml,
+            `<img src="img/item${DB.items[externalInputs.fuel.item]?.id ?? 0}.png" width="24" height="24"> `
+        );
+    }
+
+    if (externalInputs.fert && externalInputs.fert.totalRate > 0.001) {
+        let producersHtml = '';
+        externalInputs.fert.sources.forEach(src => {
+            producersHtml += `
+                <div class="node-content" style="opacity:0.8;">
+                    <span class="qty" style="color:var(--bio); min-width:60px; display:inline-block;">${formatVal(src.rate)}/m</span>
+                    <span class="machine-tag">${Math.ceil(src.count - 0.0001)} ${t(src.machine, 'machines')}</span>
+                    <span class="details" style="font-size:0.85em; cursor:pointer;" onclick="jumpToNode('${src.pathKey}')">[ ${src.pathKey} ]</span>
+                    <img src="img/item${DB.items[src.item]?.id ?? 0}.png" width="20" height="20">
+                </div>`;
+        });
+        createExtNode(
+            `${externalInputs.fert.item} (${externalInputs.fert.sources.length})`,
+            `${externalInputs.fert.totalRate.toFixed(2)}/m`,
+            'bio',
+            'ext_fert',
+            producersHtml,
+            `<img src="img/item${DB.items[externalInputs.fert.item]?.id ?? 0}.png" width="24" height="24"> `
+        );
+    }
+
+    externalInputs.forced.forEach(entry => {
+        let producersHtml = '';
+        entry.sources.forEach(src => {
+            producersHtml += `
+                <div class="node-content" style="opacity:0.8;">
+                    <span class="qty" style="color:var(--default); min-width:60px; display:inline-block;">${formatVal(src.rate)}/m</span>
+                    <span class="details" style="font-size:0.85em; cursor:pointer;" onclick="jumpToNode('${src.pathKey}')">[ ${src.pathKey} ]</span>
+                </div>`;
+        });
+        createExtNode(
+            entry.item,
+            `${formatVal(entry.totalRate)}/m`,
+            'default',
+            `ext_forced_${entry.item}`,
+            producersHtml,
+            `<img src="img/item${DB.items[entry.item]?.id ?? 0}.png" width="24" height="24"> `
+        );
+    });
+}
+
+function renderByproductsSection(treeContainer, byproducts) {
+    treeContainer.appendChild(createSectionHeader('--- BYPRODUCTS ---'));
+
+    if (byproducts.length === 0) {
+        const emptyDiv = Object.assign(document.createElement('div'), {
+            className: 'node',
+            innerHTML: `<div class="node-content"><span class="details" style="font-style:italic">${t('None')}</span></div>`
+        });
+        treeContainer.appendChild(emptyDiv);
+        return;
+    }
+
+    byproducts.forEach(entry => {
+        const pathKey = `byp_${entry.item}`;
+        const div = document.createElement('div');
+        div.className = 'node';
+        if (GLOBAL_CALC_STATE.collapsedNode.has(pathKey)) div.classList.add('collapsed');
+
+        const recycledNote = entry.remaining < entry.totalGenerated
+            ? ` <span style="font-size:0.8em; color:#888;">(${formatVal(entry.totalGenerated - entry.remaining)} ${t('recycled')})</span>`
+            : '';
+
+        let childrenHtml = '';
+        entry.producers.forEach(inst => {
+            childrenHtml += `
+                <div class="node-content" style="margin-bottom:2px; opacity:0.8;">
+                    <span class="qty" style="min-width:60px; display:inline-block; ${inst.rate > 0.0001 ? 'color:var(--byproduct);' : ''}">${formatVal(inst.rate)}/m</span>
+                    <span class="machine-tag" data-tooltip="${buildRecipeTooltip(inst.tooltipData)}">${Math.ceil(inst.machineCount)} ${t(inst.recipe.machine, 'machines')}</span>
+                    <span class="details" style="font-size:0.85em; cursor:pointer;" onclick="jumpToNode('${inst.pathKey}')">[ ${inst.pathKey} ]</span>
+                </div>
+            `;
+        });
+
+        div.innerHTML = `
+            <div class="node-content" style="background: rgba(213, 109, 231, 0.03); border-left: 3px solid var(--byproduct);">
+                <span class="tree-arrow" onclick="toggleNode(this, '${pathKey}')">▼</span>
+                <span class="qty" style="color:var(--byproduct)">${formatVal(entry.remaining)}/m</span>
+                <img src="img/item${DB.items[entry.item]?.id ?? 0}.png" width="24" height="24" loading="lazy">
+                <strong>${entry.item}</strong>
+                ${recycledNote}
+            </div>
+            <div class="node-children" style="margin-left: 20px; border-left: 1px solid #444;">${childrenHtml}</div>
+        `;
+        treeContainer.appendChild(div);
+    });
+}
+
+function updateSummaryLineFromResult(params, formulaLineData) {
+    function formattedText(name, qty, color) {
+        return ` <span class="qty" style="color:var(--${color})">${Number(qty.toFixed(2))}<img src="img/item${DB.items[name]?.id ?? 0}.png" title="${name}" width="24" height="24" style="vertical-align: middle; margin-bottom: 4px;"></span>`;
+    }
+
+    let summaryLine = '';
+    Object.entries(formulaLineData.rawItems).forEach(([name, rate]) => summaryLine += formattedText(name, rate, 'accent'));
+    Object.entries(formulaLineData.forcedItems).forEach(([name, rate]) => summaryLine += formattedText(name, rate, 'accent'));
+
+    let fuelDemandItems = formulaLineData.fuelDemandItems;
+    let fertDemandItems = formulaLineData.fertDemandItems;
+    if (params.selfFuel) fuelDemandItems = 0;
+    if (params.selfFert) fertDemandItems = 0;
+
+    const sumDemandItems = fuelDemandItems + fertDemandItems;
+    if (sumDemandItems > 0.0001) {
+        summaryLine += ` (`;
+        if (params.selectedFuel === params.selectedFert) {
+            summaryLine += formattedText(params.selectedFuel, sumDemandItems, 'gold');
+        } else {
+            if (fuelDemandItems > 0.0001) summaryLine += formattedText(params.selectedFuel, fuelDemandItems, 'fuel');
+            if (fertDemandItems > 0.0001) summaryLine += formattedText(params.selectedFert, fertDemandItems, 'bio');
+        }
+        summaryLine += `) `;
+    }
+    summaryLine += `<span style="color:var(--info);"> ➔ </span>`;
+
+    params.targets.forEach(target => {
+        if (target.rate > 0.0001) summaryLine += formattedText(target.item, target.rate, 'profit');
+    });
+
+    Object.entries(formulaLineData.availableByproducts).forEach(([name, rate]) => {
+        if (rate > 0.0001) summaryLine += formattedText(name, rate, 'byproduct');
+    });
+
+    document.getElementById('summary-line').innerHTML = summaryLine;
 }
 
 function calculatePass(p, isGhost, globalAvilByproducts, globalTotalByproducts) {
