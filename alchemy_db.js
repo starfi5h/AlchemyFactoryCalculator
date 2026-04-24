@@ -1,7 +1,7 @@
 window.ALCHEMY_DB = {
-    "version": 38,
-    "date": "2026.03.22",
-    "gameVersion": "0.4.3.4137",
+    "version": 39,
+    "date": "2026.04.23",
+    "gameVersion": "0.4.4.4323",
     "items": {
         // --- 1. RAW RESOURCES ---
         "Logs": { "id": 1, "category": "Raw Materials", "buyPrice": 200, "maxStack": -200, "heat": 2000, "cauldronCost": 0.8, "tier": 1 },
@@ -171,6 +171,7 @@ window.ALCHEMY_DB = {
         "Turquoise": { "id": 501, "category": "Jewelry", "sellPrice": 290, "cauldronCost": 108, "cauldronMulti": 1, "cauldronTarget": 108 },
         "Pocket Watch": { "id": 617, "category": "Jewelry", "sellPrice": 1950, "wholesalePrice": 1300, "cauldronCost": 789 },
         "Malachite": { "id": 618, "category": "Jewelry", "sellPrice": 1020, "cauldronCost": 367, "cauldronMulti": 1, "cauldronTarget": 427 },        
+        "Clockwork Bird": { "id": 621, "category": "Jewelry", "sellPrice": 5000, "cauldronCost": 2022 },
         "Topaz": { "id": 704, "category": "Jewelry", "sellPrice": 2800, "cauldronCost": 1205.9, "cauldronMulti": 1, "cauldronTarget": 1405.9 },       
         "Obsidian": { "id": 806, "category": "Jewelry", "sellPrice": 11000, "cauldronCost": 5290, "cauldronMulti": 1, "cauldronTarget": 5290 },
         "Silver Amulet": { "id": 810, "category": "Jewelry", "sellPrice": 48000, "wholesalePrice": 34000, "cauldronCost": 25317 },
@@ -206,6 +207,7 @@ window.ALCHEMY_DB = {
         "Paradox Crucible": { "heatCost": 1200.0, "parent": "Stone Furnace", "slotsRequired": 9, "buildCost": { "Steel Ingot": 8, "Copper Ingot": 8, "Bronze Rivet": 16 } },
         // Cauldron heatCost is depend on the recipe. Use a non-zero value as placeholder here
         "Cauldron": { "heatCost": -1, "parent": "Stone Furnace", "buildCost": { "Bronze Ingot": 20 } },
+        "Advanced Cauldron": { "heatCost": -1, "parent": "Stone Furnace", "buildCost": { "Silver Ingot": 20 } },
 
         // --- Advanced Crafting ---
         "Processor": { "buildCost": { "Plank": 12, "Large Wooden Gear": 3 } },
@@ -302,6 +304,7 @@ window.ALCHEMY_DB = {
         { "id": "Bandage", "machine": "Assembler", "inputs": { "Linen": 1, "Healing Potion": 2 }, "outputs": { "Bandage": 1 }, "baseTime": 10.0 },
         { "id": "Silver Amulet", "machine": "Assembler", "inputs": { "Silver Ingot": 2, "Lapis Lazuli": 1 }, "outputs": { "Silver Amulet": 1 }, "baseTime": 10.0 },
         { "id": "Pocket Watch", "machine": "Advanced Assembler", "inputs": { "Steel Gear": 2, "Copper Bearing": 2, "Glass": 6 }, "outputs": { "Pocket Watch": 1 }, "baseTime": 12.0 },
+        { "id": "Clockwork Bird", "machine": "Advanced Assembler", "inputs": { "Steel Ingot": 6, "Steel Gear": 2, "Malachite": 2 }, "outputs": { "Clockwork Bird": 1 }, "baseTime": 12.0 },
         { "id": "Moonlit Soap", "machine": "Advanced Blender", "inputs": { "Perfumed Soap Powder": 2, "Moon Tear": 5 }, "outputs": { "Moonlit Soap": 1 }, "baseTime": 10.0 },
         { "id": "Crown", "machine": "Advanced Assembler", "inputs": { "Gold Ingot": 3, "Ruby": 1, "Sapphire": 1 }, "outputs": { "Crown": 1 }, "baseTime": 15.0 },
 

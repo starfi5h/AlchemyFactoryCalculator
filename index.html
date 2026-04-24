@@ -29,7 +29,7 @@
             <span style="margin-left: 10px;">
                 <span id="ui-lang-toggle" style="cursor:pointer; margin-right: 10px;" onclick="toggleLanguage()" title="EN/中文">🌐EN/中文</span>
                 <a href="https://github.com/starfi5h/AlchemyFactoryCalculator" target="_blank" class="repo-link">GitHub Repo</a>
-                <span id="last-updated-time-text">2026.03.22</span>
+                <span id="last-updated-time-text">2026.04.23</span>
             </span>
         </div>
         <div class="tabs">
@@ -298,6 +298,10 @@
                 <div class="panel scroll-panel">
                     <h3>Settings & Candidates</h3>
                     <div class="cauldron-tabs-row">
+                        <button id="cauldron-type-0" class="tab-btn mini-tab active" onclick="switchCauldronType(0)">Cauldron</button>
+                        <button id="cauldron-type-1" class="tab-btn mini-tab" onclick="switchCauldronType(1)">Advanced Cauldron</button>
+                    </div>
+                    <div class="cauldron-tabs-row">
                         <button id="cauldron-tab-0" class="tab-btn mini-tab active" onclick="switchCauldronProfile(0)">Profile 1</button>
                         <button id="cauldron-tab-1" class="tab-btn mini-tab" onclick="switchCauldronProfile(1)">Profile 2</button>
                         <button id="cauldron-tab-2" class="tab-btn mini-tab" onclick="switchCauldronProfile(2)">Profile 3</button>
@@ -354,7 +358,7 @@
                                     </div>
                                     <div class="filter-control-row" id="slot-ctrl-2"></div>
                                 </div>
-                                <div class="filter-slot-wrapper">
+                                <div class="filter-slot-wrapper" id="slot3-wrapper">
                                     <div class="filter-main-row">
                                         <div class="mini-picker" id="slot3" onclick="pickFilterItem(3)">Set Input 3</div>
                                         <button class="swap-btn" title="clear" onclick="pickFilterItem(3,true); runCauldronSimulation();">×</button>
@@ -362,10 +366,11 @@
                                     <div class="filter-control-row" id="slot-ctrl-3"></div>
                                 </div>
                             </div>
-                            <div class="filter-group">
-                                <div class="checkbox-row"><input type="checkbox" id="f-ratio-100" checked onchange="runCauldronSimulation()"><label style="display:flex; font-size: 1.0em;">3 Diff</label></div>
-                                <div class="checkbox-row"><input type="checkbox" id="f-ratio-065" checked onchange="runCauldronSimulation()"><label style="display:flex; font-size: 1.0em;">2 Same</label></div>
-                                <div class="checkbox-row"><input type="checkbox" id="f-ratio-050" checked onchange="runCauldronSimulation()"><label style="display:flex; font-size: 1.0em;">3 Same</label></div>
+                            <div class="filter-group" id="ratio-filter-group">
+                                <div class="checkbox-row"><input type="checkbox" id="filter-2-diff" checked onchange="runCauldronSimulation()"><label style="display:flex; font-size: 1.0em;">2 Diff</label></div>
+                                <div class="checkbox-row"><input type="checkbox" id="filter-3-diff" checked onchange="runCauldronSimulation()"><label style="display:flex; font-size: 1.0em;">3 Diff</label></div>
+                                <div class="checkbox-row"><input type="checkbox" id="filter-2-same" checked onchange="runCauldronSimulation()"><label style="display:flex; font-size: 1.0em;">2 Same</label></div>
+                                <div class="checkbox-row"><input type="checkbox" id="filter-3-same" checked onchange="runCauldronSimulation()"><label style="display:flex; font-size: 1.0em;">3 Same</label></div>
                             </div>
                         </div>
                         

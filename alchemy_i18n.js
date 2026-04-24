@@ -110,6 +110,7 @@ window.ALCHEMY_I18N = {
         "Game version : ": "游戏版本 : ",
         "Calculator": "计算器",
         "Cauldron": "炼金锅",
+        "Advanced Cauldron": "高级炼金锅",
         "Database Editor": "数据库",
         "New database version available": "发现新版本数据库",
         "Current local version:": "您的本地版本为:",
@@ -232,6 +233,7 @@ window.ALCHEMY_I18N = {
         "Number of matching recipes" : "符合条件的配方总数",
         "Calculate All": "计算全部",
         "Set Input": "指定原料",
+        "2 Diff": "2件不同",
         "3 Diff": "3件不同",
         "2 Same": "2件相同",
         "3 Same": "3件相同",
@@ -312,8 +314,8 @@ window.ALCHEMY_I18N = {
         "Soap Powder": "肥皂粉",
         "Perfumed Soap Powder": "香皂粉",
         "Volcanic Ash": "火山灰",
-        "Star Dust": "星尘",
-        "Fairy Dust": "精灵尘",
+        "Star Dust": "星之尘",
+        "Fairy Dust": "精灵粉末",
 
         // --- METALS ---
         "Iron Sand": "铁砂",
@@ -352,6 +354,7 @@ window.ALCHEMY_I18N = {
         "Perfumed Soap": "香皂",
         "Moonlit Soap": "月光皂",
         "Pocket Watch": "怀表",
+        "Clockwork Bird": "发条鸟",
         "Silver Amulet": "银护身符",
         "Crown": "皇冠",
         "Copper Coin": "铜币",
@@ -436,6 +439,7 @@ window.ALCHEMY_I18N = {
         "Stackable Crucible": "可堆叠坩埚",
         "Paradox Crucible": "悖论坩埚",
         "Cauldron": "炼金锅",
+        "Advanced Cauldron": "高级炼金锅",
         "Kiln": "土窑",
         "Iron Smelter": "炼铁炉",
         "Refiner": "精炼机",
@@ -461,6 +465,6 @@ window.ALCHEMY_I18N = {
     "categories": {
         "Raw Materials": "原材料", "Seeds": "种子", "Herbs": "草药", "Fuel": "燃料", "Fertilizer": "肥料", "Solid": "固体", "Crystal": "晶石", "Component": "零件", "Liquid": "液体",
         "Mash": "研磨物", "Metal Mash": "金属粉", "Potion": "药水", "Catalyst": "催化剂", "Magic": "魔法", "Jewelry": "珠宝", "Relic": "圣物", "Currency": "货币", "Misc" : "杂项", "Other": "其他",
-        "[All]": "[ 全部 ]", "[Include]": "[ 选取 ]", "[Exclude]": "[ 排除 ]"
+        "[All]": "[ 全部 ]", "[Include]": "[ 选取 ]", "[Exclude]": "[ 排除 ]", "[Product]": "[ 产物 ]"
     }
 };

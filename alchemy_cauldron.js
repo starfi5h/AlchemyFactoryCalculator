@@ -5,6 +5,7 @@
 const CAULDRON_STORAGE_KEY = "alchemy_cauldron_v1";
 
 let cauldronState = {
+    activeType: 0,
     activeProfile: 0,
     favorites: [],
     profiles: [
@@ -32,6 +33,7 @@ function initCauldron() {
     translateText();
     pickFilterItem(1,true);
     pickFilterItem(2,true);
+    switchCauldronType(cauldronState.activeType);
     switchCauldronProfile(cauldronState.activeProfile);
 }
 
@@ -117,7 +119,7 @@ function populateCauldronCategories() {
     const sel = document.getElementById('cauldron-cat-select');
     sel.innerHTML = '';
     
-    const cats = ["[All]", "[Include]", "[Exclude]"];
+    const cats = ["[All]", "[Include]", "[Exclude]", "[Product]"];
     const itemCats = new Set();
     Object.values(DB.items).forEach(i => { if(i.category) itemCats.add(i.category); });
     const sortedCats = cats.concat(Array.from(itemCats));
@@ -134,6 +136,7 @@ function populateCauldronCategories() {
             const isMatch = (cat === "[All]") || 
                             (cat === "[Include]" && cauldronCandidates.has(name)) ||
                             (cat === "[Exclude]" && !cauldronCandidates.has(name)) ||
+                            (cat === "[Product]" && item.cauldronTarget) ||
                             (item.category === cat);
             
             if (isMatch) total++;
@@ -160,6 +163,7 @@ function renderCandidatePool() {
         const isVisible = (cauldronCatFilter === "[All]") || 
                           (cauldronCatFilter === "[Include]" && cauldronCandidates.has(name)) ||
                           (cauldronCatFilter === "[Exclude]" && !cauldronCandidates.has(name)) ||
+                          (cauldronCatFilter === "[Product]" && item.cauldronTarget) ||
                           (item.category === cauldronCatFilter);
 
         if (!isVisible) return;
@@ -180,6 +184,23 @@ function renderCandidatePool() {
         `;
         container.appendChild(div);
     });
+}
+
+// [修改] switchCauldronType：加入 UI 顯示/隱藏切換，並在切換至 Type1 時清除 slot3 狀態
+function switchCauldronType(index) {
+    cauldronState.activeType = index;
+    for (let i = 0; i < 2; i++) {
+        document.getElementById(`cauldron-type-${i}`).classList.toggle('active', i === index);
+    }
+
+    const isAdvancedCauldron = index === 1;
+    document.getElementById('slot3-wrapper').style.display = isAdvancedCauldron ? 'none' : '';
+    document.getElementById('filter-2-diff').parentElement.style.display = isAdvancedCauldron ? '' : 'none';
+    document.getElementById('filter-2-same').parentElement.style.display = isAdvancedCauldron ? '' : '';
+    document.getElementById('filter-3-diff').parentElement.style.display = isAdvancedCauldron ? 'none' : '';
+    document.getElementById('filter-3-same').parentElement.style.display = isAdvancedCauldron ? 'none' : '';
+
+    if (document.getElementById('cauldron-real-time-calculation')?.checked) runCauldronSimulation();
 }
 
 function switchCauldronProfile(index) {    
@@ -228,6 +249,7 @@ function bulkToggleCandidates(check) {
         const isMatch = (cauldronCatFilter === "[All]") || 
                         (cauldronCatFilter === "[Include]" && cauldronCandidates.has(name)) ||
                         (cauldronCatFilter === "[Exclude]" && !cauldronCandidates.has(name)) ||
+                        (cauldronCatFilter === "[Product]" && item.cauldronTarget) ||
                         (item.category === cauldronCatFilter);
 
         if (isMatch) {
@@ -354,14 +376,15 @@ function getCauldronStats(target) {
 /**
  * 检查配方是否符合当前的过滤器
  */
-
-
 async function runCauldronSimulation() {
+    if (cauldronState.activeType === 1) {
+        return runCauldronSimulationType1();
+    }
 
     // 檢查條件
-    const f100 = document.getElementById('f-ratio-100').checked;
-    const f065 = document.getElementById('f-ratio-065').checked;
-    const f050 = document.getElementById('f-ratio-050').checked;
+    const f100 = document.getElementById('filter-3-diff').checked;
+    const f065 = document.getElementById('filter-2-same').checked;
+    const f050 = document.getElementById('filter-3-same').checked;
     function isRecipeMatch(inputs, ratio) {
         if (ratio === 1.0 && !f100) return false;
         if (ratio === 0.65 && !f065) return false;
@@ -482,6 +505,121 @@ async function runCauldronSimulation() {
     btn.disabled = false;
 }
 
+/**
+ * 高級煉金鍋 模式的計算函數
+ * 輸入兩個原料 A 和 B，獲得產物 C。
+ */
+async function runCauldronSimulationType1() {
+
+    const include2diff = document.getElementById('filter-2-diff').checked;
+    const include2same = document.getElementById('filter-2-same').checked;
+
+    function isRecipeMatch(nA, nB) {
+        if (nA === nB) return include2same;
+        else return include2diff;
+    }
+
+    const validTargets = Object.keys(DB.items)
+        .filter(name => DB.items[name].cauldronTarget !== undefined)
+        .map(name => ({
+            name: name,
+            id: DB.items[name].id || 3000,
+            target: DB.items[name].cauldronTarget,
+            mult: DB.items[name].cauldronMulti || 1,
+        }));
+    const maxTargetItem = validTargets.reduce((prev, current) => (prev.target > current.target) ? prev : current);
+
+    // Type1 核心算法：差值絕對值，找最近 target
+    function getType1Result(nA, nB) {
+        const cA = DB.items[nA].cauldronCost;
+        const cB = DB.items[nB].cauldronCost;
+        const T = (nA === nB) ? cA : Math.abs(cA - cB);
+
+        let bestItem = maxTargetItem;
+        let minDistance = Infinity;
+        // 同類: T往上找最近的且不同於原料的產物
+        if (nA === nB) {            
+            //bestItem = maxTargetItem;
+            for (let target of validTargets) {
+                const dist = target.target - T;
+                if (1e-7 < dist && dist < minDistance && target.name !== nA) {
+                    minDistance = dist;
+                    bestItem = target;
+                }
+            }            
+        }
+        // 異類: T往下找(係數距離)最近的產物
+        else {
+            for (let target of validTargets) {
+                if (target.target > T) continue;
+
+                const dist = (T - target.target) * target.mult;
+                if (dist < minDistance) {
+                    minDistance = dist;
+                    bestItem = target;
+                }
+            }
+        }
+        return { output: bestItem.name, totalValue: T };
+    }
+
+    const list = [...cauldronCandidates].filter(isVaildCandidate);
+    list.sort((a, b) => (DB.items[b].cauldronCost - DB.items[a].cauldronCost)); // 由大至小
+
+    const btn = document.getElementById('btn-run-cauldron');
+    const progText = document.getElementById('cauldron-progress');
+    btn.disabled = true;
+
+    const resultsByOutput = {};
+    const totalCombos = (list.length * (list.length + 1)) / 2;
+    let comboCount = 0; let recipeCount = 0;
+    let lastUpdate = Date.now();
+
+    if (list.length === 0) {
+        // 特例: 在完全沒有候選物品時, 若有指定物品, 則將指定物品設為候選物品
+        for (let i = 0; i < 2; i++) {
+            if (cauldronFilterItems[i]) {
+                list.push(cauldronFilterItems[i]);
+            }
+        }
+    }
+
+    for (let i = 0; i < list.length; i++) {
+        const nA = cauldronFilterItems[0] ?? list[i];
+        for (let j = i; j < list.length; j++) {
+            const nB = cauldronFilterItems[1] ?? list[j];
+
+            const res = getType1Result(nA, nB);
+            if (isRecipeMatch(nA, nB))
+            {
+                if (!resultsByOutput[res.output]) resultsByOutput[res.output] = [];
+                resultsByOutput[res.output].push({
+                    inputs: [nA, nB],
+                    totalValue: res.totalValue
+                });
+                recipeCount++;
+            }
+
+            comboCount++;
+            if (cauldronFilterItems[1] != null) break;
+        }
+
+        if (Date.now() - lastUpdate > 150) {
+            progText.innerText = `${Math.round((comboCount / totalCombos) * 100)}%`;
+            await new Promise(r => setTimeout(r, 0));
+            lastUpdate = Date.now();
+        }
+        if (cauldronFilterItems[0] != null) break;
+    }
+
+    lastCauldronResults = resultsByOutput;
+
+    renderCauldronResults(resultsByOutput);
+    checkUnattainableItems(resultsByOutput);
+    progText.innerText = `${t('Number of matching recipes')}: (${recipeCount}) `;
+    btn.disabled = false;
+}
+
 function renderCauldronResults(data) {
     const container = document.getElementById('cauldron-results');
     container.innerHTML = '';
@@ -592,6 +730,7 @@ function renderRecipeRows(outName, container) {
     requestAnimationFrame(renderChunk);
 }
 
+// [修改] createRecipeRowHtml：Type1 不顯示 ratio 標籤；btn 的 data 屬性改為動態支援 2 或 3 個原料
 function createRecipeRowHtml(r, outName, favSet) {
     const { inputs, totalValue } = r;
     
@@ -599,13 +738,15 @@ function createRecipeRowHtml(r, outName, favSet) {
     const sortedKey = [...inputs].sort().join(',');
     const isFav = favSet.has(sortedKey);
     
-    // 最佳化比例標籤邏輯
+    // [修改] Type1 不顯示 ratio 標籤
     let ratioTag = '';
-    const [i0, i1, i2, i3] = inputs;
-    if (i0 === i1 && i1 === i2) {
-        ratioTag = '<span style="color:var(--danger);"> * 0.5</span>';
-    } else if (i0 === i1 || i1 === i2 || i2 === i3) {
-        ratioTag = '<span style="color:var(--warn);"> * 0.65</span>';
+    if (cauldronState.activeType === 0) {
+        const [i0, i1, i2] = inputs;
+        if (i0 === i1 && i1 === i2) {
+            ratioTag = '<span style="color:var(--danger);"> * 0.5</span>';
+        } else if (i0 === i1 || i1 === i2 || i2 === i0) {
+            ratioTag = '<span style="color:var(--warn);"> * 0.65</span>';
+        }
     }
 
     // 預先處理 HTML 片段
@@ -615,6 +756,9 @@ function createRecipeRowHtml(r, outName, favSet) {
                 ${n} <small>(${item.cauldronCost.toFixed(1)})</small>`;
     }).join(' + ');
 
+    // [修改] data 屬性動態支援 2 或 3 個原料
+    const dataAttrs = inputs.map((n, idx) => `data-i${idx + 1}="${n}"`).join(' ');
+
     return `
     <div class="cauldron-recipe-row">
         <span class="recipe-text">
@@ -622,17 +766,23 @@ function createRecipeRowHtml(r, outName, favSet) {
             <span style="color:var(--info);">➔</span> ${totalValue.toFixed(1)} ${ratioTag}
         </span>
         <button class="btn-fav ${isFav ? 'active' : ''}" 
-            data-i1="${i0 || ''}" data-i2="${i1 || ''}" data-i3="${i2 || ''}" data-out="${outName}">
+            ${dataAttrs} data-out="${outName}">
             ${isFav ? '★' : '☆'}
         </button>
     </div>`;
 }
 
+// [修改] toggleFavoriteStar：inputs 長度根據 activeType 動態決定
 function toggleFavoriteStar(event, btn) {
     event.stopPropagation();
     const { i1, i2, i3, out } = btn.dataset;
     const favs = cauldronState.favorites;
-    const recipeInputs = [i1, i2, i3].sort();
+
+    // Type1 只有 2 個原料，Type0 有 3 個
+    const recipeInputs = cauldronState.activeType === 1
+        ? [i1, i2].filter(Boolean).sort()
+        : [i1, i2, i3].filter(Boolean).sort();
+
     const idx = favs.findIndex(f => f.output === out && [...f.inputs].sort().join('|') === recipeInputs.join('|'));
 
     if (idx > -1) {
@@ -640,7 +790,7 @@ function toggleFavoriteStar(event, btn) {
         btn.classList.remove('active');
         btn.innerText = '☆';
     } else {
-        favs.push({ inputs: [i1, i2, i3], output: out });
+        favs.push({ inputs: recipeInputs, output: out });
         btn.classList.add('active');
         btn.innerText = '★';
     }
@@ -681,10 +831,14 @@ function checkUnattainableItems(producedData) {
    SECTION: Favorite List
    ========================================================================== */
 
-function toggleFavorite(i1, i2, i3, out) {
+// [修改] toggleFavorite：改為接受不定數量的原料，最後一個參數固定為產物名
+function toggleFavorite(...args) {
+    const out = args[args.length - 1];
+    const inputs = args.slice(0, -1);
     const favs = cauldronState.favorites;
-    const recipe = { inputs: [i1, i2, i3], output: out };
-    const idx = favs.findIndex(f => f.output === out && f.inputs.every(v => recipe.inputs.includes(v)));
+    const recipe = { inputs: inputs, output: out };
+    const sortedNew = [...inputs].sort().join('|');
+    const idx = favs.findIndex(f => f.output === out && [...f.inputs].sort().join('|') === sortedNew);
 
     if (idx > -1) favs.splice(idx, 1);
     else favs.push(recipe);
@@ -764,7 +918,7 @@ function removeFavorite(idx) {
 
 /**
  * 导出当前 Profile 的收藏夹为文本格式 (.txt)
- * 格式：物品1 + 物品2 + 物品3 = 产物
+ * 格式：物品1 + 物品2 (+ 物品3) = 产物
  */
 function exportCauldronFavorites() {
     const favs = cauldronState.favorites;
@@ -788,7 +942,8 @@ function exportCauldronFavorites() {
 
 /**
  * 从文本文件导入配方
- * 预期格式：物品1 + 物品2 + 物品3 = 产物
+ * 预期格式：物品1 + 物品2 (+ 物品3) = 产物
+ * [修改] 驗證條件放寬為支援 2 或 3 個輸入原料
  */
 function importCauldronFavorites() {
     const input = document.createElement('input');
@@ -814,8 +969,8 @@ function importCauldronFavorites() {
                     const output = parts[1].trim();
                     const inputs = parts[0].split('+').map(i => i.trim());
 
-                    // 校验：必须有 3 个输入，且产物存在于数据库
-                    if (inputs.length === 3 && DB.items[output]) {
+                    // [修改] 校验：支援 2 或 3 個輸入，且产物存在于数据库
+                    if ((inputs.length === 2 || inputs.length === 3) && DB.items[output]) {
                         const sortedNew = [...inputs].sort();
                         
                         // 去重检查
@@ -884,9 +1039,10 @@ function syncCauldronToMainDB(notify = false) {
             itemIdString += `_${inputDef?.id ?? 0}`;
         });
 
+        const machineType = fav.inputs.length === 3 ? "Cauldron" : "Advanced Cauldron";
         const newRecipe = {
             id: `AUTO_GENERATED_CAULDRON` + itemIdString,
-            machine: "Cauldron",
+            machine: machineType,
             inputs: inputCounts,
             outputs: { [targetItem]: 1 },
             baseTime: parseFloat(stats.time),
