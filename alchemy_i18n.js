@@ -220,7 +220,7 @@ window.ALCHEMY_I18N = {
         "Export to File": "导出到文件",
 
         // --- Cauldron ---
-        "Settings & Candidates": "炼金原料池",
+        "Settings & Candidates": "炼金原料设置",
         "Profile 1": "原料池1",
         "Profile 2": "原料池2",
         "Profile 3": "原料池3",

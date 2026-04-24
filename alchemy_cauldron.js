@@ -5,7 +5,7 @@
 const CAULDRON_STORAGE_KEY = "alchemy_cauldron_v1";
 
 let cauldronState = {
-    activeType: 0,
+    activeType: 0, // 0:煉金鍋 1:高級煉金鍋
     activeProfile: 0,
     favorites: [],
     profiles: [
@@ -200,6 +200,7 @@ function switchCauldronType(index) {
     document.getElementById('filter-3-diff').parentElement.style.display = isAdvancedCauldron ? 'none' : '';
     document.getElementById('filter-3-same').parentElement.style.display = isAdvancedCauldron ? 'none' : '';
 
+    saveCauldronSettings();
     if (document.getElementById('cauldron-real-time-calculation')?.checked) runCauldronSimulation();
 }
 
@@ -528,18 +529,19 @@ async function runCauldronSimulationType1() {
             mult: DB.items[name].cauldronMulti || 1,
         }));
     const maxTargetItem = validTargets.reduce((prev, current) => (prev.target > current.target) ? prev : current);
+    const minTargetItem = validTargets.reduce((prev, current) => (prev.target < current.target) ? prev : current);
 
-    // Type1 核心算法：差值絕對值，找最近 target
     function getType1Result(nA, nB) {
         const cA = DB.items[nA].cauldronCost;
         const cB = DB.items[nB].cauldronCost;
+        // 計算基準分(T)，相同素材=該物品價值，不同素材=兩者價值的差值絕對值
         const T = (nA === nB) ? cA : Math.abs(cA - cB);
 
-        let bestItem = maxTargetItem;
+        let bestItem = null;
         let minDistance = Infinity;
-        // 同類: T往上找最近的且不同於原料的產物
-        if (nA === nB) {            
-            //bestItem = maxTargetItem;
+        // 同類合成： 向上尋找最接近的更高階物品。
+        if (nA === nB) {
+            bestItem = maxTargetItem;
             for (let target of validTargets) {
                 const dist = target.target - T;
                 if (1e-7 < dist && dist < minDistance && target.name !== nA) {
@@ -548,13 +550,13 @@ async function runCauldronSimulationType1() {
                 }
             }            
         }
-        // 異類: T往下找(係數距離)最近的產物
+        // 異類合成： 向下尋找加權距離最接近的低階物品。
         else {
+            bestItem = minTargetItem;
             for (let target of validTargets) {
                 if (target.target > T) continue;
-
                 const dist = (T - target.target) * target.mult;
-                if (dist < minDistance) {
+                if (dist < minDistance && target.name !== nA && target.name !== nB) {
                     minDistance = dist;
                     bestItem = target;
                 }
@@ -644,7 +646,6 @@ function renderCauldronResults(data) {
                 <span class="qty" style="font-size:0.9em;">(${recipes.length})</span>
                 <span class="info-tag">${stats.time.toFixed(1)}s</span>
                 <span class="heat-tag">${stats.heat.toFixed(1)}P/s</span>
-                <span class="heat-tag">(${(stats.time * stats.heat).toFixed(1)}P)</span>
                 <div class="push-right details">T: ${outputItem.cauldronTarget}</div>
             </div>
             <div class="node-children" style="max-height: 300px; overflow-y: auto;">
@@ -673,8 +674,9 @@ function toggleCauldronCard(thisCard, cardElement) {
     const childrenContainer = cardElement.querySelector('.node-children');
     const isCollapsed = cardElement.classList.contains('collapsed');
     
-    // 只有在展開且尚未加載內容時才渲染
-    if (isCollapsed && childrenContainer.querySelector('.loading-placeholder')) {
+    if (isCollapsed) {
+        // 每次展開都重新渲染（清除舊內容讓 DOM 輕量化）
+        childrenContainer.innerHTML = '<div class="loading-placeholder"></div>';
         const outName = thisCard.dataset.out;
         renderRecipeRows(outName, childrenContainer);
     }
@@ -730,15 +732,13 @@ function renderRecipeRows(outName, container) {
     requestAnimationFrame(renderChunk);
 }
 
-// [修改] createRecipeRowHtml：Type1 不顯示 ratio 標籤；btn 的 data 屬性改為動態支援 2 或 3 個原料
 function createRecipeRowHtml(r, outName, favSet) {
     const { inputs, totalValue } = r;
     
     // 使用預先計算好的 Set 進行查找，性能極大提升
     const sortedKey = [...inputs].sort().join(',');
     const isFav = favSet.has(sortedKey);
-    
-    // [修改] Type1 不顯示 ratio 標籤
+        
     let ratioTag = '';
     if (cauldronState.activeType === 0) {
         const [i0, i1, i2] = inputs;
@@ -756,7 +756,6 @@ function createRecipeRowHtml(r, outName, favSet) {
                 ${n} <small>(${item.cauldronCost.toFixed(1)})</small>`;
     }).join(' + ');
 
-    // [修改] data 屬性動態支援 2 或 3 個原料
     const dataAttrs = inputs.map((n, idx) => `data-i${idx + 1}="${n}"`).join(' ');
 
     return `
@@ -772,7 +771,6 @@ function createRecipeRowHtml(r, outName, favSet) {
     </div>`;
 }
 
-// [修改] toggleFavoriteStar：inputs 長度根據 activeType 動態決定
 function toggleFavoriteStar(event, btn) {
     event.stopPropagation();
     const { i1, i2, i3, out } = btn.dataset;
@@ -943,8 +941,7 @@ function exportCauldronFavorites() {
 /**
  * 从文本文件导入配方
  * 预期格式：物品1 + 物品2 (+ 物品3) = 产物
- * [修改] 驗證條件放寬為支援 2 或 3 個輸入原料
- */
+  */
 function importCauldronFavorites() {
     const input = document.createElement('input');
     input.type = 'file';
@@ -969,7 +966,7 @@ function importCauldronFavorites() {
                     const output = parts[1].trim();
                     const inputs = parts[0].split('+').map(i => i.trim());
 
-                    // [修改] 校验：支援 2 或 3 個輸入，且产物存在于数据库
+                    // 校验：支援 2 或 3 個輸入，且产物存在于数据库
                     if ((inputs.length === 2 || inputs.length === 3) && DB.items[output]) {
                         const sortedNew = [...inputs].sort();
                         
