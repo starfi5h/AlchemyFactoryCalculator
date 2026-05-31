@@ -131,7 +131,10 @@ function init() {
         document.getElementById('targetRate').disabled = false;
         document.getElementById('targetRate').value = urlRate;
     } else {
-        updateFromSlider(); // Apply default slider position
+        // 沒有指定 rate 時，默認啟用 "Set by Machine Count" 模式，machine count = 1
+        const machineModeToggle = document.getElementById('machineModeToggle');
+        machineModeToggle.checked = true;
+        toggleControlMode(false); // 切換 UI 狀態（禁用 rate 輸入、啟用 machine 輸入）
     }
     
     if (urlFuel && document.querySelector(`#fuelSelect option[value="${urlFuel}"]`)) {

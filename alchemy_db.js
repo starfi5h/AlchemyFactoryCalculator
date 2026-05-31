@@ -1,12 +1,12 @@
 window.ALCHEMY_DB = {
-    "version": 39,
-    "date": "2026.04.23",
-    "gameVersion": "0.4.4.4323",
+    "version": 40,
+    "date": "2026.05.31",
+    "gameVersion": "0.4.5.4464",
     "items": {
         // --- 1. RAW RESOURCES ---
         "Logs": { "id": 1, "category": "Raw Materials", "buyPrice": 200, "maxStack": -200, "heat": 2000, "cauldronCost": 0.8, "tier": 1 },
         "Limestone": { "id": 2, "category": "Raw Materials", "buyPrice": 600, "maxStack": -150, "cauldronCost": 3, "tier": 2 },
-        "Iron Ore": { "id": 3, "category": "Raw Materials", "buyPrice": 1200, "maxStack": -100, "cauldronCost": 10, "tier": 3 },
+        "Iron Ore": { "id": 3, "category": "Raw Materials", "buyPrice": 1200, "maxStack": -100, "cauldronCost": 11, "tier": 3 },
         "Pyrite Ore": { "id": 23, "category": "Raw Materials", "buyPrice": 11000, "maxStack": -160, "cauldronCost": 45, "tier": 6 },
         "Rock Salt": { "id": 22, "category": "Raw Materials", "buyPrice": 9000, "maxStack": -200, "cauldronCost": 35, "tier": 6 },
         "Coal Ore": { "id": 21, "category": "Raw Materials", "buyPrice": 4800, "maxStack": -120, "heat": 30000, "cauldronCost": 37, "tier": 5 },
@@ -42,20 +42,20 @@ window.ALCHEMY_DB = {
         "Coke": { "id": 503, "category": "Fuel", "heat": 600, "cauldronCost": 29, "cauldronMulti": 1, "cauldronTarget": 30 },
         "Coke Powder": { "id": 504, "category": "Fuel", "heat": 660, "cauldronCost": 31 },
         "Coal": { "id": 604, "category": "Fuel", "heat": 540, "cauldronCost": 40, "cauldronMulti": 1, "cauldronTarget": 40 },
-        "Black Powder": { "id": 614, "category": "Fuel", "heat": 3000, "sellPrice": 330, "cauldronCost": 145, "cauldronMulti": 1, "cauldronTarget": 150 },
+        "Black Powder": { "id": 614, "category": "Fuel", "heat": 6000, "sellPrice": 660, "cauldronCost": 300, "cauldronMulti": 1, "cauldronTarget": 300 },
         "Blast Potion": { "id": 705, "category": "Fuel", "heat": 24000, "sellPrice": 2557, "cauldronCost": 1197 },
 
         // --- 5. FERTILIZERS ---
         "Basic Fertilizer": { "id": 416, "category": "Fertilizer", "nutrientValue": 144, "maxFertility": 12, "cauldronCost": 10 },
         "Advanced Fertilizer": { "id": 511, "category": "Fertilizer", "nutrientValue": 720, "maxFertility": 144, "cauldronCost": 56 },        
         "Growth Potion": { "id": 615, "category": "Fertilizer", "sellPrice": 1224, "nutrientValue": 6480, "maxFertility": 2160, "cauldronCost": 500 },
-        "Fertile Catalyst": { "id": 706, "category": "Fertilizer", "nutrientValue": 24000, "maxFertility": 6000, "wholesalePrice": 3000, "cauldronCost": 4067.84, "cauldronMulti": 0.5, "cauldronTarget": 3567.84 },
+        "Fertile Catalyst": { "id": 706, "category": "Fertilizer", "nutrientValue": 24000, "maxFertility": 6000, "wholesalePrice": 3000, "cauldronCost": 4061.84, "cauldronMulti": 1, "cauldronTarget": 3561.84 },
 
         // --- 6. POTIONS ---
         "Healing Potion": { "id": 306, "category": "Potion", "sellPrice": 85, "cauldronCost": 30 },
         "Vitality Potion": { "id": 415, "category": "Potion", "sellPrice": 330, "cauldronCost": 125 },
         "Transformation Potion": { "id": 508, "category": "Potion", "sellPrice": 620, "cauldronCost": 240 },
-        "Panacea Potion": { "id": 816, "category": "Potion", "nutrientValue": 200000, "maxFertility": 20000, "heat": 320000, "sellPrice": 30000, "cauldronCost": 15306.12 },
+        "Panacea Potion": { "id": 816, "category": "Potion", "nutrientValue": 200000, "maxFertility": 20000, "heat": 320000, "sellPrice": 30000, "cauldronCost": 15288.12 },
 
         // --- 7. SOLIDS ---        
         "Stone": { "id": 201, "category": "Solid", "maxStack": 600, "cauldronCost": 4, "cauldronMulti": 1, "cauldronTarget": 4 },
@@ -66,10 +66,10 @@ window.ALCHEMY_DB = {
         "Glass": { "id": 412, "category": "Misc", "sellPrice": 75, "maxStack": 200, "cauldronCost": 27 },
         "Steel Ingot": { "id": 505, "category": "Solid", "maxStack": 200, "cauldronCost": 161 },
         "Sulfur": { "id": 602, "category": "Solid", "cauldronCost": 166, "cauldronMulti": 1, "cauldronTarget": 246 },
-        "Bronze Ingot": { "id": 609, "category": "Solid", "maxStack": 100, "cauldronCost": 155 },
+        "Bronze Ingot": { "id": 609, "category": "Solid", "maxStack": 200, "cauldronCost": 293 },
         "Copper Ingot": { "id": 610, "category": "Solid", "maxStack": 200, "cauldronCost": 300 },           
-        "Silver Ingot": { "id": 808, "category": "Solid", "maxStack": 100, "cauldronCost": 4746 },
-        "Gold Ingot": { "id": 905, "category": "Solid", "maxStack": 100, "cauldronCost": 87222.6 },
+        "Silver Ingot": { "id": 808, "category": "Solid", "maxStack": 100, "cauldronCost": 4516 },
+        "Gold Ingot": { "id": 905, "category": "Solid", "maxStack": 100, "cauldronCost": 88181.6 },
 
 
         // --- Crystal ---
@@ -102,10 +102,10 @@ window.ALCHEMY_DB = {
         "Lavender Essential Oil": { "id": 701, "category": "Liquid", "liquid": true, "cauldronCost": 37.88 },
         "Brandy": { "id": 702, "category": "Liquid", "liquid": true, "cauldronCost": 7.425 },
         "Sulfuric Acid": { "id": 703, "category": "Liquid", "liquid": true, "cauldronCost": 23.13 },
-        "Quicksilver": { "id": 811, "category": "Liquid", "liquid": true, "cauldronCost": 413.19 },
+        "Quicksilver": { "id": 811, "category": "Liquid", "liquid": true, "cauldronCost": 407.44 },
         "Aqua Vitae": { "id": 812, "category": "Liquid", "liquid": true, "cauldronCost": 459.3 },
         "Fairy Tear": { "id": 911, "category": "Liquid", "liquid": true, "cauldronCost": 3060 },
-        "Moon Tear": { "id": 912, "category": "Liquid", "liquid": true, "cauldronCost": 97092 },
+        "Moon Tear": { "id": 912, "category": "Liquid", "liquid": true, "cauldronCost": 96678 },
 
         // --- MASH ---
         "Sand": { "id": 202, "category": "Mash", "cauldronCost": 4.5 },
@@ -115,45 +115,45 @@ window.ALCHEMY_DB = {
         "Quicklime Powder": { "id": 402, "category": "Mash", "cauldronCost": 7 },
         "Clay Powder": { "id": 407, "category": "Mash", "cauldronCost": 22 },
         "Soap Powder": { "id": 414, "category": "Mash", "cauldronCost": 24 },
+        "Yeast Powder": { "id": 507, "category": "Mash", "cauldronCost": 88, "cauldronMulti": 1, "cauldronTarget": 88 },
+        "Gloom Spores": { "id": 510, "category": "Mash", "cauldronCost": 220, "wholesalePrice": 360, "cauldronMulti": 1, "cauldronTarget": 280 },
         "Chamomile Powder": { "id": 601, "category": "Mash", "cauldronCost": 57 },
         "Sulfur Powder": { "id": 603, "category": "Mash", "cauldronCost": 200 },        
         "Perfumed Soap Powder": { "id": 708, "category": "Mash", "cauldronCost": 1216.4 },
         "Gentian Powder": { "id": 801, "category": "Mash", "cauldronCost": 430 },        
         // temp move Volcanic Ash id from 29 to 807
-        "Volcanic Ash": { "id": 807, "category": "Mash", "cauldronCost": 5290 },        
+        "Volcanic Ash": { "id": 807, "category": "Mash", "cauldronCost": 5404 },        
 
         // --- METAL MASH ---
         "Iron Sand": { "id": 303, "category": "Metal Mash", "cauldronCost": 15.5, "cauldronMulti": 1, "cauldronTarget": 15 },
         "Impure Copper Powder": { "id": 607, "category": "Metal Mash", "cauldronCost": 150, "cauldronMulti": 1, "cauldronTarget": 180 },
         "Copper Powder": { "id": 608, "category": "Metal Mash", "cauldronCost": 290, "cauldronMulti": 1, "cauldronTarget": 350 },
-        "Crude Silver Powder": { "id": 803, "category": "Metal Mash", "cauldronCost": 1273.5, "cauldronMulti": 0.7, "cauldronTarget": 1673.5 },
-        "Impure Silver Powder": { "id": 804, "category": "Metal Mash", "cauldronCost": 2547, "cauldronMulti": 0.7, "cauldronTarget": 3347 },
-        "Silver Powder": { "id": 805, "category": "Metal Mash", "cauldronCost": 4742, "cauldronMulti": 0.7, "cauldronTarget": 4742 },
-        "Crude Gold Dust": { "id": 901, "category": "Metal Mash", "cauldronCost": 10805.325, "cauldronMulti": 0.5, "cauldronTarget": 13805.325 },
-        "Impure Gold Dust": { "id": 902, "category": "Metal Mash", "cauldronCost": 21610.65, "cauldronMulti": 0.5, "cauldronTarget": 27610.65 },
-        "Gold Dust": { "id": 903, "category": "Metal Mash", "cauldronCost": 42357.3, "cauldronMulti": 0.5, "cauldronTarget": 52357.3 },
-        "Pure Gold Dust": { "id": 904, "category": "Metal Mash", "cauldronCost": 84714.6, "cauldronMulti": 0.5, "cauldronTarget": 99714.6 },
+        "Crude Silver Powder": { "id": 803, "category": "Metal Mash", "cauldronCost": 1216.0, "cauldronMulti": 1, "cauldronTarget": 1416.0 },
+        "Impure Silver Powder": { "id": 804, "category": "Metal Mash", "cauldronCost": 2432.0, "cauldronMulti": 1, "cauldronTarget": 3232.0 },
+        "Silver Powder": { "id": 805, "category": "Metal Mash", "cauldronCost": 4512.0, "cauldronMulti": 1, "cauldronTarget": 4512.0 },
+        "Crude Gold Dust": { "id": 901, "category": "Metal Mash", "cauldronCost": 10925.2, "cauldronMulti": 1, "cauldronTarget": 12925.2 },
+        "Impure Gold Dust": { "id": 902, "category": "Metal Mash", "cauldronCost": 21850.4, "cauldronMulti": 1, "cauldronTarget": 22850.4 },
+        "Gold Dust": { "id": 903, "category": "Metal Mash", "cauldronCost": 42836.8, "cauldronMulti": 1, "cauldronTarget": 52836.8 },
+        "Pure Gold Dust": { "id": 904, "category": "Metal Mash", "cauldronCost": 85673.6, "cauldronMulti": 1, "cauldronTarget": 100673.6 },
 
         // --- 11. CATALYSTS ---		
-        "Yeast Powder": { "id": 507, "category": "Catalyst", "cauldronCost": 88, "cauldronMulti": 1, "cauldronTarget": 88 },
-        "Gloom Spores": { "id": 510, "category": "Catalyst", "cauldronCost": 220, "wholesalePrice": 360, "cauldronMulti": 0.9, "cauldronTarget": 280 },
-        "Unstable Catalyst": { "id": 616, "category": "Catalyst", "cauldronCost": 746, "cauldronMulti": 0.7, "cauldronTarget": 746 },
-        "Resonant Catalyst": { "id": 815, "category": "Catalyst", "cauldronCost": 23869.44, "cauldronMulti": 0.3, "cauldronTarget": 22869.44 },
-        "Eternal Catalyst": { "id": 908, "category": "Catalyst", "cauldronCost": 1193041.6 },
+        "Unstable Catalyst": { "id": 616, "category": "Catalyst", "cauldronCost": 740, "cauldronMulti": 1, "cauldronTarget": 740 },
+        "Resonant Catalyst": { "id": 815, "category": "Catalyst", "cauldronCost": 23977.44, "cauldronMulti": 1, "cauldronTarget": 27977.44 },
+        "Eternal Catalyst": { "id": 908, "category": "Catalyst", "cauldronCost": 1194661.6 },
 
         // --- 12. Magic ---
         "Philosopherˈs Stone": { "id": 33, "category": "Magic", "cauldronCost": 1000000, "cauldronMulti": 1, "cauldronTarget": 1000000 },
         "Oblivion Essence": { "id": 25, "category": "Magic", "cauldronCost": 600, "cauldronMulti": 1, "cauldronTarget": 600 },
         "Vitality Essence": { "id": 709, "category": "Magic", "cauldronCost": 900, "cauldronMulti": 1, "cauldronTarget": 900 },
-        "Star Dust": { "id": 909, "category": "Magic", "cauldronCost": 4149, "cauldronMulti": 1, "cauldronTarget": 6149 },
+        "Star Dust": { "id": 909, "category": "Magic", "cauldronCost": 41490, "cauldronMulti": 1, "cauldronTarget": 81490 },
         "Fairy Dust": { "id": 910, "category": "Magic", "cauldronCost": 3060, "cauldronMulti": 1, "cauldronTarget": 3760 },
 
         // -------
 
         // --- 13. GOODS & CURRENCY ---
         "Copper Coin": { "id": 611, "category": "Currency", "sellPrice": 1, "cauldronCost": 0.6766666667 },
-        "Silver Coin": { "id": 809, "category": "Currency", "sellPrice": 1000, "cauldronCost": 949.2 },
-        "Gold Coin": { "id": 906, "category": "Currency", "sellPrice": 100000, "cauldronCost": 89722.6 },
+        "Silver Coin": { "id": 809, "category": "Currency", "sellPrice": 1000, "cauldronCost": 903.2 },
+        "Gold Coin": { "id": 906, "category": "Currency", "sellPrice": 100000, "cauldronCost": 90681.6 },
         
         "Gloom Fungus": { "id": 509, "category": "Misc", "cauldronCost": 26 },
         "Mortar": { "id": 203, "category": "Misc", "sellPrice": 48, "cauldronCost": 18 },
@@ -162,7 +162,7 @@ window.ALCHEMY_DB = {
         "Bandage": { "id": 308, "category": "Misc", "sellPrice": 350, "wholesalePrice": 240, "cauldronCost": 120 },
         "Soap": { "id": 413, "category": "Misc", "sellPrice": 60, "cauldronCost": 23 },
         "Perfumed Soap": { "id": 707, "category": "Misc", "sellPrice": 2590, "cauldronCost": 1216.4 },
-        "Moonlit Soap": { "id": 913, "category": "Misc", "sellPrice": 995280, "wholesalePrice": 600000, "cauldronCost": 487892.8 },
+        "Moonlit Soap": { "id": 913, "category": "Misc", "sellPrice": 995280, "wholesalePrice": 600000, "cauldronCost": 485822.8 },
 
         // --- 14. Jewelry ---
         "Ruby": { "id": 30, "category": "Jewelry", "sellPrice": 250000, "cauldronCost": 200000, "cauldronMulti": 1, "cauldronTarget": 200000 },
@@ -172,10 +172,10 @@ window.ALCHEMY_DB = {
         "Pocket Watch": { "id": 617, "category": "Jewelry", "sellPrice": 1950, "wholesalePrice": 1300, "cauldronCost": 789 },
         "Malachite": { "id": 618, "category": "Jewelry", "sellPrice": 1020, "cauldronCost": 367, "cauldronMulti": 1, "cauldronTarget": 427 },        
         "Clockwork Bird": { "id": 621, "category": "Jewelry", "sellPrice": 5000, "cauldronCost": 2022 },
-        "Topaz": { "id": 704, "category": "Jewelry", "sellPrice": 2800, "cauldronCost": 1205.9, "cauldronMulti": 1, "cauldronTarget": 1405.9 },       
-        "Obsidian": { "id": 806, "category": "Jewelry", "sellPrice": 11000, "cauldronCost": 5290, "cauldronMulti": 1, "cauldronTarget": 5290 },
-        "Silver Amulet": { "id": 810, "category": "Jewelry", "sellPrice": 48000, "wholesalePrice": 34000, "cauldronCost": 25317 },
-        "Lapis Lazuli": { "id": 813, "category": "Jewelry", "sellPrice": 32000, "maxStack": 50, "cauldronCost": 15825, "cauldronMulti": 1, "cauldronTarget": 18825 },
+        "Topaz": { "id": 704, "category": "Jewelry", "sellPrice": 2800, "cauldronCost": 1205.9, "cauldronMulti": 1, "cauldronTarget": 1705.9 },       
+        "Obsidian": { "id": 806, "category": "Jewelry", "sellPrice": 11000, "cauldronCost": 5404.0, "cauldronMulti": 1, "cauldronTarget": 6404.0 },
+        "Silver Amulet": { "id": 810, "category": "Jewelry", "sellPrice": 51000, "wholesalePrice": 34000, "cauldronCost": 24656 },
+        "Lapis Lazuli": { "id": 813, "category": "Jewelry", "sellPrice": 32000, "maxStack": 50, "cauldronCost": 15624, "cauldronMulti": 1, "cauldronTarget": 40624 },
         "Crown": { "id": 907, "category": "Jewelry", "sellPrice": 1600000, "cauldronCost": 854167.8 },
 
         // --- 15. RELICS ---
@@ -183,9 +183,9 @@ window.ALCHEMY_DB = {
         "Saturn": { "id": 619, "category": "Relic", "sellPrice": 150000, "maxStack": -100, "cauldronCost": 714 },
         "Mars": { "id": 620, "category": "Relic", "sellPrice": 280000, "maxStack": -75, "cauldronCost": 1678 },
         "Venus": { "id": 710, "category": "Relic", "sellPrice": 1000000, "maxStack": -200, "cauldronCost": 2549.6 },
-        "Mercury": { "id": 814, "category": "Relic", "sellPrice": 5200000, "maxStack": -100, "cauldronCost": 26927.8 },
-        "Luna": { "id": 914, "category": "Relic", "sellPrice": 18500000, "maxStack": -75, "cauldronCost": 187167.6 },
-        "Sol": { "id": 1001, "category": "Relic", "sellPrice": 42000000, "maxStack": -5, "cauldronCost": 5587945.6 },
+        "Mercury": { "id": 814, "category": "Relic", "sellPrice": 5200000, "maxStack": -100, "cauldronCost": 26783.3 },
+        "Luna": { "id": 914, "category": "Relic", "sellPrice": 18500000, "maxStack": -75, "cauldronCost": 187482.6 },
+        "Sol": { "id": 1001, "category": "Relic", "sellPrice": 42000000, "maxStack": -5, "cauldronCost": 5591400.6 },
 
         // --- 16. OTHER ---
         "Portal Sigil": { "id": 2001, "category": "Other", "buyPrice": 1500, "cauldronCost": 750, "tier": 4 },
@@ -339,7 +339,7 @@ window.ALCHEMY_DB = {
         },
         { "id": "Sulfur", "machine": "Iron Smelter", "inputs": { "Pyrite Ore": 1 }, "outputs": { "Sulfur": 40, "Iron Ingot": 120 }, "baseTime": 960.0 },
         { "id": "Sulfur Powder", "machine": "Grinder", "inputs": { "Sulfur": 1 }, "outputs": { "Sulfur Powder": 1 }, "baseTime": 6.0 },
-        { "id": "Black Powder", "machine": "Advanced Blender", "inputs": { "Sulfur Powder": 1, "Charcoal Powder": 12, "Limewater": 150 }, "outputs": { "Black Powder": 2 }, "baseTime": 12.0 },
+        { "id": "Black Powder", "machine": "Advanced Blender", "inputs": { "Sulfur Powder": 1, "Charcoal Powder": 12, "Limewater": 150 }, "outputs": { "Black Powder": 1 }, "baseTime": 12.0 },
 
         // --- COPPER / BRONZE ---
         // --- COPPER POWDER BATCH (50%) ---
@@ -359,7 +359,7 @@ window.ALCHEMY_DB = {
         // --- SILVER POWDER BATCH (20%) ---
         { 
             "id": "Silver Powder", "machine": "Advanced Athanor", 
-            "inputs": { "Copper Powder": 10, "Unstable Catalyst": 10, "Black Powder": 10 }, 
+            "inputs": { "Copper Powder": 20, "Black Powder": 10 }, 
             "outputs": { "Silver Powder": 1, "Crude Silver Powder": 4 }, 
             "baseTime": 32.0
         },
@@ -371,7 +371,7 @@ window.ALCHEMY_DB = {
         { "id": "Impure Gold Dust", "machine": "Refiner", "inputs": { "Crude Gold Dust": 2 }, "outputs": { "Impure Gold Dust": 1 }, "baseTime": 10.0 },
 
         // --- GOLD DUST BATCH (10%) ---
-        { "id": "Gold Dust", "machine": "Advanced Athanor", "inputs": { "Silver Powder": 10, "Volcanic Ash": 10, "Fertile Catalyst": 10, "Quicksilver": 120 }, "outputs": { "Gold Dust": 1, "Crude Gold Dust": 4, "Impure Gold Dust": 5 }, "baseTime": 80.0 },
+        { "id": "Gold Dust", "machine": "Advanced Athanor", "inputs": { "Silver Powder": 10, "Volcanic Ash": 10, "Quicksilver": 180 }, "outputs": { "Gold Dust": 1, "Crude Gold Dust": 3, "Impure Gold Dust": 6 }, "baseTime": 80.0 },
         { "id": "Pure Gold Dust", "machine": "Refiner", "inputs": { "Gold Dust": 2 }, "outputs": { "Pure Gold Dust": 1 }, "baseTime": 10.0 },
         { "id": "Pure Gold Dust 2", "machine": "Grinder", "inputs": { "Gold Ingot": 1 }, "outputs": { "Pure Gold Dust": 1 }, "baseTime": 40.0 },
         { "id": "Gold Ingot", "machine": "Crucible", "inputs": { "Pure Gold Dust": 1 }, "outputs": { "Gold Ingot": 1 }, "baseTime": 40.0 },
@@ -389,21 +389,21 @@ window.ALCHEMY_DB = {
         { "id": "Quicksilver", "machine": "Advanced Alembic", "inputs": { "Crude Silver Powder": 1, "Vitality Essence": 1, "Sulfuric Acid": 80 }, "outputs": { "Quicksilver": 10 }, "baseTime": 8.0 },
         { "id": "Aqua Vitae", "machine": "Advanced Alembic", "inputs": { "Gentian Nectar": 1, "World Tree Leaf": 1, "Brandy": 200 }, "outputs": { "Aqua Vitae": 10 }, "baseTime": 8.0 },
         { "id": "Fairy Tear", "machine": "Extractor", "inputs": { "Fairy Dust": 1 }, "outputs": { "Fairy Tear": 1 }, "baseTime": 4.0 },
-        { "id": "Moon Tear", "machine": "Advanced Alembic", "inputs": { "Star Dust": 16, "Fairy Tear": 10 }, "outputs": { "Moon Tear": 1 }, "baseTime": 8.0 },
+        { "id": "Moon Tear", "machine": "Advanced Alembic", "inputs": { "Star Dust": 1, "Fairy Tear": 18 }, "outputs": { "Moon Tear": 1 }, "baseTime": 8.0 },
 
         // --- POTIONS ---
         { "id": "Healing Potion", "machine": "Assembler", "inputs": { "Sage Powder": 6, "Flax Fiber": 6 }, "outputs": { "Healing Potion": 1 }, "baseTime": 6.0 },
         { "id": "Vitality Potion", "machine": "Blender", "inputs": { "Quicklime Powder": 4, "Fruit Wine": 80 }, "outputs": { "Vitality Potion": 1 }, "baseTime": 8.0 },
         { "id": "Transformation Potion", "machine": "Assembler", "inputs": { "Coke Powder": 2, "Gloom Spores": 1 }, "outputs": { "Transformation Potion": 1 }, "baseTime": 6.0 },
         { "id": "Growth Potion", "machine": "Advanced Blender", "inputs": { "Chamomile Powder": 2, "Clay Powder": 6, "Brine": 80 }, "outputs": { "Growth Potion": 1 }, "baseTime": 6.0 },
-        { "id": "Blast Potion", "machine": "Advanced Blender", "inputs": { "Oblivion Essence": 1, "Black Powder": 2, "Brandy": 40 }, "outputs": { "Blast Potion": 1 }, "baseTime": 6.0 },
+        { "id": "Blast Potion", "machine": "Advanced Blender", "inputs": { "Oblivion Essence": 1, "Black Powder": 1, "Brandy": 40 }, "outputs": { "Blast Potion": 1 }, "baseTime": 6.0 },
         { "id": "Panacea Potion", "machine": "Advanced Blender", "inputs": { "Fertile Catalyst": 3, "Blast Potion": 3, "Aqua Vitae": 12 }, "outputs": { "Panacea Potion": 1 }, "baseTime": 6.0 },
 
         // --- ESSENCES & CATALYSTS ---
         { "id": "Basic Fertilizer", "machine": "Assembler", "inputs": { "Plant Ash": 1, "Quicklime Powder": 1 }, "outputs": { "Basic Fertilizer": 1 }, "baseTime": 4.0 },
         { "id": "Advanced Fertilizer", "machine": "Assembler", "inputs": { "Basic Fertilizer": 1, "Gloom Fungus": 1 }, "outputs": { "Advanced Fertilizer": 1 }, "baseTime": 4.0 },
         { "id": "Fertile Catalyst", "machine": "Advanced Blender", "inputs": { "Unstable Catalyst": 1, "Vitality Essence": 1, "Lavender Essential Oil": 18 }, "outputs": { "Fertile Catalyst": 1 }, "baseTime": 8.0 },
-        { "id": "Unstable Catalyst", "machine": "Advanced Assembler", "inputs": { "Chamomile Powder": 1, "Gloom Spores": 1, "Sulfur Powder": 1 }, "outputs": { "Unstable Catalyst": 1 }, "baseTime": 4.0 },
+        { "id": "Unstable Catalyst", "machine": "Assembler", "inputs": { "Chamomile Powder": 2, "Gloom Spores": 2 }, "outputs": { "Unstable Catalyst": 1 }, "baseTime": 4.0 },
         { "id": "Resonant Catalyst", "machine": "Advanced Blender", "inputs": { "Fertile Catalyst": 1, "Volcanic Ash": 1, "Aqua Vitae": 12 }, "outputs": { "Resonant Catalyst": 1 }, "baseTime": 8.0 },
         { "id": "Eternal Catalyst", "machine": "Arcane Processor", "inputs": { "Resonant Catalyst": 15, "Philosopherˈs Stone": 1 }, "outputs": { "Eternal Catalyst": 1 }, "baseTime": 60.0 },
         // Note: ˈ is U+02C8, not ASCII 39
@@ -443,14 +443,14 @@ window.ALCHEMY_DB = {
         // --- LAPIS BATCH (33%) ---
         { 
             "id": "Lapis Lazuli", "machine": "Advanced Athanor", 
-            "inputs": { "Impure Silver Powder": 3, "Crude Shard": 12, "Gentian Powder": 12 }, 
-            "outputs": { "Lapis Lazuli": 1, "Crude Shard": 1, "Shattered Crystal": 1 }, // Est: 0.5 shard + 0.5 crystal -> 1.5 fails?
+            "inputs": { "Impure Silver Powder": 3, "Shattered Crystal": 3 }, 
+            "outputs": { "Lapis Lazuli": 1, "Shattered Crystal": 1, "Crude Shard": 1 },
             "baseTime": 36.0
         },
         // --- OBSIDIAN BATCH (50%) ---
         { 
             "id": "Obsidian", "machine": "Advanced Athanor", 
-            "inputs": { "Oblivion Essence": 2, "Crude Crystal": 2, "Unstable Catalyst": 2 }, 
+            "inputs": { "Oblivion Essence": 4, "Crude Crystal": 2 }, 
             "outputs": { "Obsidian": 1, "Volcanic Ash": 1 }, 
             "baseTime": 12.0
         },
@@ -475,7 +475,7 @@ window.ALCHEMY_DB = {
         { "id": "Saturn", "machine": "Shaper", "inputs": { "Salt": 600, "Brick": 600, "Glass": 600 }, "outputs": { "Saturn": 1 }, "baseTime": 300.0 },
         { "id": "Mars", "machine": "Shaper", "inputs": { "Iron Nails": 600, "Steel Gear": 300, "Bronze Rivet": 600, "Copper Bearing": 300 }, "outputs": { "Mars": 1 }, "baseTime": 300.0 },
         { "id": "Venus", "machine": "Advanced Shaper", "inputs": { "Healing Potion": 200, "Vitality Potion": 200, "Transformation Potion": 200, "Growth Potion": 200, "Blast Potion": 200, "Sulfuric Acid": 4000 }, "outputs": { "Venus": 1 }, "baseTime": 1200.0 },
-        { "id": "Star Dust", "machine": "Arcane Processor", "inputs": { "Jupiter": 1, "Saturn": 1, "Mars": 1 }, "outputs": { "Star Dust": 50 }, "baseTime": 300.0 },
+        { "id": "Star Dust", "machine": "Arcane Processor", "inputs": { "Jupiter": 1, "Saturn": 1, "Mars": 1 }, "outputs": { "Star Dust": 5 }, "baseTime": 300.0 },
         { "id": "Fairy Dust", "machine": "Arcane Processor", "inputs": { "Chamomile Powder": 1, "Gentian Powder": 1, "World Tree Leaf": 1 }, "outputs": { "Fairy Dust": 1 }, "baseTime": 4.0 },
         { "id": "Luna", "machine": "Arcane Shaper", "inputs": { "Steel Ingot": 75, "Bronze Ingot": 75, "Copper Ingot": 75, "Silver Ingot": 75, "Gold Ingot": 75, "Moon Tear": 75 }, "outputs": { "Luna": 1 }, "baseTime": 600.0 },
         { "id": "Mercury", "machine": "Arcane Shaper", "inputs": { "Turquoise": 100, "Malachite": 100, "Topaz": 100, "Obsidian": 100, "Lapis Lazuli": 100, "Quicksilver": 1000 }, "outputs": { "Mercury": 1 }, "baseTime": 600.0 },
