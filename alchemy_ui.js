@@ -815,7 +815,7 @@ function renderItemPicker() {
         return matchesCategory && matchesSearch;
     });
 
-    const showCauldronCost = document.getElementById('view-cauldron')?.classList.contains('active') ?? false;
+    const showCauldronCost = (document.getElementById('view-cauldron')?.classList.contains('active') || document.getElementById('cauldron-recipe-modal')?.style.display === 'flex') ?? false;
     const isGeneralCatagory = currentPickerCategory === "[All]";
     itemsToShow.forEach(([name, data]) => {
         const card = document.createElement('div');
@@ -850,6 +850,21 @@ function openRecipeModal(item, domElement) {
     const list = document.getElementById('recipe-list');
     list.innerHTML = '';
     document.getElementById('recipe-modal-title').innerText = t('Select Recipe for ') + item;
+
+    // 煉金鍋按鈕（若 item 有 cauldronTarget）
+    const titleEl = document.getElementById('recipe-modal-title');
+    const itemDef = DB.items[item];
+    // 清除舊按鈕（避免重複添加）
+    titleEl.querySelectorAll('.cauldron-shortcut-btn').forEach(b => b.remove());
+    if (itemDef && itemDef.cauldronTarget !== undefined) {
+        const btn = document.createElement('button');
+        btn.className = 'cauldron-shortcut-btn swap-btn';
+        btn.style.cssText = 'margin-left:8px; width:auto; padding:2px 6px; border-radius:4px; font-size:0.8em;';
+        btn.innerText = t('+ Add Cauldron Recipe');
+        btn.onclick = (e) => { e.stopPropagation(); openCauldronRecipeModal(item); };
+        titleEl.appendChild(btn);
+    }
+
     const currentId = (getActiveRecipe(item) || {}).id;
     
     let ancestors = [];

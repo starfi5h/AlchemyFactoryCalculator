@@ -242,7 +242,16 @@ window.ALCHEMY_I18N = {
         "Import": "导入",
         "Export": "导出",
         "Sync DB": "同步数据库",
-        "No saved recipes yet.": "暂无保存的配方。"
+        "No saved recipes yet.": "暂无保存的配方。",
+        "+ Add Cauldron Recipe": "+ 新增炼金锅配方",
+        "Valid Range": "有效区间",
+        "Target Value": "目标价值",
+        "Distance to lower bound": "距下界",
+        "Distance to upper bound": "距上界",
+        "Current Product": "当前产物",
+        "Current Value": "当前价值",
+
+        "Apply": "应用"
     },
     "items": {
         // Game version: 0.4.3.4071

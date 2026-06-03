@@ -1055,3 +1055,391 @@ function syncCauldronToMainDB(notify = false) {
     console.log(`Synced ${importedCount} recipes from cauldron`);
     if (notify) alert(`Synced ${importedCount} recipes to the Production Tab! You can now select them in the calculator.`);
 }
+
+
+/* ==========================================================================
+   SECTION: CAULDRON RECIPE MODAL (from recipe-modal shortcut)
+   ========================================================================== */
+
+let _cauldronModalState = {
+    targetItem: null,
+    cauldronType: 0,    // 0=普通(3格), 1=高級(2格)
+    slots: [null, null, null],
+};
+
+function openCauldronRecipeModal(targetItem) {
+    _cauldronModalState.targetItem = targetItem;
+    _cauldronModalState.cauldronType = 0;
+    _cauldronModalState.slots = [null, null, null];
+
+    const favs = cauldronState.favorites || [];
+    const existing = favs.find(f => f.output === targetItem && f.inputs.length === 3);
+    if (existing) {
+        existing.inputs.forEach((name, i) => { _cauldronModalState.slots[i] = name; });
+    }
+
+    document.getElementById('cauldron-recipe-modal-title').innerText = t('Cauldron') + ' → ' + targetItem;
+    _renderCauldronRecipeModal();
+    document.getElementById('cauldron-recipe-modal').style.display = 'flex';
+}
+
+function _switchCauldronModalType(type) {
+    _cauldronModalState.cauldronType = type;
+    _cauldronModalState.slots = [null, null, null];
+
+    const slotCount = type === 1 ? 2 : 3;
+    const favs = cauldronState.favorites || [];
+    const existing = favs.find(f => f.output === _cauldronModalState.targetItem && f.inputs.length === slotCount);
+    if (existing) {
+        existing.inputs.forEach((name, i) => { _cauldronModalState.slots[i] = name; });
+    }
+    _renderCauldronRecipeModal();
+}
+
+/**
+ * 計算目標 item 的 cauldronTarget 上下界
+ * 排序所有 validTargets 依 cauldronTarget，取鄰近點的中位數為界
+ */
+function _getCauldronTargetBounds(targetItem) {
+    const sorted = Object.keys(DB.items)
+        .filter(name => DB.items[name].cauldronTarget !== undefined)
+        .map(name => ({ name, target: DB.items[name].cauldronTarget }))
+        .sort((a, b) => a.target - b.target);
+
+    const idx = sorted.findIndex(x => x.name === targetItem);
+    if (idx === -1) return null;
+
+    const self = sorted[idx].target;
+    const lower = idx > 0
+        ? (sorted[idx - 1].target + self) / 2
+        : null; // 無左鄰
+    const upper = idx < sorted.length - 1
+        ? (self + sorted[idx + 1].target) / 2
+        : null; // 無右鄰
+
+    return { self, lower, upper };
+}
+
+/**
+ * 計算當前 slots 的 T 值（普通鍋）
+ */
+function _calcCauldronModalT(slots, cauldronType) {
+    const slotCount = cauldronType === 1 ? 2 : 3;
+    const filled = slots.slice(0, slotCount);
+    if (filled.some(s => !s)) return null;
+
+    if (cauldronType === 0) {
+        const [n0, n1, n2] = filled;
+        const c0 = DB.items[n0]?.cauldronCost ?? 0;
+        const c1 = DB.items[n1]?.cauldronCost ?? 0;
+        const c2 = DB.items[n2]?.cauldronCost ?? 0;
+        let ratio = 1.0;
+        if (n0 === n1 && n1 === n2) ratio = 0.5;
+        else if (n0 === n1 || n1 === n2 || n0 === n2) ratio = 0.65;
+        return (c0 + c1 + c2) * ratio;
+    } else {
+        const [nA, nB] = filled;
+        const cA = DB.items[nA]?.cauldronCost ?? 0;
+        const cB = DB.items[nB]?.cauldronCost ?? 0;
+        return nA === nB ? cA : Math.abs(cA - cB);
+    }
+}
+
+/**
+ * 計算當前 slots 的輸出物品（複用 cauldron.js 的判斷邏輯）
+ */
+function _calcCauldronModalOutput(slots, cauldronType, T) {
+    if (T === null) return null;
+    const slotCount = cauldronType === 1 ? 2 : 3;
+    const filled = slots.slice(0, slotCount);
+
+    const validTargets = Object.keys(DB.items)
+        .filter(name => DB.items[name].cauldronTarget !== undefined)
+        .map(name => ({
+            name,
+            id: DB.items[name].id ?? 3000,
+            target: DB.items[name].cauldronTarget,
+            mult: DB.items[name].cauldronMulti ?? 1,
+        }));
+
+    if (cauldronType === 0) {
+        let best = null, bestDist = Infinity, bestId = 9999;
+        for (const vt of validTargets) {
+            const dist = Math.abs((T - vt.target) * vt.mult);
+            if (dist < bestDist || (Math.abs(dist - bestDist) < 1e-7 && vt.id < bestId)) {
+                bestDist = dist; best = vt.name; bestId = vt.id;
+            }
+        }
+        return best;
+    } else {
+        const [nA, nB] = filled;
+        const maxT = validTargets.reduce((p, c) => p.target > c.target ? p : c);
+        const minT = validTargets.reduce((p, c) => p.target < c.target ? p : c);
+        if (nA === nB) {
+            let minDist = Infinity, best = maxT.name;
+            for (const vt of validTargets) {
+                const dist = vt.target - T;
+                if (dist > 1e-7 && dist < minDist && vt.name !== nA) { minDist = dist; best = vt.name; }
+            }
+            return best;
+        } else {
+            let minDist = Infinity, best = minT.name;
+            for (const vt of validTargets) {
+                if (vt.target > T) continue;
+                const dist = (T - vt.target) * vt.mult;
+                if (dist < minDist && vt.name !== nA && vt.name !== nB) { minDist = dist; best = vt.name; }
+            }
+            return best;
+        }
+    }
+}
+
+function _renderCauldronRecipeModal() {
+    const { targetItem, cauldronType, slots } = _cauldronModalState;
+    const slotCount = cauldronType === 1 ? 2 : 3;
+    const body = document.getElementById('cauldron-recipe-modal-body');
+
+    // ── T 值與輸出計算 ──
+    const T = _calcCauldronModalT(slots, cauldronType);
+    const currentOutput = _calcCauldronModalOutput(slots, cauldronType, T);
+    const allFilled = T !== null;
+    const isMatch = allFilled && currentOutput === targetItem;
+
+    // ── 目標上下界 ──
+    const bounds = _getCauldronTargetBounds(targetItem);
+
+    // ── 收藏狀態 ──
+    const favs = cauldronState.favorites || [];
+    const favCount = favs.filter(f => f.output === currentOutput && f.inputs.length === slotCount).length;
+    const sortedCurrentKey = slots.slice(0, slotCount).filter(Boolean).sort().join(',');
+    const isCurrentFav = allFilled && favs.some(f =>
+        f.output === targetItem && [...f.inputs].sort().join(',') === sortedCurrentKey
+    );
+
+    // ── mini-tab ──
+    const tabHtml = `
+        <div style="display:flex; gap:4px; margin-bottom:2px;">
+            <button class="tab-btn mini-tab ${cauldronType === 0 ? 'active' : ''}"
+                onclick="_switchCauldronModalType(0)">${t('Cauldron')}</button>
+            <button class="tab-btn mini-tab ${cauldronType === 1 ? 'active' : ''}"
+                onclick="_switchCauldronModalType(1)">${t('Advanced Cauldron')}</button>
+        </div>`;
+
+    // ── Slots + ctrl 列 ──
+    // 固定渲染 3 格，高級模式第 3 格隱藏（保留佔位）
+    let slotsHtml = '<div style="display:flex; gap:8px; align-items:flex-start;">';
+    for (let i = 0; i < 3; i++) {
+        const hidden = i >= slotCount;
+        const name = hidden ? null : slots[i];
+        const def = name ? DB.items[name] : null;
+        const cost = def ? Number(def.cauldronCost.toFixed(2)) : null;
+
+        slotsHtml += `
+            <div style="display:flex; flex-direction:column; align-items:center; gap:4px; ${hidden ? 'visibility:hidden;' : ''}">
+                <!-- picker 按鈕 -->
+                <button class="cauldron-slot-btn ${name ? 'active' : ''}"
+                    onclick="_pickCauldronModalSlot(${i})"
+                    style="display:flex; align-items:center; gap:4px; padding:5px 8px;
+                           background:#1a1a1a; border:1px solid ${name ? '#557' : '#444'};
+                           border-radius:4px; cursor:pointer; min-width:100px; color:inherit; font-size:0.85em;">
+                    ${def
+                        ? `<img src="img/item${def.id ?? 0}.png" width="18" height="18">`
+                        : '<span style="opacity:0.4; font-size:1.1em;">＋</span>'}
+                    <span>${name ?? (t('Set Input') + (i + 1))}</span>
+                </button>
+                <!-- cost 控制列：無論有無選取都佔位 -->
+                <div style="display:flex; align-items:center; gap:3px; height:24px;">
+                    ${name ? `
+                        <button class="swap-btn" onclick="_shiftCauldronModalSlot(${i}, -1)">-</button>
+                        <span style="font-size:0.8em; min-width:40px; text-align:center;">${cost}</span>
+                        <button class="swap-btn" onclick="_shiftCauldronModalSlot(${i}, 1)">+</button>
+                    ` : `
+                        <button class="swap-btn" style="opacity:0.3;" onclick="_shiftCauldronModalSlot(${i}, 1)">+</button>
+                    `}
+                </div>
+            </div>`;
+    }
+    slotsHtml += '</div>';
+
+    // ── 輸出結果列 ──
+    let resultHtml = '';
+    if (allFilled && currentOutput) {
+        const outDef = DB.items[currentOutput] || {};
+        resultHtml = `
+            <div style="padding:5px 8px; border-radius:4px; font-size:0.85em; display:flex; align-items:center; gap:6px;
+                        background:${isMatch ? 'rgba(0,200,100,0.1)' : 'rgba(200,50,50,0.1)'};
+                        border:1px solid ${isMatch ? 'var(--success,#4c4)' : 'var(--danger,#c44)'};">
+                <img src="img/item${outDef.id ?? 0}.png" width="20" height="20">
+                ${isMatch
+                    ? `<span style="color:var(--success,#4c4);">✔ ${t('Current Product')}：${currentOutput}</span>`
+                    : `<span style="color:var(--danger,#c44);">✘ ${t('Current Product')}：${currentOutput}</span>`}
+            </div>`;
+    }
+
+    // ── 目標 cauldronTarget 及上下界 ──
+    let boundsHtml = `
+            <div style="font-size:0.8em; color:#aaa; display:flex; align-items:center; gap:8px;">
+                <img src="img/item${DB.items[targetItem]?.id ?? 0}.png" width="20" height="20">
+                <span><strong style="color:#ddd;">${targetItem}</strong></span>
+                <span>${t('Target Value')} = <strong style="color:#ddd;">${bounds.self}</strong></span>`;
+    if (bounds && slotCount === 3) {
+        const lowerStr = bounds.lower !== null ? Number(bounds.lower.toFixed(2)) : '-∞';
+        const upperStr = bounds.upper !== null ? Number(bounds.upper.toFixed(2)) : '+∞';
+        boundsHtml += `<span style="color:#888;">${t('Valid Range')}：[${lowerStr}, ${upperStr}]</span>`;
+    }
+    boundsHtml += `</div>`;
+
+    // ── T 值及與區間的差 ──
+    let tInfoHtml = '';
+    if (bounds) {
+        if (!allFilled) {
+            tInfoHtml = `---`;
+        } else {
+            const tDisplay = Number(T.toFixed(3));
+            const inBounds =
+                (bounds.lower === null || T >= bounds.lower) &&
+                (bounds.upper === null || T <= bounds.upper);
+            const color = inBounds ? 'var(--success,#4c4)' : 'var(--danger,#c44)';
+
+            const dLower = bounds.lower !== null && slotCount === 3
+                ? Number((T - bounds.lower).toFixed(3))
+                : null;
+            const dUpper = bounds.upper !== null && slotCount === 3
+                ? Number((bounds.upper - T).toFixed(3))
+                : null;
+
+            const dLowerStr = dLower !== null
+                ? `${t('Distance to lower bound')}：<span style="color:${dLower >= 0 ? '#4c4' : '#c44'};">${dLower >= 0 ? '+' : ''}${dLower}</span>`
+                : '';
+            const dUpperStr = dUpper !== null
+                ? `${t('Distance to upper bound')}：<span style="color:${dUpper >= 0 ? '#4c4' : '#c44'};">${dUpper >= 0 ? '+' : ''}${dUpper}</span>`
+                : '';
+
+            tInfoHtml = `
+                <div style="font-size:0.8em; display:flex; align-items:center; gap:12px;">
+                    <span>${t('Current Value')} = <strong style="color:${color};">${tDisplay}</strong></span>
+                    ${dLowerStr ? `<span>${dLowerStr}</span>` : ''}
+                    ${dUpperStr ? `<span>${dUpperStr}</span>` : ''}
+                </div>`;
+        }
+    }
+
+    // ── 底部按鈕列 ──
+    const bottomHtml = `
+        <div style="display:flex; justify-content:space-between; align-items:center; margin-top:2px;">            
+            <span style="font-size:0.8em; color:#888;"><img src="img/item${DB.items[currentOutput]?.id ?? 0}.png" width="18" height="18"> ${t('Current Product')} ${t('Saved Recipes')} : ${favCount}</span>
+            <div style="display:flex; gap:6px;">
+                <button class="swap-btn"
+                    style="width:auto; padding:3px 10px; border-radius:4px; font-size:1.1em; ${allFilled ? '' : 'opacity:0.4; cursor:not-allowed;'}"
+                    onclick="_toggleCauldronModalFav()" ${allFilled ? '' : 'disabled'}>
+                    ${isCurrentFav ? '★' : '☆'}
+                </button>
+                <button class="swap-btn"
+                    style="width:auto; padding:3px 12px; border-radius:4px;
+                           background:${isMatch ? 'rgba(0,160,80,0.3)' : '#222'};
+                           border-color:${isMatch ? 'var(--success,#4c4)' : '#555'};
+                           ${isMatch ? '' : 'opacity:0.4; cursor:not-allowed;'}"
+                    onclick="_applyCauldronModalRecipe()" ${isMatch ? '' : 'disabled'}>
+                    ${t('Apply')}
+                </button>
+            </div>
+        </div>`;
+
+    body.innerHTML = `
+        <div style="padding:12px; display:flex; flex-direction:column; gap:8px;">
+            ${tabHtml}
+            ${slotsHtml}
+            ${resultHtml}
+            ${boundsHtml}
+            ${tInfoHtml}
+            ${bottomHtml}
+        </div>`;
+}
+
+/**
+ * 和 cauldron page 的 shiftFilterItem 相同邏輯，但作用在 modal slots
+ */
+function _shiftCauldronModalSlot(slotIdx, delta) {
+    const list = Object.keys(DB.items)
+        .filter(isVaildCandidate)
+        .sort((a, b) => DB.items[a].cauldronCost - DB.items[b].cauldronCost);
+    if (list.length === 0) return;
+
+    const current = _cauldronModalState.slots[slotIdx];
+    let nextIdx = 0;
+    if (current) {
+        const idx = list.indexOf(current);
+        nextIdx = (idx + delta + list.length) % list.length;
+    } else {
+        nextIdx = delta > 0 ? 0 : list.length - 1;
+    }
+    _cauldronModalState.slots[slotIdx] = list[nextIdx];
+    _renderCauldronRecipeModal();
+}
+
+function _pickCauldronModalSlot(slotIdx) {
+    const originalSelectItem = window.selectItem;
+    window.selectItem = (name) => {
+        if (!isVaildCandidate(name)) {
+            alert(`"${name}" 不是有效的煉金原料（無 cauldronCost）`);
+            window.selectItem = originalSelectItem;
+            return;
+        }
+        _cauldronModalState.slots[slotIdx] = name;
+        window.selectItem = originalSelectItem;
+        closeModal('picker-modal');
+        _renderCauldronRecipeModal();
+    };
+    openItemPicker();
+}
+
+function _toggleCauldronModalFav() {
+    const { targetItem, cauldronType, slots } = _cauldronModalState;
+    const slotCount = cauldronType === 1 ? 2 : 3;
+    const inputs = slots.slice(0, slotCount).filter(Boolean).sort();
+    if (inputs.length < slotCount) return;
+
+    const favs = cauldronState.favorites;
+    const key = inputs.join('|');
+    const idx = favs.findIndex(f => f.output === targetItem && [...f.inputs].sort().join('|') === key);
+    if (idx > -1) favs.splice(idx, 1);
+    else favs.push({ inputs, output: targetItem });
+
+    saveCauldronSettings();
+    renderCauldronFavorites();
+    _renderCauldronRecipeModal();
+}
+
+function _applyCauldronModalRecipe() {
+    const { targetItem, cauldronType, slots } = _cauldronModalState;
+    const slotCount = cauldronType === 1 ? 2 : 3;
+    const inputs = slots.slice(0, slotCount).filter(Boolean).sort();
+    if (inputs.length < slotCount) return;
+
+    // 1. 確保已加入收藏
+    const favs = cauldronState.favorites;
+    const key = inputs.join('|');
+    if (!favs.some(f => f.output === targetItem && [...f.inputs].sort().join('|') === key)) {
+        favs.push({ inputs, output: targetItem });
+    }
+    saveCauldronSettings();
+    renderCauldronFavorites();
+
+    // 2. 同步到主 DB 並套用對應 recipe
+    syncCauldronToMainDB();
+
+    const matchedRecipe = (DB.recipes || []).find(r => {
+        if (!r.id?.startsWith('AUTO_GENERATED_CAULDRON')) return false;
+        if (!r.outputs?.[targetItem]) return false;
+        return Object.keys(r.inputs).sort().join(',') === [...inputs].sort().join(',');
+    });
+    if (matchedRecipe) {
+        DB.settings.preferredRecipes[targetItem] = matchedRecipe.id;
+        persist();
+    }
+
+    // 3. 關閉兩個 modal 並重算
+    closeModal('cauldron-recipe-modal');
+    closeModal('recipe-modal');
+    calculate();
+}

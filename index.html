@@ -51,6 +51,19 @@
             </div>
         </div>
 
+        <!-- Cauldron Recipe Modal -->
+        <div id="cauldron-recipe-modal" class="modal-overlay" onclick="closeModal('cauldron-recipe-modal')">
+            <div class="modal-content" onclick="event.stopPropagation()" style="min-width:320px; max-width:640px;">
+                <div class="modal-header">
+                    <h2 id="cauldron-recipe-modal-title" style="font-size:1em; margin:0;">煉金鍋配方</h2>
+                    <button class="close-modal" onclick="closeModal('cauldron-recipe-modal')">&times;</button>
+                </div>
+                <div id="cauldron-recipe-modal-body">
+                    <!-- 由 JS 動態渲染 -->
+                </div>
+            </div>
+        </div>
+
         <!-- Item Picker Modal -->
         <div id="picker-modal" class="modal-overlay" onclick="closeModal('picker-modal')">
             <div class="modal-content picker-modal-content" onclick="event.stopPropagation()">

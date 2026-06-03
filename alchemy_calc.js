@@ -404,7 +404,8 @@ function renderTreeNode(params, node) {
             capTag = `<span class="max-cap-tag" onclick="recalculate('${params.targetItem}', ${params.targetRate / usageRatio})">(Max: ${formatVal(node.maxOutput)}/m)</span>`;
         }
         machineTag = `<span class="machine-tag" data-tooltip="${tooltipText}">${Math.ceil(node.machineCount - 0.0001)} ${t(node.machine, 'machines')}${capTag}</span>`;
-        if (getRecipesFor(node.item).length > 1) {
+        const hasCauldronTarget = itemDef && itemDef.cauldronTarget !== undefined;
+        if (getRecipesFor(node.item).length > 1 || hasCauldronTarget) {
             swapBtn = `<button class="swap-btn" onclick="openRecipeModal('${node.item}', this.parentElement)" title="Swap Recipe">🔄</button>`;
         }
     }
