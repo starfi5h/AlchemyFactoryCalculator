@@ -42,19 +42,18 @@ window.ALCHEMY_DB = {
         "Coke": { "id": 503, "category": "Fuel", "heat": 600, "cauldronCost": 29, "cauldronMulti": 1, "cauldronTarget": 30 },
         "Coke Powder": { "id": 504, "category": "Fuel", "heat": 660, "cauldronCost": 31 },
         "Coal": { "id": 604, "category": "Fuel", "heat": 540, "cauldronCost": 40, "cauldronMulti": 1, "cauldronTarget": 40 },
-        "Black Powder": { "id": 614, "category": "Fuel", "heat": 6000, "sellPrice": 660, "cauldronCost": 300, "cauldronMulti": 1, "cauldronTarget": 300 },
-        "Blast Potion": { "id": 705, "category": "Fuel", "heat": 24000, "sellPrice": 2557, "cauldronCost": 1197 },
+        "Black Powder": { "id": 614, "category": "Fuel", "heat": 6000, "sellPrice": 660, "cauldronCost": 300, "cauldronMulti": 1, "cauldronTarget": 300 },        
 
         // --- 5. FERTILIZERS ---
         "Basic Fertilizer": { "id": 416, "category": "Fertilizer", "nutrientValue": 144, "maxFertility": 12, "cauldronCost": 10 },
-        "Advanced Fertilizer": { "id": 511, "category": "Fertilizer", "nutrientValue": 720, "maxFertility": 144, "cauldronCost": 56 },        
-        "Growth Potion": { "id": 615, "category": "Fertilizer", "sellPrice": 1224, "nutrientValue": 6480, "maxFertility": 2160, "cauldronCost": 500 },
-        "Fertile Catalyst": { "id": 706, "category": "Fertilizer", "charges": 240, "nutrientValue": 24000, "maxFertility": 6000, "wholesalePrice": 3000, "cauldronCost": 4061.84, "cauldronMulti": 1, "cauldronTarget": 3561.84 },
+        "Advanced Fertilizer": { "id": 511, "category": "Fertilizer", "nutrientValue": 720, "maxFertility": 144, "cauldronCost": 56 },
 
         // --- 6. POTIONS ---
         "Healing Potion": { "id": 306, "category": "Potion", "sellPrice": 85, "cauldronCost": 30 },
         "Vitality Potion": { "id": 415, "category": "Potion", "sellPrice": 330, "cauldronCost": 125 },
-        "Transformation Potion": { "id": 508, "category": "Potion", "sellPrice": 620, "cauldronCost": 240 },
+        "Transformation Potion": { "id": 508, "category": "Potion", "sellPrice": 620, "cauldronCost": 240 },        
+        "Growth Potion": { "id": 615, "category": "Potion", "sellPrice": 1224, "nutrientValue": 6480, "maxFertility": 2160, "cauldronCost": 500 },
+        "Blast Potion": { "id": 705, "category": "Potion", "heat": 24000, "sellPrice": 2557, "cauldronCost": 1197 },
         "Panacea Potion": { "id": 816, "category": "Potion", "nutrientValue": 200000, "maxFertility": 20000, "heat": 320000, "sellPrice": 30000, "cauldronCost": 15288.12 },
 
         // --- 7. SOLIDS ---        
@@ -138,6 +137,7 @@ window.ALCHEMY_DB = {
 
         // --- 11. CATALYSTS ---		
         "Unstable Catalyst": { "id": 616, "category": "Catalyst", "charges": 180, "cauldronCost": 740, "cauldronMulti": 1, "cauldronTarget": 740 },
+        "Fertile Catalyst": { "id": 706, "category": "Catalyst", "charges": 240, "nutrientValue": 24000, "maxFertility": 6000, "wholesalePrice": 3000, "cauldronCost": 4061.84, "cauldronMulti": 1, "cauldronTarget": 3561.84 },
         "Resonant Catalyst": { "id": 815, "category": "Catalyst", "charges": 1500, "cauldronCost": 23977.44, "cauldronMulti": 1, "cauldronTarget": 27977.44 },
         "Eternal Catalyst": { "id": 908, "category": "Catalyst", "charges": 99999, "cauldronCost": 1194661.6 },
 

@@ -812,7 +812,11 @@ function renderItemPicker() {
 
     // 將 DB.items 轉換為數組以保持順序（或按 ID 排序）
     const itemsToShow = Object.entries(DB.items).filter(([name, data]) => {
-        const matchesCategory = (currentPickerCategory === "[All]" || data.category === currentPickerCategory);
+        const matchesCategory = (data.category === currentPickerCategory
+            || currentPickerCategory === "[All]"
+            || currentPickerCategory === t('Fuel') && data.heat > 0
+            || currentPickerCategory === t('Fertilizer') && data.nutrientValue > 0
+        );
         const matchesSearch = name.toLowerCase().includes(filterText);
         return matchesCategory && matchesSearch;
     });

@@ -74,7 +74,7 @@ function getPresetCandidates(poolType) {
         let inputSet = new Set();
         if (poolType === 'Herbs') {
             Object.entries(DB.items).forEach(([name, item]) => {
-                if (item.cauldronCost !== undefined && item.nutrientCost !== undefined || item.category === 'Crystal') {
+                if (item.cauldronCost !== undefined && item.nutrientCost !== undefined) {
                     candidateSet.add(name);
                     inputSet.add(name);
                 }
@@ -82,7 +82,7 @@ function getPresetCandidates(poolType) {
         }
         else if (poolType === 'Gold') {
             Object.entries(DB.items).forEach(([name, item]) => {
-                if (item.cauldronCost !== undefined && (item.buyPrice !== undefined || item.category === 'Currency' || item.category === 'Crystal')) {
+                if (item.cauldronCost !== undefined && (item.buyPrice !== undefined || item.category === 'Currency')) {
                     inputSet.add(name);
                     // Raw Materials has negative maxStack, it's not suitable for cauldron
                     if (item.category !== 'Raw Materials' && item.cauldronCost !== 750) candidateSet.add(name);
@@ -95,7 +95,7 @@ function getPresetCandidates(poolType) {
             for (const { inputs, outputs, machine } of DB.recipes) {
                 const inKeys = Object.keys(inputs);
                 const outKeys = Object.keys(outputs);
-                if (machine === 'Seed Plot' || machine === 'Crucible' || machine === 'Kiln' || machine === 'Paradox Crucible') continue;
+                if (machine === 'Seed Plot' || DB.machines[machine].heatCost > 0) continue;
                 if (inKeys.length === 1 && outKeys.length === 1 && inputSet.has(inKeys[0]) && isVaildCandidate(outKeys[0])) {
                     outputSet.add(outKeys[0]);
                     //console.log(outKeys[0] + "," + round);
@@ -200,7 +200,6 @@ function switchCauldronType(index) {
     document.getElementById('filter-3-diff').parentElement.style.display = isAdvancedCauldron ? 'none' : '';
     document.getElementById('filter-3-same').parentElement.style.display = isAdvancedCauldron ? 'none' : '';
 
-    saveCauldronSettings();
     if (document.getElementById('cauldron-real-time-calculation')?.checked) runCauldronSimulation();
 }
 
