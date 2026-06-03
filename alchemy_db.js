@@ -1,7 +1,7 @@
 window.ALCHEMY_DB = {
-    "version": 40,
-    "date": "2026.05.31",
-    "gameVersion": "0.4.5.4464",
+    "version": 41,
+    "date": "2026.06.03",
+    "gameVersion": "0.5.0.4471",
     "items": {
         // --- 1. RAW RESOURCES ---
         "Logs": { "id": 1, "category": "Raw Materials", "buyPrice": 200, "maxStack": -200, "heat": 2000, "cauldronCost": 0.8, "tier": 1 },
@@ -49,7 +49,7 @@ window.ALCHEMY_DB = {
         "Basic Fertilizer": { "id": 416, "category": "Fertilizer", "nutrientValue": 144, "maxFertility": 12, "cauldronCost": 10 },
         "Advanced Fertilizer": { "id": 511, "category": "Fertilizer", "nutrientValue": 720, "maxFertility": 144, "cauldronCost": 56 },        
         "Growth Potion": { "id": 615, "category": "Fertilizer", "sellPrice": 1224, "nutrientValue": 6480, "maxFertility": 2160, "cauldronCost": 500 },
-        "Fertile Catalyst": { "id": 706, "category": "Fertilizer", "nutrientValue": 24000, "maxFertility": 6000, "wholesalePrice": 3000, "cauldronCost": 4061.84, "cauldronMulti": 1, "cauldronTarget": 3561.84 },
+        "Fertile Catalyst": { "id": 706, "category": "Fertilizer", "charges": 240, "nutrientValue": 24000, "maxFertility": 6000, "wholesalePrice": 3000, "cauldronCost": 4061.84, "cauldronMulti": 1, "cauldronTarget": 3561.84 },
 
         // --- 6. POTIONS ---
         "Healing Potion": { "id": 306, "category": "Potion", "sellPrice": 85, "cauldronCost": 30 },
@@ -137,9 +137,9 @@ window.ALCHEMY_DB = {
         "Pure Gold Dust": { "id": 904, "category": "Metal Mash", "cauldronCost": 85673.6, "cauldronMulti": 1, "cauldronTarget": 100673.6 },
 
         // --- 11. CATALYSTS ---		
-        "Unstable Catalyst": { "id": 616, "category": "Catalyst", "cauldronCost": 740, "cauldronMulti": 1, "cauldronTarget": 740 },
-        "Resonant Catalyst": { "id": 815, "category": "Catalyst", "cauldronCost": 23977.44, "cauldronMulti": 1, "cauldronTarget": 27977.44 },
-        "Eternal Catalyst": { "id": 908, "category": "Catalyst", "cauldronCost": 1194661.6 },
+        "Unstable Catalyst": { "id": 616, "category": "Catalyst", "charges": 180, "cauldronCost": 740, "cauldronMulti": 1, "cauldronTarget": 740 },
+        "Resonant Catalyst": { "id": 815, "category": "Catalyst", "charges": 1500, "cauldronCost": 23977.44, "cauldronMulti": 1, "cauldronTarget": 27977.44 },
+        "Eternal Catalyst": { "id": 908, "category": "Catalyst", "charges": 99999, "cauldronCost": 1194661.6 },
 
         // --- 12. Magic ---
         "Philosopherˈs Stone": { "id": 33, "category": "Magic", "cauldronCost": 1000000, "cauldronMulti": 1, "cauldronTarget": 1000000 },
@@ -356,12 +356,14 @@ window.ALCHEMY_DB = {
 
         // --- SILVER ---
         { "id": "Impure Silver Powder", "machine": "Refiner", "inputs": { "Crude Silver Powder": 2 }, "outputs": { "Impure Silver Powder": 1 }, "baseTime": 8.0 },
-        // --- SILVER POWDER BATCH (20%) ---
+        // --- SILVER POWDER BATCH (20%) 10 RUNS ---
         { 
-            "id": "Silver Powder", "machine": "Advanced Athanor", 
-            "inputs": { "Copper Powder": 20, "Black Powder": 10 }, 
-            "outputs": { "Silver Powder": 1, "Crude Silver Powder": 4 }, 
-            "baseTime": 32.0
+            "id": "Silver Powder", "machine": "Advanced Athanor", "ChargeCost": 1500,
+            "inputs": { "Copper Powder": 40, "Black Powder": 20 }, 
+            "outputs": { "Silver Powder": 2, "Crude Silver Powder": 8 }, 
+            "unstableOutputs": { "Silver Powder": 5, "Crude Silver Powder": 5 },
+            "resonantOutputs": { "Silver Powder": 10, "Crude Silver Powder": 10 },
+            "baseTime": 64.0,
         },
         { "id": "Silver Ingot", "machine": "Crucible", "inputs": { "Silver Powder": 1 }, "outputs": { "Silver Ingot": 1 }, "baseTime": 16.0 },
         { "id": "Silver Coin", "machine": "Processor", "inputs": { "Silver Ingot": 1 }, "outputs": { "Silver Coin": 5 }, "baseTime": 16.0 },
@@ -370,8 +372,15 @@ window.ALCHEMY_DB = {
         // --- GOLD ---
         { "id": "Impure Gold Dust", "machine": "Refiner", "inputs": { "Crude Gold Dust": 2 }, "outputs": { "Impure Gold Dust": 1 }, "baseTime": 10.0 },
 
-        // --- GOLD DUST BATCH (10%) ---
-        { "id": "Gold Dust", "machine": "Advanced Athanor", "inputs": { "Silver Powder": 10, "Volcanic Ash": 10, "Quicksilver": 180 }, "outputs": { "Gold Dust": 1, "Crude Gold Dust": 3, "Impure Gold Dust": 6 }, "baseTime": 80.0 },
+        // --- GOLD DUST BATCH (10%) 10 RUNS ---
+        { 
+            "id": "Gold Dust", "machine": "Advanced Athanor", "ChargeCost": 10000,
+            "inputs": { "Silver Powder": 10, "Volcanic Ash": 10, "Quicksilver": 180 },
+            "outputs": { "Gold Dust": 1, "Impure Gold Dust": 3, "Crude Gold Dust": 6 },
+            "unstableOutputs": { "Gold Dust": 2, "Impure Gold Dust": 8 },
+            "resonantOutputs": { "Gold Dust": 10, "Impure Gold Dust": 10, "Crude Gold Dust": 10 },
+            "baseTime": 80.0 
+        },
         { "id": "Pure Gold Dust", "machine": "Refiner", "inputs": { "Gold Dust": 2 }, "outputs": { "Pure Gold Dust": 1 }, "baseTime": 10.0 },
         { "id": "Pure Gold Dust 2", "machine": "Grinder", "inputs": { "Gold Ingot": 1 }, "outputs": { "Pure Gold Dust": 1 }, "baseTime": 40.0 },
         { "id": "Gold Ingot", "machine": "Crucible", "inputs": { "Pure Gold Dust": 1 }, "outputs": { "Gold Ingot": 1 }, "baseTime": 40.0 },
@@ -439,19 +448,32 @@ window.ALCHEMY_DB = {
             "outputs": { "Malachite": 1, "Crude Shard": 1 }, 
             "baseTime": 24.0
         },
-        { "id": "Topaz", "machine": "Blender", "inputs": { "Crude Shard": 1, "Sulfuric Acid": 30 }, "outputs": { "Topaz": 1 }, "baseTime": 12.0 },
-        // --- LAPIS BATCH (33%) ---
-        { 
-            "id": "Lapis Lazuli", "machine": "Advanced Athanor", 
-            "inputs": { "Impure Silver Powder": 3, "Shattered Crystal": 3 }, 
-            "outputs": { "Lapis Lazuli": 1, "Shattered Crystal": 1, "Crude Shard": 1 },
-            "baseTime": 36.0
+        // --- MALACHITE BATCH (50%) 2 RUNS ---
+        { 
+            "id": "Malachite_Alt", "machine": "Advanced Athanor", "ChargeCost": 72,
+            "inputs": { "Impure Copper Powder": 4, "Clay Powder": 12 }, 
+            "outputs": { "Malachite": 1, "Crude Shard": 1 },
+            "unstableOutputs": { "Malachite": 2 },
+            "resonantOutputs": { "Malachite": 2, "Crude Shard": 2 },
+            "baseTime": 24.0
         },
-        // --- OBSIDIAN BATCH (50%) ---
+        { "id": "Topaz", "machine": "Blender", "inputs": { "Crude Shard": 1, "Sulfuric Acid": 30 }, "outputs": { "Topaz": 1 }, "baseTime": 12.0 },
+        // --- LAPIS BATCH (33%) 6 RUNS ---
         { 
-            "id": "Obsidian", "machine": "Advanced Athanor", 
+            "id": "Lapis Lazuli", "machine": "Advanced Athanor", "ChargeCost": 3300,
+            "inputs": { "Impure Silver Powder": 6, "Shattered Crystal": 6 }, 
+            "outputs": { "Lapis Lazuli": 2, "Shattered Crystal": 2, "Crude Shard": 2 },
+            "unstableOutputs": { "Lapis Lazuli": 3, "Shattered Crystal": 3 },
+            "resonantOutputs": { "Lapis Lazuli": 6, "Shattered Crystal": 6, "Crude Shard": 6 },
+            "baseTime": 72.0
+        },
+        // --- OBSIDIAN BATCH (50%) 2 RUNS ---
+        { 
+            "id": "Obsidian", "machine": "Advanced Athanor", "ChargeCost": 840,
             "inputs": { "Oblivion Essence": 4, "Crude Crystal": 2 }, 
-            "outputs": { "Obsidian": 1, "Volcanic Ash": 1 }, 
+            "outputs": { "Obsidian": 1, "Volcanic Ash": 1 },
+            "unstableOutputs": { "Volcanic Ash": 2 },
+            "resonantOutputs": { "Obsidian": 2, "Volcanic Ash": 2 },
             "baseTime": 12.0
         },
         { "id": "Ruby", "machine": "Cauldron", "inputs": { "Diamond": 1, "Gold Dust": 1, "Resonant Catalyst": 1 }, "outputs": { "Ruby": 1 }, "baseTime": 30.9, "heatCost": 3131.3 },

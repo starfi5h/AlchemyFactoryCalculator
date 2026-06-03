@@ -31,7 +31,7 @@
         return db.recipes.filter(recipe => recipe.outputs[item]);
     }
 
-    function getActiveRecipe(db, state, item) {
+    function getPreferredRecipe(db, state, item) {
         const candidates = getRecipesFor(db, item);
         if (candidates.length === 0) return null;
         if (candidates.length === 1) return candidates[0];
@@ -41,7 +41,46 @@
             const found = candidates.find(recipe => recipe.id === prefId);
             if (found) return found;
         }
-        return candidates[0];
+        return candidates[0];        
+    }
+
+    function getActiveRecipe(db, state, item) {
+        // Return a copy of effective recipe
+        const recipe = getPreferredRecipe(db, state, item);
+        if (!recipe) return null;        
+
+        // Apply recipeModifiers
+        if (recipe.machine === 'Advanced Athanor') {
+            const r = { ...recipe, outputs: { ...recipe.outputs }, inputs: { ...recipe.inputs } };
+            const cats = state?.recipeModifiers?.[recipe.id]?.catalysts;
+            if (!cats || cats.length === 0) return r;
+
+            let recipeInputs = r.inputs;
+            let recipeOutputs = r.outputs;
+            if (cats.includes('eternal')) {
+                r.inputs = {};
+                recipeInputs = r.inputs;
+                const [itemKey, itemValue] = Object.entries(DB.items).find(([name, item]) => item.charges === 99999);
+                recipeInputs[itemKey] = r.ChargeCost / 99999;
+            }
+            if (cats.includes('unstable')) {
+                recipeOutputs = { ...r.unstableOutputs };
+                const [itemKey, itemValue] = Object.entries(DB.items).find(([name, item]) => item.charges === 180);
+                recipeInputs[itemKey] = r.ChargeCost / 180;
+            }
+            if (cats.includes('resonant')) {
+                recipeOutputs = { ...r.resonantOutputs };
+                const [itemKey, itemValue] = Object.entries(DB.items).find(([name, item]) => item.charges === 1500);
+                recipeInputs[itemKey] = r.ChargeCost / 1500;
+            }
+            if (cats.includes('fertile')) {                
+                for (const k in recipeOutputs) recipeOutputs[k] *= 2;
+                const [itemKey, itemValue] = Object.entries(DB.items).find(([name, item]) => item.charges === 240);
+                recipeInputs[itemKey] = r.ChargeCost / 240;
+            }
+            return r;
+        }
+        return recipe;
     }
 
     function applyAlchemyMult(machineName, batchYield, alchemyMult) {
@@ -190,7 +229,7 @@
         const fertDef = db.items[params.selectedFert] || { nutrientValue: 144, maxFertility: 12 };
         const grossFertVal = fertDef.nutrientValue * params.fertMult;
 
-        function buildNode(item, rate, isInternalModule, ancestors = [], forceGhost = false, depth = 0) {
+        function buildNode(item, rate, isInternalModule, ancestors = [], forceGhost = false, depth = 0, shouldExpand = true) {
             const effectiveGhost = isGhost || forceGhost;
             const pathKey = `${ancestors.join(">")}>${item}`;
             const currentPath = [...ancestors, item];
@@ -242,7 +281,7 @@
                 isInternalModule
             };
 
-            if (isExternalInput || depth >= 20) {
+            if (isExternalInput || depth >= 20 || !shouldExpand) {
                 if (!effectiveGhost && netRate > 0) {
                     aggregates.forcedItems[item] = (aggregates.forcedItems[item] || 0) + netRate;
                     pushExternalSource(aggregates, item, { rate: netRate, pathKey });
@@ -435,7 +474,12 @@
                 Object.keys(recipe.inputs).forEach(inputName => {
                     const qtyPerBatch = recipe.inputs[inputName];
                     const requiredInputRate = netBatches * qtyPerBatch;
-                    const childNode = buildNode(inputName, requiredInputRate, isInternalModule, currentPath, effectiveGhost, depth + 1);
+                    // 高級煉金爐的共振、永恆催化劑, 因為有迴圈的風險(黑曜石-共振)所以不展開
+                    let shouldExpand = true;
+                    if (recipe.machine === 'Advanced Athanor' && DB.items[inputName]?.charges >= 1500) {
+                        shouldExpand = false;
+                    }
+                    const childNode = buildNode(inputName, requiredInputRate, isInternalModule, currentPath, effectiveGhost, depth + 1, shouldExpand);
                     if (!effectiveGhost && childNode) node.children.push(childNode);
                 });
             }

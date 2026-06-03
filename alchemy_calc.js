@@ -152,7 +152,8 @@ function calculate() {
             state: {
                 activeRecyclers: GLOBAL_CALC_STATE.activeRecyclers,
                 forcedExternals: GLOBAL_CALC_STATE.forcedExternals,
-                preferredRecipes: DB.settings.preferredRecipes
+                preferredRecipes: DB.settings.preferredRecipes,
+                recipeModifiers: DB.settings.recipeModifiers
             }
         });
 
@@ -247,7 +248,6 @@ function gatherInputs() {
             const machineCount = targetRate / ratePerMachine;
             document.getElementById('targetMachine').value = Number(machineCount.toFixed(2));
             document.getElementById('rateLabel').textContent = `${(targetRate/getBeltSpeed(lvlBelt)*100).toFixed(1)}%`;
-            console.log(`${(targetRate/getBeltSpeed(lvlBelt)*100).toFixed(1)}%`);
         }
     }
     
@@ -404,9 +404,11 @@ function renderTreeNode(params, node) {
             capTag = `<span class="max-cap-tag" onclick="recalculate('${params.targetItem}', ${params.targetRate / usageRatio})">(Max: ${formatVal(node.maxOutput)}/m)</span>`;
         }
         machineTag = `<span class="machine-tag" data-tooltip="${tooltipText}">${Math.ceil(node.machineCount - 0.0001)} ${t(node.machine, 'machines')}${capTag}</span>`;
+        const recipeCandidates = getRecipesFor(node.item);
         const hasCauldronTarget = itemDef && itemDef.cauldronTarget !== undefined;
-        if (getRecipesFor(node.item).length > 1 || hasCauldronTarget) {
-            swapBtn = `<button class="swap-btn" onclick="openRecipeModal('${node.item}', this.parentElement)" title="Swap Recipe">🔄</button>`;
+        const hasRecipeModifier = recipeCandidates?.length === 1 && recipeCandidates[0].machine === 'Advanced Athanor';
+        if (recipeCandidates.length > 1 || hasCauldronTarget || hasRecipeModifier) {
+            swapBtn = `<button class="swap-btn" onclick="openRecipeModal('${node.item}')" title="${t('Swap Recipe')}">🔄</button>`;
         }
     }
 

@@ -76,6 +76,18 @@ function translateDatabase(db, forward) {
                 newOutputs[getT(outKey)] = recipe.outputs[outKey];
             }
             recipe.outputs = newOutputs;
+
+            const newOutputs1 = {};
+            for (let outKey in recipe.unstableOutputs) {
+                newOutputs1[getT(outKey)] = recipe.unstableOutputs[outKey];
+            }
+            recipe.unstableOutputs = newOutputs1;
+
+            const newOutputs2 = {};
+            for (let outKey in recipe.resonantOutputs) {
+                newOutputs2[getT(outKey)] = recipe.resonantOutputs[outKey];
+            }
+            recipe.resonantOutputs = newOutputs2;
         });
     }
     
@@ -168,8 +180,7 @@ window.ALCHEMY_I18N = {
         "Production Chain": "生产链",
         "Recycle All": "全部回收",
         "Un-recycle All": "全部不回收",
-        "Select Recipe": "选择配方",
-        "Select Recipe for ": "切换配方 ",
+        "Swap Recipe": "替换配方",
         "Input": "输入",
         "Yields": "产出",
         "Avail": "可用",
@@ -251,6 +262,14 @@ window.ALCHEMY_I18N = {
         "Current Product": "当前产物",
         "Current Value": "当前价值",
 
+        // Modal
+        "Select Recipe": "选择配方",
+        "Select Recipe for ": "切换配方 ",
+        "Catalysts": "催化剂",
+        "🧪 Unstable": "🧪 不稳定",
+        "🌿 Fertile": "🌿 丰饶",
+        "✨ Resonant": "✨ 共振",
+        "♾️ Eternal": "♾️ 永恒",
         "Apply": "应用"
     },
     "items": {

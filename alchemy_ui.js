@@ -24,6 +24,7 @@ const DEFAULT_SETTINGS = {
     showHeatFert: false,
     showBeltCount: false,
     preferredRecipes: {},
+    recipeModifiers: {},
     activeRecyclers: {},
     customCosts: { "Logs": 200, "Coal Ore": 4800 }
 };
@@ -113,6 +114,7 @@ function init() {
     
     if(!DB.items) DB.items = {};
     if(!DB.settings.preferredRecipes) DB.settings.preferredRecipes = {};
+    if(!DB.settings.recipeModifiers)  DB.settings.recipeModifiers = {};
     if(!DB.settings.activeRecyclers) DB.settings.activeRecyclers = {};
     if(!DB.settings.customCosts) DB.settings.customCosts = {};
 
@@ -845,7 +847,26 @@ function renderItemPicker() {
     });
 }
 
-function openRecipeModal(item, domElement) {
+const ATHANOR_CATALYSTS = [
+    { id: 'unstable', label: '🧪 Unstable' },
+    { id: 'fertile',  label: '🌿 Fertile'  },
+    { id: 'resonant', label: '✨ Resonant' },
+    { id: 'eternal',  label: '♾️ Eternal'  },
+];
+
+function toggleCatalyst(recipeId, catalystId, item, btn) {
+    if (!DB.settings.recipeModifiers[recipeId]) DB.settings.recipeModifiers[recipeId] = { catalysts: [] };
+    const cats = DB.settings.recipeModifiers[recipeId].catalysts;
+    const idx = cats.indexOf(catalystId);
+    if (idx >= 0) { cats.splice(idx, 1); btn.classList.remove('active'); }
+    else           { cats.push(catalystId); btn.classList.add('active'); }
+    if (cats.length === 0) delete DB.settings.recipeModifiers[recipeId];
+    persist();
+    calculate();
+    openRecipeModal(item);
+}
+
+function openRecipeModal(item) {
     const candidates = getRecipesFor(item);
     const list = document.getElementById('recipe-list');
     list.innerHTML = '';
@@ -867,41 +888,58 @@ function openRecipeModal(item, domElement) {
 
     const currentId = (getActiveRecipe(item) || {}).id;
     
-    let ancestors = [];
-    if (domElement && domElement.dataset.ancestors) {
-        try { ancestors = JSON.parse(domElement.dataset.ancestors); } catch(e) {}
-    }
-
     candidates.forEach(r => {
         const div = document.createElement('div');
-        div.className = `recipe-option ${r.id === currentId ? 'active' : ''}`;
-        
-        let isLoop = false; let conflict = "";
-        if (r.inputs) {
-            for (let inp in r.inputs) {
-                if (inp === item || ancestors.includes(inp)) { isLoop = true; conflict = inp; break; }
+        div.className = `recipe-option ${r.id === currentId ? 'active' : ''}`;        
+
+        let recipeInputs = r.inputs;
+        let recipeOutputs = r.outputs;
+
+        const cats = DB.settings.recipeModifiers[r.id]?.catalysts;
+        if (cats && cats.length > 0) {
+            recipeInputs = {...r.inputs};
+            recipeOutputs = {...r.outputs};
+            if (cats.includes('eternal')) {
+                recipeInputs = {};
+                const [itemKey, itemValue] = Object.entries(DB.items).find(([name, item]) => item.charges === 99999);
+                recipeInputs[itemKey] = r.ChargeCost / 99999;
             }
-        }
-        if (!isLoop && r.outputs) {
-            for (let out in r.outputs) {
-                if (out !== item && ancestors.includes(out)) { isLoop = true; conflict = out; break; }
+            if (cats.includes('unstable')) {
+                recipeOutputs = { ...r.unstableOutputs };
+                const [itemKey, itemValue] = Object.entries(DB.items).find(([name, item]) => item.charges === 180);
+                recipeInputs[itemKey] = r.ChargeCost / 180;
+            }
+            if (cats.includes('resonant')) {
+                recipeOutputs = { ...r.resonantOutputs };
+                const [itemKey, itemValue] = Object.entries(DB.items).find(([name, item]) => item.charges === 1500);
+                recipeInputs[itemKey] = r.ChargeCost / 1500;
+            }
+            if (cats.includes('fertile')) {                
+                for (const k in recipeOutputs) recipeOutputs[k] *= 2;
+                const [itemKey, itemValue] = Object.entries(DB.items).find(([name, item]) => item.charges === 240);
+                recipeInputs[itemKey] = r.ChargeCost / 240;
             }
         }
 
-        let inputs = []; Object.keys(r.inputs).forEach(key => { inputs.push(`${r.inputs[key]}x ${key}`); });
-        let outputs = []; Object.keys(r.outputs).forEach(key => { outputs.push(`${r.outputs[key]}x ${key}`); });
-
+        let inputs = []; Object.keys(recipeInputs).forEach(key => { inputs.push(`${Number(recipeInputs[key].toFixed(4))}x ${key}<img src="img/item${DB.items[key]?.id ?? 0}.png" width="18" height="18">`); });
+        let outputs = []; Object.keys(recipeOutputs).forEach(key => { outputs.push(`${Number(recipeOutputs[key].toFixed(4))}x ${key}<img src="img/item${DB.items[key]?.id ?? 0}.png" width="18" height="18">`); });
         let content = `
             <div class="recipe-header"><span><strong>${t(r.machine, 'machines')}</strong> <span style="font-size:0.9em; opacity:0.8;">( ${r.baseTime} s )</span></span>${r.id === currentId ? '✅' : ''}</div>
             <div class="recipe-details">${t('Input')}: ${inputs.join(', ')}<br>${t('Yields')}: ${outputs.join(', ')}</div>
         `;
 
-        if (isLoop) {
-            div.classList.add("disabled");
-            content += `<div class="loop-warning">⚠️ Creates Infinite Loop with ${conflict}</div>`;
-            div.onclick = () => alert(`Cannot select this recipe. It creates a recursive loop because it depends on or outputs ${conflict}, which is already being produced in this chain.`);
-        } else {
-            div.onclick = () => { DB.settings.preferredRecipes[item] = r.id; persist(); closeModal('recipe-modal'); calculate(); };
+        div.onclick = (e) => {
+            if (e.target.closest('.catalyst-row')) return;
+            DB.settings.preferredRecipes[item] = r.id; persist(); closeModal('recipe-modal'); calculate();
+        };
+
+        if (r.machine === 'Advanced Athanor') {
+            const activeCats = DB.settings.recipeModifiers[r.id]?.catalysts || [];
+            const btns = ATHANOR_CATALYSTS.map(c => {
+                const isActive = activeCats.includes(c.id);
+                return `<button class="catalyst-btn${isActive ? ' active' : ''}" onclick="toggleCatalyst('${r.id}', '${c.id}', '${item}', this)">${t(c.label)}</button>`;
+            }).join('');
+            content += `<div class="catalyst-row">${t('Catalysts')} ${btns}</div>`;
         }
 
         div.innerHTML = content;
