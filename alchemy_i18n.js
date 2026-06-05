@@ -263,6 +263,11 @@ window.ALCHEMY_I18N = {
         "Current Value": "当前价值",
 
         // Modal
+        "Adjust Ratio": "调整比例",
+        "Output Rate (/min)": "产能 (/min)",
+        "Belt Count": "传送带数",
+        "Scaling Ratio": "缩放比",
+
         "Select Recipe": "选择配方",
         "Select Recipe for ": "切换配方 ",
         "Catalysts": "催化剂",

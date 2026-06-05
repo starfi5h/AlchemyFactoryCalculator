@@ -311,6 +311,8 @@ input:checked + .slider-switch:before { transform: translateX(16px); }
 }
 
 .qty { color: var(--accent); font-weight: bold; }
+.qty-clickable { cursor: pointer; border-radius: 3px; padding: 1px 3px; transition: background 0.15s; }
+.qty-clickable:hover { background: rgba(76, 175, 80, 0.2); text-decoration: underline; }
 .item-link { cursor: pointer; text-decoration: none; color: inherit; transition: 0.2s; }
 .item-link:hover { color: var(--info); text-decoration: underline; }
 .machine-tag { background: #333; padding: 2px 6px; border-radius: 3px; font-size: 0.85em; border: 1px solid #444; color: #fff; font-weight: bold; cursor: help; }
@@ -601,3 +603,21 @@ button.reset-btn:hover { background: var(--danger); color: white; }
     z-index: 10;
     box-shadow: 0 2px 2px -1px rgba(0,0,0,0.4);
 }
+/* ==========================================================================
+   SECTION: SCALE MODAL
+   ========================================================================== */
+.scale-modal-content { min-width: 340px; max-width: 480px; width: 100%; }
+.scale-modal-path-row { margin-bottom: 14px; }
+.scale-path-text { font-family: monospace; font-size: 0.8em; color: #777; word-break: break-all; }
+.scale-row { display: flex; align-items: center; justify-content: space-between; padding: 10px 0; border-bottom: 1px solid #333; gap: 12px; }
+.scale-row-label { color: #bbb; min-width: 80px; flex-shrink: 0; }
+.scale-cols { display: flex; align-items: center; gap: 10px; flex: 1; justify-content: flex-end; }
+.scale-old-val { font-family: monospace; color: #888; min-width: 70px; text-align: right; }
+.scale-arrow { color: #555; font-size: 0.9em; flex-shrink: 0; }
+.scale-new-input { width: 100px; padding: 5px 8px; background: #2a2a2a; border: 1px solid #555; border-radius: 4px; color: #fff; font-size: 0.95em; text-align: right; -moz-appearance: textfield; appearance: textfield; flex: none; }
+.scale-new-input:focus { outline: none; border-color: var(--accent); background: #1e2e1e; }
+.scale-footer { display: flex; align-items: center; justify-content: space-between; margin-top: 16px; padding-top: 12px; }
+.scale-ratio-label { color: #aaa; }
+.scale-ratio-value { color: var(--accent); font-family: monospace; font-size: 1.05em; }
+.scale-apply-btn { background: var(--accent); color: #fff; border: none; border-radius: 4px; padding: 7px 22px; font-size: 0.95em; font-weight: bold; cursor: pointer; transition: 0.15s; }
+.scale-apply-btn:hover { background: #66bb6a; }

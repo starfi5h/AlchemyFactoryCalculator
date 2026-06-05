@@ -16,17 +16,17 @@ const DEFAULT_SETTINGS = {
     lvlAlchemy: 0,
     lvlFuel: 0,
     lvlFert: 0,
-    defaultFuel: "Plank",
-    defaultFert: "Basic Fertilizer",
+    defaultFuel: "Blast Potion",
+    defaultFert: "Fertile Catalyst",
     fuelCostEnable: true,
-    fertCostEnable: true,
+    fertCostEnable: true,    
+    showBeltCount: true,
     showMaxCap: false,
     showHeatFert: false,
-    showBeltCount: false,
     preferredRecipes: {},
     recipeModifiers: {},
     activeRecyclers: {},
-    customCosts: { "Logs": 200, "Coal Ore": 4800 }
+    customCosts: {}
 };
 
 let isSelfFuel = false;
@@ -963,7 +963,7 @@ function openDrillDown(item, rate) {
 function translateText() {
     const selectors = [
         'h1', '.panel h3', '.section-header',
-        '.input-group label', '.checkbox-row label', '.checkbox-row span', '.stat-label',
+        '.input-group label', '.checkbox-row label', '.checkbox-row span', '.stat-label', '.scale-row-label',
         '.tab-btn', '.split-btn', '.save-btn', '.reset-btn', '.info'
     ].join(',');
 

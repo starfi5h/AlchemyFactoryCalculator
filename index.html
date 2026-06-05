@@ -3,7 +3,8 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Alchemy Factory Calculator</title>
+    <meta name="description" content="Alchemy Factory Calculator — 炼金工厂计算器，自动计算生产链、机器数量、传送带需求与资源消耗。">
+    <title>Alchemy Factory Calculator 炼金工厂计算器</title>
     <script src="alchemy_db.js"></script> 
     <script src="alchemy_calc_engine.js"></script>
     <script src="alchemy_constants.js"></script> 
@@ -60,6 +61,62 @@
                 </div>
                 <div id="cauldron-recipe-modal-body">
                     <!-- 由 JS 動態渲染 -->
+                </div>
+            </div>
+        </div>
+
+        <!-- Scale Modal -->
+        <div id="scale-modal" class="modal-overlay" onclick="closeModal('scale-modal')">
+            <div class="modal-content scale-modal-content" onclick="event.stopPropagation()">
+                <div class="modal-header">
+                    <h2 style="margin:0; font-size:1em; display:flex; align-items:middle; gap:8px;">
+                        <span id="scale-modal-title"></span>
+                    </h2>
+                    <button class="close-modal" onclick="closeModal('scale-modal')">&times;</button>
+                </div>
+
+                <div class="scale-modal-path-row">
+                    <span id="scale-modal-path" class="scale-path-text"></span>
+                </div>
+
+                <!-- 產量 -->
+                <div class="scale-row">
+                    <span class="scale-row-label">Output Rate (/min)</span></span>
+                    <div class="scale-cols">
+                        <span class="scale-old-val" id="scale-old-rate"></span>
+                        <span class="scale-arrow">→</span>
+                        <input class="scale-new-input" id="scale-new-rate" type="number" min="0" step="any"
+                               onchange="onScaleInputChange('rate')" oninput="onScaleInputChange('rate')">
+                    </div>
+                </div>
+
+                <!-- 傳送帶數 -->
+                <div class="scale-row">
+                    <span class="scale-row-label">Belt Count</span>
+                    <div class="scale-cols">
+                        <span class="scale-old-val" id="scale-old-belt"></span>
+                        <span class="scale-arrow">→</span>
+                        <input class="scale-new-input" id="scale-new-belt" type="number" min="0" step="any"
+                               onchange="onScaleInputChange('belt')" oninput="onScaleInputChange('belt')">
+                    </div>
+                </div>
+
+                <!-- 機器數（有機器時才顯示） -->
+                <div class="scale-row" id="scale-machine-row">
+                    <span class="scale-row-label">Machine Count</span>
+                    <div class="scale-cols">
+                        <span class="scale-old-val" id="scale-old-machine"></span>
+                        <span class="scale-arrow">→</span>
+                        <input class="scale-new-input" id="scale-new-machine" type="number" min="0" step="any"
+                               onchange="onScaleInputChange('machine')" oninput="onScaleInputChange('machine')">
+                    </div>
+                </div>
+
+                <!-- 縮放比 + Apply -->
+                <div class="scale-footer">
+                    <span class="scale-row-label">Scaling Ratio</span>
+                    <span><strong id="scale-ratio-display" class="scale-ratio-value">1.0000</strong> x</span>
+                    <button class="scale-apply-btn" onclick="applyScaleModal()">Apply</button>
                 </div>
             </div>
         </div>
@@ -211,16 +268,16 @@
                             </div>
                         </div>
                         <div class="checkbox-row">
+                            <input type="checkbox" id="showBeltCount" onchange="onLogisticsChange()">
+                            <label for="showBeltCount" style="display:inline; margin:0; cursor:pointer;">Show Belt Count</label>
+                        </div>
+                        <div class="checkbox-row">
                             <input type="checkbox" id="showMaxCap" onchange="onLogisticsChange()">
                             <label for="showMaxCap" style="display:inline; margin:0; cursor:pointer;">Show Machine Max Cap</label>
                         </div>
                         <div class="checkbox-row">
                             <input type="checkbox" id="showHeatFert" onchange="onLogisticsChange()">
                             <label for="showHeatFert" style="display:inline; margin:0; cursor:pointer;">Show Machine Heat & Nutr</label>
-                        </div>
-                        <div class="checkbox-row">
-                            <input type="checkbox" id="showBeltCount" onchange="onLogisticsChange()">
-                            <label for="showBeltCount" style="display:inline; margin:0; cursor:pointer;">Show Belt Count</label>
                         </div>
                     </div>
                 </div>

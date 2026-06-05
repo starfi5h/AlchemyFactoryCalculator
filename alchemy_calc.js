@@ -386,9 +386,15 @@ function renderTreeNode(params, node) {
     div.setAttribute('data-path', node.pathKey);
     if (GLOBAL_CALC_STATE.collapsedNode.has(node.pathKey)) div.classList.add('collapsed');
 
-    const hasChildren = node.children.length > 0;
+    const hasChildren = node.children.length > 0;    
+    const machineCountArg = node.machine ? node.machineCount : null;
+    const rpmArg = node.machine ? (node.requestedRate / node.machineCount) : null;
+    
     const arrowHtml = `<span class="tree-arrow" style="visibility:${hasChildren ? 'visible' : 'hidden'}" onclick="toggleNode(this, '${node.pathKey}')">▼</span>`;
+    const rateHtml = `<span class="qty qty-clickable" onclick="openScaleModal('${node.item}', ${node.requestedRate}, ${machineCountArg}, ${rpmArg})">${formatVal(node.requestedRate)}/m</span>`;
     const beltCountTag = node.tags.beltRatio !== null ? `<span class="belt-count">(${Number(node.tags.beltRatio.toFixed(2))})</span>` : '';
+    const itemTag = `<img src="img/item${itemDef?.id ?? 0}.png" width="24" height="24" loading="lazy">
+        <span class="item-link" onclick="openDrillDown('${node.item}', ${node.requestedRate})"><strong>${node.item}</strong></span>`;
 
     let detailsTag = '';
     if (node.tags.detailsType === 'external') detailsTag = `<span class="details">(${t('External Input')})</span>`;
@@ -445,10 +451,9 @@ function renderTreeNode(params, node) {
 
     div.innerHTML = `<div class="node-content" data-ancestors='${JSON.stringify(node.ancestors)}'>
         ${arrowHtml}
-        <span class="qty">${formatVal(node.requestedRate)}/m</span>
+        ${rateHtml}
         ${beltCountTag}
-        <img src="img/item${itemDef?.id ?? 0}.png" width="24" height="24" loading="lazy">
-        <span class="item-link" onclick="openDrillDown('${node.item}', ${node.requestedRate})"><strong>${node.item}</strong></span>
+        ${itemTag}
         ${swapBtn}
         ${detailsTag}
         ${machineTag}
@@ -909,4 +914,140 @@ function updateSummaryBox(p, heatPerSec, nutrPerSec, goldPerMin, actualFuelNeed,
             ${costHtml}
             ${valueHtml}
         </div>`;
+}
+
+/* ==========================================================================
+   SECTION: SCALE MODAL
+   ========================================================================== */
+
+// 暫存目前 modal 的基準數值（套用後更新）
+let _scaleModalBase = null;
+
+function openScaleModal(itemName, requestedRate, machineCount, ratePerMachine) {
+    const itemDef = DB.items[itemName] || {};
+    const beltSpeed = getBeltSpeed(parseInt(document.getElementById('lvlBelt').value) || 0);
+
+    // 基準數值
+    _scaleModalBase = {
+        itemName,
+        rate: requestedRate,
+        machineCount,
+        ratePerMachine,
+        beltSpeed
+    };
+
+    // 標題 icon + 名稱
+    const iconId = itemDef.id ?? 0;
+    document.getElementById('scale-modal-title').innerHTML = `${t('Adjust Ratio')} <img src="img/item${iconId}.png" width="24" height="24" style="vertical-align:middle;"> ${itemName}`;
+
+    // 填入左側舊值
+    document.getElementById('scale-old-rate').innerText = Number(requestedRate.toFixed(4));
+    document.getElementById('scale-old-belt').innerText = Number((requestedRate / beltSpeed).toFixed(4));
+
+    // 機器區域顯示/隱藏
+    const machineRow = document.getElementById('scale-machine-row');
+    if (machineCount !== null && machineCount !== undefined && ratePerMachine !== null && ratePerMachine !== undefined && machineCount > 0) {
+        machineRow.style.display = '';
+        document.getElementById('scale-old-machine').innerText = Number(machineCount.toFixed(4));
+    } else {
+        machineRow.style.display = 'none';
+    }
+
+    // 右側新值初始填入（等於舊值）
+    document.getElementById('scale-new-rate').value = Number(requestedRate.toFixed(4));
+    document.getElementById('scale-new-belt').value = Number((requestedRate / beltSpeed).toFixed(4));
+    if (machineCount !== null && machineCount !== undefined && machineCount > 0) {
+        document.getElementById('scale-new-machine').value = Number(machineCount.toFixed(4));
+    }
+
+    // 縮放比初始為 1
+    document.getElementById('scale-ratio-display').innerText = '1.000';
+    document.getElementById('scale-modal').style.display = 'flex';
+}
+
+function onScaleInputChange(source) {
+    if (!_scaleModalBase) return;
+    const { rate: baseRate, beltSpeed, machineCount, ratePerMachine } = _scaleModalBase;
+
+    let ratio = 1;
+
+    if (source === 'rate') {
+        const newRate = parseFloat(document.getElementById('scale-new-rate').value) || 0;
+        ratio = baseRate > 0 ? newRate / baseRate : 0;
+    } else if (source === 'belt') {
+        const newBelt = parseFloat(document.getElementById('scale-new-belt').value) || 0;
+        ratio = baseRate > 0 ? (newBelt * beltSpeed) / baseRate : 0;
+    } else if (source === 'machine') {
+        const newMachine = parseFloat(document.getElementById('scale-new-machine').value) || 0;
+        ratio = baseRate > 0 ? (newMachine * ratePerMachine) / baseRate : 0;
+    }
+
+    // 更新其他欄位
+    if (source !== 'rate') {
+        document.getElementById('scale-new-rate').value = Number((baseRate * ratio).toFixed(4));
+    }
+    if (source !== 'belt') {
+        document.getElementById('scale-new-belt').value = Number(((baseRate * ratio) / beltSpeed).toFixed(4));
+    }
+    if (source !== 'machine' && machineCount !== null && machineCount !== undefined && machineCount > 0) {
+        const rpm = ratePerMachine > 0 ? ratePerMachine : 1;
+        document.getElementById('scale-new-machine').value = Number(((baseRate * ratio) / rpm).toFixed(4));
+    }
+
+    document.getElementById('scale-ratio-display').innerText = ratio.toFixed(3);
+}
+
+function applyScaleModal() {
+    if (!_scaleModalBase) return;
+
+    const ratio = parseFloat(document.getElementById('scale-ratio-display').innerText) || 1;
+    const isMulti = document.getElementById('modeToggle').checked;
+
+    if (!isMulti) {
+        // 單目標模式
+        const rateEl = document.getElementById('targetRate');
+        const currentRate = parseFloat(rateEl.value) || 0;
+        const newRate = currentRate * ratio;
+        rateEl.value = Number(newRate.toFixed(2));
+
+        // 若目前是機器模式，要切換回 rate 模式才能寫入
+        const machineToggle = document.getElementById('machineModeToggle');
+        if (machineToggle.checked) {
+            machineToggle.checked = false;
+            toggleControlMode(false);
+        }
+    } else {
+        // 多目標模式：對所有列等比縮放
+        document.querySelectorAll('.multi-target-row').forEach(row => {
+            const input = row.querySelector('.multi-rate-input');
+            if (input) {
+                const cur = parseFloat(input.value) || 0;
+                input.value = Number((cur * ratio).toFixed(2));
+            }
+        });
+    }
+
+    calculate();
+
+    // 套用後更新基準值（讓使用者可繼續疊加）
+    const newBaseRate = _scaleModalBase.rate * ratio;
+    _scaleModalBase.rate = newBaseRate;
+    if (_scaleModalBase.machineCount !== null && _scaleModalBase.machineCount !== undefined) {
+        _scaleModalBase.machineCount = _scaleModalBase.machineCount * ratio;
+    }
+
+    // 更新左側舊值顯示
+    document.getElementById('scale-old-rate').innerText = Number(newBaseRate.toFixed(4));
+    document.getElementById('scale-old-belt').innerText = Number((newBaseRate / _scaleModalBase.beltSpeed).toFixed(4));
+    if (_scaleModalBase.machineCount !== null && _scaleModalBase.machineCount !== undefined && _scaleModalBase.machineCount > 0) {
+        document.getElementById('scale-old-machine').innerText = Number(_scaleModalBase.machineCount.toFixed(4));
+    }
+
+    // 右側新值同步（縮放比歸 1）
+    document.getElementById('scale-new-rate').value = Number(newBaseRate.toFixed(4));
+    document.getElementById('scale-new-belt').value = Number((newBaseRate / _scaleModalBase.beltSpeed).toFixed(4));
+    if (_scaleModalBase.machineCount !== null && _scaleModalBase.machineCount !== undefined && _scaleModalBase.machineCount > 0) {
+        document.getElementById('scale-new-machine').value = Number(_scaleModalBase.machineCount.toFixed(4));
+    }
+    document.getElementById('scale-ratio-display').innerText = '1.000';
 }
