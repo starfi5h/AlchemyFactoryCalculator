@@ -88,6 +88,10 @@ function translateDatabase(db, forward) {
                 newOutputs2[getT(outKey)] = recipe.resonantOutputs[outKey];
             }
             recipe.resonantOutputs = newOutputs2;
+
+            if (recipe.buildCost) {
+                recipe.buildCost = getT(recipe.buildCost);
+            }
         });
     }
     

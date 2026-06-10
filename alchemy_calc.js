@@ -446,7 +446,7 @@ function renderTreeNode(params, node) {
         }
     }
 
-    const externalTag = `<div><input type="checkbox" ${node.isExternal ? 'checked':''} id="buildModeToggle" onchange="toggleExternal('${node.pathKey}');"></input></div>`;
+    const externalTag = `<div><input type="checkbox" ${node.isExternal ? 'checked':''} onchange="toggleExternal('${node.pathKey}');"></input></div>`;
     const costTag = renderCostEntries(node.tags.costEntries);
 
     div.innerHTML = `<div class="node-content" data-ancestors='${JSON.stringify(node.ancestors)}'>
@@ -709,9 +709,7 @@ function updateSummaryLineFromResult(params, formulaLineData) {
 function updateConstructionList(maxCounts, minCounts, furnaces, extraBuildCosts) {
     const buildList = document.getElementById('construction-list'); buildList.innerHTML = '';
     const totalMatsContainer = document.getElementById('total-mats-container'); totalMatsContainer.innerHTML = '';
-    
-    // Check if we are in MAX mode
-    const isMaxMode = !document.getElementById('buildModeToggle').checked;
+    const isMaxMode = false;
     
     const sortedMachines = Object.keys(maxCounts).sort();
     let totalConstructionMaterials = {};
@@ -813,15 +811,8 @@ function updateConstructionList(maxCounts, minCounts, furnaces, extraBuildCosts)
         </div>`;
         totalMatsContainer.innerHTML = totalHtml;
     }
-
-    updateBuildModeLabel();
 }
 
-function updateBuildModeLabel() {
-    const isMinMode = document.getElementById('buildModeToggle').checked;
-    document.getElementById('build-mode-label').classList.toggle('active-mode', isMinMode);
-    document.getElementById('build-mode-label').innerText = isMinMode ? "MIN" : "MAX";
-}
 
 function updateSummaryBox(p, heatPerSec, nutrPerSec, goldPerMin, actualFuelNeed, actualFertNeed) {
     const { targetItem, targetRate, selfFuel, selfFert, selectedFuel, selectedFert, fuelCost, fertCost } = p;
