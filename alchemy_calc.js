@@ -18,7 +18,7 @@ function getAlchemyMult(lvl) { return AlchemyCalcEngine.getAlchemyMult(lvl); }
 
 function getRecipesFor(item) { return AlchemyCalcEngine.getRecipesFor(DB, item); }
 function getActiveRecipe(item) {
-    return AlchemyCalcEngine.getActiveRecipe(DB, { preferredRecipes: DB.settings.preferredRecipes }, item);
+    return AlchemyCalcEngine.getActiveRecipe(DB, { preferredRecipes: DB.settings.preferredRecipes, recipeModifiers: DB.settings.recipeModifiers }, item);
 }
 
 function applyAlchemyMult(machineName, batchYield, alchemyMult) {
@@ -33,7 +33,7 @@ function getProductionFertCost(item, fertVal, fertSpeed, speedMult, alchemyMult)
     return AlchemyCalcEngine.getProductionFertCost(DB, { preferredRecipes: DB.settings.preferredRecipes }, item, fertVal, fertSpeed, speedMult, alchemyMult);
 }
 
-function formatVal(val) { if(val >= 1000000) return Number((val/1000000).toFixed(2)) + 'm'; if(val >= 10000) return Number((val/1000).toFixed(2)) + 'k'; return Number(val.toFixed(2)); }
+function formatVal(val) { if(val >= 1000000) return Number((val/1000000).toFixed(2)) + 'm'; if(val >= 10000) return Number((val/1000).toFixed(2)) + 'k'; return Number(val.toFixed(3)); }
 
 function toggleBuildGroup(header) {
     header.classList.toggle('expanded');

@@ -50,34 +50,33 @@
         if (!recipe) return null;        
 
         // Apply recipeModifiers
-        if (recipe.machine === 'Advanced Athanor') {
-            const r = { ...recipe, outputs: { ...recipe.outputs }, inputs: { ...recipe.inputs } };
+        if (recipe.machine === 'Advanced Athanor') {            
             const cats = state?.recipeModifiers?.[recipe.id]?.catalysts;
-            if (!cats || cats.length === 0) return r;
+            if (!cats || cats.length === 0) return recipe;
 
-            let recipeInputs = r.inputs;
-            let recipeOutputs = r.outputs;
+            let recipeInputs = { ...recipe.inputs };
+            let recipeOutputs = { ...recipe.outputs };
             if (cats.includes('eternal')) {
-                r.inputs = {};
-                recipeInputs = r.inputs;
+                recipeInputs = {};
                 const [itemKey, itemValue] = Object.entries(DB.items).find(([name, item]) => item.charges === 99999);
-                recipeInputs[itemKey] = r.ChargeCost / 99999;
+                recipeInputs[itemKey] = recipe.ChargeCost / 99999;
             }
             if (cats.includes('unstable')) {
-                recipeOutputs = { ...r.unstableOutputs };
+                recipeOutputs = { ...recipe.unstableOutputs };
                 const [itemKey, itemValue] = Object.entries(DB.items).find(([name, item]) => item.charges === 180);
-                recipeInputs[itemKey] = r.ChargeCost / 180;
+                recipeInputs[itemKey] = recipe.ChargeCost / 180;
             }
             if (cats.includes('resonant')) {
-                recipeOutputs = { ...r.resonantOutputs };
+                recipeOutputs = { ...recipe.resonantOutputs };
                 const [itemKey, itemValue] = Object.entries(DB.items).find(([name, item]) => item.charges === 1500);
-                recipeInputs[itemKey] = r.ChargeCost / 1500;
+                recipeInputs[itemKey] = recipe.ChargeCost / 1500;
             }
             if (cats.includes('fertile')) {                
                 for (const k in recipeOutputs) recipeOutputs[k] *= 2;
                 const [itemKey, itemValue] = Object.entries(DB.items).find(([name, item]) => item.charges === 240);
-                recipeInputs[itemKey] = r.ChargeCost / 240;
+                recipeInputs[itemKey] = recipe.ChargeCost / 240;
             }
+            const r = { ...recipe, outputs: recipeOutputs, inputs: recipeInputs };
             return r;
         }
         return recipe;
@@ -474,9 +473,9 @@
                 Object.keys(recipe.inputs).forEach(inputName => {
                     const qtyPerBatch = recipe.inputs[inputName];
                     const requiredInputRate = netBatches * qtyPerBatch;
-                    // 高級煉金爐的共振、永恆催化劑, 因為有迴圈的風險(黑曜石-共振)所以不展開
+                    // 高級煉金爐的催化劑, 因為有迴圈的風險(黑曜石-共振)所以不展開
                     let shouldExpand = true;
-                    if (recipe.machine === 'Advanced Athanor' && DB.items[inputName]?.charges >= 1500) {
+                    if (recipe.machine === 'Advanced Athanor' && DB.items[inputName]?.charges >= 1) {
                         shouldExpand = false;
                     }
                     const childNode = buildNode(inputName, requiredInputRate, isInternalModule, currentPath, effectiveGhost, depth + 1, shouldExpand);
