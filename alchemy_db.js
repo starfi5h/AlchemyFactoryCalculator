@@ -1,7 +1,7 @@
 window.ALCHEMY_DB = {
-    "version": 41,
-    "date": "2026.06.03",
-    "gameVersion": "0.5.0.4471",
+    "version": 42,
+    "date": "2026.06.15",
+    "gameVersion": "0.5.0.4485",
     "items": {
         // --- 1. RAW RESOURCES ---
         "Logs": { "id": 1, "category": "Raw Materials", "buyPrice": 200, "maxStack": -200, "heat": 2000, "cauldronCost": 0.8, "tier": 1 },
@@ -65,8 +65,8 @@ window.ALCHEMY_DB = {
         "Glass": { "id": 412, "category": "Misc", "sellPrice": 75, "maxStack": 200, "cauldronCost": 27 },
         "Steel Ingot": { "id": 505, "category": "Solid", "maxStack": 200, "cauldronCost": 161 },
         "Sulfur": { "id": 602, "category": "Solid", "cauldronCost": 166, "cauldronMulti": 1, "cauldronTarget": 246 },
-        "Bronze Ingot": { "id": 609, "category": "Solid", "maxStack": 200, "cauldronCost": 293 },
-        "Copper Ingot": { "id": 610, "category": "Solid", "maxStack": 200, "cauldronCost": 300 },           
+        "Bronze Ingot": { "id": 609, "category": "Solid", "maxStack": 200, "cauldronCost": 155 },
+        "Copper Ingot": { "id": 610, "category": "Solid", "maxStack": 200, "cauldronCost": 293 },           
         "Silver Ingot": { "id": 808, "category": "Solid", "maxStack": 100, "cauldronCost": 4516 },
         "Gold Ingot": { "id": 905, "category": "Solid", "maxStack": 100, "cauldronCost": 88181.6 },
 
@@ -229,7 +229,8 @@ window.ALCHEMY_DB = {
 
         // --- Heating ---
         "Stone Furnace": { "heatSelf": 1, "slots": 9, "isGenerator": true, "buildCost": { "Stone": 20 } }, 
-        "Blast Furnace": { "heatSelf": 4.0, "slots": 42, "isGenerator": true, "buildCost": { "Brick": 30 } }, 
+        "Blast Furnace": { "heatSelf": 4, "slots": 42, "isGenerator": true, "buildCost": { "Brick": 30 } }, 
+        "Steam Heating Pad": { "heatSelf": 12, "slots": 9, "isGenerator": true, "buildCost": { "Steel Ingot": 3, "Copper Ingot": 3 } }, 
 
         // --- Raw Material Production ---
         "Table Saw": { "buildCost": { "Plank": 5 } },
