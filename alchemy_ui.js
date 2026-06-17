@@ -632,7 +632,6 @@ function loadSettingsToUI() {
         if(DB.settings.showHeatFert) document.getElementById('showHeatFert').checked = DB.settings.showHeatFert;
         if(DB.settings.showBeltCount) document.getElementById('showBeltCount').checked = DB.settings.showBeltCount;
     }
-    updateDefaultButtonState();
 }
 
 function populateSelects() {
@@ -653,18 +652,18 @@ function populateSelects() {
 }
 
 function toggleFuel() {
-    const btn = document.getElementById('btnSelfFuel'); const chk = document.getElementById('selfFuel');
-    chk.checked = !chk.checked;
-    if(chk.checked) { btn.innerText = "Self-Fuel: ON"; btn.classList.remove('btn-inactive-red'); btn.classList.add('btn-active-green'); } 
+    const btn = document.getElementById('btnSelfFuel');
+    const enable = btn.innerText === t("Self-Fuel: ON");
+    if(!enable) { btn.innerText = t("Self-Fuel: ON"); btn.classList.remove('btn-inactive-red'); btn.classList.add('btn-active-green'); } 
     else { btn.innerText = "Self-Fuel: OFF"; btn.classList.remove('btn-active-green'); btn.classList.add('btn-inactive-red'); }
     calculate();
 }
 
 function toggleFert() {
-    const btn = document.getElementById('btnSelfFert'); const chk = document.getElementById('selfFert');
-    chk.checked = !chk.checked;
-    if(chk.checked) { btn.innerText = "Self-Fert: ON"; btn.classList.remove('btn-inactive-red'); btn.classList.add('btn-active-green'); } 
-    else { btn.innerText = "Self-Fert: OFF"; btn.classList.remove('btn-active-green'); btn.classList.add('btn-inactive-red'); }
+    const btn = document.getElementById('btnSelfFert');
+    const enable = btn.innerText === t("Self-Fert: ON");
+    if(!enable) { btn.innerText = t("Self-Fert: ON"); btn.classList.remove('btn-inactive-red'); btn.classList.add('btn-active-green'); } 
+    else { btn.innerText = t("Self-Fert: OFF"); btn.classList.remove('btn-active-green'); btn.classList.add('btn-inactive-red'); }
     calculate();
 }
 
@@ -672,30 +671,26 @@ function setDefaultFuel(e) { const c = document.getElementById('fuelSelect').val
 function setDefaultFert(e) { const c = document.getElementById('fertSelect').value; DB.settings.defaultFert = c; persist(); updateDefaultButtonState(); flashButton(e.currentTarget); }
 
 function onLogisticsChange() {
-    const fItem = document.getElementById('fuelSelect').value;
-    const tItem = document.getElementById('fertSelect').value;
-    DB.settings.fuelCostEnable = document.getElementById('fuelCostEnable').checked;
-    DB.settings.fertCostEnable = document.getElementById('fertCostEnable').checked;
-    DB.settings.customCosts[fItem] = parseFloat(document.getElementById('fuelCostInput').value) || 0;
-    DB.settings.customCosts[tItem] = parseFloat(document.getElementById('fertCostInput').value) || 0;
+    const curFuel = document.getElementById('fuelSelect').value;
+    const curFert = document.getElementById('fertSelect').value;
+
+    if (DB.settings.defaultFuel !== curFuel || curFert !== DB.settings.defaultFert) {
+        document.getElementById('fuelCostInput').value = DB.settings.customCosts[curFuel] || 0;
+        document.getElementById('fertCostInput').value = DB.settings.customCosts[curFert] || 0;
+        DB.settings.defaultFuel = curFuel;
+        DB.settings.defaultFert = curFert;
+    }
+    else {
+        DB.settings.fuelCostEnable = document.getElementById('fuelCostEnable').checked;
+        DB.settings.fertCostEnable = document.getElementById('fertCostEnable').checked;
+        DB.settings.customCosts[curFuel] = parseFloat(document.getElementById('fuelCostInput').value) || 0;
+        DB.settings.customCosts[curFert] = parseFloat(document.getElementById('fertCostInput').value) || 0;
+    }
     DB.settings.showMaxCap = document.getElementById('showMaxCap').checked;
     DB.settings.showHeatFert = document.getElementById('showHeatFert').checked;    
     DB.settings.showBeltCount = document.getElementById('showBeltCount').checked;
     persist();
     calculate();
-}
-
-function updateDefaultButtonState() {
-    const curFuel = document.getElementById('fuelSelect').value; const defFuel = DB.settings.defaultFuel;
-    const btnFuel = document.getElementById('btnDefFuel');
-    if(curFuel === defFuel) { btnFuel.disabled = true; btnFuel.textContent = t("Current Default"); } else { btnFuel.disabled = false; btnFuel.textContent = t("Make Default"); }
-
-    const curFert = document.getElementById('fertSelect').value; const defFert = DB.settings.defaultFert;
-    const btnFert = document.getElementById('btnDefFert');
-    if(curFert === defFert) { btnFert.disabled = true; btnFert.textContent = t("Current Default"); } else { btnFert.disabled = false; btnFert.textContent = t("Make Default"); }
-    
-    document.getElementById('fuelCostInput').value = DB.settings.customCosts[curFuel] || 0;
-    document.getElementById('fertCostInput').value = DB.settings.customCosts[curFert] || 0;        
 }
 
 function saveSettings(e) { ['lvlBelt','lvlSpeed','lvlAlchemy','lvlFuel','lvlFert'].forEach(k => { DB.settings[k] = parseInt(document.getElementById(k).value) || 0; }); persist(); flashButton(e.currentTarget); }

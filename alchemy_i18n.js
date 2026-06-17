@@ -156,7 +156,7 @@ window.ALCHEMY_I18N = {
 
         // --- 2. Logistics ---
         "Logistics": "物流设置",
-        "Heat Source": "燃料来源",
+        "Fuel Source": "燃料来源",
         "Fertilizer Source": "肥料来源",
         "Self-Fuel: OFF": "自供燃料: 关",
         "Self-Fuel: ON": "自供燃料: 开",

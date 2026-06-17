@@ -196,11 +196,11 @@ function gatherInputs() {
     
     // Settings
     const selectedFuel = document.getElementById('fuelSelect').value;
-    const selfFuel = document.getElementById('selfFuel').checked;
+    const selfFuel = document.getElementById('btnSelfFuel')?.innerText === t("Self-Fuel: ON");
     const fuelCost = parseFloat(document.getElementById('fuelCostInput').value) || 0;
 
     const selectedFert = document.getElementById('fertSelect').value;
-    const selfFert = document.getElementById('selfFert').checked;
+    const selfFert = document.getElementById('btnSelfFert')?.innerText === t("Self-Fert: ON");
     const fertCost = parseFloat(document.getElementById('fertCostInput').value) || 0;
 
     const showFuelCost = document.getElementById('fuelCostEnable').checked;
@@ -274,17 +274,6 @@ function updateLabels(params) {
         document.getElementById('lvlAlchemy-title').innerText = `${t('Alchemy Skill')} (${(params.alchemyMult*100).toFixed(0)}%)`;
         document.getElementById('lvlFuel-title').innerText = `${t('Fuel Efficiency')} (${(params.fuelMult*100).toFixed(0)}%)`;
         document.getElementById('lvlFert-title').innerText = `${t('Fert Efficiency')} (${(params.fertMult*100).toFixed(0)}%)`;
-        
-        const fuelDef = DB.items[params.selectedFuel] || {};
-        const netHeat = (fuelDef.heat || 0) * params.fuelMult;
-        document.getElementById('fuelEfficiencyCostByHeat').innerText = (params.fuelCost == 0 || netHeat == 0) ? '' : (params.fuelCost/netHeat).toFixed(4) + ' G/P ';
-        document.getElementById('fuelEfficiencyHeatByCost').innerText = (params.fuelCost == 0 || netHeat == 0) ? '' : (netHeat/params.fuelCost).toFixed(2) + ' P/G ';
-
-        const fertDef = DB.items[params.selectedFert] || {};
-        const netNtur = (fertDef.nutrientValue || 0) * params.fertMult;
-        document.getElementById('fertEfficiencyCostByNutr').innerText = (params.fertCost == 0 || netNtur == 0) ? '' : (params.fertCost/netNtur).toFixed(4) + ' G/V ';
-        document.getElementById('fertEfficiencyNutrByCost').innerText = (params.fertCost == 0 || netNtur == 0) ? '' : (netNtur/params.fertCost).toFixed(2) + ' V/G ';
-
     } catch(e) { console.error(e); }
 }
 
