@@ -197,30 +197,30 @@ window.ALCHEMY_DB = {
         // --- Automated Processing ---
         "Grinder": { "buildCost": { "Plank": 8 } },
         "Enhanced Grinder": { "buildCost": { "Plank": 12, "Steel Gear": 3 } },
-        "Crucible": { "heatCost": 4.0, "parent": "Stone Furnace", "slotsRequired": 3, "buildCost": { "Stone": 4 } },
-        "Stackable Crucible": { "heatCost": 6.0, "parent": "Stone Furnace", "slotsRequired": 3, "buildCost": { "Stone": 6, "Steel Ingot": 2, "Bronze Rivet": 2 } },        
+        "Crucible": { "heatCost": 4.0, "slotsRequired": 3, "buildCost": { "Stone": 4 } },
+        "Stackable Crucible": { "heatCost": 6.0, "slotsRequired": 3, "buildCost": { "Stone": 6, "Steel Ingot": 2, "Bronze Rivet": 2 } },        
         "Extractor": { "buildCost": { "Iron Ingot": 5, "Glass": 5 } },
 
-        "Thermal Extractor": { "heatCost": 80.0, "parent": "Stone Furnace", "slotsRequired": 1, "buildCost": { "Steel Ingot": 5, "Glass": 5 } },
+        "Thermal Extractor": { "heatCost": 80.0,  "slotsRequired": 1, "buildCost": { "Steel Ingot": 5, "Glass": 5 } },
         "Refiner": { "buildCost": { "Plank": 8, "Steel Gear": 4 } },
         "Knowledge Altar": { "buildCost": { "Stone": 24 } },
-        "Paradox Crucible": { "heatCost": 1200.0, "parent": "Stone Furnace", "slotsRequired": 9, "buildCost": { "Steel Ingot": 8, "Copper Ingot": 8, "Bronze Rivet": 16 } },
+        "Paradox Crucible": { "heatCost": 1200.0, "slotsRequired": 9, "buildCost": { "Steel Ingot": 8, "Copper Ingot": 8, "Bronze Rivet": 16 } },
         // Cauldron heatCost is depend on the recipe. Use a non-zero value as placeholder here
-        "Cauldron": { "heatCost": -1, "parent": "Stone Furnace", "buildCost": { "Bronze Ingot": 20 } },
-        "Advanced Cauldron": { "heatCost": -1, "parent": "Stone Furnace", "buildCost": { "Silver Ingot": 20 } },
+        "Cauldron": { "heatCost": -1,  "buildCost": { "Bronze Ingot": 20 } },
+        "Advanced Cauldron": { "heatCost": -1,  "buildCost": { "Silver Ingot": 20 } },
 
         // --- Advanced Crafting ---
         "Processor": { "buildCost": { "Plank": 12, "Large Wooden Gear": 3 } },
-        "Kiln": { "heatCost": 15.0, "parent": "Stone Furnace", "slotsRequired": 6, "buildCost": { "Stone": 20, "Clay": 10 } },
+        "Kiln": { "heatCost": 15.0, "slotsRequired": 6, "buildCost": { "Stone": 20, "Clay": 10 } },
         "Blender": { "buildCost": { "Iron Ingot": 8, "Glass": 8 } },
         "Assembler": { "buildCost": { "Plank": 10, "Large Wooden Gear": 5, "Small Wooden Gear": 15 } },
-        "Alembic": { "heatCost": 108.0, "parent": "Stone Furnace", "slotsRequired": 3, "buildCost": { "Steel Ingot": 4, "Copper Ingot": 4, "Glass": 8 } },
+        "Alembic": { "heatCost": 108.0, "slotsRequired": 3, "buildCost": { "Steel Ingot": 4, "Copper Ingot": 4, "Glass": 8 } },
 
-        "Athanor": { "heatCost": 32.0, "parent": "Stone Furnace", "slotsRequired": 6, "buildCost": { "Iron Nails": 15, "Iron Ingot": 10 } },
+        "Athanor": { "heatCost": 32.0, "slotsRequired": 6, "buildCost": { "Iron Nails": 15, "Iron Ingot": 10 } },
         "Advanced Blender": { "buildCost": { "Steel Ingot": 8, "Glass": 16, "Copper Bearing": 4 } },
-        "Advanced Alembic": { "heatCost": 270.0, "parent": "Stone Furnace", "slotsRequired": 6, "buildCost": { "Steel Ingot": 8, "Glass": 16, "Copper Bearing": 4  } },
+        "Advanced Alembic": { "heatCost": 270.0, "slotsRequired": 6, "buildCost": { "Steel Ingot": 8, "Glass": 16, "Copper Bearing": 4  } },
         "Advanced Assembler": { "buildCost": { "Steel Ingot": 12, "Steel Gear": 16, "Copper Bearing": 8 } },
-        "Advanced Athanor": { "heatCost": 360.0, "parent": "Stone Furnace", "slotsRequired": 9, "buildCost": { "Steel Ingot": 12, "Copper Ingot": 12 } },
+        "Advanced Athanor": { "heatCost": 360.0, "slotsRequired": 9, "buildCost": { "Steel Ingot": 12, "Copper Ingot": 12 } },
 
         "Shaper": { "buildCost": { "Iron Ingot": 8, "Iron Nails": 16 } },
         "Advanced Shaper": { "buildCost": { "Steel Ingot": 8, "Steel Gear": 16 } },
@@ -236,7 +236,7 @@ window.ALCHEMY_DB = {
         "Table Saw": { "buildCost": { "Plank": 5 } },
         "Stone Crusher": { "buildCost": { "Plank": 6, "Large Wooden Gear": 6 } },
         "Seed Plot": { "buildCost": { "Stone": 8 } },
-        "Iron Smelter": { "heatCost": 9.0, "parent": "Stone Furnace", "slotsRequired": 9, "buildCost": { "Stone": 15 } },
+        "Iron Smelter": { "heatCost": 9.0, "slotsRequired": 9, "buildCost": { "Stone": 15 } },
         "Nursery": { "fertility": true, "buildCost": { "Iron Ingot": 8, "Clay": 4 } },
 
         "World Tree Nursery": { "fertility": true, "buildCost": { "Iron Ingot": 100, "Clay": 100  } },

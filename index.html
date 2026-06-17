@@ -29,7 +29,7 @@
             <span style="margin-left: 10px;">
                 <span id="ui-lang-toggle" style="cursor:pointer; margin-right: 10px;" onclick="toggleLanguage()" title="EN/中文">🌐EN/中文</span>
                 <a href="https://github.com/starfi5h/AlchemyFactoryCalculator" target="_blank" class="repo-link">GitHub Repo</a>
-                <span id="last-updated-time-text">2026.06.15</span>
+                <span id="last-updated-time-text">2026.06.17</span>
             </span>
         </div>
         <div class="tabs">
@@ -237,13 +237,19 @@
                         <h3>Logistics</h3>
                         <div class="input-group">
                             <div>
+                                <label>Heating Device</label>
+                            </div>
+                            <select id="heatingDeviceSelect" onchange="onLogisticsChange()"></select>
+                        </div>
+                        <div class="input-group">
+                            <div>
                                 <label>Fuel Source</label>
                                 <span id="fuelSourceDetail"></span>
                             </div>
                             <select id="fuelSelect" onchange="onLogisticsChange()"></select>
                             <div class="checkbox-row">
                                 <input type="checkbox" checked id="fuelCostEnable" onchange="onLogisticsChange()">
-                                <label for="fuelCostEnable" style="display:inline; margin:0; cursor:pointer;">Cost (G/item):</label>
+                                <label for="fuelCostEnable" style="display:inline; margin:0; cursor:pointer;">Cost (/item):</label>
                                 <input type="number" id="fuelCostInput" class="small-num-input" value="0" oninput="onLogisticsChange()">
                             </div>
                         </div>
@@ -255,7 +261,7 @@
                             <select id="fertSelect" onchange="onLogisticsChange()"></select> 
                             <div class="checkbox-row">
                                 <input type="checkbox" checked id="fertCostEnable" onchange="onLogisticsChange()">
-                                <label for="fertCostEnable" style="display:inline; margin:0; cursor:pointer;">Cost (G/item):</label>
+                                <label for="fertCostEnable" style="display:inline; margin:0; cursor:pointer;">Cost (/item):</label>
                                 <input type="number" id="fertCostInput" class="small-num-input" value="0" oninput="onLogisticsChange()">
                             </div>
                         </div>

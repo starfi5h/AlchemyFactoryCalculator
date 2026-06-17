@@ -18,6 +18,7 @@ const DEFAULT_SETTINGS = {
     lvlFert: 0,
     defaultFuel: "Blast Potion",
     defaultFert: "Fertile Catalyst",
+    selectedHeatingDevice: "Stone Furnace",
     fuelCostEnable: true,
     fertCostEnable: true,    
     showBeltCount: true,
@@ -590,7 +591,7 @@ function saveMultiTargets(e) {
     }
     DB.settings.multiTargets = targets;
     persist();
-    flashButton(e.currentTarget);
+    if(e?.currentTarget) flashButton(e.currentTarget);
 }
 
 function loadMultiTargets(e) {
@@ -626,6 +627,12 @@ function loadSettingsToUI() {
         ['lvlBelt','lvlSpeed','lvlAlchemy','lvlFuel','lvlFert'].forEach(k => { if(DB.settings[k] !== undefined) document.getElementById(k).value = DB.settings[k]; });
         if(DB.settings.defaultFuel) document.getElementById('fuelSelect').value = DB.settings.defaultFuel; 
         if(DB.settings.defaultFert) document.getElementById('fertSelect').value = DB.settings.defaultFert;
+        const heatingSel = document.getElementById('heatingDeviceSelect');
+        if(DB.settings.selectedHeatingDevice) heatingSel.value = DB.settings.selectedHeatingDevice;
+        if(!heatingSel.value) {
+            heatingSel.value = heatingSel.querySelector('option[value="Stone Furnace"]') ? "Stone Furnace" : (heatingSel.options[0]?.value || "");
+            DB.settings.selectedHeatingDevice = heatingSel.value;
+        }
         if(DB.settings.fuelCostEnable) document.getElementById('fuelCostEnable').checked = DB.settings.fuelCostEnable;
         if(DB.settings.fertCostEnable) document.getElementById('fertCostEnable').checked = DB.settings.fertCostEnable;
         if(DB.settings.showMaxCap) document.getElementById('showMaxCap').checked = DB.settings.showMaxCap;
@@ -635,8 +642,8 @@ function loadSettingsToUI() {
 }
 
 function populateSelects() {
-    const fuelSel = document.getElementById('fuelSelect'); const fertSel = document.getElementById('fertSelect');
-    fuelSel.innerHTML = ''; fertSel.innerHTML = '';
+    const fuelSel = document.getElementById('fuelSelect'); const fertSel = document.getElementById('fertSelect'); const heatingSel = document.getElementById('heatingDeviceSelect');
+    fuelSel.innerHTML = ''; fertSel.innerHTML = ''; heatingSel.innerHTML = '';
     const fuels = []; const ferts = [];
     const allItems = new Set(Object.keys(DB.items || {}));
     if(DB.recipes) DB.recipes.forEach(r => Object.keys(r.outputs).forEach(k => allItems.add(k)));
@@ -649,13 +656,21 @@ function populateSelects() {
 
     fuels.sort((a,b) => b.heat - a.heat).forEach(f => { fuelSel.appendChild(new Option(`${f.name} (${f.heat} P)`, f.name)); });
     ferts.sort((a,b) => b.val - a.val).forEach(f => { fertSel.appendChild(new Option(`${f.name} (${f.val} V)`, f.name)); });
+    Object.entries(DB.machines || {})
+        .filter(([, machine]) => machine.isGenerator)
+        .sort(([nameA], [nameB]) => nameA.localeCompare(nameB))
+        .forEach(([machineName, machine]) => {
+            heatingSel.appendChild(new Option(`${t(machineName, 'machines')} (${machine.slots || 0} ${t('slots')})`, machineName));
+        });
+    heatingSel.value = DB.settings.selectedHeatingDevice || "Stone Furnace";
+    if(!heatingSel.value) heatingSel.value = heatingSel.options[0]?.value || "";
 }
 
 function toggleFuel() {
     const btn = document.getElementById('btnSelfFuel');
     const enable = btn.innerText === t("Self-Fuel: ON");
     if(!enable) { btn.innerText = t("Self-Fuel: ON"); btn.classList.remove('btn-inactive-red'); btn.classList.add('btn-active-green'); } 
-    else { btn.innerText = "Self-Fuel: OFF"; btn.classList.remove('btn-active-green'); btn.classList.add('btn-inactive-red'); }
+    else { btn.innerText = t("Self-Fuel: OFF"); btn.classList.remove('btn-active-green'); btn.classList.add('btn-inactive-red'); }
     calculate();
 }
 
@@ -673,6 +688,7 @@ function setDefaultFert(e) { const c = document.getElementById('fertSelect').val
 function onLogisticsChange() {
     const curFuel = document.getElementById('fuelSelect').value;
     const curFert = document.getElementById('fertSelect').value;
+    const curHeatingDevice = document.getElementById('heatingDeviceSelect').value;
 
     if (DB.settings.defaultFuel !== curFuel || curFert !== DB.settings.defaultFert) {
         document.getElementById('fuelCostInput').value = DB.settings.customCosts[curFuel] || 0;
@@ -689,6 +705,7 @@ function onLogisticsChange() {
     DB.settings.showMaxCap = document.getElementById('showMaxCap').checked;
     DB.settings.showHeatFert = document.getElementById('showHeatFert').checked;    
     DB.settings.showBeltCount = document.getElementById('showBeltCount').checked;
+    DB.settings.selectedHeatingDevice = curHeatingDevice;
     persist();
     calculate();
 }

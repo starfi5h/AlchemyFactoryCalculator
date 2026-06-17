@@ -90,7 +90,15 @@
         return batchYield;
     }
 
-    function getProductionHeatCost(db, state, item, speedMult, alchemyMult) {
+    function getHeatingDevice(db, selectedHeatingDevice) {
+        const selected = (db.machines || {})[selectedHeatingDevice];
+        if (selected?.isGenerator) return selected;
+        const fallback = (db.machines || {})["Stone Furnace"];
+        if (fallback?.isGenerator) return fallback;
+        return Object.values(db.machines || {}).find(machine => machine.isGenerator) || { heatSelf: 0, slots: 3 };
+    }
+
+    function getProductionHeatCost(db, state, item, speedMult, alchemyMult, selectedHeatingDevice = "Stone Furnace") {
         let cost = 0;
         const recipe = getActiveRecipe(db, state, item);
         if (recipe && recipe.outputs[item]) {
@@ -98,15 +106,15 @@
             batchYield = applyAlchemyMult(recipe.machine, batchYield, alchemyMult);
             if (db.machines[recipe.machine] && db.machines[recipe.machine].heatCost) {
                 const machine = db.machines[recipe.machine];
-                const parent = db.machines[machine.parent];
+                const heatingDevice = getHeatingDevice(db, selectedHeatingDevice);
                 const slotsRequired = machine.slotsRequired || 1;
-                const parentSlots = machine.parentSlots || parent.slots || 3;
-                const heatPerSec = (machine.heatCost * speedMult) + (parent.heatSelf / (parentSlots / slotsRequired));
+                const heatingSlots = heatingDevice.slots || 3;
+                const heatPerSec = (machine.heatCost * speedMult) + ((heatingDevice.heatSelf || 0) / (heatingSlots / slotsRequired));
                 cost += heatPerSec * ((recipe.baseTime / speedMult) / batchYield);
             }
 
             Object.keys(recipe.inputs).forEach(inputName => {
-                cost += getProductionHeatCost(db, state, inputName, speedMult, alchemyMult) * (recipe.inputs[inputName] / batchYield);
+                cost += getProductionHeatCost(db, state, inputName, speedMult, alchemyMult, selectedHeatingDevice) * (recipe.inputs[inputName] / batchYield);
             });
         }
         return cost;
@@ -225,6 +233,7 @@
 
         const fuelDef = db.items[params.selectedFuel] || {};
         const grossFuelEnergy = (fuelDef.heat || 1) * params.fuelMult;
+        const heatingDevice = getHeatingDevice(db, params.selectedHeatingDevice);
         const fertDef = db.items[params.selectedFert] || { nutrientValue: 144, maxFertility: 12 };
         const grossFertVal = fertDef.nutrientValue * params.fertMult;
 
@@ -379,17 +388,16 @@
             let fuelRate = 0;
             if (db.machines[recipe.machine] && db.machines[recipe.machine].heatCost) {
                 const machine = db.machines[recipe.machine];
-                const parent = db.machines[machine.parent];
                 const slotsRequired = machine.slotsRequired || 1;
-                const parentSlots = machine.parentSlots || parent.slots || 3;
+                const heatingSlots = heatingDevice.slots || 3;
                 let activeHeat = machine.heatCost * params.speedMult;
                 if (machine.heatCost < 0) activeHeat = (recipe.heatCost ?? 0) * params.speedMult;
 
-                const parentMachinesNeeded = Math.ceil((machinesNeeded / (parentSlots / slotsRequired)) - 0.0001);
-                const totalHeatPerSec = (parentMachinesNeeded * parent.heatSelf * params.speedMult) + (machinesNeeded * activeHeat);
+                const heatingDevicesNeeded = Math.ceil((machinesNeeded / (heatingSlots / slotsRequired)) - 0.0001);
+                const totalHeatPerSec = (heatingDevicesNeeded * (heatingDevice.heatSelf || 0) * params.speedMult) + (machinesNeeded * activeHeat);
 
                 if (!effectiveGhost) {
-                    aggregates.furnaceSlotDemand[machine.parent] = (aggregates.furnaceSlotDemand[machine.parent] || 0) + (Math.ceil(machinesNeeded - 0.0001) * slotsRequired);
+                    aggregates.furnaceSlotDemand[params.selectedHeatingDevice] = (aggregates.furnaceSlotDemand[params.selectedHeatingDevice] || 0) + (Math.ceil(machinesNeeded - 0.0001) * slotsRequired);
                 }
 
                 aggregates.heatLoad += totalHeatPerSec;
@@ -497,6 +505,8 @@
 
         const internalModules = [];
         if (!isGhost) {
+            const shouldInternalFuel = params.selfFuel && !params.targets.some(target => target.item === params.selectedFuel);
+            const shouldInternalFert = params.selfFert && !params.targets.some(target => target.item === params.selectedFert);
             let stableFuelDemand = aggregates.fuelDemandItems;
             let stableFertDemand = aggregates.fertDemandItems;
             const byproductSnapshot = cloneRecord(availableByproducts);
@@ -507,7 +517,7 @@
             const baseBio = aggregates.bioLoad;
             const baseCost = aggregates.goldPerMin;
 
-            if ((params.selfFuel && params.selectedFuel !== params.targetItem) || (params.selfFert && params.selectedFert !== params.targetItem)) {
+            if (shouldInternalFuel || shouldInternalFert) {
                 for (let i = 0; i < 10; i++) {
                     aggregates.fuelDemandItems = baseFuel;
                     aggregates.fertDemandItems = baseFert;
@@ -546,14 +556,14 @@
             aggregates.fuelDemandItems = stableFuelDemand;
             aggregates.fertDemandItems = stableFertDemand;
 
-            if (params.selfFert && stableFertDemand > 0 && params.targetItem !== params.selectedFert) {
+            if (shouldInternalFert && stableFertDemand > 0) {
                 const fertRoot = buildNode(params.selectedFert, stableFertDemand, true, [], false, 0);
                 if (fertRoot) {
                     internalModules.push({ type: "fert", item: params.selectedFert, rate: stableFertDemand, root: fertRoot });
                 }
             }
 
-            if (params.selfFuel && stableFuelDemand > 0 && params.targetItem !== params.selectedFuel) {
+            if (shouldInternalFuel && stableFuelDemand > 0) {
                 const fuelRoot = buildNode(params.selectedFuel, stableFuelDemand, true, [], false, 0);
                 if (fuelRoot) {
                     internalModules.push({ type: "fuel", item: params.selectedFuel, rate: stableFuelDemand, root: fuelRoot });
@@ -652,11 +662,11 @@
         return { flatMax, flatMin, totalFurnaces };
     }
 
-    function calculateTotalFurnaces(furnaceSlotDemand, db) {
-        return Object.entries(furnaceSlotDemand).reduce((sum, [machineName, qty]) => {
-            const slots = db.machines[machineName]?.slots || 3;
-            return sum + Math.ceil((qty - 0.0001) / slots);
-        }, 0);
+    function calculateTotalFurnaces(furnaceSlotDemand, db, selectedHeatingDevice) {
+        const heatingDevice = getHeatingDevice(db, selectedHeatingDevice);
+        const slots = heatingDevice.slots || 3;
+        const totalSlots = Object.values(furnaceSlotDemand).reduce((sum, qty) => sum + qty, 0);
+        return Math.ceil((totalSlots - 0.0001) / slots);
     }
 
     function buildResultSections(db, params, model) {
@@ -701,7 +711,7 @@
             construction: {
                 maxCounts: machineCounts.flatMax,
                 minCounts: machineCounts.flatMin,
-                furnaces: calculateTotalFurnaces(aggregates.furnaceSlotDemand, db),
+                furnaces: calculateTotalFurnaces(aggregates.furnaceSlotDemand, db, params.selectedHeatingDevice),
                 extraBuildCosts: aggregates.extraBuildCosts
             }
         };

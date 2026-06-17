@@ -26,14 +26,14 @@ function applyAlchemyMult(machineName, batchYield, alchemyMult) {
 }
 
 function getProductionHeatCost(item, speedMult, alchemyMult) {
-    return AlchemyCalcEngine.getProductionHeatCost(DB, { preferredRecipes: DB.settings.preferredRecipes }, item, speedMult, alchemyMult);
+    return AlchemyCalcEngine.getProductionHeatCost(DB, { preferredRecipes: DB.settings.preferredRecipes }, item, speedMult, alchemyMult, DB.settings.selectedHeatingDevice);
 }
 
 function getProductionFertCost(item, fertVal, fertSpeed, speedMult, alchemyMult) {
     return AlchemyCalcEngine.getProductionFertCost(DB, { preferredRecipes: DB.settings.preferredRecipes }, item, fertVal, fertSpeed, speedMult, alchemyMult);
 }
 
-function formatVal(val) { if(val >= 1000000) return Number((val/1000000).toFixed(2)) + 'm'; if(val >= 10000) return Number((val/1000).toFixed(2)) + 'k'; return Number(val.toFixed(3)); }
+function formatVal(val) { if(val >= 1000000) return Number((val/1000000).toFixed(2)) + 'm'; if(val >= 10000) return Number((val/1000).toFixed(2)) + 'k'; return Number(val.toFixed(2)); }
 
 function toggleBuildGroup(header) {
     header.classList.toggle('expanded');
@@ -196,11 +196,15 @@ function gatherInputs() {
     
     // Settings
     const selectedFuel = document.getElementById('fuelSelect').value;
-    const selfFuel = document.getElementById('btnSelfFuel')?.innerText === t("Self-Fuel: ON");
+    const heatingDeviceSelect = document.getElementById('heatingDeviceSelect');
+    const selectedHeatingDevice = DB.machines[heatingDeviceSelect.value]?.isGenerator
+        ? heatingDeviceSelect.value
+        : (DB.machines["Stone Furnace"]?.isGenerator ? "Stone Furnace" : Object.keys(DB.machines).find(machineName => DB.machines[machineName]?.isGenerator));
+    const selfFuel = document.getElementById('btnSelfFuel')?.innerText === t("Self-Fuel: ON") && isMulti;
     const fuelCost = parseFloat(document.getElementById('fuelCostInput').value) || 0;
 
     const selectedFert = document.getElementById('fertSelect').value;
-    const selfFert = document.getElementById('btnSelfFert')?.innerText === t("Self-Fert: ON");
+    const selfFert = document.getElementById('btnSelfFert')?.innerText === t("Self-Fert: ON") && isMulti;
     const fertCost = parseFloat(document.getElementById('fertCostInput').value) || 0;
 
     const showFuelCost = document.getElementById('fuelCostEnable').checked;
@@ -256,6 +260,7 @@ function gatherInputs() {
         isMulti,
         targetItem, targetRate, // 為了相容部分單產物邏輯
         selectedFuel, selfFuel, fuelCost, showFuelCost,
+        selectedHeatingDevice,
         selectedFert, selfFert, fertCost, showFertCost,
         showMaxCap, showHeatFert, showBeltCount,
         lvlSpeed, lvlBelt, lvlFuel, lvlAlchemy, lvlFert,        
@@ -317,7 +322,8 @@ function renderCalculationResult(params, result) {
         result.construction.maxCounts,
         result.construction.minCounts,
         result.construction.furnaces,
-        result.construction.extraBuildCosts
+        result.construction.extraBuildCosts,
+        params.selectedHeatingDevice
     );
 
     updateSummaryBox(
@@ -362,8 +368,8 @@ function buildRecipeTooltip(tooltipData) {
 function renderCostEntries(costEntries) {
     return costEntries.map(entry => {
         const amount = Math.ceil(entry.amount - Number.EPSILON).toLocaleString();
-        if (entry.type === 'gold') return `<span class="cost-tag">-${amount} G/m</span>`;
-        return `<span class="cost-tag">(${amount} G/m)</span>`;
+        if (entry.type === 'gold') return `<span class="cost-tag">-${amount} /m</span>`;
+        return `<span class="cost-tag">(${amount} /m)</span>`;
     }).join('');
 }
 
@@ -531,14 +537,14 @@ function renderExternalInputsSection(treeContainer, params, externalInputs) {
         externalInputs.rawMaterialCost.sources.forEach(src => {
             producersHtml += `
                 <div class="node-content" style="opacity:0.8;">
-                    <span class="qty" style="color:var(--gold); min-width:80px; display:inline-block;">${Math.ceil(src.gold).toLocaleString()} G/m</span>
+                    <span class="qty" style="color:var(--gold); min-width:80px; display:inline-block;">${Math.ceil(src.gold).toLocaleString()} /m</span>
                     <img src="img/item${DB.items[src.item]?.id ?? 0}.png" width="20" height="20">
                     <span class="details" style="font-size:0.85em; cursor:pointer;" onclick="jumpToNode('${src.pathKey}')">[ ${src.pathKey} ]</span>
                 </div>`;
         });
         createExtNode(
             `${t('Raw Material Cost')} (${externalInputs.rawMaterialCost.sources.length})`,
-            `${Math.ceil(externalInputs.rawMaterialCost.totalGoldPerMin).toLocaleString()} G/m`,
+            `${Math.ceil(externalInputs.rawMaterialCost.totalGoldPerMin).toLocaleString()} /m`,
             'gold',
             'ext_gold',
             producersHtml
@@ -682,7 +688,12 @@ function updateSummaryLineFromResult(params, formulaLineData) {
     summaryLine += `<span style="color:var(--info);"> ➔ </span>`;
 
     params.targets.forEach(target => {
-        if (target.rate > 0.0001) summaryLine += formattedText(target.item, target.rate, 'profit');
+        if (target.rate > 0.0001) {
+            let targetRate = target.rate;
+            if (params.selfFuel && params.selectedFuel === target.item) targetRate -= formulaLineData.fuelDemandItems;
+            if (params.selfFert && params.selectedFert === target.item) targetRate -= formulaLineData.fertDemandItems;
+            summaryLine += formattedText(target.item, targetRate, 'profit');
+        }
     });
 
     Object.entries(formulaLineData.availableByproducts).forEach(([name, rate]) => {
@@ -695,7 +706,7 @@ function updateSummaryLineFromResult(params, formulaLineData) {
 /* ==========================================================================
    SECTION: JS - DOM RENDERING
    ========================================================================== */
-function updateConstructionList(maxCounts, minCounts, furnaces, extraBuildCosts) {
+function updateConstructionList(maxCounts, minCounts, furnaces, extraBuildCosts, selectedHeatingDevice) {
     const buildList = document.getElementById('construction-list'); buildList.innerHTML = '';
     const totalMatsContainer = document.getElementById('total-mats-container'); totalMatsContainer.innerHTML = '';
     const isMaxMode = false;
@@ -735,10 +746,10 @@ function updateConstructionList(maxCounts, minCounts, furnaces, extraBuildCosts)
         buildList.appendChild(li);
     });
 
-    // Stone Furnaces (Calculated as shared sources, but can scale in MAX mode if nodes are separate)
+    // Heating devices (calculated as shared heat-slot sources)
     if(furnaces > 0) {
         const li = document.createElement('li'); li.className = 'build-group';
-        const mName = "Stone Furnace";
+        const mName = selectedHeatingDevice || "Stone Furnace";
         // If MAX mode, furnaces usually increase because machines are spread out
         // For simplicity, we keep it as 'furnaces' but you could implement a max-furnace logic if needed
         const count = furnaces; 
@@ -754,7 +765,7 @@ function updateConstructionList(maxCounts, minCounts, furnaces, extraBuildCosts)
             });
             subListHtml += `</ul>`;
         }
-        li.innerHTML = `<div class="build-header" style="border-top:1px dashed #555" onclick="toggleBuildGroup(this.parentNode)"><span><span class="build-arrow">▶</span> ${t('Stone Furnace', 'machines')}</span> <span class="build-count" style="color:var(--warn)">${count}</span></div>${subListHtml}`;
+        li.innerHTML = `<div class="build-header" style="border-top:1px dashed #555" onclick="toggleBuildGroup(this.parentNode)"><span><span class="build-arrow">▶</span> ${t(mName, 'machines')}</span> <span class="build-count" style="color:var(--warn)">${count}</span></div>${subListHtml}`;
         buildList.appendChild(li);
     }
 
@@ -804,23 +815,28 @@ function updateConstructionList(maxCounts, minCounts, furnaces, extraBuildCosts)
 
 
 function updateSummaryBox(p, heatPerSec, nutrPerSec, goldPerMin, actualFuelNeed, actualFertNeed) {
-    const { targetItem, targetRate, selfFuel, selfFert, selectedFuel, selectedFert, fuelCost, fertCost } = p;
+    let { targetItem, targetRate, selfFuel, selfFert, selectedFuel, selectedFert, fuelCost, fertCost } = p;
+    if (p.isMulti && p.targets.length === 1) {
+        targetItem = p.targets[0].item;
+        targetRate = p.targets[0].rate;
+    }
     const targetItemDef = DB.items[targetItem] || {};
     
     let usedRate = 0.0;
-    if (selfFuel && targetItem === selectedFuel) usedRate += actualFuelNeed;
-    if (selfFert && targetItem === selectedFert) usedRate += actualFertNeed;
+    if (targetItem === selectedFuel) usedRate += actualFuelNeed;
+    if (targetItem === selectedFert) usedRate += actualFertNeed;
     if (selfFuel) heatPerSec = 0;
     if (selfFert) nutrPerSec = 0;
-    const netRate = targetRate - usedRate;
+    let netRate = targetRate;
+    if (selfFuel && targetItem === selectedFuel || selfFert && targetItem === selectedFert) netRate -= usedRate;
     let refRate = targetRate;
     if (netRate > 0) refRate = targetRate * (targetRate / netRate);
 
     // --- Output Blocks ---
     let outputHtml = `<div class="stat-block"><span class="stat-label">${t('Gross Output')}</span>`;
-    if (!p.isMulti) {
+    if (p.targets.length <= 1) {
         outputHtml += `<span class="stat-value net-positive">${targetRate.toFixed(1)} / min <img src="img/item${DB.items[targetItem]?.id ?? 0}.png" width="24" height="24" style="vertical-align: middle; margin-bottom: 4px;"></span>
-            ${usedRate > Number.EPSILON ? `<span class="stat-sub" onclick="recalculate('${targetItem}' , ${refRate})">Net: ${netRate.toFixed(1)} / min <br>Used: ${usedRate.toFixed(1)} / min</span>` : ''}
+            ${usedRate > Number.EPSILON ? `<span class="stat-sub net-positive" onclick="recalculate('${targetItem}' , ${refRate})">Net: ${(targetRate - usedRate).toFixed(1)} / min <br>Used: ${usedRate.toFixed(1)} / min</span>` : ''}
             </div>`;
     } else {
         p.targets.forEach((target) => {
@@ -835,16 +851,19 @@ function updateSummaryBox(p, heatPerSec, nutrPerSec, goldPerMin, actualFuelNeed,
 
     // --- Load Blocks ---
     let loadHtml = `<div class="stat-block"><span class="stat-label">${t('Total Load')}</span>`;
-    if (goldPerMin > 0) loadHtml += `<span class="stat-value" style="color:var(--gold);">${t('Coin')}: ${Math.ceil(goldPerMin).toLocaleString()} G / min</span>`;
+    if (goldPerMin > 0) loadHtml += `<span class="stat-value" style="color:var(--gold);">${t('Coin')}: ${Math.ceil(goldPerMin).toLocaleString()} /min</span>`;
     if (heatPerSec > 0) {
+        if (p.selectedHeatingDevice === 'Steam Heating Pad') {
+            loadHtml += `<span class="stat-value" style="color:var(--fuel);">${t('Steam')}: ${(heatPerSec * 60 / 20).toLocaleString()} /min</span>`;
+        }
         loadHtml += `<span>`;
-        loadHtml += `<span class="stat-value" style="color:var(--fuel);">${t('Heat')}: ${(heatPerSec * 60).toLocaleString()} P / min</span>`;
+        loadHtml += `<span class="stat-value" style="color:var(--fuel);">${t('Heat')}: ${(heatPerSec * 60).toLocaleString()} P/min</span>`;
         loadHtml += ` ( ${(actualFuelNeed).toLocaleString()}<img src="img/item${DB.items[selectedFuel]?.id ?? 0}.png" alt="${selectedFuel}" width="24" height="24" style="vertical-align: middle; margin-bottom: 4px;">/min )`;
         loadHtml += `</span>`;
     }
     if (nutrPerSec > 0) {
         loadHtml += `<span>`;
-        loadHtml += `<span class="stat-value" style="color:var(--bio);">${t('Nutr')}: ${(nutrPerSec * 60).toLocaleString()} V / min</span>`;
+        loadHtml += `<span class="stat-value" style="color:var(--bio);">${t('Nutr')}: ${(nutrPerSec * 60).toLocaleString()} V/min</span>`;
         loadHtml += `  ( ${(actualFertNeed).toLocaleString()}<img src="img/item${DB.items[selectedFert]?.id ?? 0}.png" alt="${selectedFert}" width="24" height="24" style="vertical-align: middle; margin-bottom: 4px;">/min )`;
         loadHtml += `</span>`;
     }
@@ -852,9 +871,12 @@ function updateSummaryBox(p, heatPerSec, nutrPerSec, goldPerMin, actualFuelNeed,
     
     // --- Cost Block ---
     let costHtml = `<div class="stat-block"><span class="stat-label">${t('Unit Cost')}</span>`;
-    if (!p.isMulti) {
-        if (goldPerMin > 0) costHtml += `<span class="stat-value" style="color:var(--gold);">${t('Coin')}: ${(goldPerMin / netRate).toLocaleString()} G</span>`;
+    if (p.targets.length <= 1) {
+        if (goldPerMin > 0) costHtml += `<span class="stat-value" style="color:var(--gold);">${t('Coin')}: ${(goldPerMin / netRate).toLocaleString()}</span>`;
         if (heatPerSec > 0) {
+            if (p.selectedHeatingDevice === 'Steam Heating Pad') {
+                costHtml += `<span class="stat-value" style="color:var(--fuel);">${t('Steam')}: ${(heatPerSec * 60 / netRate / 20).toLocaleString()}</span>`;
+            }
             costHtml += `<span>`
             costHtml += `<span class="stat-value" style="color:var(--fuel);">${t('Heat')}: ${(heatPerSec * 60 / netRate).toLocaleString()} P</span>`;
             costHtml += `  ( ${(actualFuelNeed/netRate).toLocaleString()}<img src="img/item${DB.items[selectedFuel]?.id ?? 0}.png" alt="${selectedFuel}" width="24" height="24" style="vertical-align: middle; margin-bottom: 4px;"> )`;
@@ -871,8 +893,8 @@ function updateSummaryBox(p, heatPerSec, nutrPerSec, goldPerMin, actualFuelNeed,
 
     // --- Value Block ---
     let valueHtml = `<div class="stat-block"><span class="stat-label">${t('Unit Value')}</span>`;
-    if (!p.isMulti) {
-        const convertedCost = (goldPerMin + fuelCost * actualFuelNeed + fertCost * actualFertNeed) / netRate;
+    if (p.targets.length <= 1) {
+        const convertedCost = (goldPerMin + (selfFuel ? 0 : fuelCost * actualFuelNeed) +  (selfFert ? 0 : fertCost * actualFertNeed)) / netRate;
         valueHtml += `<span class="stat-value gold-profit">${t('Conversion Cost')}: ${(convertedCost).toLocaleString()}</span>`;
         
         if (targetItemDef.sellPrice) {
