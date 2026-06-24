@@ -625,14 +625,21 @@
                 const valA = byproductSnapshot[key] || 0;
                 const valB = totalByproducts[key] || 0;
                 if (Math.abs(valA - valB) > maxDiff) maxDiff = Math.abs(valA - valB);
-            });
-
-            if (maxDiff < 0.0001) break;
+            });            
+            if (maxDiff < 0.0001) {
+                if (i > 0) console.log("Solve Equilibrium Completed. Oscillation Times = " + i);
+                break;
+            }
+            else if (i >= 29) {                
+                console.log("Solve Equilibrium Unfinished. Oscillation Times > 30");
+            }
 
             allKeys.forEach(key => {
+                // 對於超過15次, 調整damping ratio, 避免過度震盪(e.g. 銀的共振催化劑)
                 const valA = byproductSnapshot[key] || 0;
                 const valB = totalByproducts[key] || 0;
-                byproductSnapshot[key] = valA + ((valB - valA) * 0.5);
+                const dampingRatio = i < 15 ? 0.5 : 0.25;
+                byproductSnapshot[key] = valA + ((valB - valA) * dampingRatio);
             });
         }
 

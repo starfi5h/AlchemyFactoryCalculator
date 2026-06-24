@@ -1,6 +1,6 @@
 window.ALCHEMY_DB = {
-    "version": 42,
-    "date": "2026.06.15",
+    "version": 43,
+    "date": "2026.06.24",
     "gameVersion": "0.5.0.4485",
     "items": {
         // --- 1. RAW RESOURCES ---
@@ -318,12 +318,21 @@ window.ALCHEMY_DB = {
             "inputs": { "Coal": 1 }, "outputs": { "Coke": 1 }, 
             "baseTime": 6.0 
         },
-        // --- COKE BATCH (Converted from 50% fail rate) ---
+        // --- COKE BATCH (50%) 2 RUNS---
         { 
             "id": "Coke", "machine": "Athanor", 
             "inputs": { "Charcoal Powder": 12 }, 
             "outputs": { "Coke": 1, "Charcoal": 2 }, 
             "baseTime": 6.0 
+        },
+        // --- COKE BATCH (50%) 8 RUNS ---
+        { 
+            "id": "Coke Advanced Athanor", "machine": "Advanced Athanor", "ChargeCost": 8,
+            "inputs": { "Charcoal Powder": 48 }, 
+            "outputs": { "Coke": 4, "Charcoal": 8 }, 
+            "unstableOutputs": { "Coke": 6, "Charcoal": 4 },
+            "resonantOutputs": { "Coke": 8, "Charcoal": 16 },
+            "baseTime": 24.0 
         },
         { "id": "Coke Powder", "machine": "Grinder", "inputs": { "Coke": 1 }, "outputs": { "Coke Powder": 1 }, "baseTime": 12.0 },
         
@@ -331,11 +340,19 @@ window.ALCHEMY_DB = {
         { "id": "Iron Ingot", "machine": "Iron Smelter", "inputs": { "Iron Ore": 1 }, "outputs": { "Iron Ingot": 100 }, "baseTime": 600.0 },
         { "id": "Iron Ingot 2", "machine": "Crucible", "inputs": { "Iron Sand": 1 }, "outputs": { "Iron Ingot": 1 }, "baseTime": 6.0 },
         { "id": "Iron Sand", "machine": "Grinder", "inputs": { "Iron Ingot": 1 }, "outputs": { "Iron Sand": 1 }, "baseTime": 30.0 },
-        // --- STEEL BATCH (Converted from 25% fail rate) ---
+        // --- STEEL BATCH (25%) 4 RUNS ---
         {
             "id": "Steel Ingot", "machine": "Athanor",
             "inputs": { "Iron Ingot": 4, "Coke Powder": 4 }, 
             "outputs": { "Steel Ingot": 1, "Iron Ingot": 3 },
+            "baseTime": 16.0
+        },
+        {
+            "id": "Steel Ingot Advanced Athanor", "machine": "Advanced Athanor", "ChargeCost": 16,
+            "inputs": { "Iron Ingot": 4, "Coke Powder": 4 }, 
+            "outputs": { "Steel Ingot": 1, "Iron Ingot": 3 },
+            "unstableOutputs": { "Steel Ingot": 2, "Iron Ingot": 2 },
+            "resonantOutputs": { "Steel Ingot": 4, "Iron Ingot": 4 },
             "baseTime": 16.0
         },
         { "id": "Sulfur", "machine": "Iron Smelter", "inputs": { "Pyrite Ore": 1 }, "outputs": { "Sulfur": 40, "Iron Ingot": 120 }, "baseTime": 960.0 },
@@ -343,11 +360,19 @@ window.ALCHEMY_DB = {
         { "id": "Black Powder", "machine": "Advanced Blender", "inputs": { "Sulfur Powder": 1, "Charcoal Powder": 12, "Limewater": 150 }, "outputs": { "Black Powder": 1 }, "baseTime": 12.0 },
 
         // --- COPPER / BRONZE ---
-        // --- COPPER POWDER BATCH (50%) ---
+        // --- COPPER POWDER BATCH (50%) 2 RUNS ---
         {
             "id": "Copper Powder", "machine": "Athanor",
             "inputs": { "Iron Sand": 12, "Soap Powder": 12 }, 
             "outputs": { "Copper Powder": 1, "Impure Copper Powder": 1 },
+            "baseTime": 12.0
+        },
+        {
+            "id": "Copper Powder Advanced Athanor", "machine": "Advanced Athanor", "ChargeCost": 36,
+            "inputs": { "Iron Sand": 12, "Soap Powder": 12 }, 
+            "outputs": { "Copper Powder": 1, "Impure Copper Powder": 1 },
+            "unstableOutputs": { "Impure Copper Powder": 2 },
+            "resonantOutputs": { "Copper Powder": 2, "Impure Copper Powder": 2 },
             "baseTime": 12.0
         },
         { "id": "Copper Powder 2", "machine": "Grinder", "inputs": { "Copper Ingot": 1 }, "outputs": { "Copper Powder": 1 }, "baseTime": 12.0 },
@@ -387,9 +412,22 @@ window.ALCHEMY_DB = {
         { "id": "Gold Ingot", "machine": "Crucible", "inputs": { "Pure Gold Dust": 1 }, "outputs": { "Gold Ingot": 1 }, "baseTime": 40.0 },
         { "id": "Gold Coin", "machine": "Processor", "inputs": { "Gold Ingot": 1 }, "outputs": { "Gold Coin": 1 }, "baseTime": 40.0 },
 
-        // --- SALT BATCH (33%) ---
+        // --- SALT BATCH (33%) 3 RUNS ---
         { "id": "Salt_Rock", "machine": "Stone Crusher", "inputs": { "Rock Salt": 1 }, "outputs": { "Salt": 100, "Sand": 100 }, "baseTime": 600.0 },
-        { "id": "Salt", "machine": "Athanor", "inputs": { "Charcoal Powder": 6, "Quicklime Powder": 12 }, "outputs": { "Salt": 1, "Sand": 12 }, "baseTime": 18.0 },        
+        { 
+          "id": "Salt", "machine": "Athanor",
+          "inputs": { "Charcoal Powder": 6, "Quicklime Powder": 12 },
+          "outputs": { "Salt": 1, "Sand": 12 },
+          "baseTime": 18.0
+        },
+        { 
+          "id": "Salt Advanced Athanor", "machine": "Advanced Athanor", "ChargeCost": 6,
+          "inputs": { "Charcoal Powder": 6, "Quicklime Powder": 12 },
+          "outputs": { "Salt": 1, "Sand": 12 },
+          "unstableOutputs": { "Salt": 2, "Sand": 6 },
+          "resonantOutputs": { "Salt": 3, "Sand": 18 },
+          "baseTime": 18.0
+        },
 
         // --- LIQUIDS ---
         { "id": "Brine", "machine": "Extractor", "inputs": { "Salt": 1 }, "outputs": { "Brine": 20 }, "baseTime": 4.0 },

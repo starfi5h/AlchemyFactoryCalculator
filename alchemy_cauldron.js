@@ -547,14 +547,13 @@ async function runCauldronSimulationType1() {
                     minDistance = dist;
                     bestItem = target;
                 }
-            }            
+            }
         }
-        // 異類合成： 向下尋找加權距離最接近的低階物品。
+        // 異類合成： 尋找距離最接近的低階物品。
         else {
             bestItem = minTargetItem;
             for (let target of validTargets) {
-                if (target.target > T) continue;
-                const dist = (T - target.target) * target.mult;
+                const dist = Math.abs(T - target.target);
                 if (dist < minDistance && target.name !== nA && target.name !== nB) {
                     minDistance = dist;
                     bestItem = target;
@@ -752,7 +751,7 @@ function createRecipeRowHtml(r, outName, favSet) {
     const inputsHtml = inputs.map(n => {
         const item = DB.items[n] || { id: 0, cauldronCost: 0 };
         return `<img src="img/item${item.id}.png" width="18" height="18" loading="lazy">
-                ${n} <small>(${item.cauldronCost.toFixed(1)})</small>`;
+                ${n} <small>(${Number(item.cauldronCost.toFixed(1))})</small>`;
     }).join(' + ');
 
     const dataAttrs = inputs.map((n, idx) => `data-i${idx + 1}="${n}"`).join(' ');
@@ -761,7 +760,7 @@ function createRecipeRowHtml(r, outName, favSet) {
     <div class="cauldron-recipe-row">
         <span class="recipe-text">
             ${inputsHtml} 
-            <span style="color:var(--info);">➔</span> ${totalValue.toFixed(1)} ${ratioTag}
+            <span style="color:var(--info);">➔</span> ${Number(totalValue.toFixed(1))} ${ratioTag}
         </span>
         <button class="btn-fav ${isFav ? 'active' : ''}" 
             ${dataAttrs} data-out="${outName}">
@@ -1184,8 +1183,7 @@ function _calcCauldronModalOutput(slots, cauldronType, T) {
         } else {
             let minDist = Infinity, best = minT.name;
             for (const vt of validTargets) {
-                if (vt.target > T) continue;
-                const dist = (T - vt.target) * vt.mult;
+                const dist = Math.abs(T - vt.target);
                 if (dist < minDist && vt.name !== nA && vt.name !== nB) { minDist = dist; best = vt.name; }
             }
             return best;

@@ -295,8 +295,8 @@ function renderCalculationResult(params, result) {
         div.innerHTML = `
             <span class="section-header">--- ${t('Production Chain')} (${entry.target.item}) ---</span>
             <span style="margin-left:auto; cursor:pointer;">
-                <span class="section-header" onclick="setAllRecycling(true)">[${t('Recycle All')}]</span>
-                <span class="section-header" onclick="setAllRecycling(false)">[${t('Un-recycle All')}]</span>
+                <button class="recycle-btn" onclick="setAllRecycling(true)" title="Recycle all byproducts">${t('Recycle All')}</button>
+                <button class="recycle-btn" onclick="setAllRecycling(false)" titile="Don't recycle any byproducts">${t('Un-recycle All')}</button>
                 <span class="section-header" onclick="toggleFirstLevel()" title="Toggle First Level" style="margin-right:10px;">💠</span>
             </span>
         `;
@@ -347,8 +347,8 @@ function createSectionHeader(title) {
     div.innerHTML = `
         <span class="section-header">${title}</span>
         <span style="margin-left:auto; cursor:pointer;">
-            <span class="section-header" onclick="toggleNodesInSection(this, false)">[${t('Expand All')}]</span>
-            <span class="section-header" onclick="toggleNodesInSection(this, true)">[${t('Collapse All')}]</span>
+            <button class="recycle-btn info" onclick="toggleNodesInSection(this, false)">${t('Expand All')}</button>
+            <button class="recycle-btn info" onclick="toggleNodesInSection(this, true)">${t('Collapse All')}</button>
         </span>
     `;
     return div;
