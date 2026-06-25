@@ -29,13 +29,14 @@
             <span style="margin-left: 10px;">
                 <span id="ui-lang-toggle" style="cursor:pointer; margin-right: 10px;" onclick="toggleLanguage()" title="EN/中文">🌐EN/中文</span>
                 <a href="https://github.com/starfi5h/AlchemyFactoryCalculator" target="_blank" class="repo-link">GitHub Repo</a>
-                <span id="last-updated-time-text">2026.06.24</span>
+                <span id="last-updated-time-text">2026.06.17</span>
             </span>
         </div>
         <div class="tabs">
             <div class="tab-btn active" onclick="switchTab('calc')">Calculator</div>
             <div class="tab-btn" onclick="switchTab('cauldron')">Cauldron</div>
             <!-- <div class="tab-btn" onclick="switchTab('recipes')">Recipes</div> -->
+            <div class="tab-btn" onclick="switchTab('itemvalue')">Item Value</div>
             <div class="tab-btn" onclick="switchTab('db')">Database Editor</div>
         </div>
     </header>
@@ -541,6 +542,88 @@
             </div>
         </div>
 
+        <div id="view-itemvalue" class="view">
+            <div class="recipe-container">
+                <div class="panel sticky-filter-bar">
+                    <div class="recipe-top-bar">
+                        <div class="recipe-search-box">
+                            <input type="text" id="iv-search-input" placeholder="Search Item..." oninput="ItemValue.onSearchInput(this.value)">
+                        </div>
+
+                        <div class="input-group" style="width:160px;">
+                            <label>Category</label>
+                            <select id="iv-categoryFilter" onchange="ItemValue.onCategoryChange(this.value)"></select>
+                        </div>
+
+                        <div class="input-group" style="width:160px;">
+                            <label>Heating Device</label>
+                            <select id="iv-heatingDeviceSelect" onchange="ItemValue.render()"></select>
+                        </div>
+                        <div class="input-group" style="width:160px;">
+                            <label>Fuel Source</label>
+                            <select id="iv-fuelSelect" onchange="ItemValue.render()"></select>
+                        </div>
+                        <div class="input-group" style="width:160px;">
+                            <label>Fertilizer Source</label>
+                            <select id="iv-fertSelect" onchange="ItemValue.render()"></select>
+                        </div>
+
+                        <div class="recipe-upgrades-row">
+                            <div class="recipe-upgrade-item">
+                                <label>Factory Efficiency</label>
+                                <div class="spinner-wrapper">
+                                    <button class="spinner-btn" onclick="ItemValue.adjustLvl('iv-lvlSpeed', -1)">-</button>
+                                    <input type="number" id="iv-lvlSpeed" value="0" min="0" oninput="ItemValue.render()">
+                                    <button class="spinner-btn" onclick="ItemValue.adjustLvl('iv-lvlSpeed', 1)">+</button>
+                                </div>
+                            </div>
+                            <div class="recipe-upgrade-item">
+                                <label>Alchemy Skill</label>
+                                <div class="spinner-wrapper">
+                                    <button class="spinner-btn" onclick="ItemValue.adjustLvl('iv-lvlAlchemy', -1)">-</button>
+                                    <input type="number" id="iv-lvlAlchemy" value="0" min="0" oninput="ItemValue.render()">
+                                    <button class="spinner-btn" onclick="ItemValue.adjustLvl('iv-lvlAlchemy', 1)">+</button>
+                                </div>
+                            </div>
+                            <div class="recipe-upgrade-item">
+                                <label>Fuel Efficiency</label>
+                                <div class="spinner-wrapper">
+                                    <button class="spinner-btn" onclick="ItemValue.adjustLvl('iv-lvlFuel', -1)">-</button>
+                                    <input type="number" id="iv-lvlFuel" value="0" min="0" oninput="ItemValue.render()">
+                                    <button class="spinner-btn" onclick="ItemValue.adjustLvl('iv-lvlFuel', 1)">+</button>
+                                </div>
+                            </div>
+                            <div class="recipe-upgrade-item">
+                                <label>Fert Efficiency</label>
+                                <div class="spinner-wrapper">
+                                    <button class="spinner-btn" onclick="ItemValue.adjustLvl('iv-lvlFert', -1)">-</button>
+                                    <input type="number" id="iv-lvlFert" value="0" min="0" oninput="ItemValue.render()">
+                                    <button class="spinner-btn" onclick="ItemValue.adjustLvl('iv-lvlFert', 1)">+</button>
+                                </div>
+                            </div>
+                            <div class="recipe-upgrade-item">
+                                <label title="多輸出配方的成本折扣比例 (副產品視為銷毀)">Cost Ratio %</label>
+                                <div class="spinner-wrapper">
+                                    <button class="spinner-btn" onclick="ItemValue.adjustLvl('iv-costRatio', -5)">-</button>
+                                    <input type="number" id="iv-costRatio" value="100" min="0" max="100" oninput="ItemValue.render()">
+                                    <button class="spinner-btn" onclick="ItemValue.adjustLvl('iv-costRatio', 5)">+</button>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="recipe-table-wrapper">
+                    <table class="recipe-table" id="iv-table">
+                        <thead>
+                            <tr id="iv-table-header"></tr>
+                        </thead>
+                        <tbody id="iv-table-body"></tbody>
+                    </table>
+                </div>
+            </div>
+        </div>
+
         <div id="view-db" class="view">
             <div class="editor-container">
                 <div class="editor-toolbar">
@@ -565,5 +648,6 @@
     <script src="alchemy_calc.js"></script>
     <script src="alchemy_cauldron.js"></script>
     <script src="alchemy_recipe.js"></script>
+    <script src="alchemy_itemvalue.js"></script>
 </body>
 </html>

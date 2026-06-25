@@ -279,6 +279,7 @@ function switchTab(tabName) {
         case 'calc': btnIndex = 0; break;
         case 'cauldron': btnIndex = 1; break;        
         case 'recipes': btnIndex = 2; break;
+        case 'itemvalue': btnIndex = 2; break;
         case 'db': btnIndex = 3; break;
         default: return;
     }
@@ -292,6 +293,9 @@ function switchTab(tabName) {
     }
     if (tabName === 'recipes') {
         initRecipePage();
+    }
+    if (tabName === 'itemvalue' && typeof initItemValuePage === 'function') {
+        initItemValuePage();
     }
     if (tabName === 'calc') {
         syncCauldronToMainDB(); // 回到計算器頁面時, 嘗試同步煉金鍋配方

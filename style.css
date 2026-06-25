@@ -604,6 +604,27 @@ button.reset-btn:hover { background: var(--danger); color: white; }
     z-index: 10;
     box-shadow: 0 2px 2px -1px rgba(0,0,0,0.4);
 }
+
+/* ==========================================================================
+    SECTION: ITEM VALUE PAGE STYLES
+    ========================================================================== */
+.iv-na {
+    color: #777;
+    font-style: italic;
+}
+.iv-gold { color: var(--gold); }
+.iv-fuel { color: var(--fuel); }
+.iv-fert { color: var(--bio); }
+.iv-machine-badge {
+    display: inline-block;
+    background: #2a2a2a;
+    border: 1px solid #444;
+    border-radius: 4px;
+    padding: 1px 6px;
+    font-size: 0.8em;
+    color: #aaa;
+    white-space: nowrap;
+}
 /* ==========================================================================
    SECTION: SCALE MODAL
    ========================================================================== */
