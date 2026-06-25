@@ -458,87 +458,93 @@
             </div>
         </div>
 
-        <div id="view-recipes" class="view">
+		<div id="view-recipes" class="view">
             <div class="recipe-container">
-                <!-- 頂部過濾器與升級項 -->
-                <div class="panel sticky-filter-bar">
-                    <div class="recipe-top-bar">
-                        <!-- 搜尋框 -->
-                        <div class="recipe-search-box">
-                            <input type="text" id="recipe-search-input" placeholder="Search Item..." oninput="renderRecipeTable()">
+
+                <!-- ===== FILTER BAR ===== -->
+                <div class="panel rcp-filter-bar">
+
+                    <!-- Row 1: Search + Batch/Min + Raw toggle + Cols -->
+                    <div class="rcp-row rcp-row-1">
+                        <div class="rcp-search-wrap">
+                            <input type="text" id="rcp-search" class="rcp-search-input"
+                                    placeholder="Search item or machine…" oninput="onRecipeSearch()">
                         </div>
 
-                        <!-- 三個升級項並列 -->
-                        <div class="recipe-upgrades-row">
-                            <div class="recipe-upgrade-item">
-                                <label id="recipe-lvlAlchemy-label">Alchemy Skill</label>
-                                <div class="spinner-wrapper">
-                                    <button class="spinner-btn" onclick="adjustRecipeLvl('recipe-lvlAlchemy', -1)">-</button>
-                                    <input type="number" id="recipe-lvlAlchemy" value="0" min="0" oninput="renderRecipeTable()">
-                                    <button class="spinner-btn" onclick="adjustRecipeLvl('recipe-lvlAlchemy', 1)">+</button>
-                                </div>
+                        <div class="rcp-row-1-right">
+                            <div class="rcp-mode-group">
+                                <button id="rcp-mode-batch" class="tab-btn mini-tab active" onclick="setRecipeMode2('batch')">Batch</button>
+                                <button id="rcp-mode-min"   class="tab-btn mini-tab"        onclick="setRecipeMode2('min')">/ min</button>
                             </div>
-                            <div class="recipe-upgrade-item">
-                                <label id="recipe-lvlFuel-label">Fuel Efficiency</label>
-                                <div class="spinner-wrapper">
-                                    <button class="spinner-btn" onclick="adjustRecipeLvl('recipe-lvlFuel', -1)">-</button>
-                                    <input type="number" id="recipe-lvlFuel" value="0" min="0" oninput="renderRecipeTable()">
-                                    <button class="spinner-btn" onclick="adjustRecipeLvl('recipe-lvlFuel', 1)">+</button>
-                                </div>
-                            </div>
-                            <div class="recipe-upgrade-item">
-                                <label id="recipe-lvlFert-label">Fert Efficiency</label>
-                                <div class="spinner-wrapper">
-                                    <button class="spinner-btn" onclick="adjustRecipeLvl('recipe-lvlFert', -1)">-</button>
-                                    <input type="number" id="recipe-lvlFert" value="0" min="0" oninput="renderRecipeTable()">
-                                    <button class="spinner-btn" onclick="adjustRecipeLvl('recipe-lvlFert', 1)">+</button>
-                                </div>
+
+                            <label class="rcp-toggle-label" title="Show Gold/Heat/Nutr as item counts instead of cauldron-cost units">
+                                <input type="checkbox" id="rcp-raw-toggle" onchange="onRecipeRawToggle()">
+                                <span class="rcp-toggle-text">Raw Units</span>
+                            </label>
+
+                            <div class="rcp-col-wrap">
+                                <button class="split-btn" onclick="toggleRecipeColPanel(event)">Cols ⚙️</button>
+                                <div id="rcp-col-panel" class="rcp-col-panel"></div>
                             </div>
                         </div>
+                    </div>
 
-                        <!-- 新增：HPC -->
-                        <div class="recipe-upgrade-item">
-                            <label>Heat per Cost</label>
+                    <!-- Row 2: Machine filter chips -->
+                    <div class="rcp-row rcp-row-2" id="rcp-machine-chips"></div>
+
+                    <!-- Row 3: Parameters -->
+                    <div class="rcp-row rcp-row-3">
+                        <div class="rcp-param-item">
+                            <label class="rcp-param-label">Fuel</label>
+                            <select id="rcp-fuel-select" class="rcp-select" onchange="onRecipeParamChange()"></select>
+                        </div>
+                        <div class="rcp-param-item">
+                            <label class="rcp-param-label">Fertilizer</label>
+                            <select id="rcp-fert-select" class="rcp-select" onchange="onRecipeParamChange()"></select>
+                        </div>
+
+                        <div class="rcp-param-divider"></div>
+
+                        <div class="rcp-param-item">
+                            <label class="rcp-param-label" title="Heat value per 1 cauldron-cost unit of fuel">HPC <span class="rcp-param-hint">(P/cc)</span></label>
                             <div class="spinner-wrapper">
-                                <button class="spinner-btn" onclick="adjustRecipeLvl('recipe-hpc', -1)">-</button>
-                                <input type="number" id="recipe-hpc" value="20" oninput="renderRecipeTable()">
-                                <button class="spinner-btn" onclick="adjustRecipeLvl('recipe-hpc', 1)">+</button>
+                                <button class="spinner-btn" onclick="adjustRecipeParam('rcp-hpc', -1)">-</button>
+                                <input type="number" id="rcp-hpc" class="rcp-param-input" value="20" min="0.01" step="1" oninput="onRecipeParamChange()">
+                                <button class="spinner-btn" onclick="adjustRecipeParam('rcp-hpc', 1)">+</button>
                             </div>
                         </div>
-                        
-                        <!-- 新增：NPC -->
-                        <div class="recipe-upgrade-item">
-                            <label>Nutr per Cost</label>
+                        <div class="rcp-param-item">
+                            <label class="rcp-param-label" title="Nutrient value per 1 cauldron-cost unit of fertilizer">NPC <span class="rcp-param-hint">(V/cc)</span></label>
                             <div class="spinner-wrapper">
-                                <button class="spinner-btn" onclick="adjustRecipeLvl('recipe-npc', -1)">-</button>
-                                <input type="number" id="recipe-npc" value="20" oninput="renderRecipeTable()">
-                                <button class="spinner-btn" onclick="adjustRecipeLvl('recipe-npc', 1)">+</button>
+                                <button class="spinner-btn" onclick="adjustRecipeParam('rcp-npc', -1)">-</button>
+                                <input type="number" id="rcp-npc" class="rcp-param-input" value="20" min="0.01" step="1" oninput="onRecipeParamChange()">
+                                <button class="spinner-btn" onclick="adjustRecipeParam('rcp-npc', 1)">+</button>
+                            </div>
+                        </div>
+                        <div class="rcp-param-item">
+                            <label class="rcp-param-label" title="Gold (coins) per 1 cauldron-cost unit of bought items">GPC <span class="rcp-param-hint">(G/cc)</span></label>
+                            <div class="spinner-wrapper">
+                                <button class="spinner-btn" onclick="adjustRecipeParam('rcp-gpc', -1)">-</button>
+                                <input type="number" id="rcp-gpc" class="rcp-param-input" value="1" min="0.01" step="0.1" oninput="onRecipeParamChange()">
+                                <button class="spinner-btn" onclick="adjustRecipeParam('rcp-gpc', 0.1)">+</button>
                             </div>
                         </div>
 
-                        <!-- 切換與列選擇 -->
-                        <div class="recipe-controls">
-                            <div class="toggle-group">
-                                <button id="mode-batch" class="tab-btn mini-tab active" onclick="setRecipeMode('batch')">Batch</button>
-                                <button id="mode-min" class="tab-btn mini-tab" onclick="setRecipeMode('min')">Minute</button>
-                            </div>
-                            <div class="column-toggle-dropdown">
-                                <button class="split-btn" onclick="document.getElementById('col-selector').classList.toggle('show')">Cols ⚙️</button>
-                                <div id="col-selector" class="dropdown-content"></div>
-                            </div>
+                        <div class="rcp-param-item rcp-sync-notice" id="rcp-sync-notice">
+                            <span class="rcp-sync-dot">●</span>
+                            Levels from Settings
                         </div>
                     </div>
                 </div>
 
-                <!-- 表格區域 -->
+                <!-- ===== TABLE ===== -->
                 <div class="recipe-table-wrapper">
-                    <table class="recipe-table" id="recipe-table">
-                        <thead>
-                            <tr id="recipe-table-header"></tr>
-                        </thead>
-                        <tbody id="recipe-table-body"></tbody>
+                    <table class="recipe-table" id="rcp-table">
+                        <thead><tr id="rcp-thead"></tr></thead>
+                        <tbody id="rcp-tbody"></tbody>
                     </table>
                 </div>
+
             </div>
         </div>
 
