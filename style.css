@@ -270,6 +270,7 @@ input:checked + .slider-switch:before { transform: translateX(16px); }
 .stat-block:last-child { border-right: none; }
 .stat-label { font-size: 0.75em; color: #aaa; text-transform: uppercase; letter-spacing: 1px; }
 .stat-value { font-size: 1.00em; font-weight: bold; color: #fff; margin-top: 4px; }
+.stat-pos { font-size: 0.75em; color: var(--profit); margin-top: 2px; }
 .stat-sub { font-size: 0.75em; color: var(--warn); margin-top: 2px; }
 .gold-profit { color: var(--profit); } .gold-cost { color: var(--gold); } .net-positive { color: #69f0ae; }
 

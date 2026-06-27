@@ -223,6 +223,7 @@ window.ALCHEMY_I18N = {
         "Alchemy Skill": "炼金技术",
         "Fuel Efficiency": "燃料效率",
         "Fert Efficiency": "肥料效率",
+        "Sales Ability": "销售能力",
 
         // --- 6. Save/Reset ---
         "Save/Reset": "保存/重置",

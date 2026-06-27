@@ -35,6 +35,19 @@ function getProductionFertCost(item, fertVal, fertSpeed, speedMult, alchemyMult)
 
 function formatVal(val) { if(val >= 1000000) return Number((val/1000000).toFixed(2)) + 'm'; if(val >= 10000) return Number((val/1000).toFixed(2)) + 'k'; return Number(val.toFixed(2)); }
 
+function formatCoinIcons(coins) {
+    const total = Math.round(coins);
+    const gold   = Math.floor(total / 100000);
+    const silver = Math.floor((total % 100000) / 1000);
+    const copper = total % 1000;
+    const img = (id) => `<img src="img/item${id}.png" width="24" height="24" style="vertical-align:middle; margin-bottom:4px;">`;
+    let parts = [];
+    if (gold   > 0) parts.push(`${gold.toLocaleString()}${img(906)}`);
+    if (silver > 0) parts.push(`${silver.toLocaleString()}${img(809)}`);
+    if (copper > 0 || parts.length === 0) parts.push(`${copper.toLocaleString()}${img(611)}`);
+    return parts.join(' ');
+}
+
 function toggleBuildGroup(header) {
     header.classList.toggle('expanded');
 }
@@ -218,7 +231,7 @@ function gatherInputs() {
     const lvlFuel = parseInt(document.getElementById('lvlFuel').value) || 0;
     const lvlAlchemy = parseInt(document.getElementById('lvlAlchemy').value) || 0;
     const lvlFert = parseInt(document.getElementById('lvlFert').value) || 0;
-
+    const lvlSell = parseInt(document.getElementById('lvlSell').value) || 0;
             
     const isMachineMode = document.getElementById('machineModeToggle').checked;
     const recipe = getActiveRecipe(targetItem);
@@ -263,10 +276,11 @@ function gatherInputs() {
         selectedHeatingDevice,
         selectedFert, selfFert, fertCost, showFertCost,
         showMaxCap, showHeatFert, showBeltCount,
-        lvlSpeed, lvlBelt, lvlFuel, lvlAlchemy, lvlFert,        
+        lvlSpeed, lvlBelt, lvlFuel, lvlAlchemy, lvlFert, lvlSell,
         beltSpeed: getBeltSpeed(lvlBelt),
         speedMult: getSpeedMult(lvlSpeed),
-        alchemyMult: getAlchemyMult(lvlAlchemy),
+        alchemyMult: getAlchemyMult(lvlAlchemy),        
+        sellMult: AlchemyCalcEngine.getSellMult(lvlSell),
         fuelMult: 1 + (lvlFuel * 0.10),
         fertMult: 1 + (lvlFert * 0.10)
     };
@@ -279,6 +293,7 @@ function updateLabels(params) {
         document.getElementById('lvlAlchemy-title').innerText = `${t('Alchemy Skill')} (${(params.alchemyMult*100).toFixed(0)}%)`;
         document.getElementById('lvlFuel-title').innerText = `${t('Fuel Efficiency')} (${(params.fuelMult*100).toFixed(0)}%)`;
         document.getElementById('lvlFert-title').innerText = `${t('Fert Efficiency')} (${(params.fertMult*100).toFixed(0)}%)`;
+        document.getElementById('lvlSell-title').innerText = `${t('Sales Ability')} (${((params.sellMult) * 100).toFixed(0)}%)`;
     } catch(e) { console.error(e); }
 }
 
@@ -851,7 +866,7 @@ function updateSummaryBox(p, heatPerSec, nutrPerSec, goldPerMin, actualFuelNeed,
 
     // --- Load Blocks ---
     let loadHtml = `<div class="stat-block"><span class="stat-label">${t('Total Load')}</span>`;
-    if (goldPerMin > 0) loadHtml += `<span class="stat-value" style="color:var(--gold);">${t('Coin')}: ${Math.ceil(goldPerMin).toLocaleString()} /min</span>`;
+    if (goldPerMin > 0) loadHtml += `<span class="stat-value" style="color:var(--gold);">${t('Coin')}: ${Math.ceil(goldPerMin).toLocaleString()} /min   (${formatCoinIcons(goldPerMin)}/min)</span>`;
     if (heatPerSec > 0) {
         if (p.selectedHeatingDevice === 'Steam Heating Pad') {
             loadHtml += `<span class="stat-value" style="color:var(--fuel);">${t('Steam')}: ${(heatPerSec * 60 / 20).toLocaleString()} /min</span>`;
@@ -872,7 +887,7 @@ function updateSummaryBox(p, heatPerSec, nutrPerSec, goldPerMin, actualFuelNeed,
     // --- Cost Block ---
     let costHtml = `<div class="stat-block"><span class="stat-label">${t('Unit Cost')}</span>`;
     if (p.targets.length <= 1) {
-        if (goldPerMin > 0) costHtml += `<span class="stat-value" style="color:var(--gold);">${t('Coin')}: ${(goldPerMin / netRate).toLocaleString()}</span>`;
+        if (goldPerMin > 0) costHtml += `<span class="stat-value" style="color:var(--gold);">${t('Coin')}: ${(goldPerMin / netRate).toLocaleString()}  (${formatCoinIcons(goldPerMin/netRate)})</span>`;
         if (heatPerSec > 0) {
             if (p.selectedHeatingDevice === 'Steam Heating Pad') {
                 costHtml += `<span class="stat-value" style="color:var(--fuel);">${t('Steam')}: ${(heatPerSec * 60 / netRate / 20).toLocaleString()}</span>`;
@@ -898,8 +913,13 @@ function updateSummaryBox(p, heatPerSec, nutrPerSec, goldPerMin, actualFuelNeed,
         valueHtml += `<span class="stat-value gold-profit">${t('Conversion Cost')}: ${(convertedCost).toLocaleString()}</span>`;
         
         if (targetItemDef.sellPrice) {
-            const ratio = convertedCost > 0 ? targetItemDef.sellPrice  / convertedCost : 0;
-            valueHtml += `<span class="stat-value gold-profit">${t('Retail Price   ')}: ${targetItemDef.sellPrice.toLocaleString()} (${(ratio * 100).toFixed(1)}%)</span>`;
+            const effectiveSell = targetItemDef.category !== 'Currency' ? Math.round(targetItemDef.sellPrice * p.sellMult) : targetItemDef.sellPrice;
+            const ratio = convertedCost > 0 ? effectiveSell / convertedCost : 0;
+            const margin = ratio - 1;
+            valueHtml += `<span>`
+            valueHtml += `<span class="stat-value gold-profit">${t('Retail Price   ')}: ${effectiveSell.toLocaleString()} </span>`;
+            if (margin > -1) valueHtml += margin > 0 ? `<span class="stat-pos">(+${(margin*100).toFixed(0)}%)</span>` : `<span class="stat-sub">(${(margin*100).toFixed(0)}%)</span>`;
+            valueHtml += `</span>`
         }
         if (targetItemDef.wholesalePrice) {
             const ratio = convertedCost > 0 ? targetItemDef.wholesalePrice  / convertedCost : 0;

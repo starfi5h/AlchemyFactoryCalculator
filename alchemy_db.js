@@ -1,7 +1,7 @@
 window.ALCHEMY_DB = {
-    "version": 43,
-    "date": "2026.06.24",
-    "gameVersion": "0.5.0.4485",
+    "version": 44,
+    "date": "2026.06.27",
+    "gameVersion": "0.5.4530",
     "items": {
         // --- 1. RAW RESOURCES ---
         "Logs": { "id": 1, "category": "Raw Materials", "buyPrice": 200, "maxStack": -200, "heat": 2000, "cauldronCost": 0.8, "tier": 1 },
@@ -509,7 +509,7 @@ window.ALCHEMY_DB = {
         // --- OBSIDIAN BATCH (50%) 2 RUNS ---
         { 
             "id": "Obsidian", "machine": "Advanced Athanor", "ChargeCost": 840,
-            "inputs": { "Oblivion Essence": 4, "Crude Crystal": 2 }, 
+            "inputs": { "Oblivion Essence": 4, "Shattered Crystal": 2 }, 
             "outputs": { "Obsidian": 1, "Volcanic Ash": 1 },
             "unstableOutputs": { "Volcanic Ash": 2 },
             "resonantOutputs": { "Obsidian": 2, "Volcanic Ash": 2 },

@@ -29,7 +29,7 @@
             <span style="margin-left: 10px;">
                 <span id="ui-lang-toggle" style="cursor:pointer; margin-right: 10px;" onclick="toggleLanguage()" title="EN/中文">🌐EN/中文</span>
                 <a href="https://github.com/starfi5h/AlchemyFactoryCalculator" target="_blank" class="repo-link">GitHub Repo</a>
-                <span id="last-updated-time-text">2026.06.17</span>
+                <span id="last-updated-time-text">2026.06.27</span>
             </span>
         </div>
         <div class="tabs">
@@ -340,6 +340,14 @@
                                 <button class="spinner-btn left first" onclick="adjustInput('lvlFert', -1); calculate();">-</button>
                                 <input type="number" id="lvlFert" value="0" min="0" oninput="calculate()">
                                 <button class="spinner-btn right last" onclick="adjustInput('lvlFert', 1); calculate();">+</button>
+                            </div>
+                        </div>
+                        <div class="input-group">
+                            <label id="lvlSell-title">Sales Ability</label>
+                            <div class="spinner-wrapper">
+                                <button class="spinner-btn left first" onclick="adjustInput('lvlSell', -1); calculate();">-</button>
+                                <input type="number" id="lvlSell" value="0" min="0" oninput="calculate()">
+                                <button class="spinner-btn right last" onclick="adjustInput('lvlSell', 1); calculate();">+</button>
                             </div>
                         </div>
                     </div>
