@@ -36,7 +36,8 @@
             <div class="tab-btn active" onclick="switchTab('calc')">Calculator</div>
             <div class="tab-btn" onclick="switchTab('cauldron')">Cauldron</div>
             <!-- <div class="tab-btn" onclick="switchTab('recipes')">Recipes</div> -->
-            <div class="tab-btn" onclick="switchTab('itemvalue')">Item Value</div>
+            <!-- <div class="tab-btn" onclick="switchTab('itemvalue')">Item Value</div> -->
+            <div class="tab-btn" onclick="switchTab('help')">Wiki</div>
             <div class="tab-btn" onclick="switchTab('db')">Database Editor</div>
         </div>
     </header>
@@ -630,6 +631,8 @@
             </div>
         </div>
 
+        <div id="view-help" class="view"></div>
+
         <div id="view-db" class="view">
             <div class="editor-container">
                 <div class="editor-toolbar">
@@ -655,5 +658,6 @@
     <script src="alchemy_cauldron.js"></script>
     <script src="alchemy_recipe.js"></script>
     <script src="alchemy_itemvalue.js"></script>
+    <script src="alchemy_help.js"></script>
 </body>
 </html>
