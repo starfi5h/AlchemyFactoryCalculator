@@ -296,24 +296,27 @@ function _injectHelpStyles() {
         /* ── Split layout ── */
         .wiki-split-area {
             display: flex;
-            flex-direction: row; /* 💡 明確強制橫向排列 */
+            flex-direction: row; /* 明確強制橫向排列 */
             width: 100%;
             overflow: hidden;
         }
+
         .wiki-left-pane {
-            box-sizing: border-box; /* 💡 確保 1px 邊框不會撐大 50% 的寬度 */
-            width: 75%; 
-            flex-shrink: 0;
+            box-sizing: border-box;
+            flex: 3 1 75%;
+            min-width: 50px;
             border-right: 1px solid var(--border, #333);
             display: flex; 
             flex-direction: column; 
             overflow: hidden;
         }
+
         .wiki-right-pane {
-            box-sizing: border-box; /* 💡 確保 padding 不會撐大寬度 */
-            min-width: 250; 
+            box-sizing: border-box;
+            flex: 1 1 25%;
+            min-width: 300px;
             padding: 14px 18px; 
-            /* display: flex; 如果右邊內部不需要 flex 排版，這行可以拿掉 */
+            overflow: hidden;
         }
         .wiki-search-bar { flex-shrink: 0; padding: 7px 8px; border-bottom: 1px solid var(--border, #333); }
         .wiki-search-input {
@@ -347,7 +350,7 @@ function _injectHelpStyles() {
 
         /* ── Detail ── */
         .wiki-detail-header { display: flex; align-items: center; gap: 12px; margin-bottom: 14px; padding-bottom: 12px; border-bottom: 1px solid var(--border, #333); }
-        .wiki-detail-title-area { flex: 1; min-width: 250; }
+        .wiki-detail-title-area { flex: 1; }
         .wiki-detail-name { margin: 0 0 5px; font-size: 1.05em; font-weight: 700; color: var(--text, #eee); }
         .wiki-detail-meta { display: flex; align-items: center; flex-wrap: wrap; gap: 5px; }
         .wiki-badge { font-size: 0.7em; padding: 2px 7px; border-radius: 10px; font-weight: 600; }
@@ -363,7 +366,7 @@ function _injectHelpStyles() {
         .wiki-recipe-row {
             display: flex; align-items: center; gap: 6px;
             padding: 4px 8px; border-radius: 4px; margin-bottom: 3px;
-            border: 1px solid transparent; min-height: 30px; min-width: 250px;
+            border: 1px solid transparent; min-height: 30px;
         }
         .wiki-recipe-row.preferred { background: rgba(68,170,255,0.07); border-color: rgba(68,170,255,0.22); }
         .wiki-recipe-row.clickable { cursor: pointer; }
@@ -430,7 +433,8 @@ function _getWikiIndex() {
 function _getPreferred(itemName) {
     try {
         var db = (typeof DB !== 'undefined') ? DB : ALCHEMY_DB;
-        return db && db.settings && db.settings.preferredRecipes && db.settings.preferredRecipes[itemName];
+        let recipe = db && db.settings && db.settings.preferredRecipes && db.settings.preferredRecipes[itemName];
+        return recipe;
     } catch(e) { return null; }
 }
 
@@ -556,6 +560,7 @@ function _renderItemDetail(itemName) {
     var producers = idx.producedBy[itemName] || [];
     var consumers = idx.usedIn[itemName]     || [];
     var preferred = _getPreferred(itemName);
+    console.log(preferred);
 
     /* Stats */
     var stats = [];
@@ -567,6 +572,7 @@ function _renderItemDetail(itemName) {
     if (def.nutrientValue  != null) stats.push(['肥力补给',   def.nutrientValue + ' V']);
     if (def.maxFertility   != null) stats.push(['最大肥力',   def.maxFertility]);
     if (def.cauldronCost   != null) stats.push(['炼金价值',   def.cauldronCost]);
+    if (def.cauldronTarget != null) stats.push(['炼金目标',   def.cauldronTarget]);
     if (def.charges        != null) stats.push(['充能数',      def.charges]);
     if (def.maxStack       != null) stats.push(['最大堆叠',    def.maxStack]);
 

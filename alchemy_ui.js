@@ -541,7 +541,6 @@ function addMultiTargetRow(itemName, rate = 0) {
     
     const row = document.createElement('div');
     row.className = 'multi-target-row';
-    // 使用 dataset 儲存當前選中的物品名稱，方便 gatherInputs 讀取
     row.dataset.item = itemName;
 
     if (rate === 0) {
@@ -550,6 +549,7 @@ function addMultiTargetRow(itemName, rate = 0) {
     }
 
     row.innerHTML = `
+        <span class="drag-handle" title="Drag to reorder">⠿</span>
         <div class="mini-picker" onclick="pickMultiTargetRow(this)">
             <img src="img/item${itemDef.id}.png" width="20" height="20">
             <span class="item-name-label">${itemName}</span>
@@ -559,6 +559,53 @@ function addMultiTargetRow(itemName, rate = 0) {
     `;
     
     container.appendChild(row);
+    _initDragHandle(row.querySelector('.drag-handle'), row); // ← 新增
+}
+
+function _initDragHandle(handle, row) {
+    handle.addEventListener('pointerdown', (e) => {
+        e.preventDefault();
+        handle.setPointerCapture(e.pointerId);
+
+        const container = document.getElementById('multi-target-list');
+        row.classList.add('dragging');
+
+        let targetRow = null;
+        let insertBefore = true;
+
+        const onMove = (e) => {
+            const siblings = [...container.querySelectorAll('.multi-target-row:not(.dragging)')];
+            siblings.forEach(r => r.classList.remove('drag-over-top', 'drag-over-bottom'));
+            targetRow = null;
+
+            for (const r of siblings) {
+                const rect = r.getBoundingClientRect();
+                if (e.clientY >= rect.top && e.clientY <= rect.bottom) {
+                    insertBefore = e.clientY < rect.top + rect.height / 2;
+                    r.classList.add(insertBefore ? 'drag-over-top' : 'drag-over-bottom');
+                    targetRow = r;
+                    break;
+                }
+            }
+        };
+
+        const onUp = () => {
+            handle.removeEventListener('pointermove', onMove);
+            handle.removeEventListener('pointerup', onUp);
+
+            row.classList.remove('dragging');
+            container.querySelectorAll('.multi-target-row')
+                .forEach(r => r.classList.remove('drag-over-top', 'drag-over-bottom'));
+
+            if (targetRow) {
+                container.insertBefore(row, insertBefore ? targetRow : targetRow.nextSibling);
+                calculate();
+            }
+        };
+
+        handle.addEventListener('pointermove', onMove);
+        handle.addEventListener('pointerup', onUp);
+    });
 }
 
 function pickMultiTargetRow(pickerEl) {
@@ -1014,8 +1061,8 @@ function updateURL(tabName = '') {
     
     const params = new URLSearchParams();
     if (isEn) params.set('lang', 'en');
-    if (tabName === 'cauldron') {
-        params.set('tab', 'cauldron');        
+    if (tabName !== '' && tabName !== 'calc') {
+        params.set('tab', tabName);        
     }
     else if (item && rate) {
         params.set('item', item);

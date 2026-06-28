@@ -560,7 +560,7 @@ async function runCauldronSimulationType1() {
                 }
             }
         }
-        return { output: bestItem.name, totalValue: T };
+        return { output: bestItem.name, totalValue: cA + cB, displayValue: T };
     }
 
     const list = [...cauldronCandidates].filter(isVaildCandidate);
@@ -595,7 +595,8 @@ async function runCauldronSimulationType1() {
                 if (!resultsByOutput[res.output]) resultsByOutput[res.output] = [];
                 resultsByOutput[res.output].push({
                     inputs: [nA, nB],
-                    totalValue: res.totalValue
+                    totalValue: res.totalValue,
+                    displayValue: res.displayValue
                 });
                 recipeCount++;
             }
@@ -732,6 +733,8 @@ function renderRecipeRows(outName, container) {
 
 function createRecipeRowHtml(r, outName, favSet) {
     const { inputs, totalValue } = r;
+    const displayValue = r.displayValue !== undefined ? r.displayValue : totalValue;
+    console.log(r.displayValue);
     
     // 使用預先計算好的 Set 進行查找，性能極大提升
     const sortedKey = [...inputs].sort().join(',');
@@ -760,7 +763,7 @@ function createRecipeRowHtml(r, outName, favSet) {
     <div class="cauldron-recipe-row">
         <span class="recipe-text">
             ${inputsHtml} 
-            <span style="color:var(--info);">➔</span> ${Number(totalValue.toFixed(1))} ${ratioTag}
+            <span style="color:var(--info);">➔</span> ${Number(displayValue.toFixed(1))} ${ratioTag}
         </span>
         <button class="btn-fav ${isFav ? 'active' : ''}" 
             ${dataAttrs} data-out="${outName}">
