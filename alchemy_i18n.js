@@ -156,7 +156,7 @@ window.ALCHEMY_I18N = {
 
         // --- 2. Logistics ---
         "Logistics": "物流设置",
-        "Heating Device": "加热装置",
+        "Heating Device": "加热设备",
         "Fuel Source": "燃料来源",
         "Fertilizer Source": "肥料来源",
         "slots": "格",
@@ -281,6 +281,48 @@ window.ALCHEMY_I18N = {
         "🌿 Fertile": "🌿 丰饶",
         "✨ Resonant": "✨ 共振",
         "♾️ Eternal": "♾️ 永恒",
+
+        // --- Help ---
+        "Guides": "指南",
+        "Items": "物品",
+        "Machines": "机器",
+                
+        "Properties": "属性",
+        "Buy Price": "买入价格",
+        "Sell Price": "卖出价格",
+        "Wholesale Price": "批发价格",
+        "Heat Value": "热值",
+        "Nutrient Cost": "营养值消耗",
+        "Nutrient Value": "营养值",
+        "Max Fertility": "最大肥力",
+        "Cauldron Cost": "炼金价值",
+        "Cauldron Target": "炼金目标",
+        "Charges": "充能数",
+        "Max Stack": "最大堆叠",
+
+        "Production Recipes": "生产配方",
+        "Used In": "使用于",
+        "Build Cost": "建造材料",
+        "Heat Cost": "热值消耗",
+        "Slots Required": "占地(格子)",
+        "Heat Cost (Self)": "自热消耗",
+        "Max Slots": "占地(格子)",
+        "Type": "类型",        
+        "Fertilizer Device": "施肥设备",
+        
+        "No production recipes": "无生产配方",
+        "Not used in any recipe": "未被任何配方使用",
+        "No build materials": "无建造材料",
+        "No recipes": "无配方",
+        "Set as Preferred": "设为首选",
+        "Remove Preferred": "取消首选",
+        "Search items...": "搜索物品...",
+        "Search machines...": "搜索机器...",
+        "← Select an item": "← 选择一个物品",
+        "← Select a machine": "← 选择一台机器",
+        "Item data not found": "未找到物品数据",
+        "Machine data not found": "未找到机器数据",
+
         "Apply": "应用"
     },
     "items": {
@@ -500,6 +542,7 @@ window.ALCHEMY_I18N = {
         "World Tree Nursery": "世界树育苗圃",
         "Knowledge Altar": "知识祭坛",
         "Purchasing Portal": "进货传送门",
+        "Dispatch Portal": "发货传送门",
         "Bank Portal": "银行传送门"
     },
     "categories": {

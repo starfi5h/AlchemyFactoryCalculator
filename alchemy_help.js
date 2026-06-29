@@ -314,7 +314,7 @@ function _injectHelpStyles() {
         .wiki-right-pane {
             box-sizing: border-box;
             flex: 1 1 25%;
-            min-width: 300px;
+            min-width: 280px;
             padding: 14px 18px; 
             overflow: hidden;
         }
@@ -342,7 +342,7 @@ function _injectHelpStyles() {
         .wiki-tile:hover   { background: var(--hover-bg, #1e2a3a); }
         .wiki-tile.selected { background: var(--accent-bg, #1a3050); border-color: var(--accent, #4af); }
         .wiki-tile span { display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; overflow: hidden; line-height: 1.3; }
-        .wiki-icon { image-rendering: pixelated; display: block; flex-shrink: 0; }
+        .wiki-icon { display: block; flex-shrink: 0; }
 
         /* ── Machine list ── */
         .wiki-machine-list { flex: 1; min-height: 0; overflow-y: auto; padding: 4px; display: flex; flex-direction: column; gap: 2px; }
@@ -368,16 +368,15 @@ function _injectHelpStyles() {
             padding: 4px 8px; border-radius: 4px; margin-bottom: 3px;
             border: 1px solid transparent; min-height: 30px;
         }
+        .wiki-recipe-row:hover { background: var(--hover-bg, #1e2a3a); }
         .wiki-recipe-row.preferred { background: rgba(68,170,255,0.07); border-color: rgba(68,170,255,0.22); }
-        .wiki-recipe-row.clickable { cursor: pointer; }
-        .wiki-recipe-row.clickable:hover { background: var(--hover-bg, #1e2a3a); }
         .wiki-recipe-formula { flex: 1; display: flex; align-items: center; flex-wrap: wrap; gap: 3px; min-width: 0; }
         .wiki-items { display: flex; align-items: center; flex-wrap: wrap; gap: 2px; }
         .wiki-arrow { color: var(--text-muted, #555); font-size: 0.85em; margin: 0 2px; flex-shrink: 0; }
-        .wiki-recipe-item { display: inline-flex; align-items: center; gap: 1px; cursor: default; }
+        .wiki-recipe-item { display: inline-flex; align-items: center; gap: 1px; cursor: pointer; }
         .wiki-item-qty { font-size: 0.7em; color: var(--accent, #7af); line-height: 1; }
         .wiki-recipe-right { display: flex; align-items: center; gap: 6px; flex-shrink: 0; font-size: 0.78em; }
-        .wiki-recipe-machine { background: rgba(255,255,255,0.05); padding: 1px 5px; border-radius: 3px; }
+        .wiki-recipe-machine { background: rgba(255,255,255,0.05); padding: 1px 5px; border-radius: 3px; cursor: pointer }
 
         /* ── Star toggle ── */
         .wiki-star { flex-shrink: 0; background: none; border: none; color: #555; cursor: pointer; font-size: 0.95em; padding: 0 2px; line-height: 1; }
@@ -453,10 +452,6 @@ function _togglePreferred(itemName, recipeId) {
     _renderItemDetail(itemName);
 }
 
-function _isPrimaryProducer(itemName, recipe) {
-    return recipe.id.toLowerCase().startsWith(itemName.toLowerCase());
-}
-
 /* ─── 8. FORMAT HELPERS ───────────────────────────────────────────────────── */
 function _itemIcon(id, size) {
     size = size || 32;
@@ -471,7 +466,7 @@ function _fmtItems(obj) {
         var name = e[0], qty = e[1];
         var def = rawDB.items && rawDB.items[name];
         var label = name.replace(/"/g, '&quot;');
-        return '<span class="wiki-recipe-item" title="' + label + ' \xd7' + qty + '">'
+        return '<span class="wiki-recipe-item" title="' + label + ' \xd7' + qty + '"' + _oc('wikiSwitchToItem', name) + '>'
             + _itemIcon(def ? def.id : 0, 22)
             + '<span class="wiki-item-qty">\xd7' + qty + '</span>'
             + '</span>';
@@ -529,11 +524,11 @@ function _buildItemGridHTML() {
 function _buildItemSplitHTML() {
     return '<div class="wiki-left-pane">'
         + '<div class="wiki-search-bar"><input type="text" class="wiki-search-input" id="wiki-item-search"'
-        + ' placeholder="搜索物品..." value="' + _itemFilter.replace(/"/g, '&quot;') + '"'
+        + ` placeholder="${_tn('Search items...')}" value="` + _itemFilter.replace(/"/g, '&quot;') + '"'
         + ' oninput="_itemFilter=this.value;_refreshItemGrid()"></div>'
         + '<div class="wiki-item-grid" id="wiki-item-grid">' + _buildItemGridHTML() + '</div>'
         + '</div>'
-        + '<div class="wiki-right-pane" id="wiki-right-pane"><div class="wiki-placeholder">\u2190 选择一个物品</div></div>';
+        + '<div class="wiki-right-pane" id="wiki-right-pane"><div class="wiki-placeholder"></div></div>';
 }
 
 function _refreshItemGrid() {
@@ -554,27 +549,26 @@ function _renderItemDetail(itemName) {
     if (!pane) return;
     var rawDB = (typeof DB !== 'undefined') ? DB : {};
     var def   = rawDB.items && rawDB.items[itemName];
-    if (!def) { pane.innerHTML = '<div class="wiki-placeholder">未找到物品数据</div>'; return; }
+    if (!def) { pane.innerHTML = `<div class="wiki-placeholder">${_tn('Item data not found')}</div>`; return; }
 
     var idx       = _getWikiIndex();
     var producers = idx.producedBy[itemName] || [];
     var consumers = idx.usedIn[itemName]     || [];
     var preferred = _getPreferred(itemName);
-    console.log(preferred);
 
     /* Stats */
     var stats = [];
-    if (def.buyPrice       != null) stats.push(['买入价格',  def.buyPrice.toLocaleString()       + ' \xa2']);
-    if (def.sellPrice      != null) stats.push(['卖出价格',  def.sellPrice.toLocaleString()      + ' \xa2']);
-    if (def.wholesalePrice != null) stats.push(['批发价格',  def.wholesalePrice.toLocaleString() + ' \xa2']);
-    if (def.heat           != null) stats.push(['热值',       def.heat       + ' P']);
-    if (def.nutrientCost   != null) stats.push(['肥力消耗',   def.nutrientCost + ' V/min']);
-    if (def.nutrientValue  != null) stats.push(['肥力补给',   def.nutrientValue + ' V']);
-    if (def.maxFertility   != null) stats.push(['最大肥力',   def.maxFertility]);
-    if (def.cauldronCost   != null) stats.push(['炼金价值',   def.cauldronCost]);
-    if (def.cauldronTarget != null) stats.push(['炼金目标',   def.cauldronTarget]);
-    if (def.charges        != null) stats.push(['充能数',      def.charges]);
-    if (def.maxStack       != null) stats.push(['最大堆叠',    def.maxStack]);
+    if (def.buyPrice       != null) stats.push([_tn('Buy Price'),       def.buyPrice.toLocaleString()       + ' \xa2']);
+    if (def.sellPrice      != null) stats.push([_tn('Sell Price'),      def.sellPrice.toLocaleString()      + ' \xa2']);
+    if (def.wholesalePrice != null) stats.push([_tn('Wholesale Price'), def.wholesalePrice.toLocaleString() + ' \xa2']);
+    if (def.heat           != null) stats.push([_tn('Heat Value'),      def.heat          + ' P']);
+    if (def.nutrientCost   != null) stats.push([_tn('Nutrient Cost'),   def.nutrientCost  + ' V/min']);
+    if (def.nutrientValue  != null) stats.push([_tn('Nutrient Value'),  def.nutrientValue + ' V']);
+    if (def.maxFertility   != null) stats.push([_tn('Max Fertility'),   def.maxFertility]);
+    if (def.cauldronCost   != null) stats.push([_tn('Cauldron Cost'),   def.cauldronCost]);
+    if (def.cauldronTarget != null) stats.push([_tn('Cauldron Target'), def.cauldronTarget]);
+    if (def.charges        != null) stats.push([_tn('Charges'),         def.charges]);
+    if (def.maxStack       != null) stats.push([_tn('Max Stack'),       def.maxStack]);
 
     var statsHTML = stats.length
         ? '<div class="wiki-stats-grid">' + stats.map(function(s) {
@@ -584,15 +578,12 @@ function _renderItemDetail(itemName) {
 
     /* Produced by */
     var producersHTML = producers.length === 0
-        ? '<p class="wiki-empty">无生产配方</p>'
+        ? `<p class="wiki-empty">${_tn('No production recipes')}</p>`
         : producers.map(function(recipe) {
-            var isPrimary   = _isPrimaryProducer(itemName, recipe);
             var isPreferred = preferred === recipe.id;
-            var starHTML    = isPrimary
-                ? '<button class="wiki-star' + (isPreferred ? ' active' : '') + '" title="'
-                    + (isPreferred ? '取消首选' : '设为首选') + '" '
-                    + _oc2('_togglePreferred', itemName, recipe.id) + '>\u2605</button>'
-                : '<span class="wiki-star-ph"></span>';
+            var starHTML = '<button class="wiki-star' + (isPreferred ? ' active' : '') + '" title="'
+                         + (isPreferred ? _tn('Remove Preferred') : _tn('Set as Preferred')) + '" '
+                         + _oc2('_togglePreferred', itemName, recipe.id) + '>' + (isPreferred ? '★' : '☆') + '</button>';
             var hasIn   = Object.keys(recipe.inputs  || {}).length > 0;
             var inHTML  = hasIn ? _fmtItems(recipe.inputs) : '<em style="font-size:0.78em;color:#666">\u65e0</em>';
             var outHTML = _fmtItems(recipe.outputs || {});
@@ -604,19 +595,19 @@ function _renderItemDetail(itemName) {
                 + '<span class="wiki-items">' + outHTML + '</span>'
                 + '</div>'
                 + '<div class="wiki-recipe-right">'
-                + '<span class="wiki-recipe-machine">' + _tn(recipe.machine, 'machines') + '</span>'                
+                + '<span class="wiki-recipe-machine" ' + _oc('wikiSwitchToMachine', recipe.machine) + '>' + _tn(recipe.machine, 'machines') + '</span>'                
                 + (recipe.baseTime != null ? '<span>' + recipe.baseTime + 's</span>' : '')
                 + '</div></div>';
           }).join('');
 
     /* Used in */
     var consumersHTML = consumers.length === 0
-        ? '<p class="wiki-empty">未被任何配方使用</p>'
+        ? `<p class="wiki-empty">${_tn('Not used in any recipe')}</p>`
         : consumers.map(function(recipe) {
             var mainOut = Object.keys(recipe.outputs || {})[0] || '';
             var inHTML  = _fmtItems(recipe.inputs  || {});
             var outHTML = _fmtItems(recipe.outputs || {});
-            return '<div class="wiki-recipe-row clickable" ' + _oc('wikiSwitchToItem', mainOut) + '>'
+            return '<div class="wiki-recipe-row">'
                 + '<span class="wiki-star-ph"></span>'
                 + '<div class="wiki-recipe-formula">'
                 + '<span class="wiki-items">' + inHTML  + '</span>'
@@ -624,7 +615,7 @@ function _renderItemDetail(itemName) {
                 + '<span class="wiki-items">' + outHTML + '</span>'
                 + '</div>'
                 + '<div class="wiki-recipe-right">'
-                + '<span class="wiki-recipe-machine">' + _tn(recipe.machine, 'machines') + '</span>'                
+                + '<span class="wiki-recipe-machine" ' + _oc('wikiSwitchToMachine', recipe.machine) + '>' + _tn(recipe.machine, 'machines') + '</span>'                
                 + (recipe.baseTime != null ? '<span>' + recipe.baseTime + 's</span>' : '')
                 + '</div></div>';
           }).join('');
@@ -636,9 +627,9 @@ function _renderItemDetail(itemName) {
         + '<h2 class="wiki-detail-name">' + itemName + '</h2>'
         + '<div class="wiki-detail-meta"><span class="wiki-badge category">' + (_tn(def.category, 'categories') || '\u2014') + '</span></div>'
         + '</div></div>'
-        + (statsHTML ? '<div class="wiki-section"><div class="wiki-section-title">\u5c5e\u6027</div>' + statsHTML + '</div>' : '')
-        + '<div class="wiki-section"><div class="wiki-section-title">\u751f\u4ea7\u914d\u65b9 (' + producers.length + ')</div>' + producersHTML + '</div>'
-        + '<div class="wiki-section"><div class="wiki-section-title">\u4f7f\u7528\u4e8e (' + consumers.length + ')</div>' + consumersHTML + '</div>';
+        + (statsHTML ? `<div class="wiki-section"><div class="wiki-section-title">${_tn('Properties')}</div>` + statsHTML + '</div>' : '')
+        + `<div class="wiki-section"><div class="wiki-section-title">${_tn('Production Recipes')} (${producers.length})</div>` + producersHTML + '</div>'
+        + `<div class="wiki-section"><div class="wiki-section-title">${_tn('Used In')} (${consumers.length})</div>` + consumersHTML + '</div>';
 }
 
 /* ─── 11. MACHINE PAGE ────────────────────────────────────────────────────── */
@@ -664,11 +655,11 @@ function _buildMachineListHTML() {
 function _buildMachineSplitHTML() {
     return '<div class="wiki-left-pane">'
         + '<div class="wiki-search-bar"><input type="text" class="wiki-search-input" id="wiki-machine-search"'
-        + ' placeholder="搜索机器..." value="' + _machineFilter.replace(/"/g, '&quot;') + '"'
+        + ` placeholder=${_tn('Search machines...')} value="` + _machineFilter.replace(/"/g, '&quot;') + '"'
         + ' oninput="_machineFilter=this.value;_refreshMachineList()"></div>'
         + '<div class="wiki-machine-list" id="wiki-machine-grid">' + _buildMachineListHTML() + '</div>'
         + '</div>'
-        + '<div class="wiki-right-pane" id="wiki-right-pane"><div class="wiki-placeholder">\u2190 选择一台机器</div></div>';
+        + '<div class="wiki-right-pane" id="wiki-right-pane"><div class="wiki-placeholder"></div></div>';
 }
 
 function _refreshMachineList() {
@@ -689,18 +680,18 @@ function _renderMachineDetail(machineName) {
     if (!pane) return;
     var rawDB   = (typeof DB !== 'undefined') ? DB : {};
     var def     = rawDB.machines && rawDB.machines[machineName];
-    if (!def) { pane.innerHTML = '<div class="wiki-placeholder">未找到机器数据</div>'; return; }
+    if (!def) { pane.innerHTML = `<div class="wiki-placeholder">${_tn('Machine data not found')}</div>`; return; }
     var idx     = _getWikiIndex();
     var recipes = idx.machineRecipes[machineName] || [];
 
     /* Properties */
-    var props = [];
-    if (def.heatCost      != null && def.heatCost > 0) props.push(['\u71c3\u6599\u6d88\u8017',   def.heatCost + ' P/s']);
-    if (def.slotsRequired != null) props.push(['\u6240\u9700\u63d2\u69fd',  def.slotsRequired]);
-    if (def.heatSelf      != null) props.push(['\u70ed\u529b\u8f93\u51fa\u500d\u7387', '\xd7' + def.heatSelf]);
-    if (def.slots         != null) props.push(['\u6700\u5927\u63d2\u69fd',  def.slots]);
-    if (def.isGenerator)           props.push(['\u7c7b\u578b', '\u52a0\u70ed\u8bbe\u5907']);
-    if (def.fertility)             props.push(['\u7c7b\u578b', '\u65bd\u80a5\u8bbe\u5907']);
+    var props = [];    
+    if (def.isGenerator)           props.push([_tn('Type'), _tn('Heating Device')]);
+    if (def.fertility)             props.push([_tn('Type'), _tn('Fertilizer Device')]);
+    if (def.heatCost      != null && def.heatCost > 0) props.push([_tn('Heat Cost'), def.heatCost + ' P/s']);
+    if (def.heatSelf      != null) props.push([_tn('Heat Cost (Self)'), def.heatSelf + ' P/s']);
+    if (def.slotsRequired != null) props.push([_tn('Slots Required'), def.slotsRequired]);
+    if (def.slots         != null) props.push([_tn('Max Slots'),  def.slots]);
     var propsHTML = props.length
         ? '<div class="wiki-stats-grid">' + props.map(function(p) {
             return '<span class="wiki-stat-key">' + p[0] + '</span><span class="wiki-stat-val">' + p[1] + '</span>';
@@ -717,7 +708,7 @@ function _renderMachineDetail(machineName) {
                 + _itemIcon(itemDef ? itemDef.id : 0, 22)
                 + '<span>' + item + ' \xd7' + qty + '</span></div>';
           }).join('') + '</div>'
-        : '<p class="wiki-empty">\u65e0\u5efa\u9020\u6750\u6599</p>';
+        : `<p class="wiki-empty">${_tn('No build materials')}</p>`;
 
     /* Recipes */
     var recipesHTML = recipes.length === 0
@@ -728,7 +719,7 @@ function _renderMachineDetail(machineName) {
                 ? _fmtItems(recipe.inputs)
                 : '<em style="font-size:0.78em;color:#666">\u65e0</em>';
             var outHTML = _fmtItems(recipe.outputs || {});
-            return '<div class="wiki-recipe-row clickable" ' + _oc('wikiSwitchToItem', mainOut) + '>'
+            return '<div class="wiki-recipe-row">'
                 + '<span class="wiki-star-ph"></span>'
                 + '<div class="wiki-recipe-formula">'
                 + '<span class="wiki-items">' + inHTML  + '</span>'
@@ -744,12 +735,10 @@ function _renderMachineDetail(machineName) {
         '<div class="wiki-detail-header">'
         + '<div class="wiki-detail-title-area">'
         + '<h2 class="wiki-detail-name">' + _tn(machineName, 'machines') + '</h2>'
-        + '<div class="wiki-detail-meta"><span class="wiki-role-text" style="font-size:0.75em;color:var(--text-muted,#888)">'
-        + recipes.length + ' \u4e2a\u914d\u65b9</span></div>'
         + '</div></div>'
-        + (propsHTML ? '<div class="wiki-section"><div class="wiki-section-title">\u5c5e\u6027</div>' + propsHTML + '</div>' : '')
-        + '<div class="wiki-section"><div class="wiki-section-title">\u5efa\u9020\u6750\u6599</div>' + buildCostHTML + '</div>'
-        + '<div class="wiki-section"><div class="wiki-section-title">\u914d\u65b9 (' + recipes.length + ')</div>' + recipesHTML + '</div>';
+        + (propsHTML ? `<div class="wiki-section"><div class="wiki-section-title">${_tn('Properties')}</div>` + propsHTML + '</div>' : '')
+        + `<div class="wiki-section"><div class="wiki-section-title">${_tn('')}</div>` + buildCostHTML + '</div>'
+        + `<div class="wiki-section"><div class="wiki-section-title">${_tn('Production Recipes')} (${recipes.length})</div>` + recipesHTML + '</div>';
 }
 
 /* ─── 12. GUIDES INNER HTML ───────────────────────────────────────────────── */
@@ -806,9 +795,9 @@ function renderHelpPage() {
     container.innerHTML =
         '<div id="help-inner">'
         + '<div class="wiki-subnav">'
-        + '<button class="wiki-tab-btn" data-view="guides"   ' + _oc('wikiSwitchView', 'guides')   + '>\u6307\u5357</button>'
-        + '<button class="wiki-tab-btn" data-view="items"    ' + _oc('wikiSwitchView', 'items')    + '>\u7269\u54c1</button>'
-        + '<button class="wiki-tab-btn" data-view="machines" ' + _oc('wikiSwitchView', 'machines') + '>\u673a\u5668</button>'
+        + '<button class="wiki-tab-btn" data-view="guides"   ' + _oc('wikiSwitchView', 'guides')   + '>' + _tn('Guides') + '</button>'
+        + '<button class="wiki-tab-btn" data-view="items"    ' + _oc('wikiSwitchView', 'items')    + '>' + _tn('Items') + '</button>'
+        + '<button class="wiki-tab-btn" data-view="machines" ' + _oc('wikiSwitchView', 'machines') + '>' + _tn('Machines') + '</button>'
         + '</div>'
         + '<div id="wiki-area"></div>'
         + '</div>';
