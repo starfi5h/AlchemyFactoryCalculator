@@ -140,6 +140,7 @@ window.ALCHEMY_I18N = {
         "+ Add Item": "+ 添加需求物品",
         "💾 Save List": "💾 保存列表",
         "📂 Load List": "📂 加载列表",
+        "⚡ Fuel/Fert 1-Machine Quick Set": "⚡ 快速设定燃料/肥料(单机器)",
         "Target Item": "目标物品",
         "Select or Type...": "选择或输入...",
         "Set by Machine Count": "按机器数量设置",
@@ -181,6 +182,8 @@ window.ALCHEMY_I18N = {
         "Conversion Cost": "总成本",
         "Retail Price   ": "零售价",
         "Wholesale Price": "批发价",
+        "Fuel Value": "燃料换算价值",
+        "Fert Value": "肥料换算价值",
 
         "Production Chain": "生产链",
         "Recycle All": "全部回收",

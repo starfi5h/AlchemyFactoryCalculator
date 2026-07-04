@@ -662,6 +662,34 @@ function loadMultiTargets(e) {
 }
 
 /**
+ * 快速將多產物清單設為 [selectedFuel, selectedFert] 各一列，
+ * 速率各自為「單一機台滿載」速率
+ */
+function quickSetFuelFertTargets() {
+    const fuelItem = document.getElementById('fuelSelect').value;
+    const fertItem = document.getElementById('fertSelect').value;
+    if (!fuelItem || !fertItem) return;
+
+    // 確保處於多產物模式
+    const modeToggle = document.getElementById('modeToggle');
+    if (!modeToggle.checked) {
+        modeToggle.checked = true;
+        toggleCalcMode();
+    }
+
+    const container = document.getElementById('multi-target-list');
+    container.innerHTML = '';
+
+    const fuelRate = getSingleMachineRate(fuelItem);
+    const fertRate = getSingleMachineRate(fertItem);
+
+    addMultiTargetRow(fuelItem, Number((fuelRate || 0).toFixed(2)));
+    addMultiTargetRow(fertItem, Number((fertRate || 0).toFixed(2)));
+
+    calculate();
+}
+
+/**
  * 讓按鈕閃爍一下的輔助函數
  */
 function flashButton(el) {

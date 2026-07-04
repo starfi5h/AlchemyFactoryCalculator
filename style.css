@@ -364,8 +364,8 @@ input:checked + .slider-switch:before { transform: translateX(16px); }
 }
 .machine-tag:hover::after { opacity: 1; visibility: visible; }
 
-.heat-tag { color: var(--warn); font-size: 0.85em; margin-left: 3px; }
-.bio-tag { color: var(--bio); font-size: 0.85em; margin-left: 3px; }
+.heat-tag { color: var(--warn); font-size: 0.85em; margin-left: 3px; align-items: center; }
+.bio-tag { color: var(--bio); font-size: 0.85em; margin-left: 3px; align-items: center; }
 .cost-tag { color: var(--gold); font-size: 0.85em; margin-left: 3px; font-weight: bold; }
 .byproduct-tag { color: var(--byproduct); font-size: 0.85em; margin-left: 3px; font-weight: bold; }
 .info-tag { color: var(--info); font-size: 0.85em; margin-left: 3px; }
@@ -383,7 +383,7 @@ input:checked + .slider-switch:before { transform: translateX(16px); }
 .recycle-btn.active { background: #2e3d30; color: var(--profit); border-color: var(--profit); }
 .recycle-btn.info { color: #aaa; border-color: #444; }
 
-.section-header { margin-top: 25px; margin-bottom: 8px; padding-bottom: 4px; border-bottom: 1px dashed #555; color: #888; text-transform: uppercase; letter-spacing: 1px; font-size: 0.85em; font-weight: bold; }
+.section-header { margin-top: 25px; margin-bottom: 8px; padding-bottom: 4px; color: #888; text-transform: uppercase; letter-spacing: 1px; font-size: 0.85em; font-weight: bold; }
 
 /* ==========================================================================
     SECTION: CSS - MODALS & EDITOR

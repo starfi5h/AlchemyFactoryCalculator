@@ -179,6 +179,45 @@ function calculate() {
     } catch(e) { console.error(e); }
 }
 
+/**
+ * 計算指定物品在單一機台滿載下的產出速率 (items/min)，
+ * 已套用 Alchemy/Speed 倍率並被傳送帶速度上限裁切
+ * @param {string} itemName
+ * @param {object} [opts] 可選覆寫參數 { lvlAlchemy, lvlSpeed, lvlBelt, selectedFert }
+ * @returns {number} ratePerMachine，若無配方則回傳 0
+ */
+function getSingleMachineRate(itemName, opts = {}) {
+    const itemDef = DB.items[itemName];
+    if (!itemDef) return 0;
+    const recipe = getActiveRecipe(itemName);
+    if (!recipe) return 0;
+
+    const lvlAlchemy   = opts.lvlAlchemy   ?? (parseInt(document.getElementById('lvlAlchemy').value) || 0);
+    const lvlSpeed     = opts.lvlSpeed     ?? (parseInt(document.getElementById('lvlSpeed').value) || 0);
+    const lvlBelt      = opts.lvlBelt      ?? (parseInt(document.getElementById('lvlBelt').value) || 0);
+    const selectedFert = opts.selectedFert ?? document.getElementById('fertSelect').value;
+
+    let batchYield = recipe.outputs[itemName] || 1;
+    batchYield = applyAlchemyMult(recipe.machine, batchYield, getAlchemyMult(lvlAlchemy));
+
+    let recipeTime = recipe.baseTime || 1;
+    const recipeNutrientCost = recipe.nutrientCost || 0;
+    if (recipeNutrientCost > 0 && recipe.machine === "Nursery") {
+        const fertilitySpeed = DB.items[selectedFert]?.maxFertility || 1;
+        recipeTime = recipeNutrientCost / fertilitySpeed;
+    }
+
+    let ratePerMachine = (60 / (recipeTime || 1)) * getSpeedMult(lvlSpeed) * batchYield;
+
+    if (!itemDef.liquid) {
+        let beltSpeed = getBeltSpeed(lvlBelt);
+        if (itemDef.category === "Currency") beltSpeed *= 50;
+        else if (recipe.sharedOutputs) beltSpeed /= recipe.sharedOutputs;
+        ratePerMachine = Math.min(ratePerMachine, beltSpeed);
+    }
+
+    return ratePerMachine;
+}
 
 function gatherInputs() {
 
@@ -239,21 +278,7 @@ function gatherInputs() {
     document.getElementById('active-machine-name').innerText = machineName;        
 
     if (recipe) {
-        let batchYield = recipe.outputs[targetItem] || 1;
-        batchYield = applyAlchemyMult(recipe.machine, batchYield, getAlchemyMult(lvlAlchemy));
-        let recipeTime = recipe.baseTime || 1;
-        const recipeNtrientCost = recipe.nutrientCost || 0;
-        if (recipeNtrientCost > 0 && recipe.machine === "Nursery") {
-            let fertilitySpeed = DB.items[selectedFert]?.maxFertility || 1;
-            recipeTime =  recipeNtrientCost / fertilitySpeed;
-        }
-        let ratePerMachine = (60 / (recipeTime || 1)) * getSpeedMult(lvlSpeed) * batchYield;        
-        if (!(DB.items[targetItem].liquid)) {
-            let beltSpeed = getBeltSpeed(lvlBelt);
-            if (DB.items[targetItem].category === "Currency") beltSpeed *= 50; // 貨幣輸出為50個1堆疊
-            else if (recipe.sharedOutputs) beltSpeed /= recipe.sharedOutputs; // 共用輸出口(龍膽花)
-            ratePerMachine = Math.min(ratePerMachine, beltSpeed);
-        }
+        const ratePerMachine = getSingleMachineRate(targetItem, { lvlAlchemy, lvlSpeed, lvlBelt, selectedFert });
         if (isMachineMode) {
             const machineCount = parseFloat(document.getElementById('targetMachine').value) || 0;
             targetRate = machineCount * ratePerMachine;
@@ -302,18 +327,25 @@ function renderCalculationResult(params, result) {
     treeContainer.innerText = '';
 
     result.treeRoots.forEach(entry => {
+        const rootCosts = sumResourceCosts(entry.root);
+        const fuelTag = rootCosts.fuel > 0 ? `<span class="heat-tag">-${rootCosts.fuel.toFixed(2)}/m <img src="img/item${DB.items[params.selectedFuel]?.id ?? 0}.png" width="18" height="18" style="vertical-align:middle; margin-bottom:2px;"></span>` : ``;
+        const bioTag = rootCosts.fert > 0 ? `<span class="bio-tag">-${rootCosts.fert.toFixed(2)}/m <img src="img/item${DB.items[params.selectedFert]?.id ?? 0}.png" width="18" height="18" style="vertical-align:middle; margin-bottom:2px;"></span>` : ``;
+
         const div = document.createElement('div');
         div.style.marginTop = '25px';
         div.style.marginBottom = '8px';
         div.style.paddingBottom = '4px';
         div.style.borderBottom = '1px dashed #555';
         div.innerHTML = `
-            <span class="section-header">--- ${t('Production Chain')} (${entry.target.item}) ---</span>
+            <span class="section-header">--- ${t('Production Chain')} (${entry.target.item}) ---
+            </span>
             <span style="margin-left:auto; cursor:pointer;">
                 <button class="recycle-btn" onclick="setAllRecycling(true)" title="Recycle all byproducts">${t('Recycle All')}</button>
                 <button class="recycle-btn" onclick="setAllRecycling(false)" titile="Don't recycle any byproducts">${t('Un-recycle All')}</button>
                 <span class="section-header" onclick="toggleFirstLevel()" title="Toggle First Level" style="margin-right:10px;">💠</span>
             </span>
+            ${fuelTag}
+            ${bioTag}
         `;
         treeContainer.appendChild(div);
         treeContainer.appendChild(renderTreeNode(params, entry.root));
@@ -341,13 +373,17 @@ function renderCalculationResult(params, result) {
         params.selectedHeatingDevice
     );
 
+    // 新增：計算 fuel/fert 換算價值
+    const fuelFertValues = solveFuelFertValue(params, result);
+
     updateSummaryBox(
         params,
         result.summary.heatLoad,
         result.summary.bioLoad,
         result.summary.goldPerMin,
         result.summary.fuelDemandItems,
-        result.summary.fertDemandItems
+        result.summary.fertDemandItems,
+        fuelFertValues
     );
 
     updateSummaryLineFromResult(params, result.formulaLineData);
@@ -383,8 +419,9 @@ function buildRecipeTooltip(tooltipData) {
 function renderCostEntries(costEntries) {
     return costEntries.map(entry => {
         const amount = Math.ceil(entry.amount - Number.EPSILON).toLocaleString();
-        if (entry.type === 'gold') return `<span class="cost-tag">-${amount} /m</span>`;
-        return `<span class="cost-tag">(${amount} /m)</span>`;
+        if (entry.type === 'gold') return `<span class="cost-tag">-${amount} /m <img src="img/copper.png" width="16" height="16" style="vertical-align:middle; margin-bottom:2px;"></span>`;
+        return ``; // ignore fuel and fert cost
+        //return `<span class="cost-tag">(${amount} /m)</span>`;
     }).join('');
 }
 
@@ -419,7 +456,8 @@ function renderTreeNode(params, node) {
             const usageRatio = node.maxOutput > 0 ? node.netRate / node.maxOutput : 0;
             capTag = `<span class="max-cap-tag" onclick="recalculate('${params.targetItem}', ${params.targetRate / usageRatio})">(Max: ${formatVal(node.maxOutput)}/m)</span>`;
         }
-        machineTag = `<span class="machine-tag" data-tooltip="${tooltipText}">${Math.ceil(node.machineCount - 0.0001)} ${t(node.machine, 'machines')}${capTag}</span>`;
+        const machineIcon = node.tags.heat ? '🔥' : (node.tags.bio ? '🌱' : '');
+        machineTag = `<span class="machine-tag" data-tooltip="${tooltipText}">${Math.ceil(node.machineCount - 0.0001)} ${t(node.machine, 'machines')}${capTag} ${machineIcon}</span>`;
         const recipeCandidates = getRecipesFor(node.item);
         const hasCauldronTarget = itemDef && itemDef.cauldronTarget !== undefined;
         const hasRecipeModifier = recipeCandidates?.length === 1 && recipeCandidates[0].machine === 'Advanced Athanor';
@@ -428,18 +466,18 @@ function renderTreeNode(params, node) {
         }
     }
 
-    const byproductTag = node.tags.byproducts.map(entry => `<span class="byproduct-tag">+${formatVal(entry.rate)}/m ${entry.item}</span>`).join('');
+    const byproductTag = node.tags.byproducts.map(entry => `<span class="byproduct-tag">+${formatVal(entry.rate)}/m <img src="img/item${DB.items[entry.item]?.id ?? 0}.png" width="18" height="18" style="vertical-align:middle; margin-bottom:2px;">${entry.item}</span>`).join('');
 
     let bioTag = '';
     if (node.tags.bio) {
-        let bioText = `-${formatVal(node.tags.bio.rate)}/m ${params.selectedFert}`;
+        let bioText = `-${formatVal(node.tags.bio.rate)}/m<img src="img/item${DB.items[params.selectedFert]?.id ?? 0}.png" title="${params.selectedFert}" width="18" height="18" style="vertical-align:middle; margin-bottom:2px">`;
         if (params.showHeatFert) bioText += ` (${formatVal(node.tags.bio.nutrientPerSec)} V/s)`;
         bioTag = `<span class="bio-tag">${bioText}</span>`;
     }
 
     let heatTag = '';
     if (node.tags.heat) {
-        let heatText = `-${formatVal(node.tags.heat.rate)}/m ${params.selectedFuel}`;
+        let heatText = `-${formatVal(node.tags.heat.rate)}/m<img src="img/item${DB.items[params.selectedFuel]?.id ?? 0}.png" title="${params.selectedFuel}" width="18" height="18" style="vertical-align:middle; margin-bottom:2px">`;
         if (params.showHeatFert) heatText += ` (${formatVal(node.tags.heat.heatPerSec)} P/s)`;
         heatTag = `<span class="heat-tag">${heatText}</span>`;
     }
@@ -828,8 +866,63 @@ function updateConstructionList(maxCounts, minCounts, furnaces, extraBuildCosts,
     }
 }
 
+/**
+ * 遞迴加總一棵生產樹中所有節點的 gold cost / fuel 消耗量 / fert 消耗量
+ * (只取 costEntries 中 type==='gold' 的部分，避免混入 fuel/fert 的自訂單價)
+ */
+function sumResourceCosts(node, acc = { gold: 0, fuel: 0, fert: 0 }) {
+    (node.tags.costEntries || []).forEach(entry => {
+        if (entry.type === 'gold') acc.gold += entry.amount;
+    });
+    if (node.tags.heat) acc.fuel += node.tags.heat.rate;
+    if (node.tags.bio)  acc.fert += node.tags.bio.rate;
+    node.children.forEach(child => sumResourceCosts(child, acc));
+    return acc;
+}
 
-function updateSummaryBox(p, heatPerSec, nutrPerSec, goldPerMin, actualFuelNeed, actualFertNeed) {
+/**
+ * 當多目標模式下恰好有 2 個目標，且分別為 selectedFuel / selectedFert 時，
+ * 解出 Fuel / Fert 相對於 Coin(=1) 的換算價值
+ * 回傳 { fuelValue, fertValue } 或 null (條件不符) 
+ * fuelValue/fertValue 為 null 代表無法求解 (det ≈ 0)
+ */
+function solveFuelFertValue(params, result) {
+    if (!params.isMulti || params.targets.length !== 2) return null;
+
+    const fuelItem = params.selectedFuel;
+    const fertItem = params.selectedFert;
+    if (!fuelItem || !fertItem || fuelItem === fertItem) return null;
+
+    const itemSet = new Set(params.targets.map(tg => tg.item));
+    if (!itemSet.has(fuelItem) || !itemSet.has(fertItem)) return null;
+
+    const rootFuel = result.treeRoots.find(entry => entry.target.item === fuelItem);
+    const rootFert = result.treeRoots.find(entry => entry.target.item === fertItem);
+    if (!rootFuel || !rootFert) return null;
+
+    const c1 = sumResourceCosts(rootFuel.root); // fuel 目標鏈的 x1,y1,z1
+    const c2 = sumResourceCosts(rootFert.root); // fert 目標鏈的 x2,y2,z2
+
+    const w1 = rootFuel.target.rate;
+    const w2 = rootFert.target.rate;
+
+    // (w1-y1)*Vf - z1*Vz = x1
+    // -y2*Vf + (w2-z2)*Vz = x2
+    const a11 = w1 - c1.fuel, a12 = -c1.fert;
+    const a21 = -c2.fuel,     a22 = w2 - c2.fert;
+    const det = a11 * a22 - a12 * a21;
+
+    if (Math.abs(det) < 1e-6) {
+        return { fuelValue: null, fertValue: null };
+    }
+
+    const fuelValue = (c1.gold * a22 - a12 * c2.gold) / det;
+    const fertValue = (a11 * c2.gold - a21 * c1.gold) / det;
+
+    return { fuelValue, fertValue };
+}
+
+function updateSummaryBox(p, heatPerSec, nutrPerSec, goldPerMin, actualFuelNeed, actualFertNeed, fuelFertValues) {
     let { targetItem, targetRate, selfFuel, selfFert, selectedFuel, selectedFert, fuelCost, fertCost } = p;
     if (p.isMulti && p.targets.length === 1) {
         targetItem = p.targets[0].item;
@@ -903,6 +996,21 @@ function updateSummaryBox(p, heatPerSec, nutrPerSec, goldPerMin, actualFuelNeed,
             costHtml += `  ( ${(actualFertNeed/netRate).toLocaleString()}<img src="img/item${DB.items[selectedFert]?.id ?? 0}.png" alt="${selectedFert}" width="24" height="24" style="vertical-align: middle; margin-bottom: 4px;"> )`;
             costHtml += `</span>`;
         }
+    }
+    else if (p.targets.length === 2 && fuelFertValues) {
+        const fmtVal = (v) => (v === null || v === undefined || !isFinite(v))
+            ? '—'
+            : v.toLocaleString(undefined, { maximumFractionDigits: 2 });
+
+        costHtml += `<span class="stat-value" style="color:var(--fuel);">
+            <img src="img/item${DB.items[p.selectedFuel]?.id ?? 0}.png" width="18" height="18" style="vertical-align:middle; margin-bottom:2px;">
+            ${t('Fuel Value')}: ${fmtVal(fuelFertValues.fuelValue)} <img src="img/copper.png" width="16" height="16" style="vertical-align:middle; margin-bottom:2px;">
+            
+        </span>`;
+        costHtml += `<span class="stat-value" style="color:var(--bio);">
+            <img src="img/item${DB.items[p.selectedFert]?.id ?? 0}.png" width="18" height="18" style="vertical-align:middle; margin-bottom:2px;">
+            ${t('Fert Value')}: ${fmtVal(fuelFertValues.fertValue)} <img src="img/copper.png" width="16" height="16" style="vertical-align:middle; margin-bottom:2px;">
+        </span>`;
     }
     costHtml += `</div>`;
 
