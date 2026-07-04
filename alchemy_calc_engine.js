@@ -89,6 +89,16 @@
             const r = { ...recipe, outputs: recipeOutputs, inputs: recipeInputs };
             return r;
         }
+        else if (recipe.machine === 'Paradox Crucible') {
+            if (recipe.customInputSlot) {
+                const mod = state?.recipeModifiers?.[recipe.id];
+                const inputName = mod?.customInput;
+                if (!inputName || !db.items[inputName]) return null; // 尚未選擇輸入物品
+                const baseTime = computeParadoxTime(db, inputName);
+                if (baseTime === null) return null; // 缺 baseCost 等資料
+                return { ...recipe, inputs: { [inputName]: 1 }, baseTime };
+           }
+        }
         return recipe;
     }
 
@@ -98,6 +108,18 @@
             if (machineName === "Thermal Extractor") batchYield *= 3;
         }
         return batchYield;
+    }
+
+    function computeParadoxTime(db, itemName) {
+        const itemDef = db.items[itemName];
+        if (!itemDef) return null;
+        let { baseCost, cauldronCost, cauldronTarget, maxStack, paradoxTime } = itemDef;
+        if (paradoxTime) return paradoxTime;
+        if (!(baseCost > 0) || !(cauldronCost > 0) || !(cauldronTarget > 0)) return null;
+        if (maxStack < 0) baseCost *= -maxStack;
+        const efficiency = cauldronCost / cauldronTarget;
+        const baseTime = 1500 / (baseCost * efficiency);
+        return (baseTime > 0 && isFinite(baseTime)) ? baseTime : null;
     }
 
     function getHeatingDevice(db, selectedHeatingDevice) {
@@ -784,6 +806,7 @@
         getActiveRecipe,
         applyAlchemyMult,
         getProductionHeatCost,
-        getProductionFertCost
+        getProductionFertCost,
+        computeParadoxTime
     };
 })(window);

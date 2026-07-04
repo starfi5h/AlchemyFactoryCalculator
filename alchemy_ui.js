@@ -989,6 +989,45 @@ function openRecipeModal(item) {
         const div = document.createElement('div');
         div.className = `recipe-option ${r.id === currentId ? 'active' : ''}`;        
 
+        // 自訂輸入配方 (Oblivion Essence via Paradox Crucible 等)
+        if (r.customInputSlot) {
+            const mod = DB.settings.recipeModifiers[r.id] || {};
+            const selectedItem = mod.customInput;
+            const inputDef = selectedItem ? DB.items[selectedItem] : null;
+            const previewTime = selectedItem ? AlchemyCalcEngine.computeParadoxTime(DB, selectedItem) : null;
+            const isReady = !!selectedItem && previewTime !== null;
+
+            div.classList.toggle('disabled', !isReady);
+
+            const pickerHtml = `
+                <span class="mini-picker" style="display:inline-flex;" onclick="event.stopPropagation(); pickCustomRecipeInput('${r.id}', '${item}')">
+                    ${inputDef ? `<img src="img/item${inputDef.id ?? 0}.png" width="18" height="18">` : ''}
+                    <span>${selectedItem ? selectedItem : t('Select Input Item')}</span>
+                </span>`;
+
+            let warnHtml = '';
+            if (!selectedItem) {
+                warnHtml = `<div class="loop-warning">${t('Please select an input item first.')}</div>`;
+            } else if (previewTime === null) {
+                warnHtml = `<div class="loop-warning">${t('Selected item is missing baseCost data.')}</div>`;
+            }
+
+            div.innerHTML = `
+                <div class="recipe-header"><span><strong>${t(r.machine, 'machines')}</strong> <span style="font-size:0.9em; opacity:0.8;">( ${previewTime !== null ? previewTime.toFixed(2) : '—'} s )</span></span>${r.id === currentId ? '✅' : ''}</div>
+                <div class="recipe-details">${t('Input')}: ${pickerHtml}<br>${t('Yields')}: 1x <img src="img/item${DB.items[item]?.id ?? 0}.png" width="18" height="18"> ${item}</div>
+                ${warnHtml}
+            `;
+
+            div.onclick = (e) => {
+                if (e.target.closest('.mini-picker')) return;
+                if (!isReady) return;
+                DB.settings.preferredRecipes[item] = r.id; persist(); closeModal('recipe-modal'); calculate();
+            };
+
+            list.appendChild(div);
+            return;
+        }
+
         let recipeInputs = r.inputs;
         let recipeOutputs = r.outputs;
 
@@ -1043,6 +1082,26 @@ function openRecipeModal(item) {
         list.appendChild(div);
     });
     document.getElementById('recipe-modal').style.display = 'flex';
+}
+
+/**
+ * 開啟 Item Picker 讓玩家為「自訂輸入配方」選擇 input 物品
+ * @param {string} recipeId  例如 "Oblivion Essence (Custom)"
+ * @param {string} forItem   該配方所屬的產出物品，用於選完後重繪 recipe modal
+ */
+function pickCustomRecipeInput(recipeId, forItem) {
+    const originalSelectItem = window.selectItem;
+    window.selectItem = (name) => {
+        if (!DB.settings.recipeModifiers[recipeId]) DB.settings.recipeModifiers[recipeId] = {};
+        DB.settings.recipeModifiers[recipeId].customInput = name;
+        persist();
+
+        window.selectItem = originalSelectItem;
+        closeModal('picker-modal');
+        calculate();
+        openRecipeModal(forItem); // 重新渲染 recipe modal 顯示新選擇
+    };
+    openItemPicker();
 }
 
 function openDrillDown(item, rate) {
