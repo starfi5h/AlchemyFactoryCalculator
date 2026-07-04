@@ -300,8 +300,12 @@ window.ALCHEMY_I18N = {
         "Guides": "指南",
         "Items": "物品",
         "Machines": "机器",
+        "Category": "类别",
+        "Tier": "等级",
                 
         "Properties": "属性",
+        "Has Value": "有值",
+        "Quick select (exact)": "快速选择",
         "Buy Price": "买入价格",
         "Sell Price": "卖出价格",
         "Wholesale Price": "批发价格",

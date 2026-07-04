@@ -266,7 +266,7 @@ function _injectHelpStyles() {
             padding: 3px 14px; border-radius: 4px;
             border: 1px solid var(--border, #333); background: transparent;
             color: var(--text-muted, #aaa); cursor: pointer;
-            font-size: 0.8em; font-weight: 600;
+            font-size: 1.0em; font-weight: 600;
         }
         .wiki-tab-btn:hover  { background: var(--hover-bg, #1e2a3a); color: var(--text, #eee); }
         .wiki-tab-btn.active { background: var(--accent-bg, #1e3a5f); border-color: var(--accent, #4af); color: var(--accent, #4af); }
@@ -295,28 +295,17 @@ function _injectHelpStyles() {
 
         /* ── Split layout ── */
         .wiki-split-area {
-            display: flex;
-            flex-direction: row; /* 明確強制橫向排列 */
-            width: 100%;
-            overflow: hidden;
+            display: flex; flex-direction: row;
+            width: 100%; overflow: hidden;
         }
-
         .wiki-left-pane {
-            box-sizing: border-box;
-            flex: 3 1 75%;
-            min-width: 50px;
+            box-sizing: border-box; flex: 3 1 75%; min-width: 50px;
             border-right: 1px solid var(--border, #333);
-            display: flex; 
-            flex-direction: column; 
-            overflow: hidden;
+            display: flex; flex-direction: column; overflow: hidden;
         }
-
         .wiki-right-pane {
-            box-sizing: border-box;
-            flex: 1 1 25%;
-            min-width: 280px;
-            padding: 14px 18px; 
-            overflow: hidden;
+            box-sizing: border-box; flex: 1 1 25%; min-width: 270px;
+            padding: 14px 18px; overflow-y: auto;
         }
         .wiki-search-bar { flex-shrink: 0; padding: 7px 8px; border-bottom: 1px solid var(--border, #333); }
         .wiki-search-input {
@@ -339,7 +328,7 @@ function _injectHelpStyles() {
             font-size: 0.8em; text-align: center; gap: 3px;
             color: var(--text, #ddd); border: 1px solid transparent; user-select: none;
         }
-        .wiki-tile:hover   { background: var(--hover-bg, #1e2a3a); }
+        .wiki-tile:hover    { background: var(--hover-bg, #1e2a3a); }
         .wiki-tile.selected { background: var(--accent-bg, #1a3050); border-color: var(--accent, #4af); }
         .wiki-tile span { display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; overflow: hidden; line-height: 1.3; }
         .wiki-icon { display: block; flex-shrink: 0; }
@@ -376,7 +365,7 @@ function _injectHelpStyles() {
         .wiki-recipe-item { display: inline-flex; align-items: center; gap: 1px; cursor: pointer; }
         .wiki-item-qty { font-size: 0.7em; color: var(--accent, #7af); line-height: 1; }
         .wiki-recipe-right { display: flex; align-items: center; gap: 6px; flex-shrink: 0; font-size: 0.78em; }
-        .wiki-recipe-machine { background: rgba(255,255,255,0.05); padding: 1px 5px; border-radius: 3px; cursor: pointer }
+        .wiki-recipe-machine { background: rgba(255,255,255,0.05); padding: 1px 5px; border-radius: 3px; cursor: pointer; }
 
         /* ── Star toggle ── */
         .wiki-star { flex-shrink: 0; background: none; border: none; color: #555; cursor: pointer; font-size: 0.95em; padding: 0 2px; line-height: 1; }
@@ -388,6 +377,85 @@ function _injectHelpStyles() {
         .wiki-build-cost { display: flex; flex-wrap: wrap; gap: 6px; }
         .wiki-build-item { display: flex; align-items: center; gap: 6px; padding: 4px 8px; background: var(--panel-bg, #1a2535); border: 1px solid var(--border, #2a3a4a); border-radius: 4px; font-size: 0.78em; cursor: pointer; }
         .wiki-build-item:hover { border-color: var(--accent, #4af); }
+
+        /* ── Chip filter bar ── */
+        .wiki-chip-bar {
+            flex-shrink: 0; display: flex; flex-wrap: wrap; gap: 5px;
+            padding: 6px 8px; border-bottom: 1px solid var(--border, #333);
+        }
+        .wiki-chip-wrap { position: relative; }
+        .wiki-filter-chip {
+            display: inline-flex; align-items: center; gap: 4px;
+            padding: 3px 10px; border: 1px solid var(--border, #444); border-radius: 12px;
+            background: transparent; color: var(--text-muted, #aaa);
+            font-size: 0.9em; cursor: pointer; white-space: nowrap; user-select: none;
+            transition: border-color 0.15s, color 0.15s, background 0.15s;
+        }
+        .wiki-filter-chip:hover  { border-color: #888; color: #eee; }
+        .wiki-filter-chip.active { background: rgba(76,175,80,0.12); border-color: var(--accent,#4caf50); color: var(--accent,#4caf50); }
+        .wiki-filter-chip.open   { border-color: #777; color: #ddd; background: rgba(255,255,255,0.04); }
+        .chip-arrow { opacity: 0.5; font-size: 0.75em; }
+        .chip-clear { opacity: 0.7; line-height: 1; }
+        .chip-clear:hover { opacity: 1; }
+
+        .wiki-chip-panel {
+            position: absolute; top: calc(100% + 4px); left: 0; min-width: 160px;
+            background: #252525; border: 1px solid #555; border-radius: 6px;
+            padding: 6px; z-index: 300; box-shadow: 0 6px 18px rgba(0,0,0,0.55);
+            display: flex; flex-wrap: wrap; gap: 4px;
+        }
+        .wiki-cat-btn {
+            padding: 3px 8px; border: 1px solid #444; border-radius: 4px;
+            background: transparent; color: #bbb; font-size: 0.8em;
+            cursor: pointer; white-space: nowrap; transition: 0.15s;
+        }
+        .wiki-cat-btn:hover  { background: #333; color: #eee; border-color: #666; }
+        .wiki-cat-btn.active { background: rgba(76,175,80,0.12); border-color: var(--accent,#4caf50); color: var(--accent,#4caf50); }
+
+        .wiki-chip-panel-num { flex-direction: column; min-width: 140px; gap: 6px; }
+        .chip-panel-row { display: flex; align-items: center; gap: 6px; font-size: 0.78em; color: #aaa; }
+        .chip-num-input {
+            flex: 1; padding: 3px 5px; background: #1a1a1a;
+            border: 1px solid #555; border-radius: 3px; color: #eee;
+            font-size: 0.85em; width: 70px; min-width: 30px;
+            -moz-appearance: textfield; appearance: textfield;
+        }
+        .chip-num-input::-webkit-inner-spin-button,
+        .chip-num-input::-webkit-outer-spin-button { -webkit-appearance: none; }
+        .chip-num-input:focus { outline: none; border-color: var(--accent,#4caf50); }
+        .chip-exist-btn {
+            padding: 3px 8px; border: 1px solid #555; border-radius: 4px;
+            background: transparent; color: #aaa; font-size: 0.78em; cursor: pointer; transition: 0.15s;
+        }
+        .chip-exist-btn:hover  { border-color: #888; color: #eee; }
+        .chip-exist-btn.active { background: rgba(76,175,80,0.12); border-color: var(--accent,#4caf50); color: var(--accent,#4caf50); }
+
+        .wiki-active-filter-bar {
+            display: flex; flex-wrap: wrap; align-items: center; gap: 5px;
+            padding: 5px 8px; border-bottom: 1px solid var(--border,#333);
+            background: rgba(76,175,80,0.03);
+        }
+        .wiki-active-chip {
+            display: inline-flex; align-items: center; gap: 3px;
+            padding: 2px 8px; background: rgba(76,175,80,0.10);
+            border: 1px solid rgba(76,175,80,0.35); border-radius: 10px;
+            color: var(--accent,#4caf50); font-size: 0.74em;
+        }
+        .wiki-active-chip button {
+            background: none; border: none; color: inherit; cursor: pointer;
+            font-size: 0.9em; padding: 0 1px; opacity: 0.7; line-height: 1;
+        }
+        .wiki-active-chip button:hover { opacity: 1; }
+        .chip-clear-all {
+            margin-left: auto; background: transparent; border: 1px solid #555;
+            border-radius: 4px; color: #888; font-size: 0.72em; cursor: pointer;
+            padding: 2px 7px; transition: 0.15s;
+        }
+        .chip-clear-all:hover { border-color: #888; color: #eee; }
+        .wiki-no-results {
+            padding: 32px 16px; text-align: center;
+            color: var(--text-muted,#666); font-size: 0.82em; font-style: italic;
+        }
     `;
     document.head.appendChild(s);
 }
@@ -399,6 +467,16 @@ var _selectedMachine = null;
 var _itemFilter      = '';
 var _machineFilter   = '';
 var _wikiIndex       = null;
+
+/* ─── 5b. CHIP FILTER STATE ──────────────────────────────────────────────── */
+var _itemChipFilters = {
+    category:      null,    
+    tier:          { active: false, min: '', max: '' },
+    sell:          { active: false, min: '', max: '' },
+    wholesale:     { active: false, min: '', max: '' },
+    cauldronTarget:{ active: false, min: '', max: '' }
+};
+var _activeChip = null; // 'category' | 'sell' | 'wholesale' | 'cauldronTarget' | null
 
 /* ─── 6. WIKI INDEX ───────────────────────────────────────────────────────── */
 function _getWikiIndex() {
@@ -432,8 +510,7 @@ function _getWikiIndex() {
 function _getPreferred(itemName) {
     try {
         var db = (typeof DB !== 'undefined') ? DB : ALCHEMY_DB;
-        let recipe = db && db.settings && db.settings.preferredRecipes && db.settings.preferredRecipes[itemName];
-        return recipe;
+        return db && db.settings && db.settings.preferredRecipes && db.settings.preferredRecipes[itemName];
     } catch(e) { return null; }
 }
 
@@ -447,7 +524,7 @@ function _togglePreferred(itemName, recipeId) {
         } else {
             db.settings.preferredRecipes[itemName] = recipeId;
         }
-        if (typeof saveSettings === 'function') saveSettings();
+        if (typeof persist === 'function') persist();
     } catch(e) { console.warn('help: togglePreferred failed', e); }
     _renderItemDetail(itemName);
 }
@@ -459,7 +536,6 @@ function _itemIcon(id, size) {
         + '" loading="lazy" class="wiki-icon" onerror="this.style.opacity=\'0.15\'">';
 }
 
-/* Render item set as icon-only spans; item name shown in title tooltip */
 function _fmtItems(obj) {
     var rawDB = (typeof DB !== 'undefined') ? DB : {};
     return Object.entries(obj).map(function(e) {
@@ -473,7 +549,7 @@ function _fmtItems(obj) {
     }).join('');
 }
 
-/* Safe onclick: encode arg with encodeURIComponent to handle all special chars */
+/* Safe onclick helpers */
 function _oc(fn, arg) {
     return 'onclick="' + fn + '(decodeURIComponent(\'' + encodeURIComponent(arg) + '\'))"';
 }
@@ -500,35 +576,61 @@ function wikiSwitchToMachine(name) {
 }
 
 /* ─── 10. ITEM PAGE ───────────────────────────────────────────────────────── */
-function _buildItemGridHTML() {
-    var rawDB = (typeof DB !== 'undefined') ? DB : {};
-    var items = rawDB.items || {};
-    var entries = Object.entries(items);
-    if (_itemFilter) {
-        var f = _itemFilter.toLowerCase();
-        entries = entries.filter(function(e) {
-            return e[0].toLowerCase().includes(f) || (e[0]).toLowerCase().includes(f);
-        });
-    }
-    entries.sort(function(a, b) { return (a[1].id || 0) - (b[1].id || 0); });
-    return entries.map(function(e) {
-        var name = e[0], def = e[1];
-        var sel  = name === _selectedItem ? ' selected' : '';
-        return '<div class="wiki-tile' + sel + '" data-name="' + name.replace(/"/g, '&quot;') + '" ' + _oc('wikiSelectItem', name) + '>'
-            + _itemIcon(def.id, 32)
-            + '<span>' + (name) + '</span>'
-            + '</div>';
-    }).join('');
-}
 
 function _buildItemSplitHTML() {
     return '<div class="wiki-left-pane">'
         + '<div class="wiki-search-bar"><input type="text" class="wiki-search-input" id="wiki-item-search"'
-        + ` placeholder="${_tn('Search items...')}" value="` + _itemFilter.replace(/"/g, '&quot;') + '"'
+        + ' placeholder="' + _tn('Search items...') + '" value="' + _itemFilter.replace(/"/g, '&quot;') + '"'
         + ' oninput="_itemFilter=this.value;_refreshItemGrid()"></div>'
+        + '<div class="wiki-chip-bar" id="wiki-chip-bar">' + _buildChipBarInner() + '</div>'
+        + '<div id="wiki-active-filters">' + _buildActiveFiltersHTML() + '</div>'
         + '<div class="wiki-item-grid" id="wiki-item-grid">' + _buildItemGridHTML() + '</div>'
         + '</div>'
         + '<div class="wiki-right-pane" id="wiki-right-pane"><div class="wiki-placeholder"></div></div>';
+}
+
+function _buildItemGridHTML() {
+    var rawDB = (typeof DB !== 'undefined') ? DB : {};
+    var entries = Object.entries(rawDB.items || {});
+
+    // text filter
+    if (_itemFilter) {
+        var f = _itemFilter.toLowerCase();
+        entries = entries.filter(function(e) { return e[0].toLowerCase().includes(f); });
+    }
+    // category chip
+    if (_itemChipFilters.category) {
+        var cat = _itemChipFilters.category;
+        entries = entries.filter(function(e) { return e[1].category === cat; });
+    }
+    // numeric chips
+    var PROP_MAP = { tier: 'tier', sell: 'sellPrice', wholesale: 'wholesalePrice', cauldronTarget: 'cauldronTarget' };
+    ['tier', 'sell', 'wholesale', 'cauldronTarget'].forEach(function(key) {
+        var fi = _itemChipFilters[key];
+        if (!fi.active) return;
+        var prop = PROP_MAP[key];
+        entries = entries.filter(function(e) {
+            var val = e[1][prop];
+            if (val == null) return false;
+            if (fi.min !== '' && val < parseFloat(fi.min)) return false;
+            if (fi.max !== '' && val > parseFloat(fi.max)) return false;
+            return true;
+        });
+    });
+
+    entries.sort(function(a, b) { return (a[1].id || 0) - (b[1].id || 0); });
+
+    if (!entries.length) {
+        return '<div class="wiki-no-results">No items match the current filters.</div>';
+    }
+
+    return entries.map(function(e) {
+        var name = e[0], def = e[1];
+        var sel = name === _selectedItem ? ' selected' : '';
+        return '<div class="wiki-tile' + sel + '" data-name="' + name.replace(/"/g, '&quot;') + '" '
+            + _oc('wikiSelectItem', name) + '>'
+            + _itemIcon(def.id, 32) + '<span>' + name + '</span></div>';
+    }).join('');
 }
 
 function _refreshItemGrid() {
@@ -536,6 +638,220 @@ function _refreshItemGrid() {
     if (grid) grid.innerHTML = _buildItemGridHTML();
 }
 
+/* ─── CHIP FILTER FUNCTIONS ─────────────────────────────────────────────── */
+
+function _toggleChip(key) {
+    _activeChip = (_activeChip === key) ? null : key;
+    _refreshChipBar();
+    event.stopPropagation();
+}
+
+function _onChipOutsideClick(e) {
+    if (_activeChip && !e.target.closest('#wiki-chip-bar')) {
+        _activeChip = null;
+        _refreshChipBar();
+    }
+}
+
+function _refreshChipBar() {
+    var bar = document.getElementById('wiki-chip-bar');
+    if (bar) bar.innerHTML = _buildChipBarInner();
+    var af = document.getElementById('wiki-active-filters');
+    if (af) af.innerHTML = _buildActiveFiltersHTML();
+    _refreshItemGrid();
+}
+
+function _buildChipBarInner() {
+    var rawDB = (typeof DB !== 'undefined') ? DB : {};
+    var catSet = new Set();
+    Object.values(rawDB.items || {}).forEach(function(d) { if (d.category) catSet.add(d.category); });
+    var cats = ['[All]'].concat(Array.from(catSet).sort());
+
+    var CHIPS = [
+        {
+            key: 'category',
+            label: function() {
+                return _itemChipFilters.category
+                    ? _tn(_itemChipFilters.category, 'categories')
+                    : _tn('Category', 'ui');
+            }
+        },
+        { key: 'tier',          label: function() { return _tn('Tier', 'ui');            } },
+        { key: 'sell',          label: function() { return _tn('Sell Price', 'ui');      } },
+        { key: 'wholesale',     label: function() { return _tn('Wholesale Price', 'ui'); } },
+        { key: 'cauldronTarget',label: function() { return _tn('Cauldron Target', 'ui'); } }
+    ];
+
+    return CHIPS.map(function(c) {
+        var isNumeric = c.key !== 'category';
+        var f         = isNumeric ? _itemChipFilters[c.key] : null;
+        var isActive  = isNumeric ? f.active : !!_itemChipFilters.category;
+        var isOpen    = _activeChip === c.key;
+
+        // suffix: active → clear ✕ button; else → chevron
+        var suffix = isActive
+            ? ' <span class="chip-clear" onclick="event.stopPropagation();_clearChip(\'' + c.key + '\')">✕</span>'
+            : ' <span class="chip-arrow">' + (isOpen ? '▲' : '▾') + '</span>';
+
+        return '<div class="wiki-chip-wrap">'
+            + '<button class="wiki-filter-chip'
+            + (isActive ? ' active' : '') + (isOpen && !isActive ? ' open' : '')
+            + '" onclick="_toggleChip(\'' + c.key + '\')">'
+            + c.label() + suffix
+            + '</button>'
+            + (isOpen ? _buildChipPanelHTML(c.key, cats) : '')
+            + '</div>';
+    }).join('');
+}
+
+function _buildChipPanelHTML(key, cats) {
+    if (key === 'category') {
+        return '<div class="wiki-chip-panel">'
+            + cats.map(function(cat) {
+                var sel = (_itemChipFilters.category || '[All]') === cat;
+                return '<button class="wiki-cat-btn' + (sel ? ' active' : '') + '" '
+                    + _oc('_selectCategory', cat) + '>'
+                    + _tn(cat, 'categories')
+                    + '</button>';
+            }).join('')
+            + '</div>';
+    }
+    if (key === 'tier') {
+        var f = _itemChipFilters[key];
+        var tierBtns = '';
+        for (var t = 0; t <= 9; t++) {
+            var tStr = String(t);
+            // 高亮：min 或 max 有值時，該按鈕若在區間內就標示
+            var inRange = f.active
+                && (f.min === '' || t >= parseInt(f.min))
+                && (f.max === '' || t <= parseInt(f.max));
+            tierBtns += '<button class="wiki-cat-btn' + (inRange ? ' active' : '') + '" '
+                + 'onclick="_setTierQuick(' + t + ')">' + t + '</button>';
+        }
+        return '<div class="wiki-chip-panel" style="min-width:190px;">'
+            + '<div style="width:100%; font-size:0.72em; color:#777; margin-bottom:2px;">' + _tn('Quick select (exact)') + '</div>'
+            + tierBtns
+            + '<div style="width:100%; height:1px; background:#333; margin:4px 0;"></div>'
+            + '<label class="chip-panel-row"><span>Min</span>'
+            + '<input type="number" class="chip-num-input" value="' + (f.min || '') + '" placeholder="0" min="0" max="9" '
+            + 'oninput="_onChipNum(\'tier\',\'min\',this.value)"></label>'
+            + '<label class="chip-panel-row"><span>Max</span>'
+            + '<input type="number" class="chip-num-input" value="' + (f.max || '') + '" placeholder="9" min="0" max="9" '
+            + 'oninput="_onChipNum(\'tier\',\'max\',this.value)"></label>'
+            + '</div>';
+    }
+
+    // Numeric panel (sell / wholesale / cauldronTarget)
+    var f = _itemChipFilters[key];
+    var isExistOnly = f.active && f.min === '' && f.max === '';
+    return '<div class="wiki-chip-panel wiki-chip-panel-num">'
+        + '<button class="chip-exist-btn' + (isExistOnly ? ' active' : '')
+        + '" onclick="_toggleExistFilter(\'' + key + '\')" title="Match items that have this property">' + _tn('Has Value') + '</button>'
+        + '<label class="chip-panel-row"><span>Min</span>'
+        + '<input type="number" class="chip-num-input" value="' + (f.min || '') + '" placeholder="—" '
+        + 'oninput="_onChipNum(\'' + key + '\',\'min\',this.value)"></label>'
+        + '<label class="chip-panel-row"><span>Max</span>'
+        + '<input type="number" class="chip-num-input" value="' + (f.max || '') + '" placeholder="—" '
+        + 'oninput="_onChipNum(\'' + key + '\',\'max\',this.value)"></label>'
+        + '</div>';
+}
+
+function _buildActiveFiltersHTML() {
+    var LABELS = {
+        tier:          _tn('Tier', 'ui'),
+        sell:          _tn('Sell Price', 'ui'),
+        wholesale:     _tn('Wholesale Price', 'ui'),
+        cauldronTarget:_tn('Cauldron Target', 'ui')
+    };
+    var chips = [];
+
+    if (_itemChipFilters.category) {
+        chips.push('<span class="wiki-active-chip">'
+            + _tn(_itemChipFilters.category, 'categories')
+            + ' <button onclick="_clearChip(\'category\')">✕</button></span>');
+    }
+    ['tier', 'sell', 'wholesale', 'cauldronTarget'].forEach(function(key) {
+        var f = _itemChipFilters[key];
+        if (!f.active) return;
+        var range = (f.min !== '' || f.max !== '')
+            ? (f.min || '*') + ' ~ ' + (f.max || '*')
+            : '✓';
+        chips.push('<span class="wiki-active-chip">'
+            + LABELS[key] + ': ' + range
+            + ' <button onclick="_clearChip(\'' + key + '\')">✕</button></span>');
+    });
+
+    if (!chips.length) return '';
+
+    return '<div class="wiki-active-filter-bar">'
+        + chips.join('')
+        + '<button class="chip-clear-all" onclick="_clearAllChips()">Clear All</button>'
+        + '</div>';
+}
+
+function _selectCategory(cat) {
+    _itemChipFilters.category = (cat === '[All]') ? null : cat;
+    _activeChip = null;
+    _refreshChipBar();
+    event.stopPropagation();
+}
+
+/* Called from oninput — intentionally does NOT rebuild the chip panel
+   so the focused <input> keeps focus across the partial refresh.        */
+function _onChipNum(key, field, val) {
+    _itemChipFilters[key][field] = val;
+    _itemChipFilters[key].active = true;
+    var af = document.getElementById('wiki-active-filters');
+    if (af) af.innerHTML = _buildActiveFiltersHTML();
+    _refreshItemGrid();
+    event.stopPropagation();
+}
+
+function _toggleExistFilter(key) {
+    var f = _itemChipFilters[key];
+    // If already "exist-only" (active, no range) → deactivate; else → activate with no range
+    if (f.active && f.min === '' && f.max === '') {
+        f.active = false;
+    } else {
+        f.active = true;
+        f.min = '';
+        f.max = '';
+    }
+    _refreshChipBar();
+    event.stopPropagation();
+}
+
+function _setTierQuick(t) {
+    var tStr = String(t);
+    _itemChipFilters.tier = { active: true, min: tStr, max: tStr };
+    _refreshChipBar();
+}
+
+function _clearChip(key) {
+    if (key === 'category') {
+        _itemChipFilters.category = null;
+    } else {
+        _itemChipFilters[key] = { active: false, min: '', max: '' };
+    }
+    if (_activeChip === key) _activeChip = null;
+    _refreshChipBar();
+    event.stopPropagation();
+}
+
+function _clearAllChips() {
+    _itemChipFilters = {
+        category:      null,
+        tier:          { active: false, min: '', max: '' },
+        sell:          { active: false, min: '', max: '' },
+        wholesale:     { active: false, min: '', max: '' },
+        cauldronTarget:{ active: false, min: '', max: '' }
+    };
+    _activeChip = null;
+    _refreshChipBar();
+    event.stopPropagation();
+}
+
+/* ─── 11. ITEM DETAIL ─────────────────────────────────────────────────────── */
 function wikiSelectItem(name) {
     _selectedItem = name;
     document.querySelectorAll('#wiki-item-grid .wiki-tile').forEach(function(el) {
@@ -549,7 +865,7 @@ function _renderItemDetail(itemName) {
     if (!pane) return;
     var rawDB = (typeof DB !== 'undefined') ? DB : {};
     var def   = rawDB.items && rawDB.items[itemName];
-    if (!def) { pane.innerHTML = `<div class="wiki-placeholder">${_tn('Item data not found')}</div>`; return; }
+    if (!def) { pane.innerHTML = '<div class="wiki-placeholder">' + _tn('Item data not found') + '</div>'; return; }
 
     var idx       = _getWikiIndex();
     var producers = idx.producedBy[itemName] || [];
@@ -558,6 +874,7 @@ function _renderItemDetail(itemName) {
 
     /* Stats */
     var stats = [];
+    if (def.tier           != null) stats.push([_tn('Tier'),            def.tier]);
     if (def.buyPrice       != null) stats.push([_tn('Buy Price'),       def.buyPrice.toLocaleString()       + ' \xa2']);
     if (def.sellPrice      != null) stats.push([_tn('Sell Price'),      def.sellPrice.toLocaleString()      + ' \xa2']);
     if (def.wholesalePrice != null) stats.push([_tn('Wholesale Price'), def.wholesalePrice.toLocaleString() + ' \xa2']);
@@ -578,44 +895,43 @@ function _renderItemDetail(itemName) {
 
     /* Produced by */
     var producersHTML = producers.length === 0
-        ? `<p class="wiki-empty">${_tn('No production recipes')}</p>`
+        ? '<p class="wiki-empty">' + _tn('No production recipes') + '</p>'
         : producers.map(function(recipe) {
             var isPreferred = preferred === recipe.id;
             var starHTML = '<button class="wiki-star' + (isPreferred ? ' active' : '') + '" title="'
                          + (isPreferred ? _tn('Remove Preferred') : _tn('Set as Preferred')) + '" '
                          + _oc2('_togglePreferred', itemName, recipe.id) + '>' + (isPreferred ? '★' : '☆') + '</button>';
             var hasIn   = Object.keys(recipe.inputs  || {}).length > 0;
-            var inHTML  = hasIn ? _fmtItems(recipe.inputs) : '<em style="font-size:0.78em;color:#666">\u65e0</em>';
+            var inHTML  = hasIn ? _fmtItems(recipe.inputs) : '<em style="font-size:0.78em;color:#666">—</em>';
             var outHTML = _fmtItems(recipe.outputs || {});
             return '<div class="wiki-recipe-row' + (isPreferred ? ' preferred' : '') + '">'
                 + starHTML
                 + '<div class="wiki-recipe-formula">'
                 + '<span class="wiki-items">' + inHTML  + '</span>'
-                + '<span class="wiki-arrow">\u2192</span>'
+                + '<span class="wiki-arrow">→</span>'
                 + '<span class="wiki-items">' + outHTML + '</span>'
                 + '</div>'
                 + '<div class="wiki-recipe-right">'
-                + '<span class="wiki-recipe-machine" ' + _oc('wikiSwitchToMachine', recipe.machine) + '>' + _tn(recipe.machine, 'machines') + '</span>'                
+                + '<span class="wiki-recipe-machine" ' + _oc('wikiSwitchToMachine', recipe.machine) + '>' + _tn(recipe.machine, 'machines') + '</span>'
                 + (recipe.baseTime != null ? '<span>' + recipe.baseTime + 's</span>' : '')
                 + '</div></div>';
           }).join('');
 
     /* Used in */
     var consumersHTML = consumers.length === 0
-        ? `<p class="wiki-empty">${_tn('Not used in any recipe')}</p>`
+        ? '<p class="wiki-empty">' + _tn('Not used in any recipe') + '</p>'
         : consumers.map(function(recipe) {
-            var mainOut = Object.keys(recipe.outputs || {})[0] || '';
             var inHTML  = _fmtItems(recipe.inputs  || {});
             var outHTML = _fmtItems(recipe.outputs || {});
             return '<div class="wiki-recipe-row">'
                 + '<span class="wiki-star-ph"></span>'
                 + '<div class="wiki-recipe-formula">'
                 + '<span class="wiki-items">' + inHTML  + '</span>'
-                + '<span class="wiki-arrow">\u2192</span>'
+                + '<span class="wiki-arrow">→</span>'
                 + '<span class="wiki-items">' + outHTML + '</span>'
                 + '</div>'
                 + '<div class="wiki-recipe-right">'
-                + '<span class="wiki-recipe-machine" ' + _oc('wikiSwitchToMachine', recipe.machine) + '>' + _tn(recipe.machine, 'machines') + '</span>'                
+                + '<span class="wiki-recipe-machine" ' + _oc('wikiSwitchToMachine', recipe.machine) + '>' + _tn(recipe.machine, 'machines') + '</span>'
                 + (recipe.baseTime != null ? '<span>' + recipe.baseTime + 's</span>' : '')
                 + '</div></div>';
           }).join('');
@@ -625,14 +941,14 @@ function _renderItemDetail(itemName) {
         + _itemIcon(def.id, 32)
         + '<div class="wiki-detail-title-area">'
         + '<h2 class="wiki-detail-name">' + itemName + '</h2>'
-        + '<div class="wiki-detail-meta"><span class="wiki-badge category">' + (_tn(def.category, 'categories') || '\u2014') + '</span></div>'
+        + '<div class="wiki-detail-meta"><span class="wiki-badge category">' + (_tn(def.category, 'categories') || '—') + '</span></div>'
         + '</div></div>'
-        + (statsHTML ? `<div class="wiki-section"><div class="wiki-section-title">${_tn('Properties')}</div>` + statsHTML + '</div>' : '')
-        + `<div class="wiki-section"><div class="wiki-section-title">${_tn('Production Recipes')} (${producers.length})</div>` + producersHTML + '</div>'
-        + `<div class="wiki-section"><div class="wiki-section-title">${_tn('Used In')} (${consumers.length})</div>` + consumersHTML + '</div>';
+        + (statsHTML ? '<div class="wiki-section"><div class="wiki-section-title">' + _tn('Properties') + '</div>' + statsHTML + '</div>' : '')
+        + '<div class="wiki-section"><div class="wiki-section-title">' + _tn('Production Recipes') + ' (' + producers.length + ')</div>' + producersHTML + '</div>'
+        + '<div class="wiki-section"><div class="wiki-section-title">' + _tn('Used In') + ' (' + consumers.length + ')</div>' + consumersHTML + '</div>';
 }
 
-/* ─── 11. MACHINE PAGE ────────────────────────────────────────────────────── */
+/* ─── 12. MACHINE PAGE ────────────────────────────────────────────────────── */
 function _buildMachineListHTML() {
     var rawDB    = (typeof DB !== 'undefined') ? DB : {};
     var machines = rawDB.machines || {};
@@ -646,16 +962,20 @@ function _buildMachineListHTML() {
     return entries.map(function(e) {
         var name = e[0];
         var sel  = name === _selectedMachine ? ' selected' : '';
+        var machine = machines[name] || {};
+        var isHeat = machine.heatCost || machine.isGenerator;
+        var isBio = machine.fertility;
+        var badge = isHeat ? ' 🔥' : (isBio ? ' 🌱' : '');
         return '<div class="wiki-tile machine-tile' + sel + '" data-name="' + name.replace(/"/g, '&quot;') + '" '
             + _oc('wikiSelectMachine', name) + '>'
-            + '<span>' + _tn(name, 'machines') + '</span></div>';
+            + '<span>' + _tn(name, 'machines') + badge + '</span></div>';
     }).join('');
 }
 
 function _buildMachineSplitHTML() {
     return '<div class="wiki-left-pane">'
         + '<div class="wiki-search-bar"><input type="text" class="wiki-search-input" id="wiki-machine-search"'
-        + ` placeholder=${_tn('Search machines...')} value="` + _machineFilter.replace(/"/g, '&quot;') + '"'
+        + ' placeholder="' + _tn('Search machines...') + '" value="' + _machineFilter.replace(/"/g, '&quot;') + '"'
         + ' oninput="_machineFilter=this.value;_refreshMachineList()"></div>'
         + '<div class="wiki-machine-list" id="wiki-machine-grid">' + _buildMachineListHTML() + '</div>'
         + '</div>'
@@ -680,18 +1000,19 @@ function _renderMachineDetail(machineName) {
     if (!pane) return;
     var rawDB   = (typeof DB !== 'undefined') ? DB : {};
     var def     = rawDB.machines && rawDB.machines[machineName];
-    if (!def) { pane.innerHTML = `<div class="wiki-placeholder">${_tn('Machine data not found')}</div>`; return; }
+    if (!def) { pane.innerHTML = '<div class="wiki-placeholder">' + _tn('Machine data not found') + '</div>'; return; }
     var idx     = _getWikiIndex();
     var recipes = idx.machineRecipes[machineName] || [];
 
     /* Properties */
-    var props = [];    
-    if (def.isGenerator)           props.push([_tn('Type'), _tn('Heating Device')]);
-    if (def.fertility)             props.push([_tn('Type'), _tn('Fertilizer Device')]);
-    if (def.heatCost      != null && def.heatCost > 0) props.push([_tn('Heat Cost'), def.heatCost + ' P/s']);
-    if (def.heatSelf      != null) props.push([_tn('Heat Cost (Self)'), def.heatSelf + ' P/s']);
-    if (def.slotsRequired != null) props.push([_tn('Slots Required'), def.slotsRequired]);
-    if (def.slots         != null) props.push([_tn('Max Slots'),  def.slots]);
+    var props = [];
+    if (def.tier != null)                      props.push([_tn('Tier'),             def.tier]);
+    if (def.isGenerator)                       props.push([_tn('Type'),             _tn('Heating Device')]);
+    if (def.fertility)                         props.push([_tn('Type'),             _tn('Fertilizer Device')]);
+    if (def.heatCost != null && def.heatCost > 0) props.push([_tn('Heat Cost'),     def.heatCost + ' P/s']);
+    if (def.heatSelf != null)                  props.push([_tn('Heat Cost (Self)'), def.heatSelf + ' P/s']);
+    if (def.slotsRequired != null)             props.push([_tn('Slots Required'),   def.slotsRequired]);
+    if (def.slots != null)                     props.push([_tn('Max Slots'),        def.slots]);
     var propsHTML = props.length
         ? '<div class="wiki-stats-grid">' + props.map(function(p) {
             return '<span class="wiki-stat-key">' + p[0] + '</span><span class="wiki-stat-val">' + p[1] + '</span>';
@@ -708,22 +1029,21 @@ function _renderMachineDetail(machineName) {
                 + _itemIcon(itemDef ? itemDef.id : 0, 22)
                 + '<span>' + item + ' \xd7' + qty + '</span></div>';
           }).join('') + '</div>'
-        : `<p class="wiki-empty">${_tn('No build materials')}</p>`;
+        : '<p class="wiki-empty">' + _tn('No build materials') + '</p>';
 
     /* Recipes */
     var recipesHTML = recipes.length === 0
-        ? '<p class="wiki-empty">\u65e0\u914d\u65b9</p>'
+        ? '<p class="wiki-empty">' + _tn('No recipes') + '</p>'
         : recipes.map(function(recipe) {
-            var mainOut = Object.keys(recipe.outputs || {})[0] || '';
-            var inHTML  = Object.keys(recipe.inputs || {}).length > 0
+            var inHTML = Object.keys(recipe.inputs || {}).length > 0
                 ? _fmtItems(recipe.inputs)
-                : '<em style="font-size:0.78em;color:#666">\u65e0</em>';
+                : '<em style="font-size:0.78em;color:#666">—</em>';
             var outHTML = _fmtItems(recipe.outputs || {});
             return '<div class="wiki-recipe-row">'
                 + '<span class="wiki-star-ph"></span>'
                 + '<div class="wiki-recipe-formula">'
                 + '<span class="wiki-items">' + inHTML  + '</span>'
-                + '<span class="wiki-arrow">\u2192</span>'
+                + '<span class="wiki-arrow">→</span>'
                 + '<span class="wiki-items">' + outHTML + '</span>'
                 + '</div>'
                 + '<div class="wiki-recipe-right">'
@@ -736,12 +1056,12 @@ function _renderMachineDetail(machineName) {
         + '<div class="wiki-detail-title-area">'
         + '<h2 class="wiki-detail-name">' + _tn(machineName, 'machines') + '</h2>'
         + '</div></div>'
-        + (propsHTML ? `<div class="wiki-section"><div class="wiki-section-title">${_tn('Properties')}</div>` + propsHTML + '</div>' : '')
-        + `<div class="wiki-section"><div class="wiki-section-title">${_tn('')}</div>` + buildCostHTML + '</div>'
-        + `<div class="wiki-section"><div class="wiki-section-title">${_tn('Production Recipes')} (${recipes.length})</div>` + recipesHTML + '</div>';
+        + (propsHTML ? '<div class="wiki-section"><div class="wiki-section-title">' + _tn('Properties') + '</div>' + propsHTML + '</div>' : '')
+        + '<div class="wiki-section"><div class="wiki-section-title">' + _tn('Build Cost') + '</div>' + buildCostHTML + '</div>'
+        + '<div class="wiki-section"><div class="wiki-section-title">' + _tn('Production Recipes') + ' (' + recipes.length + ')</div>' + recipesHTML + '</div>';
 }
 
-/* ─── 12. GUIDES INNER HTML ───────────────────────────────────────────────── */
+/* ─── 13. GUIDES INNER HTML ───────────────────────────────────────────────── */
 function _buildGuidesInnerHTML() {
     var html = '<div class="help-container">';
     var inGrid = false;
@@ -760,20 +1080,26 @@ function _buildGuidesInnerHTML() {
     return html + '</div>';
 }
 
-/* ─── 13. SUB-NAV SWITCHER ────────────────────────────────────────────────── */
+/* ─── 14. SUB-NAV SWITCHER ────────────────────────────────────────────────── */
 function wikiSwitchView(view) {
     _currentWikiView = view;
     document.querySelectorAll('.wiki-tab-btn').forEach(function(btn) {
         btn.classList.toggle('active', btn.dataset.view === view);
     });
+
+    // Always remove the outside-click listener; re-add only when entering items view
+    document.removeEventListener('click', _onChipOutsideClick);
+
     var area = document.getElementById('wiki-area');
     if (!area) return;
+
     if (view === 'guides') {
         area.className = 'wiki-guides-area';
         area.innerHTML = _buildGuidesInnerHTML();
     } else if (view === 'items') {
         area.className = 'wiki-split-area';
         area.innerHTML = _buildItemSplitHTML();
+        document.addEventListener('click', _onChipOutsideClick);
         if (_selectedItem) _renderItemDetail(_selectedItem);
     } else if (view === 'machines') {
         area.className = 'wiki-split-area';
@@ -782,7 +1108,7 @@ function wikiSwitchView(view) {
     }
 }
 
-/* ─── 14. ENTRY POINTS ────────────────────────────────────────────────────── */
+/* ─── 15. ENTRY POINTS ────────────────────────────────────────────────────── */
 function initHelpPage() {
     _injectHelpStyles();
     renderHelpPage();
@@ -791,12 +1117,11 @@ function initHelpPage() {
 function renderHelpPage() {
     var container = document.getElementById('view-help');
     if (!container) return;
-    /* #help-inner owns flex layout; #view-help stays display:block for tab system */
     container.innerHTML =
         '<div id="help-inner">'
         + '<div class="wiki-subnav">'
-        + '<button class="wiki-tab-btn" data-view="guides"   ' + _oc('wikiSwitchView', 'guides')   + '>' + _tn('Guides') + '</button>'
-        + '<button class="wiki-tab-btn" data-view="items"    ' + _oc('wikiSwitchView', 'items')    + '>' + _tn('Items') + '</button>'
+        + '<button class="wiki-tab-btn" data-view="guides"   ' + _oc('wikiSwitchView', 'guides')   + '>' + _tn('Guides')   + '</button>'
+        + '<button class="wiki-tab-btn" data-view="items"    ' + _oc('wikiSwitchView', 'items')    + '>' + _tn('Items')    + '</button>'
         + '<button class="wiki-tab-btn" data-view="machines" ' + _oc('wikiSwitchView', 'machines') + '>' + _tn('Machines') + '</button>'
         + '</div>'
         + '<div id="wiki-area"></div>'
