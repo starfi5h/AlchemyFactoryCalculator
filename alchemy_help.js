@@ -719,7 +719,7 @@ function _buildChipPanelHTML(key, cats) {
     if (key === 'tier') {
         var f = _itemChipFilters[key];
         var tierBtns = '';
-        for (var t = 0; t <= 9; t++) {
+        for (var t = 1; t <= 9; t++) {
             var tStr = String(t);
             // 高亮：min 或 max 有值時，該按鈕若在區間內就標示
             var inRange = f.active
@@ -733,10 +733,10 @@ function _buildChipPanelHTML(key, cats) {
             + tierBtns
             + '<div style="width:100%; height:1px; background:#333; margin:4px 0;"></div>'
             + '<label class="chip-panel-row"><span>Min</span>'
-            + '<input type="number" class="chip-num-input" value="' + (f.min || '') + '" placeholder="0" min="0" max="9" '
+            + '<input type="number" class="chip-num-input" value="' + (f.min || '') + '" placeholder="1" min="1" max="9" '
             + 'oninput="_onChipNum(\'tier\',\'min\',this.value)"></label>'
             + '<label class="chip-panel-row"><span>Max</span>'
-            + '<input type="number" class="chip-num-input" value="' + (f.max || '') + '" placeholder="9" min="0" max="9" '
+            + '<input type="number" class="chip-num-input" value="' + (f.max || '') + '" placeholder="9" min="1" max="9" '
             + 'oninput="_onChipNum(\'tier\',\'max\',this.value)"></label>'
             + '</div>';
     }
@@ -963,12 +963,13 @@ function _buildMachineListHTML() {
         var name = e[0];
         var sel  = name === _selectedMachine ? ' selected' : '';
         var machine = machines[name] || {};
-        var isHeat = machine.heatCost || machine.isGenerator;
-        var isBio = machine.fertility;
-        var badge = isHeat ? ' 🔥' : (isBio ? ' 🌱' : '');
+        let badges = ' ';
+        if(machine.heatCost || machine.isGenerator) badges += '🔥';
+        if(machine.fertility) badges += '🌱';
+        if(_tn("Glass", 'items') in machine["buildCost"]) badges += '💧';
         return '<div class="wiki-tile machine-tile' + sel + '" data-name="' + name.replace(/"/g, '&quot;') + '" '
             + _oc('wikiSelectMachine', name) + '>'
-            + '<span>' + _tn(name, 'machines') + badge + '</span></div>';
+            + '<span>' + _tn(name, 'machines') + badges + '</span></div>';
     }).join('');
 }
 
