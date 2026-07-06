@@ -172,9 +172,12 @@ window.ALCHEMY_I18N = {
         "Self-Fert: OFF": "自供肥料: 关",
         "Self-Fert: ON": "自供肥料: 开",
         "Cost (/item):" : "成本设置(每个):",
-        "Show Machine Max Cap": "显示机器产能上限",
-        "Show Machine Heat & Nutr": "显示机器热值&肥力用量",
+        "UI Size": "版面大小",
         "Show Belt Count": "显示传送带需求",
+        "Show Machine Usage": "显示机器消耗用量",
+        "Show Machine Max Cap": "显示机器产能上限",        
+        "Show Machine Heat & Nutr": "显示机器热值&肥力用量",
+        
 
         // --- 3. Tree & Nodes ---
         "Gross Output": "总产出",

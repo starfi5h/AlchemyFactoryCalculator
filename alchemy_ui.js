@@ -20,8 +20,10 @@ const DEFAULT_SETTINGS = {
     defaultFert: "Fertile Catalyst",
     selectedHeatingDevice: "Stone Furnace",
     fuelCostEnable: true,
-    fertCostEnable: true,    
+    fertCostEnable: true,
+    nodeSize: 1,
     showBeltCount: true,
+    showFuelFert: true,
     showMaxCap: false,
     showHeatFert: false,
     preferredRecipes: {},
@@ -716,7 +718,12 @@ function loadSettingsToUI() {
         }
         if(DB.settings.fuelCostEnable) document.getElementById('fuelCostEnable').checked = DB.settings.fuelCostEnable;
         if(DB.settings.fertCostEnable) document.getElementById('fertCostEnable').checked = DB.settings.fertCostEnable;
+        if(DB.settings.nodeSize) {
+            document.getElementById('nodeScaleSlider').value = DB.settings.nodeSize;
+            setNodeScale(DB.settings.nodeSize);
+        }
         if(DB.settings.showMaxCap) document.getElementById('showMaxCap').checked = DB.settings.showMaxCap;
+        if(DB.settings.showFuelFert) document.getElementById('showFuelFert').checked = DB.settings.showFuelFert;
         if(DB.settings.showHeatFert) document.getElementById('showHeatFert').checked = DB.settings.showHeatFert;
         if(DB.settings.showBeltCount) document.getElementById('showBeltCount').checked = DB.settings.showBeltCount;
     }
@@ -763,8 +770,10 @@ function toggleFert() {
     calculate();
 }
 
-function setDefaultFuel(e) { const c = document.getElementById('fuelSelect').value; DB.settings.defaultFuel = c; persist(); updateDefaultButtonState(); flashButton(e.currentTarget); }
-function setDefaultFert(e) { const c = document.getElementById('fertSelect').value; DB.settings.defaultFert = c; persist(); updateDefaultButtonState(); flashButton(e.currentTarget); }
+function setNodeScale(val) {
+    document.documentElement.style.setProperty('--node-scale', val);
+    document.getElementById('nodeSizeLabel').innerText = t('UI Size') + ': ' + (val * 100).toFixed(0) + '%';
+}
 
 function onLogisticsChange() {
     const curFuel = document.getElementById('fuelSelect').value;
@@ -783,7 +792,9 @@ function onLogisticsChange() {
         DB.settings.customCosts[curFuel] = parseFloat(document.getElementById('fuelCostInput').value) || 0;
         DB.settings.customCosts[curFert] = parseFloat(document.getElementById('fertCostInput').value) || 0;
     }
+    DB.settings.nodeSize = document.getElementById('nodeScaleSlider').value;
     DB.settings.showMaxCap = document.getElementById('showMaxCap').checked;
+    DB.settings.showFuelFert = document.getElementById('showFuelFert').checked;
     DB.settings.showHeatFert = document.getElementById('showHeatFert').checked;    
     DB.settings.showBeltCount = document.getElementById('showBeltCount').checked;
     DB.settings.selectedHeatingDevice = curHeatingDevice;

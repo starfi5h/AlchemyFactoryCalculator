@@ -260,10 +260,11 @@ function gatherInputs() {
     const fertCost = parseFloat(document.getElementById('fertCostInput').value) || 0;
 
     const showFuelCost = document.getElementById('fuelCostEnable').checked;
-    const showFertCost = document.getElementById('fertCostEnable').checked;
+    const showFertCost = document.getElementById('fertCostEnable').checked;    
+    const showBeltCount = document.getElementById('showBeltCount').checked;
+    const showFuelFert = document.getElementById('showFuelFert').checked;
     const showMaxCap = document.getElementById('showMaxCap').checked;
     const showHeatFert = document.getElementById('showHeatFert').checked;
-    const showBeltCount = document.getElementById('showBeltCount').checked;
 
     const lvlSpeed = parseInt(document.getElementById('lvlSpeed').value) || 0;
     const lvlBelt = parseInt(document.getElementById('lvlBelt').value) || 0;
@@ -300,7 +301,7 @@ function gatherInputs() {
         selectedFuel, selfFuel, fuelCost, showFuelCost,
         selectedHeatingDevice,
         selectedFert, selfFert, fertCost, showFertCost,
-        showMaxCap, showHeatFert, showBeltCount,
+        showFuelFert, showBeltCount, showMaxCap, showHeatFert, 
         lvlSpeed, lvlBelt, lvlFuel, lvlAlchemy, lvlFert, lvlSell,
         beltSpeed: getBeltSpeed(lvlBelt),
         speedMult: getSpeedMult(lvlSpeed),
@@ -331,11 +332,8 @@ function renderCalculationResult(params, result) {
         const fuelTag = rootCosts.fuel > 0 ? `<span class="heat-tag">-${rootCosts.fuel.toFixed(2)}/m <img src="img/item${DB.items[params.selectedFuel]?.id ?? 0}.png" width="18" height="18" style="vertical-align:middle; margin-bottom:2px;"></span>` : ``;
         const bioTag = rootCosts.fert > 0 ? `<span class="bio-tag">-${rootCosts.fert.toFixed(2)}/m <img src="img/item${DB.items[params.selectedFert]?.id ?? 0}.png" width="18" height="18" style="vertical-align:middle; margin-bottom:2px;"></span>` : ``;
 
-        const div = document.createElement('div');
-        div.style.marginTop = '25px';
-        div.style.marginBottom = '8px';
-        div.style.paddingBottom = '4px';
-        div.style.borderBottom = '1px dashed #555';
+        const div = document.createElement('div');        
+        div.className = 'section-title';
         div.innerHTML = `
             <span class="section-header">--- ${t('Production Chain')} (${entry.target.item}) ---
             </span>
@@ -466,24 +464,24 @@ function renderTreeNode(params, node) {
         }
     }
 
-    const byproductTag = node.tags.byproducts.map(entry => `<span class="byproduct-tag">+${formatVal(entry.rate)}/m <img src="img/item${DB.items[entry.item]?.id ?? 0}.png" width="18" height="18" style="vertical-align:middle; margin-bottom:2px;">${entry.item}</span>`).join('');
+    let byproductTag = node.tags.byproducts.map(entry => `<span class="byproduct-tag">+${formatVal(entry.rate)}/m <img src="img/item${DB.items[entry.item]?.id ?? 0}.png" width="18" height="18" style="vertical-align:middle; margin-bottom:2px;">${entry.item}</span>`).join('');
 
     let bioTag = '';
-    if (node.tags.bio) {
+    if (node.tags.bio && params.showFuelFert) {
         let bioText = `-${formatVal(node.tags.bio.rate)}/m<img src="img/item${DB.items[params.selectedFert]?.id ?? 0}.png" title="${params.selectedFert}" width="18" height="18" style="vertical-align:middle; margin-bottom:2px">`;
         if (params.showHeatFert) bioText += ` (${formatVal(node.tags.bio.nutrientPerSec)} V/s)`;
         bioTag = `<span class="bio-tag">${bioText}</span>`;
     }
 
     let heatTag = '';
-    if (node.tags.heat) {
+    if (node.tags.heat && params.showFuelFert) {
         let heatText = `-${formatVal(node.tags.heat.rate)}/m<img src="img/item${DB.items[params.selectedFuel]?.id ?? 0}.png" title="${params.selectedFuel}" width="18" height="18" style="vertical-align:middle; margin-bottom:2px">`;
         if (params.showHeatFert) heatText += ` (${formatVal(node.tags.heat.heatPerSec)} P/s)`;
         heatTag = `<span class="heat-tag">${heatText}</span>`;
     }
 
     let outputTag = '';
-    if (node.tags.output) outputTag = `<span class="output-tag">${t('Yields')}: ${(node.tags.output.multiplier * 100).toFixed(0)}%</span>`;
+    if (node.tags.output && params.showFuelFert) outputTag = `<span class="output-tag">${t('Yields')}: ${(node.tags.output.multiplier * 100).toFixed(0)}%</span>`;
 
     let recycleTag = '';
     if (node.canRecycle) {
@@ -495,7 +493,8 @@ function renderTreeNode(params, node) {
     }
 
     const externalTag = `<div><input type="checkbox" ${node.isExternal ? 'checked':''} onchange="toggleExternal('${node.pathKey}');"></input></div>`;
-    const costTag = renderCostEntries(node.tags.costEntries);
+    const costTag = params.showFuelFert ? renderCostEntries(node.tags.costEntries) : '';
+    if (node.netRate < Number.EPSILON) byproductTag = bioTag = heatTag = '';
 
     div.innerHTML = `<div class="node-content" data-ancestors='${JSON.stringify(node.ancestors)}'>
         ${arrowHtml}
