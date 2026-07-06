@@ -375,6 +375,7 @@ window.ALCHEMY_I18N = {
         "Chamomile": "洋甘菊",
         "Gentian": "龙胆花",
         "Gentian Nectar": "龙胆花蜜",
+        "Gentian Mixture": "龙胆花混合",
         "World Tree Leaf": "世界树之叶",
         "World Tree Core": "世界树核心",
         "Gloom Fungus": "幽暗菇",

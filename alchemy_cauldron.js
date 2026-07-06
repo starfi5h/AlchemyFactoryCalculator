@@ -21,7 +21,7 @@ let cauldronFilterItems = [null, null, null];
 
 function isVaildCandidate(itemName) {
     const item = DB.items[itemName];
-    return item && item.cauldronCost !== undefined && !(item.liquid);
+    return item && item.cauldronCost !== undefined && !(item.liquid) && !(item.virtual);
 }
 
 // 初始化：在 alchemy_ui.js 的 init() 之后调用

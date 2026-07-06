@@ -1,6 +1,6 @@
 window.ALCHEMY_DB = {
-    "version": 45,
-    "date": "2026.07.05",
+    "version": 46,
+    "date": "2026.07.06",
     "gameVersion": "0.5.4539",
     "items": {
         // --- 1. RAW RESOURCES ---
@@ -32,6 +32,7 @@ window.ALCHEMY_DB = {
         "Lavender": { "id": 13, "category": "Herbs", "nutrientCost": 2160, "baseCost": 180, "cauldronCost": 180, "paradoxTime": 8.333, "tier": 7 },
         "Gentian": { "id": 17, "category": "Herbs", "nutrientCost": 6000, "baseCost": 500, "cauldronCost": 400, "paradoxTime": 3.750, "tier": 8 },
         "Gentian Nectar": { "id": 802, "category": "Herbs", "nutrientCost": 6000, "baseCost": 500, "cauldronCost": 420, "paradoxTime": 3.571, "tier": 8 },
+        "Gentian Mixture": { "id": 9001, "category": "Herbs", "virtual": true, "nutrientCost": 6000, "baseCost": 500, "cauldronCost": 410, "paradoxTime": 3.660, "tier": 8 },
         "World Tree Leaf": { "id": 27, "category": "Herbs", "nutrientCost": 30000, "baseCost": 2500, "cauldronCost": 2500, "paradoxTime": 0.6, "tier": 8 },
         "World Tree Core": { "id": 28, "category": "Herbs", "nutrientCost": 3000000, "baseCost": 250000, "cauldronCost": 250000, "paradoxTime": 0.006, "tier": 8 },
         
@@ -253,6 +254,7 @@ window.ALCHEMY_DB = {
         { "id": "Chamomile", "machine": "Nursery", "buildCost": "Chamomile Seeds", "inputs": {}, "outputs": { "Chamomile": 1 }, "nutrientCost": 720 },
         { "id": "Lavender", "machine": "Nursery", "buildCost": "Lavender Seeds", "inputs": {}, "outputs": { "Lavender": 1 }, "nutrientCost": 2160},
         { "id": "Gentian_Dual", "machine": "Nursery", "buildCost": "Gentian Seeds", "inputs": {}, "outputs": { "Gentian": 1, "Gentian Nectar": 1 }, "nutrientCost": 12000, "sharedOutputs": 2},
+        { "id": "Gentian_Mixture", "machine": "Nursery", "buildCost": "Gentian Seeds", "inputs": {}, "outputs": { "Gentian Mixture": 2 }, "nutrientCost": 12000, "sharedOutputs": 2},
         { "id": "World Tree_Dual", "machine": "World Tree Nursery", "buildCost": "World Tree Seed", "inputs": {}, "outputs": { "World Tree Leaf": 99, "World Tree Core":1 }, "baseTime": 300.0, "nutrientCost": 5970000},
 
         // --- CURRENCY ---
