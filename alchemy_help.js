@@ -307,6 +307,24 @@ function _injectHelpStyles() {
             box-sizing: border-box; flex: 1 1 25%; min-width: 270px;
             padding: 14px 18px; overflow-y: auto;
         }
+        @media (max-width: 720px) {
+            .wiki-split-area {
+                flex-direction: column;
+            }
+            .wiki-left-pane {
+                flex: 1 1 auto;
+                border-right: none;
+                max-height: 36vh;  /* 限制左側高度，避免佔滿畫面 */
+            }
+            .wiki-right-pane {
+                flex: 1 1 auto;
+                min-width: 0;
+                width: 100%;
+                max-height: 64vh;
+                border-top: 1px solid var(--border, #333);
+            }
+        }
+
         .wiki-search-bar { flex-shrink: 0; padding: 7px 8px; border-bottom: 1px solid var(--border, #333); }
         .wiki-search-input {
             width: 100%; box-sizing: border-box; padding: 5px 8px;

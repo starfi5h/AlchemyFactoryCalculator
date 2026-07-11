@@ -329,8 +329,8 @@ function renderCalculationResult(params, result) {
 
     result.treeRoots.forEach(entry => {
         const rootCosts = sumResourceCosts(entry.root);
-        const fuelTag = rootCosts.fuel > 0 ? `<span class="heat-tag">-${rootCosts.fuel.toFixed(2)}/m <img src="img/item${DB.items[params.selectedFuel]?.id ?? 0}.png" width="18" height="18" style="vertical-align:middle; margin-bottom:2px;"></span>` : ``;
-        const bioTag = rootCosts.fert > 0 ? `<span class="bio-tag">-${rootCosts.fert.toFixed(2)}/m <img src="img/item${DB.items[params.selectedFert]?.id ?? 0}.png" width="18" height="18" style="vertical-align:middle; margin-bottom:2px;"></span>` : ``;
+        const fuelTag = rootCosts.fuel > 0 ? `<span class="heat-tag">-${rootCosts.fuel.toFixed(2)}/m <img src="img/item${DB.items[params.selectedFuel]?.id ?? 0}.png" class="item-icon-small"</span>` : ``;
+        const bioTag = rootCosts.fert > 0 ? `<span class="bio-tag">-${rootCosts.fert.toFixed(2)}/m <img src="img/item${DB.items[params.selectedFert]?.id ?? 0}.png" class="item-icon-small"></span>` : ``;
 
         const div = document.createElement('div');        
         div.className = 'section-title';
@@ -389,10 +389,7 @@ function renderCalculationResult(params, result) {
 
 function createSectionHeader(title) {
     const div = document.createElement('div');
-    div.style.marginTop = '25px';
-    div.style.marginBottom = '8px';
-    div.style.paddingBottom = '4px';
-    div.style.borderBottom = '1px dashed #555';
+    div.className = 'section-title';
     div.innerHTML = `
         <span class="section-header">${title}</span>
         <span style="margin-left:auto; cursor:pointer;">
@@ -417,7 +414,7 @@ function buildRecipeTooltip(tooltipData) {
 function renderCostEntries(costEntries) {
     return costEntries.map(entry => {
         const amount = Math.ceil(entry.amount - Number.EPSILON).toLocaleString();
-        if (entry.type === 'gold') return `<span class="cost-tag">-${amount} /m <img src="img/copper.png" width="16" height="16" style="vertical-align:middle; margin-bottom:2px;"></span>`;
+        if (entry.type === 'gold') return `<span class="cost-tag">-${amount} /m <img src="img/copper.png" class="item-icon-small"></span>`;
         return ``; // ignore fuel and fert cost
         //return `<span class="cost-tag">(${amount} /m)</span>`;
     }).join('');
@@ -438,7 +435,7 @@ function renderTreeNode(params, node) {
     const arrowHtml = `<span class="tree-arrow" style="visibility:${hasChildren ? 'visible' : 'hidden'}" onclick="toggleNode(this, '${node.pathKey}')">▼</span>`;
     const rateHtml = `<span class="qty qty-clickable" onclick="openScaleModal('${node.item}', ${node.requestedRate}, ${machineCountArg}, ${rpmArg})">${formatVal(node.requestedRate)}/m</span>`;
     const beltCountTag = node.tags.beltRatio !== null ? `<span class="belt-count">(${Number(node.tags.beltRatio.toFixed(2))})</span>` : '';
-    const itemTag = `<img src="img/item${itemDef?.id ?? 0}.png" width="24" height="24" loading="lazy">
+    const itemTag = `<img src="img/item${itemDef?.id ?? 0}.png" class="item-icon">
         <span class="item-link" onclick="openDrillDown('${node.item}', ${node.requestedRate})"><strong>${node.item}</strong></span>`;
 
     let detailsTag = '';
@@ -464,18 +461,18 @@ function renderTreeNode(params, node) {
         }
     }
 
-    let byproductTag = node.tags.byproducts.map(entry => `<span class="byproduct-tag">+${formatVal(entry.rate)}/m <img src="img/item${DB.items[entry.item]?.id ?? 0}.png" width="18" height="18" style="vertical-align:middle; margin-bottom:2px;">${entry.item}</span>`).join('');
+    let byproductTag = node.tags.byproducts.map(entry => `<span class="byproduct-tag">+${formatVal(entry.rate)}/m <img src="img/item${DB.items[entry.item]?.id ?? 0}.png" class="item-icon-small">${entry.item}</span>`).join('');
 
     let bioTag = '';
     if (node.tags.bio && params.showFuelFert) {
-        let bioText = `-${formatVal(node.tags.bio.rate)}/m<img src="img/item${DB.items[params.selectedFert]?.id ?? 0}.png" title="${params.selectedFert}" width="18" height="18" style="vertical-align:middle; margin-bottom:2px">`;
+        let bioText = `-${formatVal(node.tags.bio.rate)}/m<img src="img/item${DB.items[params.selectedFert]?.id ?? 0}.png" title="${params.selectedFert}" class="item-icon-small">`;
         if (params.showHeatFert) bioText += ` (${formatVal(node.tags.bio.nutrientPerSec)} V/s)`;
         bioTag = `<span class="bio-tag">${bioText}</span>`;
     }
 
     let heatTag = '';
     if (node.tags.heat && params.showFuelFert) {
-        let heatText = `-${formatVal(node.tags.heat.rate)}/m<img src="img/item${DB.items[params.selectedFuel]?.id ?? 0}.png" title="${params.selectedFuel}" width="18" height="18" style="vertical-align:middle; margin-bottom:2px">`;
+        let heatText = `-${formatVal(node.tags.heat.rate)}/m<img src="img/item${DB.items[params.selectedFuel]?.id ?? 0}.png" title="${params.selectedFuel}" class="item-icon-small">`;
         if (params.showHeatFert) heatText += ` (${formatVal(node.tags.heat.heatPerSec)} P/s)`;
         heatTag = `<span class="heat-tag">${heatText}</span>`;
     }
@@ -553,7 +550,7 @@ function renderCommonNodesSection(treeContainer, params, commonNodes) {
             <div class="node-content" style="background: rgba(76, 175, 80, 0.05); border-left: 3px solid var(--accent);">
                 <span class="tree-arrow" onclick="toggleNode(this, '${pathKey}')">▼</span>
                 <span class="qty">${formatVal(entry.totalRate)}/m</span>
-                <img src="img/item${DB.items[entry.item]?.id ?? 0}.png" width="24" height="24">
+                <img src="img/item${DB.items[entry.item]?.id ?? 0}.png" class="item-icon">
                 <strong>${entry.item}</strong>
                 ${machineLabel}
                 ${heatTag}
@@ -620,7 +617,7 @@ function renderExternalInputsSection(treeContainer, params, externalInputs) {
             'fuel',
             'ext_fuel',
             producersHtml,
-            `<img src="img/item${DB.items[externalInputs.fuel.item]?.id ?? 0}.png" width="24" height="24"> `
+            `<img src="img/item${DB.items[externalInputs.fuel.item]?.id ?? 0}.png" class="item-icon"> `
         );
     }
 
@@ -641,7 +638,7 @@ function renderExternalInputsSection(treeContainer, params, externalInputs) {
             'bio',
             'ext_fert',
             producersHtml,
-            `<img src="img/item${DB.items[externalInputs.fert.item]?.id ?? 0}.png" width="24" height="24"> `
+            `<img src="img/item${DB.items[externalInputs.fert.item]?.id ?? 0}.png" class="item-icon"> `
         );
     }
 
@@ -660,7 +657,7 @@ function renderExternalInputsSection(treeContainer, params, externalInputs) {
             'default',
             `ext_forced_${entry.item}`,
             producersHtml,
-            `<img src="img/item${DB.items[entry.item]?.id ?? 0}.png" width="24" height="24"> `
+            `<img src="img/item${DB.items[entry.item]?.id ?? 0}.png" class="item-icon"> `
         );
     });
 }
@@ -702,7 +699,7 @@ function renderByproductsSection(treeContainer, byproducts) {
             <div class="node-content" style="background: rgba(213, 109, 231, 0.03); border-left: 3px solid var(--byproduct);">
                 <span class="tree-arrow" onclick="toggleNode(this, '${pathKey}')">▼</span>
                 <span class="qty" style="color:var(--byproduct)">${formatVal(entry.remaining)}/m</span>
-                <img src="img/item${DB.items[entry.item]?.id ?? 0}.png" width="24" height="24" loading="lazy">
+                <img src="img/item${DB.items[entry.item]?.id ?? 0}.png" class="item-icon">
                 <strong>${entry.item}</strong>
                 ${recycledNote}
             </div>
@@ -1030,7 +1027,12 @@ function updateSummaryBox(p, heatPerSec, nutrPerSec, goldPerMin, actualFuelNeed,
         }
         if (targetItemDef.wholesalePrice) {
             const ratio = convertedCost > 0 ? targetItemDef.wholesalePrice  / convertedCost : 0;
-            valueHtml += `<span class="stat-value gold-profit">${t('Wholesale Price')}: ${targetItemDef.wholesalePrice.toLocaleString()} (${(ratio * 100).toFixed(1)}%)</span>`;
+            const margin = ratio - 1;
+            valueHtml += `<span>`
+            valueHtml += `<span class="stat-value gold-profit">${t('Wholesale Price')}: ${targetItemDef.wholesalePrice.toLocaleString()} </span>`;
+            if (margin > -1) valueHtml += margin > 0 ? `<span class="stat-pos">(+${(margin*100).toFixed(0)}%)</span>` : `<span class="stat-sub">(${(margin*100).toFixed(0)}%)</span>`;
+            valueHtml += `</span>`
+
         }
     }
     valueHtml += `</div>`;
