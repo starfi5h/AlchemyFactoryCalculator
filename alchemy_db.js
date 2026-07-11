@@ -1,6 +1,6 @@
 window.ALCHEMY_DB = {
-    "version": 46,
-    "date": "2026.07.06",
+    "version": 47,
+    "date": "2026.07.10",
     "gameVersion": "0.5.4539",
     "items": {
         // --- 1. RAW RESOURCES ---
@@ -47,7 +47,7 @@ window.ALCHEMY_DB = {
 
         // --- 5. FERTILIZERS ---
         "Basic Fertilizer": { "id": 416, "category": "Fertilizer", "nutrientValue": 144, "maxFertility": 12, "baseCost": 10, "cauldronCost": 10, "tier": 4 },
-        "Advanced Fertilizer": { "id": 511, "category": "Fertilizer", "nutrientValue": 720, "maxFertility": 144, "baseCost": 56, "cauldronCost": 56, "tier": 5 },
+        "Advanced Fertilizer": { "id": 511, "category": "Fertilizer", "nutrientValue": 720, "maxFertility": 144, "baseCost": 56, "cauldronCost": 58, "tier": 5 },
 
         // --- 6. POTIONS ---
         "Healing Potion": { "id": 306, "category": "Potion", "sellPrice": 85, "baseCost": 30, "cauldronCost": 30, "tier": 3 },
@@ -608,6 +608,9 @@ window.ALCHEMY_DB = {
         { "id": "Fruit Wine_Thermal", "machine": "Thermal Extractor", "inputs": { "Redcurrant": 1 }, "outputs": { "Fruit Wine": 10 }, "baseTime": 6.0 },
         { "id": "Limewater_Thermal", "machine": "Thermal Extractor", "inputs": { "Quicklime Powder": 1 }, "outputs": { "Limewater": 30 }, "baseTime": 3.0 },
         { "id": "Brine_Thermal", "machine": "Thermal Extractor", "inputs": { "Salt": 1 }, "outputs": { "Brine": 20 }, "baseTime": 4.0 },
-        { "id": "Fairy Tear_Thermal", "machine": "Thermal Extractor", "inputs": { "Fairy Dust": 1 }, "outputs": { "Fairy Tear": 1 }, "baseTime": 4.0 }
+        { "id": "Fairy Tear_Thermal", "machine": "Thermal Extractor", "inputs": { "Fairy Dust": 1 }, "outputs": { "Fairy Tear": 1 }, "baseTime": 4.0 },
+
+        // --- VIRTUAL RECIPES ---
+        { "id": "Unstable Catalyst (Gentian Mixture)", "machine": "Cauldron", "inputs": { "Gentian Mixture": 1, "Gentian Nectar": 1, "Gentian": 1 }, "outputs": { "Unstable Catalyst": 1 }, "baseTime": 10.3, "heatCost": 148.0 }
     ]
 };

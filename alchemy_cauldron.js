@@ -549,12 +549,13 @@ async function runCauldronSimulationType1() {
                 }
             }
         }
-        // 異類合成： 尋找距離最接近的低階物品。
+        // 異類合成： 尋找距離最接近，且和價值較高的輸入物品不同
         else {
+            const higherInputName = cA > cB ? nA: nB;
             bestItem = minTargetItem;
             for (let target of validTargets) {
                 const dist = Math.abs(T - target.target);
-                if (dist < minDistance && target.name !== nA && target.name !== nB) {
+                if (dist < minDistance && target.name !== higherInputName) {
                     minDistance = dist;
                     bestItem = target;
                 }
@@ -1184,10 +1185,11 @@ function _calcCauldronModalOutput(slots, cauldronType, T) {
             }
             return best;
         } else {
+            const higherInputName = DB.items[nA].cauldronTarget > DB.items[nB].cauldronTarget ? nA: nB;
             let minDist = Infinity, best = minT.name;
             for (const vt of validTargets) {
                 const dist = Math.abs(T - vt.target);
-                if (dist < minDist && vt.name !== nA && vt.name !== nB) { minDist = dist; best = vt.name; }
+                if (dist < minDist && vt.name !== higherInputName) { minDist = dist; best = vt.name; }
             }
             return best;
         }
