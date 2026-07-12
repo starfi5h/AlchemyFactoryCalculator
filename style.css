@@ -449,14 +449,21 @@ input:checked + .slider-switch:before { transform: translateX(16px); }
 
 .picker-modal-content {
     /* 1. 決定大小 */
-    width: 600px;
+    width: 640px;
     height: 80vh;   /* 固定高度為螢幕高度的 80% */
+    overflow-y: scroll; scrollbar-gutter: stable;
 }
 .picker-filter-bar { display: flex; flex-wrap: wrap; gap: 8px; padding: 10px 0; border-bottom: 1px solid #444; margin-bottom: 10px; }
+.picker-tier-row {
+    display: flex; align-items: center; gap: 10px;
+    padding: 6px 0; border-bottom: 1px solid #444; margin-bottom: 10px;
+}
+.picker-tier-row input[type="range"] { flex: 1; }
 
 .category-btn { background: #2d2d2d; border: 1px solid #444; color: #aaa; padding: 6px 12px; border-radius: 4px; cursor: pointer; font-size: 12px; transition: 0.2s; }
 .category-btn:hover { background: #444; color: #fff; }
 .category-btn.active { background: #4caf50; color: white; border-color: #4caf50; }
+
 
 /* 搜尋框容器 */
 .picker-search-container { margin-bottom: 15px; }
@@ -468,15 +475,15 @@ input:checked + .slider-switch:before { transform: translateX(16px); }
     padding-right: 5px; /* 給捲軸留一點空間 */
 }
 
-.picker-grid-two-column { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; }
-.picker-item-row { background: #2a2a2a; border: 1px solid #333; padding: 8px 12px; border-radius: 6px; display: flex; align-items: center; cursor: pointer; transition: 0.2s; }
+.picker-grid-two-column { display: grid; grid-template-columns: 1fr 1fr; gap: 4px; }
+.picker-item-row { background: #2a2a2a; border: 1px solid #333; padding: 6px 8px; border-radius: 6px; display: flex; align-items: center; cursor: pointer; transition: 0.2s; }
 .picker-item-row:hover { background: #333; border-color: #555; }
 .picker-item-row img { width: 24px; height: 24px; margin-right: 12px; }
 .picker-item-name { flex: 1; font-weight: bold; color: #e0e0e0; font-size: 14px; }
 .picker-item-tag { font-size: 10px; padding: 2px 8px; border-radius: 3px; text-transform: uppercase; background: rgba(255, 255, 255, 0.05); color: #888; border: 1px solid #444; }
 
 @media (max-width: 400px) {
-    .picker-modal-content { width: 360px; height: 90vh; padding: 15px; }
+    .picker-modal-content { width: 360px; height: 90vh; padding: 15px; overflow-y: scroll; scrollbar-gutter: stable; }
 }
 
 /* cauldron 最下方的物品欄*/

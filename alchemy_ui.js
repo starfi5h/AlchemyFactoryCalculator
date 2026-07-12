@@ -41,6 +41,14 @@ let currentFocus = -1;
 
 // ITEM PICKER GLOBALS
 let currentPickerCategory = "[All]";
+let currentPickerTier = 0; // 0 = 不篩選
+let currentPickerProps = new Set(); // 'sellPrice' | 'wholesalePrice' | 'cauldronTarget'
+const PICKER_PROP_DEFS = [
+    { key: 'sellPrice',      label: 'Sell Price' },
+    { key: 'wholesalePrice', label: 'Wholesale Price' },
+    { key: 'cauldronTarget', label: 'Cauldron Target' }
+];
+
 
 // URL STATES
 let lastUrlItem = ""; 
@@ -880,6 +888,8 @@ function closeModal(id) { document.getElementById(id).style.display = 'none'; }
 function openItemPicker() {
     document.getElementById('ui-picker-title').innerText = t('Select Item', 'ui');
     renderCategoryBar();
+    renderPickerTierRow();
+    renderPickerPropsBar();
     renderItemPicker();
     document.getElementById('picker-modal').style.display = 'flex';
 }
@@ -908,6 +918,41 @@ function renderCategoryBar() {
     });
 }
 
+function renderPickerTierRow() {
+    const row = document.getElementById('picker-tier-row');
+    if (!row) return;
+    row.innerHTML = `
+        <label style="flex-shrink:0; margin:0;">${t('Tier')}</label>
+        <input type="range" id="picker-tier-slider" min="0" max="9" step="1"
+               value="${currentPickerTier}" oninput="onPickerTierChange(this.value)">
+        <span id="picker-tier-value" style="min-width:20px; text-align:center; color:var(--accent); font-weight:bold;">${currentPickerTier > 0 ? currentPickerTier : '—'}</span>
+    `;
+}
+
+function onPickerTierChange(val) {
+    currentPickerTier = parseInt(val) || 0;
+    const valSpan = document.getElementById('picker-tier-value');
+    if (valSpan) valSpan.innerText = currentPickerTier > 0 ? currentPickerTier : '—';
+    renderItemPicker();
+}
+
+function renderPickerPropsBar() {
+    const bar = document.getElementById('picker-props-bar');
+    if (!bar) return;
+    bar.innerHTML = `<label style="flex-shrink:0; margin:0;">${t('Properties')}</label>` +
+        PICKER_PROP_DEFS.map(p => {
+            const active = currentPickerProps.has(p.key);
+            return `<button class="category-btn ${active ? 'active' : ''}" onclick="togglePickerProp('${p.key}')">${t(p.label, 'ui')}</button>`;
+        }).join('');
+}
+
+function togglePickerProp(key) {
+    if (currentPickerProps.has(key)) currentPickerProps.delete(key);
+    else currentPickerProps.add(key);
+    renderPickerPropsBar();
+    renderItemPicker();
+}
+
 // 渲染物品列表
 function renderItemPicker() {    
     const grid = document.getElementById('picker-items-grid');
@@ -922,7 +967,9 @@ function renderItemPicker() {
             || currentPickerCategory === t('Fertilizer') && data.nutrientValue > 0
         );
         const matchesSearch = name.toLowerCase().includes(filterText);
-        return matchesCategory && matchesSearch;
+        const matchesTier = currentPickerTier <= 0 || data.tier === currentPickerTier;
+        const matchesProps = [...currentPickerProps].every(key => data[key] != null);
+        return matchesCategory && matchesSearch && matchesTier && matchesProps;
     });
 
     const showCauldronCost = (document.getElementById('view-cauldron')?.classList.contains('active') || document.getElementById('cauldron-recipe-modal')?.style.display === 'flex') ?? false;
