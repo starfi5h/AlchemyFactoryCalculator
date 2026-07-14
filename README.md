@@ -1,7 +1,7 @@
 [EN](#alchemy-factory-calculator)/[中文](#炼金工厂计算器)
 
 
-# ⚗️ Alchemy Factory Calculator
+# Alchemy Factory Calculator
 
 A browser-based production planning tool for the game **Alchemy Factory**.  
 Precisely calculates raw material consumption, machine counts, heat/nutrient loads, and profitability for any production chain.
@@ -64,8 +64,8 @@ Enter your current research levels in the **Upgrades** panel on the right:
 | **Logistics Efficiency** | Increases belt speed (items/min per belt) |
 | **Factory Efficiency** | Multiplies all machine processing speeds |
 | **Alchemy Skill** | Increases yield on Extractors, Alembics, and Thermal Extractors |
-| **Fuel Efficiency** | Reduces fuel consumption by 10% per level |
-| **Fert Efficiency** | Reduces fertilizer consumption by 10% per level |
+| **Fuel Efficiency** | Increases the heat value of fuel |
+| **Fert Efficiency** | Increases the nutrient value of fertilizer |
 | **Sales Ability** | Increases sell price used in profitability calculations |
 
 Click **Save Upgrades** to persist settings to the browser.
@@ -144,8 +144,8 @@ The right panel lists every machine type and count required. Click a machine nam
   - All different → ×1.0, Two same → ×0.65, All same → ×0.5
   - Output is the item whose `cauldronTarget` is nearest to T.
 - **Advanced Cauldron (2-slot):**
-  - Same + Same → `T = Cost₁`, searches **upward** for the nearest higher-tier product.
-  - A + B (different) → `T = |Cost₁ − Cost₂|`, searches **downward** for the nearest lower-tier product.
+  - Same + Same → `T = Cost₁`, searches **upward** for the nearest product.
+  - A + B (different) → `T = |Cost₁ − Cost₂|`, searches for the nearest product whose target value is less than the maximum of the two cauldron costs.
 
 Switch type with the **Cauldron / Advanced Cauldron** toggle at the top.
 
@@ -293,7 +293,7 @@ No build tools, bundlers, or external dependencies. Pure HTML + CSS + vanilla Ja
 ---
 ---
 
-# ⚗️ 炼金工厂计算器
+# 炼金工厂计算器
 
 专为游戏 **《炼金工厂》(Alchemy Factory)** 打造的浏览器端生产规划工具。  
 可精确计算任意生产链的原料消耗、机器数量、热值/肥力负载与利润。
@@ -356,19 +356,19 @@ No build tools, bundlers, or external dependencies. Pure HTML + CSS + vanilla Ja
 | **物流效率** | 提升传送带速度（个/分钟） |
 | **工厂效率** | 提升所有机器的处理速度 |
 | **炼金技术** | 提升萃取机、蒸馏器和热能萃取机的产量 |
-| **燃料效率** | 每级减少 10% 燃料消耗 |
-| **肥料效率** | 每级减少 10% 肥料消耗 |
-| **销售能力** | 提升利润计算中使用的卖出价格 |
+| **燃料效率** | 提升燃料的热值 |
+| **肥料效率** | 提升肥料的营养值 |
+| **销售能力** | 提升上架商品卖出价格 |
 
-点击**保存设置**将升级数据持久化到浏览器。
+点击**保存设置**将科技等级保存。
 
 ### 物流设置
 
 | 设置 | 说明 |
 |---|---|
-| **加热装置** | 选择炉子类型（石炉 / 高温炉 / 蒸气加热板），影响格位共享和热力输出 |
+| **加热装置** | 选择热源类型（石炉 / 高温炉 / 蒸气加热板），影响自热消耗 |
 | **燃料来源** | 用作燃料的物品；热值负载也会换算为该物品的消耗量 |
-| **肥料来源** | 用作肥料的物品；用于育苗圃计算 |
+| **肥料来源** | 用作肥料的物品；育苗圃的产出速率也和所用肥料有关 |
 | **成本（每个）** | 可选的燃料/肥料单价（金币），纳入单位成本和利润计算 |
 | **显示传送带需求** | 在每个节点旁显示传送带占用数 |
 | **显示机器产能上限** | 显示取整后机器数的最大产能 |
@@ -389,7 +389,7 @@ No build tools, bundlers, or external dependencies. Pure HTML + CSS + vanilla Ja
 **每个节点的操作：**
 - **▼/▶ 箭头** — 折叠/展开子树（折叠状态会被记住）
 - **🔄 按钮** — 打开配方选择器，切换生产方式
-- **♻️ 按钮** — 开启该节点的副产物回收（当副产物在生产链其他地方被消耗时出现）
+- **♻️ 按钮** — 开启该节点的副产物回收（当副产物在生产链其他地方被生产时出现）
 - **☐ 复选框** — 标记为**外部输入**；该节点将不会被内部生产，汇总到"外部输入"区域
 
 使用每条生产链顶部的**全部回收 / 全部不回收**按钮，一次性切换所有回收器状态。
@@ -400,7 +400,7 @@ No build tools, bundlers, or external dependencies. Pure HTML + CSS + vanilla Ja
 - 选择备用配方（例如：用炼金炉还是高级炼金炉生产焦炭）。
 - 对于**高级炼金炉**配方，可选择一个或多个**催化剂**（不稳定 / 丰饶 / 共振 / 永恒），改变输出比例或输入原料。
 - 若所选配方会产生**无限循环**，将以红色高亮显示并无法应用。
-- 有 `cauldronTarget` 的物品还会显示 **+ 新增炼金锅配方** 按钮，用于打开[炼金锅配方编辑窗](#炼金锅配方快捷编辑窗)。
+- 可炼金的物品还会显示 **+ 新增炼金锅配方** 按钮，用于打开[炼金锅配方编辑窗](#炼金锅配方快捷编辑窗)。
 
 ### 比例缩放窗口
 
@@ -436,8 +436,8 @@ No build tools, bundlers, or external dependencies. Pure HTML + CSS + vanilla Ja
   - 全不同 → ×1.0，两同 → ×0.65，三同 → ×0.5
   - 输出为 `cauldronTarget` 最接近 T 值的物品。
 - **高级炼金锅（2格）：**
-  - 相同 + 相同 → `T = Cost₁`，**向上**匹配最近的高阶产物。
-  - A + B（不同）→ `T = |Cost₁ − Cost₂|`，**向下**匹配最近的低阶产物。
+  - 相同 + 相同 → `T = Cost₁`，**向上**匹配最近的产物。
+  - A + B（不同）→ `T = |Cost₁ − Cost₂|`，匹配最近的产物(且其目标值小于两者中的最大炼金价值)。
 
 在顶部的**炼金锅 / 高级炼金锅**切换按钮之间切换类型。
 

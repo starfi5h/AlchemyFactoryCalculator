@@ -79,30 +79,28 @@ function getPresetCandidates(poolType) {
                     inputSet.add(name);
                 }
             });
+
+            for (let round = 0; round < 3; round++) {
+                let outputSet = new Set();
+                for (const { inputs, outputs, machine } of DB.recipes) {
+                    const inKeys = Object.keys(inputs);
+                    const outKeys = Object.keys(outputs);
+                    if (machine === 'Seed Plot' || DB.machines[machine].heatCost > 0) continue;
+                    if (inKeys.length === 1 && outKeys.length === 1 && inputSet.has(inKeys[0]) && isVaildCandidate(outKeys[0])) {
+                        outputSet.add(outKeys[0]);
+                        //console.log(outKeys[0] + "," + round);
+                    }
+                }
+                outputSet.forEach(item => candidateSet.add(item));
+                inputSet = new Set(outputSet);
+            }
         }
         else if (poolType === 'Gold') {
             Object.entries(DB.items).forEach(([name, item]) => {
                 if (item.cauldronCost !== undefined && (item.buyPrice !== undefined || item.category === 'Currency')) {
-                    inputSet.add(name);
-                    // Raw Materials has negative maxStack, it's not suitable for cauldron
-                    if (item.category !== 'Raw Materials' && item.cauldronCost !== 750) candidateSet.add(name);
+                    candidateSet.add(name);
                 }
             });
-        }        
-
-        for (let round = 0; round < 3; round++) {
-            let outputSet = new Set();
-            for (const { inputs, outputs, machine } of DB.recipes) {
-                const inKeys = Object.keys(inputs);
-                const outKeys = Object.keys(outputs);
-                if (machine === 'Seed Plot' || DB.machines[machine].heatCost > 0) continue;
-                if (inKeys.length === 1 && outKeys.length === 1 && inputSet.has(inKeys[0]) && isVaildCandidate(outKeys[0])) {
-                    outputSet.add(outKeys[0]);
-                    //console.log(outKeys[0] + "," + round);
-                }
-            }
-            outputSet.forEach(item => candidateSet.add(item));
-            inputSet = new Set(outputSet);
         }
     }
     catch (e) {
@@ -218,9 +216,9 @@ function switchCauldronProfile(index) {
 /**
  * 將目前 Profile 的候選清單重置為「草藥/植物」預設組
  */
-function applyHerbPreset() {
-    const herbSet = getPresetCandidates('Herbs');
-    cauldronCandidates = new Set(herbSet);
+function applyPreset(poolType) {
+    const candidates = getPresetCandidates(poolType);
+    cauldronCandidates = new Set(candidates);
     populateCauldronCategories();
     document.getElementById('cauldron-cat-select').value = cauldronCatFilter;
     renderCandidatePool();
@@ -549,13 +547,13 @@ async function runCauldronSimulationType1() {
                 }
             }
         }
-        // 異類合成： 尋找距離最接近，且和價值較高的輸入物品不同
+        // 異類合成： 尋找距離最接近，且目標小於兩者最大價值的物品
         else {
-            const higherInputName = cA > cB ? nA: nB;
+            const higherCost = cA > cB ? cA : cB;
             bestItem = minTargetItem;
             for (let target of validTargets) {
                 const dist = Math.abs(T - target.target);
-                if (dist < minDistance && target.name !== higherInputName) {
+                if (dist < minDistance && target.target < higherCost) {
                     minDistance = dist;
                     bestItem = target;
                 }
@@ -641,7 +639,7 @@ function renderCauldronResults(data) {
         card.innerHTML = `
             <div class="node-content compact-card" data-out="${outName}" onclick="toggleCauldronCard(this, this.parentElement)">
                 <span class="tree-arrow">▼</span>
-                <img src="img/item${outputItem.id ?? 0}.png" width="24" height="24">
+                <img src="img/item${outputItem.id ?? 0}.png" class="item-icon">
                 <span class="item-link"><strong>${outName}</strong></span>                
                 <span class="qty" style="font-size:0.9em;">(${recipes.length})</span>
                 <span class="info-tag">${stats.time.toFixed(1)}s</span>
@@ -754,7 +752,7 @@ function createRecipeRowHtml(r, outName, favSet) {
     // 預先處理 HTML 片段
     const inputsHtml = inputs.map(n => {
         const item = DB.items[n] || { id: 0, cauldronCost: 0 };
-        return `<img src="img/item${item.id}.png" width="18" height="18" loading="lazy">
+        return `<img src="img/item${item.id}.png" class="item-icon-small">
                 ${n} <small>(${Number(item.cauldronCost.toFixed(1))})</small>`;
     }).join(' + ');
 
@@ -881,7 +879,7 @@ function renderCauldronFavorites() {
         card.innerHTML = `
             <div class="node-content compact-card" onclick="this.parentElement.classList.toggle('collapsed')">
                 <span class="tree-arrow">▼</span>
-                <img src="img/item${DB.items[outName]?.id ?? 0}.png" width="24" height="24">
+                <img src="img/item${DB.items[outName]?.id ?? 0}.png" class="item-icon">
                 <span class="item-link"><strong>${outName}</strong></span>
                 <span class="qty">(${items.length})</span>
                 <span class="info-tag">${itemPerMin > 0 ? itemPerMin.toFixed(2) + '/min' : ''}</span>
@@ -893,7 +891,7 @@ function renderCauldronFavorites() {
                         <span class="recipe-text">
                             ${f.inputs.map(name => 
                                 DB.items[name] 
-                                    ? `<img src="img/item${DB.items[name].id}.png" width="18" height="18">${name}` 
+                                    ? `<img src="img/item${DB.items[name].id}.png" class="item-icon-small">${name}` 
                                     : `<span style="color:var(--warn);" title="找不到的物品名称">⚠️${name}</span>`
                             ).join(' + ')}
                         </span>

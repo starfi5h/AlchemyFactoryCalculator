@@ -49,6 +49,18 @@ h1 { color: var(--accent); margin: 0; font-size: 1.1em; }
 }
 .tab-btn:hover { background: #333; color: #fff; }
 .tab-btn.active { background: var(--accent); color: white; border-color: var(--accent); font-weight: bold; }
+@media (max-width: 640px) {
+    header {
+        flex-wrap: wrap;
+        row-gap: 8px;
+    }
+    .tabs {
+        order: 3;
+        width: 100%;
+        overflow-x: auto;
+        -webkit-overflow-scrolling: touch;
+    }
+}
 
 main { flex: 1; overflow: hidden; position: relative; }
 .view { position: absolute; top: 0; left: 0; width: 100%; height: 100%; overflow-y: auto; padding: 15px; display: none; }
@@ -242,7 +254,7 @@ input:disabled { opacity: 0.5; cursor: not-allowed; background: #2a2a2a; color: 
 .split-btn:hover:not(:disabled) { background: #444; color: #fff; }
 .btn-active-green { background: #2e7d32 !important; border-color: #4caf50 !important; color: white !important; }
 .btn-inactive-red { background: #333 !important; color: #aaa !important; }
-.checkbox-row { display: flex; align-items: center; margin-top: 8px; font-size: 0.9em; color: #ccc; }
+.checkbox-row { display: flex; align-items: center; font-size: 0.9em; color: #ccc; }
 .checkbox-row input { margin-right: 8px; }
 
 /* 按鈕閃爍動畫：從綠色漸變回原本顏色 */
@@ -512,7 +524,7 @@ button.reset-btn:hover { background: var(--danger); color: white; }
 .mini-tab { flex: 1; padding: 4px 2px !important; text-align: center; border: none !important; }
 .mini-tab.active { background: var(--accent) !important; color: white !important; }
 
-.cauldron-filter-bar { display: flex; gap: 15px; align-items: center; background: #252525; padding: 8px; border-radius: 4px; margin-bottom: 10px; }
+.cauldron-filter-bar { display: flex; gap: 15px; align-items: center; background: #252525; padding: 8px; border-radius: 4px; margin-bottom: 10px; flex-wrap: wrap; }
 .filter-group { display: flex; gap: 10px; align-items: center; }
 .mini-picker { background: #333; border: 1px solid #555; padding: 4px 10px; border-radius: 4px; font-size: 0.9em; cursor: pointer; min-width: 100px; text-align: center; }
 .mini-picker.active { border-color: var(--info); color: var(--info); background: rgba(33, 150, 243, 0.1); }
@@ -528,11 +540,11 @@ button.reset-btn:hover { background: var(--danger); color: white; }
 .cauldron-card .node-content { cursor: pointer; background: #333; margin-bottom: 2px; }
 .cauldron-card .node-children { border-left: 2px solid #444; margin-left: 10px; }
 
-.cauldron-recipe-row { display: flex; justify-content: space-between; align-items: center; padding: 6px 12px; background: #2a2a2a; border-bottom: 1px solid #333; font-size: 0.9em; }
+.cauldron-recipe-row { display: flex; justify-content: space-between; align-items: center; padding: 6px 12px; background: #2a2a2a; border-bottom: 1px solid #333; font-size: calc(0.9em * var(--node-scale)); }
 .cauldron-recipe-row:hover { background: #333; }
 .recipe-text { display: flex; align-items: center; gap: 2px; flex-wrap: wrap; font-size:1.0em; }
 
-.fav-recipe-item { display: flex; justify-content: space-between; align-items: center; background: #333; padding: 8px; border-radius: 4px; margin-bottom: 5px; font-size: 0.9em; }
+.fav-recipe-item { display: flex; justify-content: space-between; align-items: center; background: #333; padding: 8px; border-radius: 4px; margin-bottom: 5px; font-size: calc(0.9em * var(--node-scale)); }
 
 #unattainable-list .picker-item { background: rgba(244, 67, 54, 0.05); border: 1px dashed #552222; }
 

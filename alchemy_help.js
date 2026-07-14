@@ -9,17 +9,17 @@ const HELP_TEXT = {
         'section.calc': '📐 Calculator Guide',
 
         'calc.target.title': 'Setting a Target',
-        'calc.target.desc': 'Type an item name in the <strong>search box</strong> or click the item icon to open the <strong>Item Picker</strong>. Set the desired output using the <strong>Belt Load Fraction</strong> slider, or enter a custom <strong>Rate (Items/Min)</strong> directly.<br><br>' +
-        'Toggle <strong>MULTI</strong> mode to plan multiple production targets simultaneously — each row can be set independently. Use <strong>Save List</strong> / <strong>Load List</strong> to persist multi-target sets in your browser. In multi-target mode, enable <strong>Self-Fuel</strong> or <strong>Self-Fert</strong> to automatically deduct factory consumption from the net output of the target item itself.<br><br>' +
-        'Switch to <strong>Machine Count</strong> mode to calculate the required output rate from a fixed number of machines.',
+        'calc.target.desc': 'Type an item name in the <strong>search box</strong> or click the "☰" button to open the <strong>Item Picker</strong> (browse by category). Set the desired output by entering a <strong>Rate (Items/Min)</strong> directly, or use the <strong>Belt Load Fraction</strong> slider. You can also set the rate based on <strong>Machine Count</strong>.<br><br>' +
+        'Switch to <strong>MULTI</strong> mode to plan multiple production targets simultaneously — each row can be set independently. In multi-target mode, enable <strong>Self-Fuel</strong> or <strong>Self-Fert</strong> to load internal fuel and fertilizer production modules.<br><br>',
 
         'calc.upgrades.title': 'Upgrades & Logistics',
         'calc.upgrades.desc': 'Enter your current research levels in the <strong>Upgrades</strong> panel for accurate results:<ol>' +
         '<li><strong>Logistics Efficiency</strong>: Increases conveyor belt speed (Items/Min).</li>' +
         '<li><strong>Factory Efficiency</strong>: Boosts the processing speed of all machines.</li>' +
         '<li><strong>Alchemy Skill</strong>: Increases the yield of Cauldrons and certain processing machines.</li>' +
-        '<li><strong>Fuel Efficiency</strong>: Reduces fuel consumption by 10% per level.</li>' +
-        '<li><strong>Fertilizer Efficiency</strong>: Reduces fertilizer consumption by 10% per level.</li></ol>' +
+        '<li><strong>Fuel Efficiency</strong>: Increases the heat value of fuel.</li>' +
+        '<li><strong>Fertilizer Efficiency</strong>: Increases the nutrient value of fertilizer.</li>' +
+        '<li><strong>Sales Ability</strong>: Increases the selling price of listed items.</li></ol>' +
         'In the <strong>Logistics</strong> section, choose your <strong>Heating Device</strong>, <strong>Fuel Source</strong>, and <strong>Fertilizer Source</strong>. Click <strong>Save Upgrades</strong> to persist all settings to your browser.',
 
         'calc.tree.title': 'Reading the Production Tree',
@@ -61,8 +61,8 @@ const HELP_TEXT = {
         'cauldron.f2.title': 'Advanced Cauldron (2-slot)',
         'cauldron.f2.desc': 'The <strong>Advanced Cauldron</strong> uses only <strong>two ingredient slots</strong>, with two distinct calculation modes:<br><br>' +
         '<strong>Both Same</strong>: <code>T = Cost₁</code> (uses the single cost, searches <strong>upward</strong> for the nearest higher-tier product).<br>' +
-        '<strong>Both Different</strong>: <code>T = |Cost₁ - Cost₂|</code> (uses the absolute difference, searches <strong>downward</strong> for the nearest lower-tier product).<br><br>' +
-        'Switch between Cauldron types using the <strong>type toggle</strong> at the top of the Cauldron tab.',
+        '<strong>Both Different</strong>: <code>T = |Cost₁ - Cost₂|</code> (uses the absolute difference, matches the nearest product whose target value is less than the maximum of the two cauldron costs).<br><br>' +
+        'Use the <strong>type toggle</strong> button at the top of the Cauldron tab to switch between normal and advanced cauldrons.',
 
         'cauldron.pool.title': 'Candidate Pool & Profiles',
         'cauldron.pool.desc': 'The <strong>Candidate Pool</strong> lists all items eligible as cauldron ingredients (must have a <code>cauldronCost</code> and not be a liquid). Check or uncheck items to include them in the search.<br><br>' +
@@ -70,7 +70,7 @@ const HELP_TEXT = {
         '<li><strong>Profile 1</strong>: All valid ingredients (default).</li>' +
         '<li><strong>Profile 2</strong>: Herb-based items (auto-generated from herbal chains).</li>' +
         '<li><strong>Profile 3</strong>: Gold / currency-based items.</li></ol>' +
-        'Use <strong>Select All</strong> / <strong>Deselect All</strong> to quickly configure the active profile. The <strong>🌿 Herb Preset</strong> button resets the pool to a herb-focused set. All settings are saved to the browser automatically.',
+        'Use <strong>Select All</strong> / <strong>Deselect All</strong> to quickly configure the active profile. The <strong>🌿 Herb Preset</strong> button resets the pool to a herb-focused set.',
 
         'cauldron.filter.title': 'Category Filter & Slot Lock',
         'cauldron.filter.desc': 'Use the <strong>Category</strong> dropdown to filter the candidate pool by item type. Special filters: <strong>[Include]</strong> shows only checked items, <strong>[Exclude]</strong> shows only unchecked items, <strong>[Product]</strong> shows only valid cauldron output items.<br><br>' +
@@ -109,18 +109,18 @@ const HELP_TEXT = {
         // ===== 计算器指南 =====
         'section.calc': '📐 计算器指南',
 
-        'calc.target.title': '设定生产目标',
-        'calc.target.desc': '在<strong>搜索框</strong>输入物品名称，或点击物品图标打开<strong>物品选择器</strong>。使用<strong>传送带负载比例</strong>滑块，或直接输入<strong>速率（个/分钟）</strong>设定产量目标。<br><br>' +
-        '切换 <strong>MULTI</strong> 模式可同时规划多个生产目标——每一行可独立设置物品和速率。使用 <strong>保存列表</strong> / <strong>加载列表</strong> 可将多目标清单保存在浏览器中。在多目标模式下，开启 <strong>自供燃料</strong> 或 <strong>自供肥料</strong>，可让目标物品自身的产出优先回补工厂消耗（形成净产出）。<br><br>' +
-        '切换至 <strong>机器数量</strong> 模式，则可以从固定的机器数量反推产能。',
+        'calc.target.title': '设定生产目标物品与速率',
+        'calc.target.desc': '在<strong>搜索框</strong>输入物品名称，或点击**☰**打开<strong>物品选择器</strong>（可按分类浏览）。<br>直接输入<strong>速率（个/分钟）</strong>设定产量目标。速率也可以<strong>按机器数量设置</strong>，或<strong>传送带负载比例</strong>滑块<br><br>' +
+        '切换 <strong>多目标</strong> 模式可同时规划多个生产目标——每一行可独立设置物品和速率。在多目标模式下，开启 <strong>自供燃料</strong> 或 <strong>自供肥料</strong>，可以加载内部燃料和肥料模块。<br><br>',
 
         'calc.upgrades.title': '升级与物流设置',
         'calc.upgrades.desc': '在 <strong>升级</strong> 面板填入当前的研究等级，以获得精确计算：<ol>' +
         '<li><strong>物流效率</strong>：提升传送带速度（个/分钟）。</li>' +
         '<li><strong>工厂效率</strong>：提升所有机器的处理速度。</li>' +
         '<li><strong>炼金技能</strong>：提升炼金锅及部分加工机器的产量。</li>' +
-        '<li><strong>燃料效率</strong>：每级减少 10% 燃料消耗。</li>' +
-        '<li><strong>肥料效率</strong>：每级减少 10% 肥料消耗。</li></ol>' +
+        '<li><strong>燃料效率</strong>：提升燃料的热值。</li>' +
+        '<li><strong>肥料效率</strong>：提升肥料的营养值。</li>' +
+        '<li><strong>销售能力</strong>：提升上架商品卖出价格。</li></ol>' +
         '在 <strong>物流设置</strong> 中选择 <strong>加热装置</strong>、<strong>燃料来源</strong> 和 <strong>肥料来源</strong>。点击 <strong>保存设置</strong> 可将所有设定持久化到浏览器中。',
 
         'calc.tree.title': '解读生产树',
@@ -157,12 +157,12 @@ const HELP_TEXT = {
         'section.cauldron': '⚗️ 炼金锅指南',
 
         'cauldron.f3.title': '普通炼金锅（3格）',
-        'cauldron.f3.desc': '普通炼金锅需放入 <strong>三格原料</strong>。系统将根据计算出的 T 值，输出 <strong>炼金价值</strong> 最接近 T 的物品：<br><br><code>T = (Cost₁ + Cost₂ + Cost₃) × Ratio</code><br><br>Ratio 根据三格中相同物品的数量决定：<ol><li><strong>全部不同（×1.0）</strong>：三格物品各不相同。</li><li><strong>两格相同（×0.65）</strong>：恰好有两格放置相同物品。</li><li><strong>三格相同（×0.5）</strong>：三格均放置相同物品。</li></ol>',
+        'cauldron.f3.desc': '普通炼金锅需放入 <strong>三格原料</strong>。系统将根据计算出的 T 值，输出 <strong>炼金目标(cauldronTarget)</strong> 最接近 T 的物品：<br><br><code>T = (Cost₁ + Cost₂ + Cost₃) × Ratio</code><br><br>Ratio 根据三格中相同物品的数量决定：<ol><li><strong>全部不同（×1.0）</strong>：三格物品各不相同。</li><li><strong>两格相同（×0.65）</strong>：恰好有两格放置相同物品。</li><li><strong>三格相同（×0.5）</strong>：三格均放置相同物品。</li></ol>',
 
         'cauldron.f2.title': '高级炼金锅（2格）',
         'cauldron.f2.desc': '<strong>高级炼金锅</strong> 只需放入 <strong>两格原料</strong>，根据两格是否相同分为两种计算方式：<br><br>' +
-        '<strong>两格相同</strong>：<code>T = Cost₁</code>（取单格价值，<strong>向上</strong>匹配最近的高阶产物）。<br>' +
-        '<strong>两格不同</strong>：<code>T = |Cost₁ - Cost₂|</code>（取差值绝对值，<strong>向下</strong>匹配最近的低阶产物）。<br><br>' +
+        '<strong>两格相同</strong>：<code>T = Cost₁</code>（取单格价值，<strong>向上</strong>匹配最近的产物）。<br>' +
+        '<strong>两格不同</strong>：<code>T = |Cost₁ - Cost₂|</code>（取差值绝对值，匹配最近的产物，其目标值小于两者中的最大炼金价值）。<br><br>' +
         '在炼金锅页面顶部的 <strong>类型切换</strong> 按钮，可在普通与高级炼金锅之间切换。',
 
         'cauldron.pool.title': '候选池与 Profile',
@@ -171,7 +171,7 @@ const HELP_TEXT = {
         '<li><strong>Profile 1</strong>：全部有效原料（预设）。</li>' +
         '<li><strong>Profile 2</strong>：以药草为基底的物品（从药草链自动生成）。</li>' +
         '<li><strong>Profile 3</strong>：以金币/货币为基底的物品。</li></ol>' +
-        '使用 <strong>全选</strong> / <strong>取消全选</strong> 快速配置当前 Profile。<strong>🌿 草药预设组</strong> 按钮可将候选池重置为药草导向的集合。所有设定会自动保存至浏览器。',
+        '使用 <strong>全选</strong> / <strong>取消全选</strong> 快速配置当前的塞选分类物品。<strong>🌿预设组</strong> 按钮可将候选池重置为药草导向的集合。',
 
         'cauldron.filter.title': '分类过滤与格位锁定',
         'cauldron.filter.desc': '使用 <strong>分类</strong> 下拉菜单依物品类型筛选候选池。特殊分类包括 <strong>[选取]</strong>（只显示已勾选物品）、<strong>[排除]</strong>（只显示未勾选物品）和 <strong>[产物]</strong>（只显示可作为炼金锅产出的物品）。<br><br>' +
