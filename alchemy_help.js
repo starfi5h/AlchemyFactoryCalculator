@@ -61,7 +61,7 @@ const HELP_TEXT = {
         'cauldron.f2.title': 'Advanced Cauldron (2-slot)',
         'cauldron.f2.desc': 'The <strong>Advanced Cauldron</strong> uses only <strong>two ingredient slots</strong>, with two distinct calculation modes:<br><br>' +
         '<strong>Both Same</strong>: <code>T = Cost₁</code> (uses the single cost, searches <strong>upward</strong> for the nearest higher-tier product).<br>' +
-        '<strong>Both Different</strong>: <code>T = |Cost₁ - Cost₂|</code> (uses the absolute difference, matches the nearest product whose target value is less than the maximum of the two cauldron costs).<br><br>' +
+        '<strong>Both Different</strong>: <code>T = |Cost₁ - Cost₂|</code> (uses the absolute difference, matches the nearest product whose target value is less than the maximum of the two cauldron costs, and not the higher cost input).<br><br>' +
         'Use the <strong>type toggle</strong> button at the top of the Cauldron tab to switch between normal and advanced cauldrons.',
 
         'cauldron.pool.title': 'Candidate Pool & Profiles',
@@ -162,7 +162,7 @@ const HELP_TEXT = {
         'cauldron.f2.title': '高级炼金锅（2格）',
         'cauldron.f2.desc': '<strong>高级炼金锅</strong> 只需放入 <strong>两格原料</strong>，根据两格是否相同分为两种计算方式：<br><br>' +
         '<strong>两格相同</strong>：<code>T = Cost₁</code>（取单格价值，<strong>向上</strong>匹配最近的产物）。<br>' +
-        '<strong>两格不同</strong>：<code>T = |Cost₁ - Cost₂|</code>（取差值绝对值，匹配最近的产物，其目标值小于两者中的最大炼金价值）。<br><br>' +
+        '<strong>两格不同</strong>：<code>T = |Cost₁ - Cost₂|</code>（取差值绝对值，匹配条件符合的距目标最近的产物，其产物非较高价值的输入物品, 且目标值小于它的价值）。<br><br>' +
         '在炼金锅页面顶部的 <strong>类型切换</strong> 按钮，可在普通与高级炼金锅之间切换。',
 
         'cauldron.pool.title': '候选池与 Profile',
