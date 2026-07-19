@@ -323,9 +323,11 @@ input:checked + .slider-switch:before { transform: translateX(16px); }
 .stat-block { display: flex; flex-direction: column; padding-right: 10px; border-right: 1px solid #444; }
 .stat-block:last-child { border-right: none; }
 .stat-label { font-size: 0.75em; color: #aaa; text-transform: uppercase; letter-spacing: 1px; }
-.stat-value { font-size: 1.00em; font-weight: bold; color: #fff; margin-top: 4px; }
+.stat-value { font-size: 0.90em; font-weight: bold; color: #fff; margin-top: 4px; }
 .stat-pos { font-size: 0.75em; color: #aaa; margin-top: 2px; }
 .stat-sub { font-size: 0.75em; color: var(--warn); margin-top: 2px; }
+.stat-flex-row { display: flex; flex-wrap: wrap; align-items: baseline; column-gap: 6px; row-gap: 0; }
+.stat-extra { font-size: 0.85em; font-weight: normal; opacity: 0.95; margin-left: auto; white-space: nowrap; }
 .gold-profit { color: var(--profit); } .gold-cost { color: var(--gold); } .net-positive { color: #69f0ae; }
 
 /* ==========================================================================

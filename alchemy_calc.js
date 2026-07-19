@@ -960,13 +960,15 @@ function updateSummaryBox(p, heatPerSec, nutrPerSec, goldPerMin, actualFuelNeed,
         if (p.selectedHeatingDevice === 'Steam Heating Pad') {
             loadHtml += `<span class="stat-value" style="color:var(--fuel);">${t('Steam')}: ${(heatPerSec * 60 / 20).toLocaleString()} /min</span>`;
         }
-        loadHtml += `<span class="stat-value" style="color:var(--fuel);" title="${(heatPerSec * 60).toLocaleString()} P/min">`;
-        loadHtml += `${t('Heat')}: ${(actualFuelNeed).toLocaleString()}<img src="img/item${DB.items[selectedFuel]?.id ?? 0}.png" alt="${selectedFuel}" width="24" height="24" style="vertical-align: middle; margin-bottom: 4px;">/ min`;
+        loadHtml += `<span class="stat-value stat-flex-row" style="color:var(--fuel);">`;
+        loadHtml += `<span>${t('Heat')}: ${(actualFuelNeed).toLocaleString()}<img src="img/item${DB.items[selectedFuel]?.id ?? 0}.png" alt="${selectedFuel}" width="24" height="24" style="vertical-align: middle; margin-bottom: 4px;">/ min</span>`;
+        loadHtml += `<span class="stat-extra" style="color:var(--warn);">(${(heatPerSec * 60).toLocaleString(undefined, {minimumFractionDigits: 1, maximumFractionDigits: 1})} P/min)</span>`;
         loadHtml += `</span>`;
     }
     if (nutrPerSec > 0) {
-        loadHtml += `<span class="stat-value" style="color:var(--bio);" title="${(nutrPerSec * 60).toLocaleString()} V/min">`;
-        loadHtml += `${t('Nutr')}:  ${(actualFertNeed).toLocaleString()}<img src="img/item${DB.items[selectedFert]?.id ?? 0}.png" alt="${selectedFert}" width="24" height="24" style="vertical-align: middle; margin-bottom: 4px;">/ min`;
+        loadHtml += `<span class="stat-value stat-flex-row" style="color:var(--bio);">`;
+        loadHtml += `<span>${t('Nutr')}:  ${(actualFertNeed).toLocaleString()}<img src="img/item${DB.items[selectedFert]?.id ?? 0}.png" alt="${selectedFert}" width="24" height="24" style="vertical-align: middle; margin-bottom: 4px;">/ min</span>`;
+        loadHtml += `<span class="stat-extra">(${(nutrPerSec * 60).toLocaleString(undefined, {minimumFractionDigits: 1, maximumFractionDigits: 1})} V/min)</span>`;
         loadHtml += `</span>`;
     }
     loadHtml += `</div>`;
@@ -994,13 +996,15 @@ function updateSummaryBox(p, heatPerSec, nutrPerSec, goldPerMin, actualFuelNeed,
             if (p.selectedHeatingDevice === 'Steam Heating Pad') {
                 costHtml += `<span class="stat-value" style="color:var(--fuel);">${t('Steam')}: ${(heatPerSec * 60 / netRate / 20).toLocaleString()}</span>`;
             }
-            costHtml += `<span class="stat-value" style="color:var(--fuel);" title="${(heatPerSec * 60 / netRate).toLocaleString()} P">`;
-            costHtml += `${t('Heat')}: ${(actualFuelNeed/netRate).toLocaleString()}<img src="img/item${DB.items[selectedFuel]?.id ?? 0}.png" alt="${selectedFuel}" width="24" height="24" style="vertical-align: middle; margin-bottom: 4px;"> `;
+            costHtml += `<span class="stat-value stat-flex-row" style="color:var(--fuel);">`;
+            costHtml += `<span>${t('Heat')}: ${(actualFuelNeed/netRate).toLocaleString()}<img src="img/item${DB.items[selectedFuel]?.id ?? 0}.png" alt="${selectedFuel}" width="24" height="24" style="vertical-align: middle; margin-bottom: 4px;"> </span>`;
+            costHtml += `<span class="stat-extra" style="color:var(--warn);">(${(heatPerSec * 60 / netRate).toLocaleString(undefined, {minimumFractionDigits: 1, maximumFractionDigits: 1})} P)</span>`;
             costHtml += `</span>`;
         }
         if (nutrPerSec > 0) { 
-            costHtml += `<span class="stat-value" style="color:var(--bio);" title="${(nutrPerSec * 60 / netRate).toLocaleString()} V">`;
-            costHtml += `${t('Nutr')}: ${(actualFertNeed/netRate).toLocaleString()}<img src="img/item${DB.items[selectedFert]?.id ?? 0}.png" alt="${selectedFert}" width="24" height="24" style="vertical-align: middle; margin-bottom: 4px;"> `;
+            costHtml += `<span class="stat-value stat-flex-row" style="color:var(--bio);">`;
+            costHtml += `<span>${t('Nutr')}: ${(actualFertNeed/netRate).toLocaleString()}<img src="img/item${DB.items[selectedFert]?.id ?? 0}.png" alt="${selectedFert}" width="24" height="24" style="vertical-align: middle; margin-bottom: 4px;"> </span>`;
+            costHtml += `<span class="stat-extra">(${(nutrPerSec * 60 / netRate).toLocaleString(undefined, {minimumFractionDigits: 1, maximumFractionDigits: 1})} V)</span>`;
             costHtml += `</span>`;
         }
     }
