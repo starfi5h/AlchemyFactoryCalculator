@@ -762,6 +762,13 @@ function populateSelects() {
     if(!heatingSel.value) heatingSel.value = heatingSel.options[0]?.value || "";
 }
 
+function togglePanelCollapse(btn) {
+    const body = btn.closest('.panel')?.querySelector('.panel-body');
+    if (!body) return;
+    const collapsed = body.classList.toggle('collapsed');
+    btn.textContent = collapsed ? '▶' : '▼';
+}
+
 function toggleFuel() {
     const btn = document.getElementById('btnSelfFuel');
     const enable = btn.innerText === t("Self-Fuel: ON");
