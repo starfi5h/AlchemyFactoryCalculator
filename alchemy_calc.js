@@ -17,8 +17,8 @@ function getSpeedMult(lvl) { return AlchemyCalcEngine.getSpeedMult(lvl); }
 function getAlchemyMult(lvl) { return AlchemyCalcEngine.getAlchemyMult(lvl); }
 
 function getRecipesFor(item) { return AlchemyCalcEngine.getRecipesFor(DB, item); }
-function getActiveRecipe(item) {
-    return AlchemyCalcEngine.getActiveRecipe(DB, { preferredRecipes: DB.settings.preferredRecipes, recipeModifiers: DB.settings.recipeModifiers }, item);
+function getActiveRecipe(item, pathKey = "") {
+    return AlchemyCalcEngine.getActiveRecipe(DB, { preferredRecipes: DB.settings.preferredRecipes, nodeRecipeOverrides: DB.settings.nodeRecipeOverrides, recipeModifiers: DB.settings.recipeModifiers }, item, pathKey);
 }
 
 function applyAlchemyMult(machineName, batchYield, alchemyMult) {
@@ -166,6 +166,7 @@ function calculate() {
                 activeRecyclers: GLOBAL_CALC_STATE.activeRecyclers,
                 forcedExternals: GLOBAL_CALC_STATE.forcedExternals,
                 preferredRecipes: DB.settings.preferredRecipes,
+                nodeRecipeOverrides: DB.settings.nodeRecipeOverrides,
                 recipeModifiers: DB.settings.recipeModifiers
             }
         });
@@ -427,6 +428,8 @@ function renderTreeNode(params, node) {
     div.setAttribute('data-depth', node.depth % 10);
     div.setAttribute('data-path', node.pathKey);
     if (GLOBAL_CALC_STATE.collapsedNode.has(node.pathKey)) div.classList.add('collapsed');
+    const hasOverride = !!DB.settings.nodeRecipeOverrides?.[node.pathKey];
+    if (hasOverride) div.classList.add('node-override');
 
     const hasChildren = node.children.length > 0;    
     const machineCountArg = node.machine ? node.machineCount : null;
@@ -457,7 +460,7 @@ function renderTreeNode(params, node) {
         const hasCauldronTarget = itemDef && itemDef.cauldronTarget !== undefined;
         const hasRecipeModifier = recipeCandidates?.length === 1 && recipeCandidates[0].machine === 'Advanced Athanor';
         if (recipeCandidates.length > 1 || hasCauldronTarget || hasRecipeModifier) {
-            swapBtn = `<button class="swap-btn" onclick="openRecipeModal('${node.item}')" title="${t('Swap Recipe')}">🔄</button>`;
+            swapBtn = `<button class="swap-btn" onclick="openRecipeModal('${node.item}', '${node.pathKey}')" title="${t('Swap Recipe')}">🔄</button>`;
         }
     }
 

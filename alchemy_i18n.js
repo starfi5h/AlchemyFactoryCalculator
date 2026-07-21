@@ -288,6 +288,8 @@ window.ALCHEMY_I18N = {
 
         "Select Recipe": "选择配方",
         "Select Recipe for ": "切换配方 ",
+        "Global": "全局",
+        "This Node Only": "仅此节点",
         "Catalysts": "催化剂",
         "🧪 Unstable": "🧪 不稳定",
         "🌿 Fertile": "🌿 丰饶",

@@ -352,6 +352,7 @@ input:checked + .slider-switch:before { transform: translateX(16px); }
     font-size: calc(1em * var(--node-scale));
     gap: calc(4px * var(--node-scale));
 }
+.node.node-override > .node-content, .node.node-override > .node-content .swap-btn { border: 1px dashed var(--gold); }
 .tree-arrow { display: inline-block; width: 14px; cursor: pointer; transition: transform 0.1s; user-select: none; font-size: 0.8em; color: #888; text-align:center; }
 .belt-count { color: var(--belt-count); font-family: monospace; font-weight: bold; font-size: 0.9em; }
 .node.collapsed .node-children { display: none; }

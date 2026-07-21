@@ -54,10 +54,19 @@
         return candidates[0];        
     }
 
-    function getActiveRecipe(db, state, item) {
+    function getActiveRecipe(db, state, item, pathKey = "") {
         // Return a copy of effective recipe
-        const recipe = getPreferredRecipe(db, state, item);
-        if (!recipe) return null;        
+        let recipe = null;
+        if (pathKey !== "" && state?.nodeRecipeOverrides?.[pathKey]) {
+            const overrideId = state.nodeRecipeOverrides[pathKey];
+            const candidates = getRecipesFor(db, item);
+            recipe = candidates.find(r => r.id === overrideId) || null;            
+        }
+        if (!recipe) {
+            recipe = getPreferredRecipe(db, state, item);
+        }
+        if (!recipe) return null;
+   
 
         // Apply recipeModifiers
         if (recipe.machine === 'Advanced Athanor') {            
@@ -330,7 +339,7 @@
                 return effectiveGhost ? null : node;
             }
 
-            const recipe = getActiveRecipe(db, state, item);
+            const recipe = getActiveRecipe(db, state, item, pathKey);
             if (!recipe) {
                 if (!effectiveGhost) {
                     if (itemDef.buyPrice) {

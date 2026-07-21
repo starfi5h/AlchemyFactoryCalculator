@@ -27,6 +27,7 @@ const DEFAULT_SETTINGS = {
     showMaxCap: false,
     showHeatFert: false,
     preferredRecipes: {},
+    nodeRecipeOverrides: {},
     recipeModifiers: {},
     activeRecyclers: {},
     customCosts: {}
@@ -125,6 +126,7 @@ function init() {
     
     if(!DB.items) DB.items = {};
     if(!DB.settings.preferredRecipes) DB.settings.preferredRecipes = {};
+    if(!DB.settings.nodeRecipeOverrides) DB.settings.nodeRecipeOverrides = {};
     if(!DB.settings.recipeModifiers)  DB.settings.recipeModifiers = {};
     if(!DB.settings.activeRecyclers) DB.settings.activeRecyclers = {};
     if(!DB.settings.customCosts) DB.settings.customCosts = {};
@@ -1025,36 +1027,110 @@ function toggleCatalyst(recipeId, catalystId, item, btn) {
     if (cats.length === 0) delete DB.settings.recipeModifiers[recipeId];
     persist();
     calculate();
-    openRecipeModal(item);
+    openRecipeModal(item, _recipeModalPathKey);
 }
 
-function openRecipeModal(item) {
-    const candidates = getRecipesFor(item);
-    const list = document.getElementById('recipe-list');
-    list.innerHTML = '';
-    document.getElementById('recipe-modal-title').innerText = t('Select Recipe for ') + item;
+let _recipeModalScope = 'global'; // 'global' | 'node'
+let _recipeModalPathKey = '';
+let _recipeModalItem = '';
 
-    // 煉金鍋按鈕（若 item 有 cauldronTarget）
+function openRecipeModal(item, pathKey = '') {
+    _recipeModalItem = item;
+    _recipeModalPathKey = pathKey;
+    _recipeModalScope = DB.settings.nodeRecipeOverrides[pathKey] ? 'node' : 'global';
+
+    _renderRecipeModalScopeBar();
+    _renderRecipeModalList();
+
+    document.getElementById('recipe-modal').style.display = 'flex';
+}
+
+function _renderRecipeModalScopeBar() {
     const titleEl = document.getElementById('recipe-modal-title');
-    const itemDef = DB.items[item];
-    // 清除舊按鈕（避免重複添加）
+    titleEl.innerText = t('Select Recipe for ') + _recipeModalItem;
+
+    // 清除舊的 scope bar / cauldron 按鈕
+    document.getElementById('recipe-modal-scope-bar')?.remove();
     titleEl.querySelectorAll('.cauldron-shortcut-btn').forEach(b => b.remove());
+
+    const itemDef = DB.items[_recipeModalItem];
     if (itemDef && itemDef.cauldronTarget !== undefined) {
         const btn = document.createElement('button');
         btn.className = 'cauldron-shortcut-btn swap-btn';
         btn.style.cssText = 'margin-left:8px; width:auto; padding:2px 6px; border-radius:4px; font-size:0.8em;';
         btn.innerText = t('+ Add Cauldron Recipe');
-        btn.onclick = (e) => { e.stopPropagation(); openCauldronRecipeModal(item); };
+        btn.onclick = (e) => { e.stopPropagation(); openCauldronRecipeModal(_recipeModalItem); };
         titleEl.appendChild(btn);
     }
 
-    const currentId = (getActiveRecipe(item) || {}).id;
+    // 只有在有 pathKey 時才顯示 scope 開關（無 pathKey = 沒有節點context，只能全局）
+    if (!_recipeModalPathKey) return;
+
+    const bar = document.createElement('div');
+    bar.id = 'recipe-modal-scope-bar';
+    bar.style.cssText = 'display:flex; gap:4px; margin:8px 0;';
+    bar.innerHTML = `
+        <button class="tab-btn mini-tab ${_recipeModalScope === 'global' ? 'active' : ''}"
+            onclick="_setRecipeModalScope('global')">🌐 ${t('Global')}</button>
+        <button class="tab-btn mini-tab ${_recipeModalScope === 'node' ? 'active' : ''}"
+            onclick="_setRecipeModalScope('node')">📍 ${t('This Node Only')}</button>
+    `;
+    document.getElementById('recipe-list').insertAdjacentElement('beforebegin', bar);
+}
+
+function _setRecipeModalScope(scope) {
+    _recipeModalScope = scope;    
+    _renderRecipeModalScopeBar();
+    _renderRecipeModalList();
     
+    const pathKey = _recipeModalPathKey;
+    if (pathKey) {
+        const item = _recipeModalItem;
+        const currentId = (getActiveRecipe(item) || {}).id;
+        if (_recipeModalScope === 'node') {
+            DB.settings.nodeRecipeOverrides[pathKey] = currentId;
+        } else {
+            DB.settings.preferredRecipes[item] = currentId;
+            delete DB.settings.nodeRecipeOverrides[pathKey];
+        }
+        persist();
+        calculate();
+    }
+}
+
+function _renderRecipeModalList() {
+    const item = _recipeModalItem;
+    const pathKey = _recipeModalPathKey;
+    const candidates = getRecipesFor(item);
+    const list = document.getElementById('recipe-list');
+    list.innerHTML = '';
+
+    // 依 scope 決定「目前選中」的判斷依據
+    const currentId = (getActiveRecipe(item, pathKey) || {}).id;
+
     candidates.forEach(r => {
         const div = document.createElement('div');
-        div.className = `recipe-option ${r.id === currentId ? 'active' : ''}`;        
+        div.className = `recipe-option ${r.id === currentId ? 'active' : ''}`;
 
-        // 自訂輸入配方 (Oblivion Essence via Paradox Crucible 等)
+        // 寫入邏輯依 scope 分流
+        const applyRecipe = () => {
+            if (pathKey) {
+                if (_recipeModalScope === 'node') {
+                    DB.settings.nodeRecipeOverrides[pathKey] = r.id;
+                } else {
+                    DB.settings.preferredRecipes[item] = r.id;
+                    delete DB.settings.nodeRecipeOverrides[pathKey];
+                }                
+                
+            }
+            persist();
+            closeModal('recipe-modal');            
+            console.log("pathKey1 = " + pathKey);
+            console.log(getActiveRecipe(item, pathKey));
+            calculate();
+        };
+
+        // 自訂輸入配方 (Paradox Crucible 等)
         if (r.customInputSlot) {
             const mod = DB.settings.recipeModifiers[r.id] || {};
             const selectedItem = mod.customInput;
@@ -1086,7 +1162,7 @@ function openRecipeModal(item) {
             div.onclick = (e) => {
                 if (e.target.closest('.mini-picker')) return;
                 if (!isReady) return;
-                DB.settings.preferredRecipes[item] = r.id; persist(); closeModal('recipe-modal'); calculate();
+                applyRecipe();
             };
 
             list.appendChild(div);
@@ -1096,28 +1172,29 @@ function openRecipeModal(item) {
         let recipeInputs = r.inputs;
         let recipeOutputs = r.outputs;
 
+        // catalyst 維持全局，讀取邏輯不變
         const cats = DB.settings.recipeModifiers[r.id]?.catalysts;
         if (cats && cats.length > 0) {
             recipeInputs = {...r.inputs};
             recipeOutputs = {...r.outputs};
             if (cats.includes('eternal')) {
                 recipeInputs = {};
-                const [itemKey, itemValue] = Object.entries(DB.items).find(([name, item]) => item.charges === 99999);
+                const [itemKey] = Object.entries(DB.items).find(([, it]) => it.charges === 99999);
                 recipeInputs[itemKey] = r.ChargeCost / 99999;
             }
             if (cats.includes('unstable')) {
                 recipeOutputs = { ...r.unstableOutputs };
-                const [itemKey, itemValue] = Object.entries(DB.items).find(([name, item]) => item.charges === 180);
+                const [itemKey] = Object.entries(DB.items).find(([, it]) => it.charges === 180);
                 recipeInputs[itemKey] = r.ChargeCost / 180;
             }
             if (cats.includes('resonant')) {
                 recipeOutputs = { ...r.resonantOutputs };
-                const [itemKey, itemValue] = Object.entries(DB.items).find(([name, item]) => item.charges === 1500);
+                const [itemKey] = Object.entries(DB.items).find(([, it]) => it.charges === 1500);
                 recipeInputs[itemKey] = r.ChargeCost / 1500;
             }
-            if (cats.includes('fertile')) {                
+            if (cats.includes('fertile')) {
                 for (const k in recipeOutputs) recipeOutputs[k] *= 2;
-                const [itemKey, itemValue] = Object.entries(DB.items).find(([name, item]) => item.charges === 240);
+                const [itemKey] = Object.entries(DB.items).find(([, it]) => it.charges === 240);
                 recipeInputs[itemKey] = r.ChargeCost / 240;
             }
         }
@@ -1131,9 +1208,10 @@ function openRecipeModal(item) {
 
         div.onclick = (e) => {
             if (e.target.closest('.catalyst-row')) return;
-            DB.settings.preferredRecipes[item] = r.id; persist(); closeModal('recipe-modal'); calculate();
+            applyRecipe();
         };
 
+        // catalyst 按鈕維持全局寫入（toggleCatalyst 不變）
         if (r.machine === 'Advanced Athanor') {
             const activeCats = DB.settings.recipeModifiers[r.id]?.catalysts || [];
             const btns = ATHANOR_CATALYSTS.map(c => {
@@ -1146,9 +1224,7 @@ function openRecipeModal(item) {
         div.innerHTML = content;
         list.appendChild(div);
     });
-    document.getElementById('recipe-modal').style.display = 'flex';
 }
-
 /**
  * 開啟 Item Picker 讓玩家為「自訂輸入配方」選擇 input 物品
  * @param {string} recipeId  例如 "Oblivion Essence (Custom)"
@@ -1200,7 +1276,28 @@ function toggleLanguage() {
     window.ALCHEMY_I18N.enabled = !window.ALCHEMY_I18N.enabled;
     const url = new URL(window.location.href);
     if (!window.ALCHEMY_I18N.enabled) url.searchParams.set('lang', 'en');
-    else url.searchParams.delete('lang');    
+    else url.searchParams.delete('lang');
+
+    // --- translate the 'item' param to match the new language ---
+    const itemParam = url.searchParams.get('item');
+    if (itemParam) {
+        const i18n = window.ALCHEMY_I18N;
+        const goingToEnglish = i18n.enabled === false; // state AFTER the toggle above
+        let translated = itemParam;
+
+        if (i18n.items) {
+            if (goingToEnglish) {
+                // itemParam is currently Chinese -> find matching English key
+                const found = Object.entries(i18n.items).find(([, zh]) => zh === itemParam);
+                if (found) translated = found[0];
+            } else {
+                // itemParam is currently English -> look up Chinese value
+                translated = i18n.items[itemParam] || itemParam;
+            }
+        }
+        url.searchParams.set('item', translated);
+    }
+    
     window.location.href = url.toString();
 }
 
