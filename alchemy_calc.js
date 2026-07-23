@@ -794,7 +794,8 @@ function updateConstructionList(maxCounts, minCounts, furnaces, extraBuildCosts,
             });
             subListHtml += `</ul>`;
         }
-        li.innerHTML = `<div class="build-header" onclick="toggleBuildGroup(this.parentNode)"><span><span class="build-arrow">▶</span> ${t(m, 'machines')}</span> <span class="build-count">${label}</span></div>${subListHtml}`;
+        const machineIcon = `<img src="img/machines/${m.toLowerCase().replaceAll(' ', '-')}.png" width="16" height="16" loading="lazy" onerror="this.style.opacity='0'">`;
+        li.innerHTML = `<div class="build-header" onclick="toggleBuildGroup(this.parentNode)"><span><span class="build-arrow">▶</span>${machineIcon} ${t(m, 'machines')}</span> <span class="build-count">${label}</span></div>${subListHtml}`;
         buildList.appendChild(li);
     });
 
@@ -817,7 +818,8 @@ function updateConstructionList(maxCounts, minCounts, furnaces, extraBuildCosts,
             });
             subListHtml += `</ul>`;
         }
-        li.innerHTML = `<div class="build-header" style="border-top:1px dashed #555" onclick="toggleBuildGroup(this.parentNode)"><span><span class="build-arrow">▶</span> ${t(mName, 'machines')}</span> <span class="build-count" style="color:var(--warn)">${count}</span></div>${subListHtml}`;
+        const machineIcon = `<img src="img/machines/${mName.toLowerCase().replaceAll(' ', '-')}.png" width="16" height="16" loading="lazy" onerror="this.style.opacity='0'">`;
+        li.innerHTML = `<div class="build-header" style="border-top:1px dashed #555" onclick="toggleBuildGroup(this.parentNode)"><span><span class="build-arrow">▶</span>${machineIcon} ${t(mName, 'machines')}</span> <span class="build-count" style="color:var(--warn)">${count}</span></div>${subListHtml}`;
         buildList.appendChild(li);
     }
 

@@ -984,10 +984,11 @@ function _buildMachineListHTML() {
         let badges = ' ';
         if(machine.heatCost || machine.isGenerator) badges += '🔥';
         if(machine.fertility) badges += '🌱';
-        if(_tn("Glass", 'items') in machine["buildCost"]) badges += '💧';
+        if(_tn("Glass", 'items') in machine["buildCost"]) badges += '💧';        
+        const machineIcon = `<img src="img/machines/${name.toLowerCase().replaceAll(' ', '-')}.png" width="16" height="16" loading="lazy" onerror="this.style.opacity='0'">`;
         return '<div class="wiki-tile machine-tile' + sel + '" data-name="' + name.replace(/"/g, '&quot;') + '" '
             + _oc('wikiSelectMachine', name) + '>'
-            + '<span>' + _tn(name, 'machines') + badges + '</span></div>';
+            + '<span>' + machineIcon + ' ' + _tn(name, 'machines') + badges + '</span></div>';
     }).join('');
 }
 
@@ -1072,6 +1073,7 @@ function _renderMachineDetail(machineName) {
 
     pane.innerHTML =
         '<div class="wiki-detail-header">'
+        + `<img src="img/machines/${machineName.toLowerCase().replaceAll(' ', '-')}.png" width="32" height="32" loading="lazy" class="wiki-icon" onerror="this.style.opacity='0'">`
         + '<div class="wiki-detail-title-area">'
         + '<h2 class="wiki-detail-name">' + _tn(machineName, 'machines') + '</h2>'
         + '</div></div>'
