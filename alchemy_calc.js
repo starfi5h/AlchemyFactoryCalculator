@@ -20,6 +20,9 @@ function getRecipesFor(item) { return AlchemyCalcEngine.getRecipesFor(DB, item);
 function getActiveRecipe(item, pathKey = "") {
     return AlchemyCalcEngine.getActiveRecipe(DB, { preferredRecipes: DB.settings.preferredRecipes, nodeRecipeOverrides: DB.settings.nodeRecipeOverrides, recipeModifiers: DB.settings.recipeModifiers }, item, pathKey);
 }
+function getRecipeById(recipeId, recipeModifiers) {
+    return AlchemyCalcEngine.getRecipeById(DB, recipeModifiers, recipeId);
+}
 
 function applyAlchemyMult(machineName, batchYield, alchemyMult) {
     return AlchemyCalcEngine.applyAlchemyMult(machineName, batchYield, alchemyMult);

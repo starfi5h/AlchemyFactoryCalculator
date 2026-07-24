@@ -289,9 +289,10 @@ function switchTab(tabName) {
     let btnIndex = 0;
     switch (tabName) {
         case 'calc': btnIndex = 0; break;
-        case 'cauldron': btnIndex = 1; break;        
-        case 'help': btnIndex = 2; break;
-        case 'db': btnIndex = 3; break;
+        case 'cauldron': btnIndex = 1; break;
+        case 'planner': btnIndex = 2; break;
+        case 'help': btnIndex = 3; break;
+        case 'db': btnIndex = 4; break;
         default: return;
     }
     document.querySelectorAll('.view').forEach(el => el.classList.remove('active'));
@@ -310,6 +311,9 @@ function switchTab(tabName) {
     }
     if (tabName === 'help' && typeof initHelpPage === 'function') {
         initHelpPage();
+    }
+    if (tabName === 'planner' && typeof initPlannerPage === 'function') {
+        initPlannerPage();
     }
     if (tabName === 'calc') {
         syncCauldronToMainDB(); // 回到計算器頁面時, 嘗試同步煉金鍋配方
@@ -1162,7 +1166,9 @@ function _renderRecipeModalList() {
             div.onclick = (e) => {
                 if (e.target.closest('.mini-picker')) return;
                 if (!isReady) return;
-                applyRecipe();
+                DB.settings.preferredRecipes[item] = r.id; persist();
+                if (typeof notifyPlannerRecipeChanged === 'function') notifyPlannerRecipeChanged();
+                closeModal('recipe-modal'); calculate();
             };
 
             list.appendChild(div);
@@ -1172,29 +1178,28 @@ function _renderRecipeModalList() {
         let recipeInputs = r.inputs;
         let recipeOutputs = r.outputs;
 
-        // catalyst 維持全局，讀取邏輯不變
         const cats = DB.settings.recipeModifiers[r.id]?.catalysts;
         if (cats && cats.length > 0) {
             recipeInputs = {...r.inputs};
             recipeOutputs = {...r.outputs};
             if (cats.includes('eternal')) {
                 recipeInputs = {};
-                const [itemKey] = Object.entries(DB.items).find(([, it]) => it.charges === 99999);
+                const [itemKey, itemValue] = Object.entries(DB.items).find(([name, item]) => item.charges === 99999);
                 recipeInputs[itemKey] = r.ChargeCost / 99999;
             }
             if (cats.includes('unstable')) {
                 recipeOutputs = { ...r.unstableOutputs };
-                const [itemKey] = Object.entries(DB.items).find(([, it]) => it.charges === 180);
+                const [itemKey, itemValue] = Object.entries(DB.items).find(([name, item]) => item.charges === 180);
                 recipeInputs[itemKey] = r.ChargeCost / 180;
             }
             if (cats.includes('resonant')) {
                 recipeOutputs = { ...r.resonantOutputs };
-                const [itemKey] = Object.entries(DB.items).find(([, it]) => it.charges === 1500);
+                const [itemKey, itemValue] = Object.entries(DB.items).find(([name, item]) => item.charges === 1500);
                 recipeInputs[itemKey] = r.ChargeCost / 1500;
             }
-            if (cats.includes('fertile')) {
+            if (cats.includes('fertile')) {                
                 for (const k in recipeOutputs) recipeOutputs[k] *= 2;
-                const [itemKey] = Object.entries(DB.items).find(([, it]) => it.charges === 240);
+                const [itemKey, itemValue] = Object.entries(DB.items).find(([name, item]) => item.charges === 240);
                 recipeInputs[itemKey] = r.ChargeCost / 240;
             }
         }
@@ -1208,10 +1213,11 @@ function _renderRecipeModalList() {
 
         div.onclick = (e) => {
             if (e.target.closest('.catalyst-row')) return;
-            applyRecipe();
+            DB.settings.preferredRecipes[item] = r.id; persist();
+            if (typeof notifyPlannerRecipeChanged === 'function') notifyPlannerRecipeChanged();
+            closeModal('recipe-modal'); calculate();
         };
 
-        // catalyst 按鈕維持全局寫入（toggleCatalyst 不變）
         if (r.machine === 'Advanced Athanor') {
             const activeCats = DB.settings.recipeModifiers[r.id]?.catalysts || [];
             const btns = ATHANOR_CATALYSTS.map(c => {
@@ -1224,7 +1230,9 @@ function _renderRecipeModalList() {
         div.innerHTML = content;
         list.appendChild(div);
     });
+    document.getElementById('recipe-modal').style.display = 'flex';
 }
+
 /**
  * 開啟 Item Picker 讓玩家為「自訂輸入配方」選擇 input 物品
  * @param {string} recipeId  例如 "Oblivion Essence (Custom)"
@@ -1236,6 +1244,7 @@ function pickCustomRecipeInput(recipeId, forItem) {
         if (!DB.settings.recipeModifiers[recipeId]) DB.settings.recipeModifiers[recipeId] = {};
         DB.settings.recipeModifiers[recipeId].customInput = name;
         persist();
+        if (typeof notifyPlannerRecipeChanged === 'function') notifyPlannerRecipeChanged();
 
         window.selectItem = originalSelectItem;
         closeModal('picker-modal');

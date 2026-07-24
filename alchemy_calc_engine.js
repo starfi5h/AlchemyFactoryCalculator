@@ -54,61 +54,68 @@
         return candidates[0];        
     }
 
-    function getActiveRecipe(db, state, item, pathKey = "") {
-        // Return a copy of effective recipe
-        let recipe = null;
-        if (pathKey !== "" && state?.nodeRecipeOverrides?.[pathKey]) {
-            const overrideId = state.nodeRecipeOverrides[pathKey];
-            const candidates = getRecipesFor(db, item);
-            recipe = candidates.find(r => r.id === overrideId) || null;            
-        }
-        if (!recipe) {
-            recipe = getPreferredRecipe(db, state, item);
-        }
+    function applyRecipeModifiers(db, modifiers, recipe) {
         if (!recipe) return null;
-   
 
-        // Apply recipeModifiers
-        if (recipe.machine === 'Advanced Athanor') {            
-            const cats = state?.recipeModifiers?.[recipe.id]?.catalysts;
+        if (recipe.machine === 'Advanced Athanor') {
+            const cats = modifiers?.catalysts;
             if (!cats || cats.length === 0) return recipe;
 
             let recipeInputs = { ...recipe.inputs };
             let recipeOutputs = { ...recipe.outputs };
             if (cats.includes('eternal')) {
                 recipeInputs = {};
-                const [itemKey, itemValue] = Object.entries(DB.items).find(([name, item]) => item.charges === 99999);
+                const [itemKey] = Object.entries(DB.items).find(([, item]) => item.charges === 99999);
                 recipeInputs[itemKey] = recipe.ChargeCost / 99999;
             }
             if (cats.includes('unstable')) {
                 recipeOutputs = { ...recipe.unstableOutputs };
-                const [itemKey, itemValue] = Object.entries(DB.items).find(([name, item]) => item.charges === 180);
+                const [itemKey] = Object.entries(DB.items).find(([, item]) => item.charges === 180);
                 recipeInputs[itemKey] = recipe.ChargeCost / 180;
             }
             if (cats.includes('resonant')) {
                 recipeOutputs = { ...recipe.resonantOutputs };
-                const [itemKey, itemValue] = Object.entries(DB.items).find(([name, item]) => item.charges === 1500);
+                const [itemKey] = Object.entries(DB.items).find(([, item]) => item.charges === 1500);
                 recipeInputs[itemKey] = recipe.ChargeCost / 1500;
             }
-            if (cats.includes('fertile')) {                
+            if (cats.includes('fertile')) {
                 for (const k in recipeOutputs) recipeOutputs[k] *= 2;
-                const [itemKey, itemValue] = Object.entries(DB.items).find(([name, item]) => item.charges === 240);
+                const [itemKey] = Object.entries(DB.items).find(([, item]) => item.charges === 240);
                 recipeInputs[itemKey] = recipe.ChargeCost / 240;
             }
-            const r = { ...recipe, outputs: recipeOutputs, inputs: recipeInputs };
-            return r;
+            return { ...recipe, outputs: recipeOutputs, inputs: recipeInputs };
         }
         else if (recipe.machine === 'Paradox Crucible') {
             if (recipe.customInputSlot) {
-                const mod = state?.recipeModifiers?.[recipe.id];
-                const inputName = mod?.customInput;
-                if (!inputName || !db.items[inputName]) return null; // 尚未選擇輸入物品
+                const inputName = modifiers?.customInput;
+                if (!inputName || !db.items[inputName]) return null;
                 const baseTime = computeParadoxTime(db, inputName);
-                if (baseTime === null) return null; // 缺 baseCost 等資料
+                if (baseTime === null) return null;
                 return { ...recipe, inputs: { [inputName]: 1 }, baseTime };
-           }
+            }
         }
         return recipe;
+    }
+
+    function getActiveRecipe(db, state, item, pathKey = "") {
+        let recipe = null;
+        if (pathKey !== "" && state?.nodeRecipeOverrides?.[pathKey]) {
+            const overrideId = state.nodeRecipeOverrides[pathKey];
+            const candidates = getRecipesFor(db, item);
+            recipe = candidates.find(r => r.id === overrideId) || null;
+        }
+        if (!recipe) {
+            recipe = getPreferredRecipe(db, state, item);
+        }
+        if (!recipe) return null;
+        return applyRecipeModifiers(db, state?.recipeModifiers?.[recipe.id], recipe);
+    }
+
+    // 新增：直接依 recipe.id 取得配方並套用 modifiers，不依賴 item/preferred
+    function getRecipeById(db, modifiers, recipeId) {
+        const recipe = (db.recipes || []).find(r => r.id === recipeId);
+        if (!recipe) return null;
+        return applyRecipeModifiers(db, modifiers, recipe);
     }
 
     function applyAlchemyMult(machineName, batchYield, alchemyMult) {
@@ -813,6 +820,7 @@
         getSellMult,
         getRecipesFor,
         getActiveRecipe,
+        getRecipeById,
         applyAlchemyMult,
         getProductionHeatCost,
         getProductionFertCost,

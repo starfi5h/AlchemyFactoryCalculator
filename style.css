@@ -830,3 +830,166 @@ button.reset-btn:hover { background: var(--danger); color: white; }
 .scale-apply-btn { background: var(--accent); color: #fff; border: none; border-radius: 4px; padding: 7px 22px; font-size: 0.95em; font-weight: bold; cursor: pointer; transition: 0.15s; }
 .scale-apply-btn:hover { background: #66bb6a; }
 
+/* ==========================================================================
+    SECTION: PLANNER VIEW STYLES
+    ========================================================================== */
+/* ==========================================================================
+    SECTION: PLANNER VIEW STYLES
+    ========================================================================== */
+#view-planner.active { display: flex; flex-direction: column; padding: 0; }
+
+.planner-toolbar {
+    display: flex; align-items: center; gap: 12px;
+    padding: 8px 14px; border-bottom: 1px solid var(--border);
+    flex-shrink: 0; background: var(--panel);
+}
+.planner-toolbar-hint { font-size: 0.8em; color: #777; }
+
+.planner-canvas {
+    flex: 1; position: relative; overflow: hidden;
+    background-color: #161616;
+    background-image: radial-gradient(#2a2a2a 1px, transparent 1px);
+    background-size: 24px 24px;
+    cursor: grab;
+}
+.planner-canvas.panning { cursor: grabbing; }
+
+.planner-viewport {
+    position: absolute; top: 0; left: 0; width: 100%; height: 100%;
+    transform-origin: 0 0;
+}
+.planner-svg-layer {
+    position: absolute; top: 0; left: 0; width: 100%; height: 100%;
+    overflow: visible; pointer-events: none;
+}
+.planner-nodes-layer { position: absolute; top: 0; left: 0; }
+
+.planner-node {
+    position: absolute; min-width: 200px;
+    background: var(--panel); border: 1px solid var(--border); border-radius: 6px;
+    box-shadow: 0 4px 12px rgba(0,0,0,0.4);
+    user-select: none;
+}
+.planner-node-header {
+    display: flex; align-items: center; gap: 6px;
+    padding: 6px 8px; background: #222; border-bottom: 1px solid var(--border);
+    border-radius: 6px 6px 0 0; cursor: move;
+}
+.planner-node-header.dragging { cursor: move; }
+.planner-node-icon { width: 22px; height: 22px; flex-shrink: 0; }
+.planner-node-title {
+    flex: 1; font-weight: bold; font-size: 0.9em; color: #eee;
+    white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
+}
+.planner-gear-btn, .planner-close-btn {
+    background: transparent; border: none; color: #999; cursor: pointer;
+    font-size: 1em; padding: 2px 4px; line-height: 1; flex-shrink: 0;
+}
+.planner-gear-btn:hover { color: #fff; }
+.planner-close-btn:hover { color: var(--danger); }
+
+.planner-node-body { padding: 8px; display: flex; flex-direction: column; gap: 8px; position: relative; }
+.planner-ports-row { display: flex; gap: 4px; }
+.planner-ports-col { display: flex; flex-direction: column; gap: 4px; flex: 1; min-width: 0; width: 100%; }
+.planner-ports-in { border-right: 1px dashed #3a3a3a; }
+.planner-ports-out { align-items: flex-end; }
+
+.planner-port {
+    position: relative; display: flex; align-items: center; gap: 4px;
+    font-size: 0.8em; white-space: nowrap; padding: 2px 2px;
+}
+.planner-port-name { color: #ccc; overflow: hidden; text-overflow: ellipsis; max-width: 90px; }
+.planner-port-rate { color: #fff; font-weight: bold; flex-shrink: 0; }
+.planner-port-empty { color: #555; font-style: italic; font-size: 0.8em; padding: 2px 12px; }
+
+.planner-port-dot {
+    position: absolute; top: 50%; transform: translateY(-50%);
+    width: 10px; height: 10px; border-radius: 50%; flex-shrink: 0;
+    border: 1px solid rgba(255,255,255,0.3); cursor: crosshair;
+}
+.planner-port-in .planner-port-dot  { left: -14px; }
+.planner-port-out .planner-port-dot { right: -14px; }
+.planner-port-gray   { background: #777; }
+.planner-port-yellow { background: var(--warn); }
+.planner-port-green  { background: var(--profit); }
+.planner-port-red    { background: var(--danger); }
+
+.planner-port-badge {
+    position: absolute; top: 50%; transform: translateY(-50%);
+    font-size: 0.8em; font-weight: bold; white-space: nowrap; pointer-events: none;
+}
+.planner-port-in .planner-port-badge  { left: -40px; }
+.planner-port-out .planner-port-badge { right: -40px; }
+.planner-badge-surplus  { color: var(--warn); }
+.planner-badge-shortage { color: var(--danger); }
+
+.planner-machine-count-row {
+    display: flex; align-items: center; justify-content: space-between; gap: 8px;
+    border-top: 1px dashed #444; padding-top: 8px;
+}
+.planner-machine-count-row label { margin: 0; font-size: 0.8em; }
+.planner-machine-count-row input {
+    width: 70px; padding: 4px; background: #333; border: 1px solid #555;
+    color: #fff; border-radius: 4px; text-align: center;
+}
+
+/* 卡片內的燃料/肥料用量：不佔用版面空間，直接溢出顯示在卡片下方外側 */
+.planner-node .planner-heatfert-row {
+    position: absolute; left: 8px; right: 8px; top: 100%; margin-top: 4px;
+}
+.planner-heatfert-row { display: flex; gap: 8px; flex-wrap: wrap; font-size: 0.85em; }
+
+/* ---- Edges (Phase 2/3) ---- */
+.planner-svg-layer .planner-edge-hit {
+    stroke: transparent; stroke-width: 14px; fill: none;
+    cursor: pointer; pointer-events: stroke;
+}
+.planner-svg-layer foreignObject { pointer-events: auto; }
+
+.planner-edge-line {
+    fill: none; stroke: var(--accent); stroke-width: 2.5;
+    stroke-dasharray: 6 5; animation: planner-flow-dash 0.6s linear infinite;
+}
+.planner-edge-preview { stroke: #fff; stroke-dasharray: 4 4; opacity: 0.85; animation: none; }
+@keyframes planner-flow-dash { to { stroke-dashoffset: -22; } }
+
+.planner-edge-label {
+    display: flex; align-items: center; gap: 4px;
+    background: #202020; border: 1px solid #444; border-radius: 5px;
+    padding: 3px 7px; font-size: 11px; color: #eee; cursor: pointer; white-space: nowrap;
+    width: fit-content; margin: 0 auto;
+}
+.planner-edge-belt { color: #888; font-size: 0.9em; }
+
+/* ---- Floating "add node from dangling connection" recipe picker ---- */
+.planner-recipe-picker {
+    position: fixed; z-index: 500; width: 320px; max-height: 420px;
+    background: #202020; border: 1px solid #444; border-radius: 8px;
+    box-shadow: 0 10px 30px rgba(0,0,0,0.6);
+    display: flex; flex-direction: column; overflow: hidden;
+}
+.planner-picker-header {
+    padding: 8px 12px; font-size: 0.75em; font-weight: bold; letter-spacing: 0.05em;
+    text-transform: uppercase; color: #aaa; border-bottom: 1px solid #333;
+}
+.planner-picker-search {
+    margin: 8px 10px; padding: 8px 10px; background: #151515; border: 1px solid #555;
+    border-radius: 4px; color: #eee; font-size: 0.9em;
+}
+.planner-picker-search:focus { outline: none; border-color: var(--accent); }
+.planner-picker-list { flex: 1; overflow-y: auto; padding: 4px 6px 8px; }
+.planner-picker-row {
+    display: flex; align-items: center; gap: 8px; padding: 6px 8px; border-radius: 5px; cursor: pointer;
+}
+.planner-picker-row:hover { background: #2a2a2a; }
+.planner-picker-flow { display: flex; align-items: center; gap: 2px; flex-shrink: 0; }
+.planner-picker-arrow { color: var(--warn); font-size: 0.9em; margin: 0 2px; }
+.planner-picker-name {
+    flex: 1; font-size: 0.88em; color: #eee;
+    white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
+}
+.planner-picker-machine {
+    display: flex; align-items: center; gap: 4px; font-size: 0.75em; color: #888;
+    flex-shrink: 0; white-space: nowrap;
+}
+.planner-picker-empty { padding: 20px; text-align: center; color: #666; font-size: 0.85em; font-style: italic; }

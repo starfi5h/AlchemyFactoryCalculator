@@ -5,9 +5,21 @@ function t(text, category = 'ui') {
     const i18n = window.ALCHEMY_I18N;
 	const translatedText = i18n?.[category]?.[text];
 	if (!translatedText && category != 'ui') {
-		console.warn(`[i18n][${category}] Missing: ${text}`);
+		console.info(`[i18n][${category}] Missing: ${text}`);
 	}	
     return translatedText ?? text;
+}
+
+// Input item name, return the translated item name. And vice versice
+function queryDualItemName(itemName) {
+    const i18n = window.ALCHEMY_I18N;
+    if (!i18n || !i18n.items) return "";
+    const translatedText = i18n.items[itemName];
+    if (translatedText) return translatedText;
+    for (const [originalName, nameInDb] of Object.entries(i18n.items)) {
+        if (nameInDb === itemName) return originalName;
+    }
+    return "";
 }
 
 function translateDatabase(db, forward) {
@@ -346,7 +358,17 @@ window.ALCHEMY_I18N = {
         "Item data not found": "未找到物品数据",
         "Machine data not found": "未找到机器数据",
 
-        "Apply": "应用"
+        "Apply": "应用",
+
+        // --- Planner ---
+        "Planner": "规划器",
+        "+ Add Node": "+ 新增节点",
+        "Right-click canvas to add a node here. Drag node header to move. Drag empty canvas to pan.": "在畫布上按右鍵可在該處新增節點。拖曳節點標題列可移動節點，拖曳空白畫布可平移視角。",
+        "This item has no recipe and cannot be added as a Planner node.": "该物品没有生产配方，无法新增为节点。",
+        "Node Settings": "节点设置",
+        "Remove Node": "移除节点",
+        "No Recipe": "无配方",
+        "No recipe selected": "尚未选择配方"
     },
     "items": {
         // Game version: 0.4.3.4071
