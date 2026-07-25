@@ -667,8 +667,9 @@
 
         let byproductSnapshot = cloneRecord(totalByproducts);
         let latestTotal = cloneRecord(totalByproducts);
+        const maxTimes = 60;
 
-        for (let i = 0; i < 30; i++) {
+        for (let i = 0; i <= maxTimes; i++) {
             availableByproducts = cloneRecord(byproductSnapshot);
             totalByproducts = {};
 
@@ -693,15 +694,15 @@
                 if (i > 0) console.log("Solve Equilibrium Completed. Oscillation Times = " + i);
                 break;
             }
-            else if (i >= 29) {                
-                console.log("Solve Equilibrium Unfinished. Oscillation Times > 30");
+            else if (i >= maxTimes) {                
+                console.log(`Solve Equilibrium Unfinished. Oscillation Times > ${maxTimes}`);
             }
 
             allKeys.forEach(key => {
                 // 對於超過15次, 調整damping ratio, 避免過度震盪(e.g. 銀的共振催化劑)
                 const valA = byproductSnapshot[key] || 0;
                 const valB = totalByproducts[key] || 0;
-                const dampingRatio = i < 15 ? 0.5 : 0.25;
+                const dampingRatio = i < 30 ? (i < 15 ? 0.5 : 0.25) : 0.125;
                 byproductSnapshot[key] = valA + ((valB - valA) * dampingRatio);
             });
         }

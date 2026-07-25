@@ -1141,7 +1141,9 @@ function onScaleInputChange(source) {
 function applyScaleModal() {
     if (!_scaleModalBase) return;
 
-    const ratio = parseFloat(document.getElementById('scale-ratio-display').innerText) || 1;
+    const { rate: baseRate, beltSpeed, machineCount, ratePerMachine } = _scaleModalBase;
+    const newRate = parseFloat(document.getElementById('scale-new-rate').value) || 0;
+    const ratio = baseRate > 0 ? newRate / baseRate : 1;
     const isMulti = document.getElementById('modeToggle').checked;
 
     if (!isMulti) {
@@ -1149,7 +1151,7 @@ function applyScaleModal() {
         const rateEl = document.getElementById('targetRate');
         const currentRate = parseFloat(rateEl.value) || 0;
         const newRate = currentRate * ratio;
-        rateEl.value = Number(newRate.toFixed(2));
+        rateEl.value = newRate;
 
         // 若目前是機器模式，要切換回 rate 模式才能寫入
         const machineToggle = document.getElementById('machineModeToggle');
@@ -1163,7 +1165,7 @@ function applyScaleModal() {
             const input = row.querySelector('.multi-rate-input');
             if (input) {
                 const cur = parseFloat(input.value) || 0;
-                input.value = Number((cur * ratio).toFixed(2));
+                input.value = cur * ratio;
             }
         });
     }
