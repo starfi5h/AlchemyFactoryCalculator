@@ -138,6 +138,11 @@
         return (baseTime > 0 && isFinite(baseTime)) ? baseTime : null;
     }
 
+    function getCustomCost(state, item) {
+        const val = state?.customCosts?.[item];
+        return (typeof val === 'number' && val > 0) ? val : null;
+    }
+
     function getHeatingDevice(db, selectedHeatingDevice) {
         const selected = (db.machines || {})[selectedHeatingDevice];
         if (selected?.isGenerator) return selected;
@@ -342,6 +347,14 @@
                     aggregates.forcedItems[item] = (aggregates.forcedItems[item] || 0) + netRate;
                     pushExternalSource(aggregates, item, { rate: netRate, pathKey });
                     node.tags.detailsType = "external";
+
+                    const customCost = getCustomCost(state, item);
+                    if (customCost !== null) {
+                        const costPerMin = netRate * customCost;
+                        aggregates.goldPerMin += costPerMin;
+                        aggregates.rawMaterialSourceMap.push({ item, gold: costPerMin, pathKey });
+                        node.tags.costEntries.push({ type: "gold", amount: costPerMin, custom: true });
+                    }
                 }
                 return effectiveGhost ? null : node;
             }
@@ -349,13 +362,15 @@
             const recipe = getActiveRecipe(db, state, item, pathKey);
             if (!recipe) {
                 if (!effectiveGhost) {
-                    if (itemDef.buyPrice) {
-                        const costPerMin = netRate * itemDef.buyPrice;
+                    const customCost = getCustomCost(state, item);
+                    const effectivePrice = customCost !== null ? customCost : itemDef.buyPrice;
+                    if (effectivePrice) {
+                        const costPerMin = netRate * effectivePrice;
                         aggregates.rawItems[item] = (aggregates.rawItems[item] || 0) + netRate;
                         aggregates.goldPerMin += costPerMin;
                         aggregates.rawMaterialSourceMap.push({ item, gold: costPerMin, pathKey });
                         node.tags.detailsType = "raw";
-                        node.tags.costEntries.push({ type: "gold", amount: costPerMin });
+                        node.tags.costEntries.push({ type: "gold", amount: costPerMin, custom: customCost !== null });
                         node.isRaw = true;
                     } else {
                         aggregates.forcedItems[item] = (aggregates.forcedItems[item] || 0) + netRate;

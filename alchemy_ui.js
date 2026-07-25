@@ -1259,6 +1259,93 @@ function openDrillDown(item, rate) {
     window.open(url, '_blank');
 }
 
+function openCustomCostModal(focusItem = null) {
+    if (!DB.settings.customCosts) DB.settings.customCosts = {};
+    document.getElementById('custom-cost-modal-title').innerText = '⚙ ' + t('Manage Custom Costs', 'ui');
+    renderCustomCostList(focusItem);
+    document.getElementById('custom-cost-modal').style.display = 'flex';
+}
+
+function renderCustomCostList(focusItem = null) {
+    const container = document.getElementById('custom-cost-list');
+    const costs = DB.settings.customCosts || {};
+    const entries = Object.keys(costs);
+
+    if (entries.length === 0) {
+        container.innerHTML = `<div style="color:#666; padding:10px; font-size:0.85em; text-align:center;">${t('No custom costs set.', 'ui')}</div>`;
+        return;
+    }
+
+    const lvlFuel = parseInt(document.getElementById('lvlFuel')?.value) || 0;
+    const lvlFert = parseInt(document.getElementById('lvlFert')?.value) || 0;
+
+    container.innerHTML = entries.map(name => {
+        const itemDef = DB.items[name] || {};
+        const cost = costs[name] || 0;
+
+        // 燃料/肥料比例文字，顯示在 item-name-label 右側
+        let ratioText = '';
+        if (itemDef.nutrientValue) {
+            const perCost = cost > 0 ? (itemDef.nutrientValue * (1 + lvlFert * 0.10) / cost) : 0;
+            ratioText = `<span class="details" style="color:var(--bio); white-space:nowrap; font-size:0.8em;">${perCost.toFixed(2)} V/${t('Coin')}</span>`;
+        }
+        else if (itemDef.heat) {
+            const perCost = cost > 0 ? (itemDef.heat * (1 + lvlFuel * 0.10) / cost) : 0;
+            ratioText = `<span class="details" style="color:var(--fuel); white-space:nowrap; font-size:0.8em;">${perCost.toFixed(2)} P/${t('Coin')}</span>`;
+        }
+
+        // details 區域一律顯示硬幣格式
+        const coinDisplay = `<span class="details" style="text-align:right;">${formatCoinIcons(cost)}</span>`;
+
+        const highlight = name === focusItem ? 'border-color:var(--accent); background:#2e3d30;' : '';
+        return `
+        <div class="multi-target-row" style="${highlight}">
+            <img src="img/item${itemDef.id ?? 0}.png" width="20" height="20">
+            <span class="item-name-label" style="flex:1; display:flex; gap:10px;">
+                <span>${name}</span>
+                ${ratioText}
+            </span>
+            ${coinDisplay}
+            <input type="number" class="small-num-input" style="width:120px;" value="${cost}"
+                   onchange="updateCustomCostValue('${name}', this.value)">
+            <button class="swap-btn" onclick="removeCustomCostRow('${name}')" style="color:var(--danger); border-color:var(--danger);">x</button>
+        </div>`;
+    }).join('');
+}
+
+function updateCustomCostValue(item, val) {
+    DB.settings.customCosts[item] = parseFloat(val) || 0;
+    persist();
+    // 與舊的 fuel/fert 輸入框同步
+    if (item === document.getElementById('fuelSelect')?.value) {
+        document.getElementById('fuelCostInput').value = DB.settings.customCosts[item];
+    }
+    if (item === document.getElementById('fertSelect')?.value) {
+        document.getElementById('fertCostInput').value = DB.settings.customCosts[item];
+    }
+    renderCustomCostList();
+}
+
+function removeCustomCostRow(item) {
+    delete DB.settings.customCosts[item];
+    persist();
+    renderCustomCostList();
+    calculate();
+}
+
+function addCustomCostRow() {
+    const originalSelectItem = window.selectItem;
+    window.selectItem = (name) => {
+        window.selectItem = originalSelectItem;
+        closeModal('picker-modal');
+        if (DB.settings.customCosts[name] === undefined) DB.settings.customCosts[name] = 0;
+        persist();
+        openCustomCostModal(name);
+    };
+    openItemPicker();
+}
+
+
 /* ==========================================================================
    SECTION: Translation & URL
    ========================================================================== */

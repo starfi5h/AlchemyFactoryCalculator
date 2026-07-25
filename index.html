@@ -35,7 +35,7 @@
         <div class="tabs">
             <div class="tab-btn active" onclick="switchTab('calc')">Calculator</div>
             <div class="tab-btn" onclick="switchTab('cauldron')">Cauldron</div>
-            <div class="tab-btn" onclick="switchTab('planner')">Planner</div>
+            <!-- <div class="tab-btn" onclick="switchTab('planner')">Planner</div> -->
             <!-- <div class="tab-btn" onclick="switchTab('recipes')">Recipes</div> -->
             <!-- <div class="tab-btn" onclick="switchTab('itemvalue')">Item Value</div> -->
             <div class="tab-btn" onclick="switchTab('help')">Wiki</div>
@@ -145,6 +145,19 @@
             </div>
         </div>
 
+        <!-- Custom Cost Modal -->
+        <div id="custom-cost-modal" class="modal-overlay" onclick="closeModal('custom-cost-modal')">
+            <div class="modal-content" onclick="event.stopPropagation()" style="min-width:360px; max-width:520px;">
+                <div class="modal-header">
+                    <h2 style="margin:0; font-size:1em;" id="custom-cost-modal-title">⚙ Manage Custom Costs</h2>
+                    <button class="close-modal" onclick="closeModal('custom-cost-modal')">&times;</button>
+                </div>
+                <div id="custom-cost-list"></div>
+                <button class="save-btn" style="margin-top:10px; background:var(--panel); border-style:dashed;"
+                        onclick="addCustomCostRow()">+ <span id="custom-cost-add-label">Add Item</span></button>
+            </div>
+        </div>
+
         <!-- Item Picker Modal -->
         <div id="picker-modal" class="modal-overlay" onclick="closeModal('picker-modal')">
             <div class="modal-content picker-modal-content" onclick="event.stopPropagation()">
@@ -239,7 +252,7 @@
                                     <button class="spinner-btn right last" onclick="adjustRate(1)">+1</button>
                                 </div>
                             </div>
-                            <div class="input-group" style="margin-bottom:20px;">
+                            <div class="input-group">
                                 <label>Belt Load Fraction</label> <label id="rateLabel">100%</label>
                                 <div class="slider-container">
                                     <input type="range" id="beltSlider" min="0" max="100" step="1" oninput="updateFromSlider()">
@@ -301,6 +314,10 @@
                                 <input type="number" id="fertCostInput" class="small-num-input" value="0" oninput="onLogisticsChange()">
                             </div>
                         </div>
+
+                        <button class="split-btn" style="width:100%; margin-bottom:10px;" onclick="openCustomCostModal()">
+                            ⚙ <span id="custom-cost-btn-label">Manage Custom Costs</span>
+                        </button>
 
                         <div class="input-group">
                             <label id="nodeSizeLabel">Node Size: 100%</label>

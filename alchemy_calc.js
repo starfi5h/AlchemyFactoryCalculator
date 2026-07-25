@@ -170,7 +170,8 @@ function calculate() {
                 forcedExternals: GLOBAL_CALC_STATE.forcedExternals,
                 preferredRecipes: DB.settings.preferredRecipes,
                 nodeRecipeOverrides: DB.settings.nodeRecipeOverrides,
-                recipeModifiers: DB.settings.recipeModifiers
+                recipeModifiers: DB.settings.recipeModifiers,
+                customCosts: DB.settings.customCosts
             }
         });
 
@@ -415,12 +416,13 @@ function buildRecipeTooltip(tooltipData) {
     return tooltipText;
 }
 
-function renderCostEntries(costEntries) {
+function renderCostEntries(costEntries, itemName) {
     return costEntries.map(entry => {
+        if (entry.type !== 'gold') return ``; // ignore fuel and fert cost
         const amount = Math.ceil(entry.amount - Number.EPSILON).toLocaleString();
-        if (entry.type === 'gold') return `<span class="cost-tag">-${amount} /m <img src="img/copper.png" class="item-icon-small"></span>`;
-        return ``; // ignore fuel and fert cost
-        //return `<span class="cost-tag">(${amount} /m)</span>`;
+        const bolt = entry.custom ? ' ⚡' : '';
+        return `<span class="cost-tag" style="cursor:pointer;" title="${t('Manage Custom Cost')}"
+            onclick="event.stopPropagation(); openCustomCostModal('${itemName}')">-${amount} /m <img src="img/copper.png" class="item-icon-small">${bolt}</span>`;
     }).join('');
 }
 
@@ -496,7 +498,7 @@ function renderTreeNode(params, node) {
     }
 
     const externalTag = `<div><input type="checkbox" ${node.isExternal ? 'checked':''} onchange="toggleExternal('${node.pathKey}');"></input></div>`;
-    const costTag = params.showFuelFert ? renderCostEntries(node.tags.costEntries) : '';
+    const costTag = params.showFuelFert ? renderCostEntries(node.tags.costEntries, node.item) : '';
     if (node.netRate < Number.EPSILON) byproductTag = bioTag = heatTag = '';
 
     div.innerHTML = `<div class="node-content" data-ancestors='${JSON.stringify(node.ancestors)}'>

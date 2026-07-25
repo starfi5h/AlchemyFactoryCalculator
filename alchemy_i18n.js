@@ -313,6 +313,11 @@ window.ALCHEMY_I18N = {
         "Selected item is missing baseCost data.": "该物品缺少 baseCost 数据，暂无法使用。",
         "Cannot select the output item itself as input.": "不能选择产物本身作为输入。",
 
+        "⚙ Manage Custom Costs": "⚙ 管理自订成本",
+        "Manage Custom Costs": "管理自订成本",
+        "No custom costs set.": "尚未设定任何自订成本。",
+        "Add Item": "新增物品",
+
         // --- Help ---
         "Guides": "指南",
         "Items": "物品",
