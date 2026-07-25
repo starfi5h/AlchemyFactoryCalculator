@@ -258,14 +258,14 @@ function gatherInputs() {
         ? heatingDeviceSelect.value
         : (DB.machines["Stone Furnace"]?.isGenerator ? "Stone Furnace" : Object.keys(DB.machines).find(machineName => DB.machines[machineName]?.isGenerator));
     const selfFuel = document.getElementById('btnSelfFuel')?.innerText === t("Self-Fuel: ON") && isMulti;
-    const fuelCost = parseFloat(document.getElementById('fuelCostInput').value) || 0;
+    const fuelCost = DB.settings.customCosts[selectedFuel] || 0;
 
     const selectedFert = document.getElementById('fertSelect').value;
     const selfFert = document.getElementById('btnSelfFert')?.innerText === t("Self-Fert: ON") && isMulti;
-    const fertCost = parseFloat(document.getElementById('fertCostInput').value) || 0;
+    const fertCost = DB.settings.customCosts[selectedFert] || 0;
 
-    const showFuelCost = document.getElementById('fuelCostEnable').checked;
-    const showFertCost = document.getElementById('fertCostEnable').checked;    
+    const showFuelCost = false;
+    const showFertCost = false;
     const showBeltCount = document.getElementById('showBeltCount').checked;
     const showFuelFert = document.getElementById('showFuelFert').checked;
     const showMaxCap = document.getElementById('showMaxCap').checked;

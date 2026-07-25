@@ -19,8 +19,6 @@ const DEFAULT_SETTINGS = {
     defaultFuel: "Blast Potion",
     defaultFert: "Fertile Catalyst",
     selectedHeatingDevice: "Stone Furnace",
-    fuelCostEnable: true,
-    fertCostEnable: true,
     nodeSize: 1,
     showBeltCount: true,
     showFuelFert: true,
@@ -730,8 +728,6 @@ function loadSettingsToUI() {
             heatingSel.value = heatingSel.querySelector('option[value="Stone Furnace"]') ? "Stone Furnace" : (heatingSel.options[0]?.value || "");
             DB.settings.selectedHeatingDevice = heatingSel.value;
         }
-        if(DB.settings.fuelCostEnable) document.getElementById('fuelCostEnable').checked = DB.settings.fuelCostEnable;
-        if(DB.settings.fertCostEnable) document.getElementById('fertCostEnable').checked = DB.settings.fertCostEnable;
         if(DB.settings.nodeSize) {
             document.getElementById('nodeScaleSlider').value = DB.settings.nodeSize;
             setNodeScale(DB.settings.nodeSize);
@@ -801,22 +797,12 @@ function onLogisticsChange() {
     const curFert = document.getElementById('fertSelect').value;
     const curHeatingDevice = document.getElementById('heatingDeviceSelect').value;
 
-    if (DB.settings.defaultFuel !== curFuel || curFert !== DB.settings.defaultFert) {
-        document.getElementById('fuelCostInput').value = DB.settings.customCosts[curFuel] || 0;
-        document.getElementById('fertCostInput').value = DB.settings.customCosts[curFert] || 0;
-        DB.settings.defaultFuel = curFuel;
-        DB.settings.defaultFert = curFert;
-    }
-    else {
-        DB.settings.fuelCostEnable = document.getElementById('fuelCostEnable').checked;
-        DB.settings.fertCostEnable = document.getElementById('fertCostEnable').checked;
-        DB.settings.customCosts[curFuel] = parseFloat(document.getElementById('fuelCostInput').value) || 0;
-        DB.settings.customCosts[curFert] = parseFloat(document.getElementById('fertCostInput').value) || 0;
-    }
+    DB.settings.defaultFuel = curFuel;
+    DB.settings.defaultFert = curFert;
     DB.settings.nodeSize = document.getElementById('nodeScaleSlider').value;
     DB.settings.showMaxCap = document.getElementById('showMaxCap').checked;
     DB.settings.showFuelFert = document.getElementById('showFuelFert').checked;
-    DB.settings.showHeatFert = document.getElementById('showHeatFert').checked;    
+    DB.settings.showHeatFert = document.getElementById('showHeatFert').checked;
     DB.settings.showBeltCount = document.getElementById('showBeltCount').checked;
     DB.settings.selectedHeatingDevice = curHeatingDevice;
     persist();
@@ -1285,13 +1271,13 @@ function renderCustomCostList(focusItem = null) {
 
         // 燃料/肥料比例文字，顯示在 item-name-label 右側
         let ratioText = '';
+        if (itemDef.heat) {
+            const perCost = cost > 0 ? (itemDef.heat * (1 + lvlFuel * 0.10) / cost) : 0;
+            ratioText += `<span class="details" style="color:var(--fuel); white-space:nowrap; font-size:0.8em;">${perCost.toFixed(2)} P/${t('Coin')}</span>`;
+        }
         if (itemDef.nutrientValue) {
             const perCost = cost > 0 ? (itemDef.nutrientValue * (1 + lvlFert * 0.10) / cost) : 0;
-            ratioText = `<span class="details" style="color:var(--bio); white-space:nowrap; font-size:0.8em;">${perCost.toFixed(2)} V/${t('Coin')}</span>`;
-        }
-        else if (itemDef.heat) {
-            const perCost = cost > 0 ? (itemDef.heat * (1 + lvlFuel * 0.10) / cost) : 0;
-            ratioText = `<span class="details" style="color:var(--fuel); white-space:nowrap; font-size:0.8em;">${perCost.toFixed(2)} P/${t('Coin')}</span>`;
+            ratioText += `<span class="details" style="color:var(--bio); white-space:nowrap; font-size:0.8em;">${perCost.toFixed(2)} V/${t('Coin')}</span>`;
         }
 
         // details 區域一律顯示硬幣格式
@@ -1316,14 +1302,8 @@ function renderCustomCostList(focusItem = null) {
 function updateCustomCostValue(item, val) {
     DB.settings.customCosts[item] = parseFloat(val) || 0;
     persist();
-    // 與舊的 fuel/fert 輸入框同步
-    if (item === document.getElementById('fuelSelect')?.value) {
-        document.getElementById('fuelCostInput').value = DB.settings.customCosts[item];
-    }
-    if (item === document.getElementById('fertSelect')?.value) {
-        document.getElementById('fertCostInput').value = DB.settings.customCosts[item];
-    }
     renderCustomCostList();
+    calculate();
 }
 
 function removeCustomCostRow(item) {
