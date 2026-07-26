@@ -5,53 +5,503 @@
    Phase 3: 依 edge 建立順序做流量分配，port 變色 + 卡片外 +N/-N 標籤
    ========================================================================== */
 
-const PLANNER_STORAGE_KEY = "alchemy_planner_v1";
+const PLANNER_LIBRARY_KEY = "alchemy_planner_library_v1";
 
-let plannerState = {
-    nodes: {},          // { [nodeId]: { id, recipeId, recipeModifiers, machineCount, x, y } }
-    edges: {},          // { [edgeId]: { id, item, fromNode, toNode, createdAt } }
-    viewport: { x: 0, y: 0, zoom: 1 },
-    _edgeSeq: 0,
-    _nodeSeq: 0
+/**
+ * plannerLibrary: 存放所有「方案(Plan)」的容器，會整包寫入 localStorage。
+ * {
+ *   activePlanId: string,
+ *   planOrder: string[],           // plan id 顯示順序 (下拉選單 / 管理清單皆依此排序)
+ *   plans: { [planId]: { id, name, updatedAt, data } }
+ * }
+ * 其中每個 plan.data 的結構，就是原本單一 plannerState 的內容：
+ * { nodes, edges, viewport, _edgeSeq, _nodeSeq, gridSize }
+ */
+let plannerLibrary = {
+    activePlanId: null,
+    planOrder: [],
+    plans: {}
 };
 
+// plannerState 永遠指向「目前作用中 plan」的 data 物件參照；
+// 畫布相關的所有函式維持讀寫 plannerState，不需要知道 library 的存在。
+let plannerState = null;
+
 let _plannerLastFlows = null; // 上一次 resolveFlows() 的結果快取 (供拖曳節點時即時重繪邊線用)
+let _plannerCanvasHovered = false;
+let _plannerManageSelectedId = null; // 「方案管理」Modal 內目前選中(highlight)的 plan id
+let _plannerLinkMode = false;
+let _plannerSummaryCollapsed = false;
+let _plannerSummarySectionCollapsed = { cost: false, output: false, input: false, machines: true };
+const PLANNER_ZOOM_MIN = 0.2;
+const PLANNER_ZOOM_MAX = 3;
+const PLANNER_GRID_STEPS = [40, 20, 0];
+
+/**
+ * plannerHistory: 每個 plan 各自獨立的 undo/redo 堆疊，只存在記憶體中 (不寫入 localStorage)。
+ * { [planId]: { stack: [ deep-cloned plan.data, ... ], index: number } }
+ * index 指向 stack 中「目前所在」的快照；stack[0] 永遠是該 plan 在本次 session 被載入當下的初始狀態。
+ */
+let plannerHistory = {};
+const PLANNER_HISTORY_LIMIT = 10;
 
 /* ---------------- INIT / PERSISTENCE ---------------- */
 
 function initPlannerPage() {
-    loadPlannerState();
+    _injectPlannerSummaryStyles();
+    loadPlannerLibrary();
+    renderPlannerToolbarSelect();
+
     renderPlanner();
     attachPlannerCanvasPan();
     attachPlannerPortDragHandlers();
+    attachPlannerWheelZoom();
+    attachPlannerPinchZoom();
+    attachPlannerKeyboardShortcuts();
+    updatePlannerGridButton();
+    updatePlannerGridBackground();
+    updatePlannerUndoRedoButtons();
 }
 
-function loadPlannerState() {
-    const saved = localStorage.getItem(PLANNER_STORAGE_KEY);
-    if (!saved) return;
-    try {
-        const parsed = JSON.parse(saved);
-        plannerState = Object.assign(
-            { nodes: {}, edges: {}, viewport: { x: 0, y: 0, zoom: 1 }, _edgeSeq: 0, _nodeSeq: 0 },
-            parsed
-        );
-        // 遷移邊的物品(中/英轉換)
-        Object.values(plannerState.edges).forEach(edge => {
+/** 建立一個全新、空白的 plan 資料本體 (即原本 plannerState 的初始值) */
+function _createEmptyPlanData() {
+    return { nodes: {}, edges: {}, viewport: { x: 0, y: 0, zoom: 1 }, _edgeSeq: 0, _nodeSeq: 0, gridSize: 0 };
+}
+
+/** 建立一筆新的 plan 條目 (含 meta: id/name/updatedAt) */
+function _createPlan(name) {
+    const id = 'plan_' + Date.now() + '_' + Math.floor(Math.random() * 10000);
+    return { id, name: name || t('New Plan', 'ui'), updatedAt: Date.now(), data: _createEmptyPlanData() };
+}
+
+/** 讀取整個 plan library；若無資料或損毀，建立一個預設空白方案 */
+function loadPlannerLibrary() {
+    const saved = localStorage.getItem(PLANNER_LIBRARY_KEY);
+    if (saved) {
+        try {
+            plannerLibrary = JSON.parse(saved);
+        } catch (e) {
+            console.error("Planner library corrupt, resetting.", e);
+            plannerLibrary = null;
+        }
+    }
+
+    if (!plannerLibrary || !plannerLibrary.plans || Object.keys(plannerLibrary.plans).length === 0) {
+        const plan = _createPlan(t('Default Plan', 'ui'));
+        plannerLibrary = { activePlanId: plan.id, planOrder: [plan.id], plans: { [plan.id]: plan } };
+    }
+    if (!plannerLibrary.planOrder || plannerLibrary.planOrder.length === 0) {
+        plannerLibrary.planOrder = Object.keys(plannerLibrary.plans);
+    }
+    if (!plannerLibrary.activePlanId || !plannerLibrary.plans[plannerLibrary.activePlanId]) {
+        plannerLibrary.activePlanId = plannerLibrary.planOrder[0];
+    }
+
+    // 遷移每個 plan 中，邊(edge)所記錄的物品名稱(中/英轉換)
+    Object.values(plannerLibrary.plans).forEach(plan => {
+        Object.values(plan.data.edges || {}).forEach(edge => {
             const itemName = edge.item;
             if (!DB.items[itemName]) {
                 const alterName = queryDualItemName(itemName); // i18n
                 if (DB.items[alterName]) {
-                    edge.item = alterName;                    
+                    edge.item = alterName;
                 }
             }
         });
-    } catch (e) {
-        console.error("Planner state corrupt, resetting.", e);
-    }
+    });
+
+    _activatePlanData(plannerLibrary.activePlanId);
 }
 
+/** 將 plannerState 指向指定 plan 的資料本體，並補齊缺漏欄位 */
+function _activatePlanData(planId) {
+    const plan = plannerLibrary.plans[planId];
+    if (!plan) return;
+    plannerState = plan.data;
+    if (!plannerState.viewport) plannerState.viewport = { x: 0, y: 0, zoom: 1 };
+    if (!plannerState.viewport.zoom) plannerState.viewport.zoom = 1;
+    if (plannerState.gridSize === undefined) plannerState.gridSize = 0;
+    _plannerLastFlows = null;
+    _ensurePlannerHistory(planId);
+}
+
+/** 只保存 library 結構本身 (方案清單/順序/目前選中哪個)，不視為對內容的編輯 */
+function savePlannerLibraryMeta() {
+    localStorage.setItem(PLANNER_LIBRARY_KEY, JSON.stringify(plannerLibrary));
+}
+
+/** 保存目前作用中 plan 的內容變更；同時更新其 updatedAt 時間戳記，並推進 undo 歷史堆疊 */
 function savePlannerState() {
-    localStorage.setItem(PLANNER_STORAGE_KEY, JSON.stringify(plannerState));
+    const plan = plannerLibrary.plans[plannerLibrary.activePlanId];
+    if (plan) plan.updatedAt = Date.now();
+    _pushPlannerHistory(plannerLibrary.activePlanId);
+    savePlannerLibraryMeta();
+    updatePlannerUndoRedoButtons();
+}
+
+/* ==========================================================================
+   SECTION: UNDO / REDO (per-plan, in-memory only)
+   ========================================================================== */
+
+/** 若指定 plan 尚無歷史堆疊，以目前狀態建立一筆初始快照 (index 0) */
+function _ensurePlannerHistory(planId) {
+    if (plannerHistory[planId]) return;
+    plannerHistory[planId] = {
+        stack: [JSON.parse(JSON.stringify(plannerLibrary.plans[planId].data))],
+        index: 0
+    };
+}
+
+/** 將目前 plannerState 的深拷貝推進歷史堆疊；若曾經 undo 過，先捨棄後面的 redo 分支 */
+function _pushPlannerHistory(planId) {
+    _ensurePlannerHistory(planId);
+    const hist = plannerHistory[planId];
+    hist.stack = hist.stack.slice(0, hist.index + 1);
+    hist.stack.push(JSON.parse(JSON.stringify(plannerState)));
+    if (hist.stack.length > PLANNER_HISTORY_LIMIT) {
+        hist.stack.shift(); // 超過上限 (10 筆)，捨棄最舊的一筆
+    }
+    hist.index = hist.stack.length - 1;
+}
+
+/** 依目前歷史堆疊位置，更新 toolbar 上 Undo/Redo 按鈕的 disabled 狀態 */
+function updatePlannerUndoRedoButtons() {
+    const hist = plannerHistory[plannerLibrary.activePlanId];
+    const undoBtn = document.getElementById('planner-undo-btn');
+    const redoBtn = document.getElementById('planner-redo-btn');
+    if (undoBtn) undoBtn.disabled = !hist || hist.index <= 0;
+    if (redoBtn) redoBtn.disabled = !hist || hist.index >= hist.stack.length - 1;
+}
+
+/** 將歷史堆疊中指定位置的快照還原為目前的 plan 資料，並重繪畫布 (不會再推進歷史) */
+function _restorePlannerHistorySnapshot(planId, hist) {
+    const snapshot = hist.stack[hist.index];
+    const restored = JSON.parse(JSON.stringify(snapshot));
+    plannerLibrary.plans[planId].data = restored;
+    plannerLibrary.plans[planId].updatedAt = Date.now();
+    plannerState = restored;
+    _plannerLastFlows = null;
+
+    renderPlanner();
+    updatePlannerGridButton();
+    updatePlannerGridBackground();
+    applyPlannerViewportTransform();
+    updatePlannerUndoRedoButtons();
+    savePlannerLibraryMeta(); // 還原操作本身不算新的編輯，不推進歷史堆疊
+}
+
+function plannerUndo() {
+    const planId = plannerLibrary.activePlanId;
+    const hist = plannerHistory[planId];
+    if (!hist || hist.index <= 0) return;
+    hist.index--;
+    _restorePlannerHistorySnapshot(planId, hist);
+}
+
+function plannerRedo() {
+    const planId = plannerLibrary.activePlanId;
+    const hist = plannerHistory[planId];
+    if (!hist || hist.index >= hist.stack.length - 1) return;
+    hist.index++;
+    _restorePlannerHistorySnapshot(planId, hist);
+}
+
+/* ==========================================================================
+   SECTION: PLAN LIBRARY UI - Toolbar Dropdown
+   ========================================================================== */
+
+/** 重繪 toolbar 上的方案下拉選單，選中項對應 activePlanId */
+function renderPlannerToolbarSelect() {
+    const sel = document.getElementById('planner-plan-select');
+    if (!sel) return;
+    sel.innerHTML = plannerLibrary.planOrder
+        .filter(id => plannerLibrary.plans[id])
+        .map(id => {
+            const plan = plannerLibrary.plans[id];
+            const selected = id === plannerLibrary.activePlanId ? 'selected' : '';
+            return `<option value="${id}" ${selected}>${_escapeHtml(plan.name)}</option>`;
+        }).join('');
+}
+
+/** 切換目前作用中的方案：重新指向 plannerState、重繪整個畫布 */
+function switchPlannerPlan(planId) {
+    if (!plannerLibrary.plans[planId] || planId === plannerLibrary.activePlanId) return;
+    plannerLibrary.activePlanId = planId;
+    _activatePlanData(planId);
+
+    renderPlanner();
+    updatePlannerGridButton();
+    updatePlannerGridBackground();
+    applyPlannerViewportTransform();
+    renderPlannerToolbarSelect();
+    updatePlannerUndoRedoButtons();
+    savePlannerLibraryMeta(); // 只是切換選中對象，不算編輯內容
+}
+
+function _escapeHtml(str) {
+    return (str || '').replace(/[&<>"']/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
+}
+
+function _formatPlannerTime(ts) {
+    if (!ts) return '';
+    const diff = Date.now() - ts;
+    const min = 60000, hr = 3600000, day = 86400000;
+    if (diff < min) return t('just now', 'ui');
+    if (diff < hr) return Math.floor(diff / min) + ' ' + t('min ago', 'ui');
+    if (diff < day) return Math.floor(diff / hr) + ' ' + t('hr ago', 'ui');
+    if (diff < day * 7) return Math.floor(diff / day) + ' ' + t('days ago', 'ui');
+    return new Date(ts).toLocaleDateString();
+}
+
+/* ==========================================================================
+   SECTION: PLAN LIBRARY UI - Manage Plans Modal
+   ========================================================================== */
+
+/** 開啟「方案管理」Modal，預設選中目前作用中的方案 */
+function openPlannerManageModal() {
+    _plannerManageSelectedId = plannerLibrary.activePlanId;
+    renderPlannerManageList();
+    document.getElementById('planner-manage-modal').style.display = 'flex';
+}
+
+/** 重繪 Modal 內的方案清單 (含拖曳排序 handle 綁定) */
+function renderPlannerManageList() {
+    const container = document.getElementById('planner-plan-list');
+    if (!container) return;
+    container.innerHTML = plannerLibrary.planOrder
+        .filter(id => plannerLibrary.plans[id])
+        .map(id => {
+            const plan = plannerLibrary.plans[id];
+            const isSelected = id === _plannerManageSelectedId;
+            const isActive = id === plannerLibrary.activePlanId;
+            return `
+                <div class="planner-plan-row ${isSelected ? 'selected' : ''}" data-plan-id="${id}" onclick="selectPlannerManageRow('${id}')">
+                    <span class="planner-plan-drag-handle" title="Drag to reorder">⠿</span>
+                    <span class="planner-plan-name">${_escapeHtml(plan.name)}</span>
+                    ${isActive ? `<span class="planner-plan-active-tag">${t('Active', 'ui')}</span>` : ''}
+                    <span class="planner-plan-meta">${_formatPlannerTime(plan.updatedAt)}</span>
+                </div>`;
+        }).join('');
+
+    container.querySelectorAll('.planner-plan-row').forEach(row => {
+        _initPlannerPlanDragHandle(row.querySelector('.planner-plan-drag-handle'), row);
+    });
+
+    _updatePlannerManageActionsState();
+}
+
+/** 選中/未選中時，啟用或停用「載入/重新命名/複製/刪除/匯出」這排操作按鈕 */
+function _updatePlannerManageActionsState() {
+    const row = document.getElementById('planner-plan-actions-row');
+    if (!row) return;
+    const disabled = !_plannerManageSelectedId;
+    row.querySelectorAll('button').forEach(btn => btn.disabled = disabled);
+}
+
+function selectPlannerManageRow(id) {
+    _plannerManageSelectedId = id;
+    renderPlannerManageList();
+}
+
+/** 清單列的拖曳排序：沿用 multi-target-row 既有的 pointer event pattern */
+function _initPlannerPlanDragHandle(handle, row) {
+    if (!handle) return;
+    handle.addEventListener('pointerdown', (e) => {
+        e.preventDefault();
+        e.stopPropagation();
+        handle.setPointerCapture(e.pointerId);
+
+        const container = document.getElementById('planner-plan-list');
+        row.classList.add('dragging');
+        let targetRow = null;
+        let insertBefore = true;
+
+        const onMove = (ev) => {
+            const siblings = [...container.querySelectorAll('.planner-plan-row:not(.dragging)')];
+            siblings.forEach(r => r.classList.remove('drag-over-top', 'drag-over-bottom'));
+            targetRow = null;
+
+            for (const r of siblings) {
+                const rect = r.getBoundingClientRect();
+                if (ev.clientY >= rect.top && ev.clientY <= rect.bottom) {
+                    insertBefore = ev.clientY < rect.top + rect.height / 2;
+                    r.classList.add(insertBefore ? 'drag-over-top' : 'drag-over-bottom');
+                    targetRow = r;
+                    break;
+                }
+            }
+        };
+
+        const onUp = () => {
+            handle.removeEventListener('pointermove', onMove);
+            handle.removeEventListener('pointerup', onUp);
+            row.classList.remove('dragging');
+            container.querySelectorAll('.planner-plan-row')
+                .forEach(r => r.classList.remove('drag-over-top', 'drag-over-bottom'));
+
+            if (targetRow) {
+                container.insertBefore(row, insertBefore ? targetRow : targetRow.nextSibling);
+                plannerLibrary.planOrder = [...container.querySelectorAll('.planner-plan-row')].map(r => r.dataset.planId);
+                savePlannerLibraryMeta();
+                renderPlannerToolbarSelect();
+            }
+        };
+
+        handle.addEventListener('pointermove', onMove);
+        handle.addEventListener('pointerup', onUp);
+    });
+}
+
+/* ---- Modal 操作按鈕：載入 / 重新命名 / 複製 / 刪除 / 匯出 ---- */
+
+/** 把 Modal 內選中的方案設為作用中方案，並關閉 Modal */
+function managePlannerLoadSelected() {
+    if (!_plannerManageSelectedId) return;
+    switchPlannerPlan(_plannerManageSelectedId);
+    closeModal('planner-manage-modal');
+}
+
+/** 就地將選中列的名稱換成輸入框，方便重新命名 */
+function managePlannerRenameSelected() {
+    const id = _plannerManageSelectedId;
+    if (!id) return;
+    const nameEl = document.querySelector(`.planner-plan-row[data-plan-id="${id}"] .planner-plan-name`);
+    if (!nameEl) return;
+    const plan = plannerLibrary.plans[id];
+    const oldName = plan.name;
+    nameEl.innerHTML = `<input type="text" value="${_escapeHtml(oldName)}">`;
+    const input = nameEl.querySelector('input');
+    input.focus();
+    input.select();
+    input.addEventListener('click', (e) => e.stopPropagation());
+
+    const commit = () => {
+        const newName = input.value.trim();
+        plan.name = newName || oldName;
+        savePlannerLibraryMeta();
+        renderPlannerToolbarSelect();
+        renderPlannerManageList();
+    };
+    input.addEventListener('blur', commit);
+    input.addEventListener('keydown', (e) => {
+        if (e.key === 'Enter') input.blur();
+        if (e.key === 'Escape') { input.value = oldName; input.blur(); }
+    });
+}
+
+/** 複製選中的方案 (含全部節點/連線)，插入在原方案之後 */
+function managePlannerDuplicateSelected() {
+    const id = _plannerManageSelectedId;
+    if (!id) return;
+    const src = plannerLibrary.plans[id];
+    const copy = _createPlan(src.name + ' ' + t('(Copy)', 'ui'));
+    copy.data = JSON.parse(JSON.stringify(src.data));
+
+    const idx = plannerLibrary.planOrder.indexOf(id);
+    plannerLibrary.plans[copy.id] = copy;
+    plannerLibrary.planOrder.splice(idx + 1, 0, copy.id);
+
+    _plannerManageSelectedId = copy.id;
+    savePlannerLibraryMeta();
+    renderPlannerToolbarSelect();
+    renderPlannerManageList();
+}
+
+/** 刪除選中的方案；若刪掉的是目前作用中方案，自動切換到清單第一筆；不可刪到 0 個方案 */
+function managePlannerDeleteSelected() {
+    const id = _plannerManageSelectedId;
+    if (!id) return;
+    if (!confirm(t('Delete this plan?', 'ui'))) return;
+
+    delete plannerLibrary.plans[id];
+    plannerLibrary.planOrder = plannerLibrary.planOrder.filter(pid => pid !== id);
+    delete plannerHistory[id]; // 該 plan 的 undo/redo 歷史一併清除
+
+    if (plannerLibrary.planOrder.length === 0) {
+        const plan = _createPlan(t('Default Plan', 'ui'));
+        plannerLibrary.plans[plan.id] = plan;
+        plannerLibrary.planOrder = [plan.id];
+    }
+
+    if (plannerLibrary.activePlanId === id) {
+        plannerLibrary.activePlanId = plannerLibrary.planOrder[0];
+        _activatePlanData(plannerLibrary.activePlanId);
+        renderPlanner();
+        updatePlannerGridButton();
+        updatePlannerGridBackground();
+        applyPlannerViewportTransform();
+        updatePlannerUndoRedoButtons();
+    }
+
+    _plannerManageSelectedId = plannerLibrary.activePlanId;
+    savePlannerLibraryMeta();
+    renderPlannerToolbarSelect();
+    renderPlannerManageList();
+}
+
+/** 將選中方案匯出成單一 .json 檔 (含 name + data，方便匯入時直接還原名稱) */
+function managePlannerExportSelected() {
+    const id = _plannerManageSelectedId;
+    if (!id) return;
+    const plan = plannerLibrary.plans[id];
+    const exportObj = { name: plan.name, data: plan.data };
+    const blob = new Blob([JSON.stringify(exportObj, null, 2)], { type: "application/json" });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = url;
+    a.download = `planner_${plan.name.replace(/[^\w\-]+/g, '_')}.json`;
+    document.body.appendChild(a);
+    a.click();
+    document.body.removeChild(a);
+    URL.revokeObjectURL(url);
+}
+
+/* ---- Modal 底部操作：新方案 / 匯入 (與選中列無關的全域操作) ---- */
+
+/** 建立一個空白新方案並直接進入重新命名狀態 */
+function managePlannerCreateNew() {
+    const plan = _createPlan(t('New Plan', 'ui'));
+    plannerLibrary.plans[plan.id] = plan;
+    plannerLibrary.planOrder.push(plan.id);
+    _plannerManageSelectedId = plan.id;
+    savePlannerLibraryMeta();
+    renderPlannerToolbarSelect();
+    renderPlannerManageList();
+    managePlannerRenameSelected();
+}
+
+/** 從檔案匯入一個方案 (新增一筆到清單，不覆蓋既有方案) */
+function managePlannerImport() {
+    const input = document.createElement('input');
+    input.type = 'file';
+    input.accept = '.json';
+    input.onchange = (e) => {
+        const file = e.target.files[0];
+        if (!file) return;
+        const reader = new FileReader();
+        reader.onload = (readerEvent) => {
+            try {
+                const parsed = JSON.parse(readerEvent.target.result);
+                if (!parsed || typeof parsed !== 'object' || !parsed.data || !parsed.data.nodes) {
+                    throw new Error("Invalid plan file format.");
+                }
+                const plan = _createPlan(parsed.name || t('Imported Plan', 'ui'));
+                plan.data = Object.assign(_createEmptyPlanData(), parsed.data);
+
+                plannerLibrary.plans[plan.id] = plan;
+                plannerLibrary.planOrder.push(plan.id);
+                _plannerManageSelectedId = plan.id;
+
+                savePlannerLibraryMeta();
+                renderPlannerToolbarSelect();
+                renderPlannerManageList();
+            } catch (err) {
+                alert(t('Failed to import plan: ', 'ui') + err.message);
+            }
+        };
+        reader.readAsText(file);
+    };
+    input.click();
 }
 
 /* ---------------- COORDINATE HELPERS ---------------- */
@@ -59,15 +509,197 @@ function savePlannerState() {
 function plannerScreenToGraph(clientX, clientY) {
     const canvas = document.getElementById('planner-canvas');
     const rect = canvas.getBoundingClientRect();
+    const zoom = plannerState.viewport.zoom || 1;
     return {
-        x: clientX - rect.left - plannerState.viewport.x,
-        y: clientY - rect.top - plannerState.viewport.y
+        x: (clientX - rect.left - plannerState.viewport.x) / zoom,
+        y: (clientY - rect.top - plannerState.viewport.y) / zoom
     };
 }
 
 function applyPlannerViewportTransform() {
     const vp = document.getElementById('planner-viewport');
-    if (vp) vp.style.transform = `translate(${plannerState.viewport.x}px, ${plannerState.viewport.y}px)`;
+    const zoom = plannerState.viewport.zoom || 1;
+    if (vp) vp.style.transform = `translate(${plannerState.viewport.x}px, ${plannerState.viewport.y}px) scale(${zoom})`;
+    updatePlannerGridBackground();
+}
+
+/* ==========================================================================
+   SECTION: VIEW CONTROLS - ZOOM / GRID SNAP / FIT TO VIEW
+   ========================================================================== */
+
+function plannerSetZoom(newZoom, anchorClientX, anchorClientY) {
+    const canvas = document.getElementById('planner-canvas');
+    if (!canvas) return;
+    const rect = canvas.getBoundingClientRect();
+    const ax = anchorClientX ?? (rect.left + rect.width / 2);
+    const ay = anchorClientY ?? (rect.top + rect.height / 2);
+    const oldZoom = plannerState.viewport.zoom || 1;
+
+    newZoom = Math.min(PLANNER_ZOOM_MAX, Math.max(PLANNER_ZOOM_MIN, newZoom));
+    if (Math.abs(newZoom - oldZoom) < 0.0001) return;
+
+    // アンカー下のグラフ座標を保ったままズーム
+    const graphX = (ax - rect.left - plannerState.viewport.x) / oldZoom;
+    const graphY = (ay - rect.top - plannerState.viewport.y) / oldZoom;
+
+    plannerState.viewport.zoom = newZoom;
+    plannerState.viewport.x = (ax - rect.left) - graphX * newZoom;
+    plannerState.viewport.y = (ay - rect.top) - graphY * newZoom;
+
+    applyPlannerViewportTransform();
+    if (_plannerLastFlows) renderPlannerEdges(_plannerLastFlows);
+}
+
+function plannerZoomIn()  { plannerSetZoom((plannerState.viewport.zoom || 1) * 1.2); }
+function plannerZoomOut() { plannerSetZoom((plannerState.viewport.zoom || 1) / 1.2); }
+
+function attachPlannerWheelZoom() {
+    const canvas = document.getElementById('planner-canvas');
+    if (!canvas || canvas.dataset.wheelBound) return;
+    canvas.dataset.wheelBound = "1";
+    canvas.addEventListener('wheel', (e) => {
+        e.preventDefault();
+        const factor = e.deltaY < 0 ? 1.1 : 1 / 1.1;
+        plannerSetZoom((plannerState.viewport.zoom || 1) * factor, e.clientX, e.clientY);
+    }, { passive: false });
+}
+
+function attachPlannerPinchZoom() {
+    const canvas = document.getElementById('planner-canvas');
+    if (!canvas || canvas.dataset.pinchBound) return;
+    canvas.dataset.pinchBound = "1";
+
+    let pinchStartDist = 0;
+    let pinchStartZoom = 1;
+    let pinchMidpoint = null;
+
+    canvas.addEventListener('touchstart', (e) => {
+        if (e.touches.length === 2) {
+            e.preventDefault();
+            const [t1, t2] = e.touches;
+            pinchStartDist = Math.hypot(t2.clientX - t1.clientX, t2.clientY - t1.clientY);
+            pinchStartZoom = plannerState.viewport.zoom || 1;
+            pinchMidpoint = { x: (t1.clientX + t2.clientX) / 2, y: (t1.clientY + t2.clientY) / 2 };
+        }
+    }, { passive: false });
+
+    canvas.addEventListener('touchmove', (e) => {
+        if (e.touches.length === 2 && pinchStartDist > 0) {
+            e.preventDefault();
+            const [t1, t2] = e.touches;
+            const dist = Math.hypot(t2.clientX - t1.clientX, t2.clientY - t1.clientY);
+            const scale = dist / pinchStartDist;
+            plannerSetZoom(pinchStartZoom * scale, pinchMidpoint.x, pinchMidpoint.y);
+        }
+    }, { passive: false });
+
+    canvas.addEventListener('touchend', (e) => {
+        if (e.touches.length < 2) pinchStartDist = 0;
+    });
+}
+
+function attachPlannerKeyboardShortcuts() {
+    const canvas = document.getElementById('planner-canvas');
+    if (!canvas || canvas.dataset.keyBound) return;
+    canvas.dataset.keyBound = "1";
+
+    canvas.addEventListener('mouseenter', () => _plannerCanvasHovered = true);
+    canvas.addEventListener('mouseleave', () => _plannerCanvasHovered = false);
+
+    document.addEventListener('keydown', (e) => {
+        if (!_plannerCanvasHovered) return;
+        const tag = (e.target.tagName || '').toLowerCase();
+        if (tag === 'input' || tag === 'textarea') return;
+
+        if (e.key === '+' || e.key === '=') { e.preventDefault(); plannerZoomIn(); }
+        else if (e.key === '-' || e.key === '_') { e.preventDefault(); plannerZoomOut(); }
+        else if (e.key === 'f' || e.key === 'F') { e.preventDefault(); plannerFitToView(); }
+        else if ((e.ctrlKey || e.metaKey) && e.key.toLowerCase() === 'z') { e.preventDefault(); plannerUndo(); }
+        else if ((e.ctrlKey || e.metaKey) && e.key.toLowerCase() === 'y') { e.preventDefault(); plannerRedo(); }
+    });
+}
+
+function plannerSnapVal(v) {
+    const g = plannerState.gridSize || 0;
+    if (!g) return v;
+    return Math.round(v / g) * g;
+}
+
+function plannerCycleGridSnap() {
+    const idx = PLANNER_GRID_STEPS.indexOf(plannerState.gridSize || 0);
+    plannerState.gridSize = PLANNER_GRID_STEPS[(idx + 1) % PLANNER_GRID_STEPS.length];
+    updatePlannerGridButton();
+    updatePlannerGridBackground();
+    savePlannerLibraryMeta(); // 純視圖操作 (格線設定)：只寫入 localStorage，不計入 undo 歷史
+}
+
+function updatePlannerGridButton() {
+    const btn = document.getElementById('planner-grid-btn');
+    if (!btn) return;
+    const g = plannerState.gridSize || 0;
+    btn.textContent = g ? `⊞${g}` : '⊞';
+    btn.title = g ? `Grid Snap: ${g}px` : 'Grid Snap: Off';
+    btn.classList.toggle('active', !!g);
+}
+
+function updatePlannerGridBackground() {
+    const canvas = document.getElementById('planner-canvas');
+    if (!canvas) return;
+    const g = plannerState.gridSize || 0;
+    const zoom = plannerState.viewport.zoom || 1;
+
+    if (!g) {
+        canvas.style.backgroundImage = 'radial-gradient(#2a2a2a 1px, transparent 1px)';
+        canvas.style.backgroundSize = '24px 24px';
+    } else {
+        const size = g * zoom;
+        canvas.style.backgroundImage =
+            'linear-gradient(to right, rgba(255,255,255,0.07) 1px, transparent 1px), ' +
+            'linear-gradient(to bottom, rgba(255,255,255,0.07) 1px, transparent 1px)';
+        canvas.style.backgroundSize = `${size}px ${size}px`;
+    }
+    canvas.style.backgroundPosition = `${plannerState.viewport.x}px ${plannerState.viewport.y}px`;
+}
+
+function plannerFitToView() {
+    const nodes = Object.values(plannerState.nodes);
+    const canvas = document.getElementById('planner-canvas');
+    if (!canvas) return;
+
+    if (nodes.length === 0) {
+        plannerState.viewport = { x: 0, y: 0, zoom: 1 };
+        applyPlannerViewportTransform();
+        savePlannerLibraryMeta(); // 純視圖操作 (fit to view)：只寫入 localStorage，不計入 undo 歷史
+        return;
+    }
+
+    let minX = Infinity, minY = Infinity, maxX = -Infinity, maxY = -Infinity;
+    nodes.forEach(node => {
+        const el = document.getElementById('planner-node-' + node.id);
+        const w = el ? el.offsetWidth : 220;
+        const h = el ? el.offsetHeight : 120;
+        minX = Math.min(minX, node.x);
+        minY = Math.min(minY, node.y);
+        maxX = Math.max(maxX, node.x + w);
+        maxY = Math.max(maxY, node.y + h);
+    });
+
+    const PAD = 60;
+    minX -= PAD; minY -= PAD; maxX += PAD; maxY += PAD;
+    const graphW = Math.max(1, maxX - minX);
+    const graphH = Math.max(1, maxY - minY);
+
+    const rect = canvas.getBoundingClientRect();
+    let zoom = Math.min(rect.width / graphW, rect.height / graphH);
+    zoom = Math.min(PLANNER_ZOOM_MAX, Math.max(PLANNER_ZOOM_MIN, zoom));
+
+    plannerState.viewport.zoom = zoom;
+    plannerState.viewport.x = (rect.width - graphW * zoom) / 2 - minX * zoom;
+    plannerState.viewport.y = (rect.height - graphH * zoom) / 2 - minY * zoom;
+
+    applyPlannerViewportTransform();
+    if (_plannerLastFlows) renderPlannerEdges(_plannerLastFlows);
+    savePlannerLibraryMeta(); // 純視圖操作 (fit to view)：只寫入 localStorage，不計入 undo 歷史
 }
 
 /* ---------------- ADD / REMOVE NODES ---------------- */
@@ -76,9 +708,10 @@ function onPlannerAddNodeClick() {
     const canvas = document.getElementById('planner-canvas');
     if (!canvas) return;
     const rect = canvas.getBoundingClientRect();
+    const zoom = plannerState.viewport.zoom || 1;
     const stackOffset = (Object.keys(plannerState.nodes).length % 6) * 26;
-    const graphX = (rect.width / 2 - plannerState.viewport.x) - 110 + stackOffset;
-    const graphY = (rect.height / 2 - plannerState.viewport.y) - 60 + stackOffset;
+    const graphX = (rect.width / 2 - plannerState.viewport.x) / zoom - 110 + stackOffset;
+    const graphY = (rect.height / 2 - plannerState.viewport.y) / zoom - 60 + stackOffset;
     openPlannerItemPicker(graphX, graphY);
 }
 
@@ -153,38 +786,59 @@ function plannerGetRecipeTime(recipe) {
 }
 
 /**
- * 依節點目前的機器數與全域共用設定(preferredRecipes/recipeModifiers/升級等級)，
- * 算出這個節點所有 input/output port 的速率，以及機台本身的燃料/肥料消耗。
+ * 依配方 id (與可選的 recipeModifiers，例如高級煉金爐催化劑) 算出「單台機器」的
+ * input/output/heat/fert per-min 速率，不受任何節點的 machineCount 影響。
+ * 回傳: { recipe, inputsPerMachine, outputsPerMachine, heatItemsPerMachine, fertItemsPerMachine }
  */
-function computeNodePorts(node) {
-    const recipe = getRecipeById(node.recipeId, node.recipeModifiers);
-    const result = { recipe, inputs: [], outputs: [], heatItemsPerMin: 0, fertItemsPerMin: 0 };
-    if (!recipe) return result;
+function plannerGetRecipeRates(recipeId, recipeModifiers) {
+    const recipe = getRecipeById(recipeId, recipeModifiers);
+    if (!recipe) return null;
 
+    const lvlBelt = DB.settings.lvlBelt || 0;
     const lvlSpeed = DB.settings.lvlSpeed || 0;
     const lvlAlchemy = DB.settings.lvlAlchemy || 0;
     const lvlFuel = DB.settings.lvlFuel || 0;
-    const lvlFert = DB.settings.lvlFert || 0;
+    const lvlFert = DB.settings.lvlFert || 0;    
+    const beltSpeed = getBeltSpeed(lvlBelt);
     const speedMult = getSpeedMult(lvlSpeed);
     const alchemyMult = getAlchemyMult(lvlAlchemy);
 
-    const recipeTime = plannerGetRecipeTime(recipe);
+    const recipeTime = plannerGetRecipeTime(recipe);    
+    const mainOut = Object.keys(recipe.outputs)[0];
     const nutrientCost = recipe.nutrientCost || 0;
-    const isNursery = recipe.machine === "Nursery" || recipe.machine === "World Tree Nursery";
-    const batchesPerMin = (60 / (recipeTime || 1)) * speedMult * node.machineCount;
+    const isNursery = recipe.machine === "Nursery" || recipe.machine === "World Tree Nursery";    
 
-    const mainOut = Object.keys(recipe.outputs)[0]; // 取代原本的 node.itemTarget
-
-    Object.entries(recipe.inputs || {}).forEach(([item, qty]) => {
-        result.inputs.push({ item, rate: qty * batchesPerMin });
-    });
-    Object.entries(recipe.outputs || {}).forEach(([item, qty]) => {
-        let effQty = qty;
-        if (item === mainOut) effQty = applyAlchemyMult(recipe.machine, qty, alchemyMult);
-        result.outputs.push({ item, rate: effQty * batchesPerMin });
+    let batchesPerMinPerMachine = (60 / (recipeTime || 1)) * speedMult;
+    const inputsPerMachine = Object.entries(recipe.inputs || {}).map(([item, qty]) => ({
+        item, rate: qty * batchesPerMinPerMachine
+    }));
+    const outputsPerMachine = Object.entries(recipe.outputs || {}).map(([item, qty]) => {
+        const effQty = item === mainOut ? applyAlchemyMult(recipe.machine, qty, alchemyMult) : qty;
+        return { item, rate: effQty * batchesPerMinPerMachine };
     });
 
-    // 燃料消耗 (heatCost -> 燃料物品/分鐘)
+    // 檢查端口傳送帶速度限制。inputsPerMachine因為有雕刻機多個入口，暫時不檢查
+    let batchesRatio = 1.0;
+    for (const { item, rate } of outputsPerMachine) {
+        const itemDef = DB.items[item];
+        if (itemDef && !itemDef.liquid) {
+            let effectiveBeltSpeed = beltSpeed;
+            if (itemDef.category === "Currency") effectiveBeltSpeed *= 50;
+            else if (recipe.sharedOutputs) effectiveBeltSpeed /= recipe.sharedOutputs;
+            if (rate > effectiveBeltSpeed) {
+                batchesRatio = Math.min(batchesRatio, effectiveBeltSpeed/rate);
+            }
+        }
+    }
+
+    if (batchesRatio < 1) {
+        batchesPerMinPerMachine *= batchesRatio;
+        inputsPerMachine.forEach(io => io.rate *= batchesRatio);
+        outputsPerMachine.forEach(io => io.rate *= batchesRatio);
+    }
+
+    // 燃料消耗 (heatCost -> 燃料物品/分鐘, 每台機器)
+    let heatItemsPerMachine = 0;
     const machineDef = DB.machines[recipe.machine];
     if (machineDef && machineDef.heatCost) {
         const heatingDeviceName = DB.settings.selectedHeatingDevice || "Stone Furnace";
@@ -195,23 +849,100 @@ function computeNodePorts(node) {
         const heatingSlots = heatingDevice.slots || 3;
         let activeHeat = machineDef.heatCost * speedMult;
         if (machineDef.heatCost < 0) activeHeat = (recipe.heatCost ?? 0) * speedMult;
-        const heatingDevicesNeeded = node.machineCount / (heatingSlots / slotsRequired);
-        const totalHeatPerSec = heatingDevicesNeeded * (heatingDevice.heatSelf || 0) * speedMult
-            + node.machineCount * activeHeat;
+        const heatingDevicesNeededPerMachine = 1 / (heatingSlots / slotsRequired);
+        const totalHeatPerSecPerMachine = heatingDevicesNeededPerMachine * (heatingDevice.heatSelf || 0) * speedMult
+            + activeHeat;
         const fuelDef = DB.items[DB.settings.defaultFuel] || {};
         const grossFuelEnergy = (fuelDef.heat || 1) * (1 + lvlFuel * 0.10);
-        result.heatItemsPerMin = (totalHeatPerSec * 60) / grossFuelEnergy;
+        heatItemsPerMachine = (totalHeatPerSecPerMachine * 60) / grossFuelEnergy;
     }
 
-    // 肥料消耗 (Nursery)
+    // 肥料消耗 (Nursery, 每台機器)
+    let fertItemsPerMachine = 0;
     if (isNursery) {
-        const totalNutrientsPerMin = batchesPerMin * nutrientCost;
+        const totalNutrientsPerMinPerMachine = batchesPerMinPerMachine * nutrientCost;
         const fertDef = DB.items[DB.settings.defaultFert] || { nutrientValue: 144 };
         const grossFertVal = fertDef.nutrientValue * (1 + lvlFert * 0.10);
-        result.fertItemsPerMin = totalNutrientsPerMin / grossFertVal;
+        fertItemsPerMachine = totalNutrientsPerMinPerMachine / grossFertVal;
     }
 
+    return { recipe, inputsPerMachine, outputsPerMachine, heatItemsPerMachine, fertItemsPerMachine };
+}
+
+/**
+ * 依節點目前的機器數與全域共用設定(preferredRecipes/recipeModifiers/升級等級)，
+ * 算出這個節點所有 input/output port 的速率，以及機台本身的燃料/肥料消耗。
+ */
+function computeNodePorts(node) {
+    const rates = plannerGetRecipeRates(node.recipeId, node.recipeModifiers);
+    const result = { recipe: rates ? rates.recipe : null, inputs: [], outputs: [], heatItemsPerMin: 0, fertItemsPerMin: 0 };
+    if (!rates) return result;
+
+    const mc = node.machineCount;
+    result.inputs = rates.inputsPerMachine.map(p => ({ item: p.item, rate: p.rate * mc }));
+    result.outputs = rates.outputsPerMachine.map(p => ({ item: p.item, rate: p.rate * mc }));
+    result.heatItemsPerMin = rates.heatItemsPerMachine * mc;
+    result.fertItemsPerMin = rates.fertItemsPerMachine * mc;
     return result;
+}
+
+/** 依 plannerGetRecipeRates() 的結果，組出 hover tooltip 的 HTML 內容 */
+function buildPlannerRateTooltipHtml(rates) {
+    if (!rates) return '';
+
+    const rowHtml = (item, qty, color) => {
+        const def = DB.items[item] || {};
+        const plusSign = qty > 0 ? '+' : '';
+        return `<div class="planner-rate-tooltip-row">
+            <span class="planner-rate-tooltip-qty" style="color:${color}">${plusSign}${formatVal(qty)}</span>
+            <img src="img/item${def.id ?? 0}.png">
+            <span class="planner-rate-tooltip-name">${item}</span>
+        </div>`;
+    };
+
+    let html = '';
+    if (rates.inputsPerMachine.length > 0) {
+        html += rates.inputsPerMachine.map(p => rowHtml(p.item, -p.rate, '#e0e0e0')).join('');
+    }
+    if (rates.outputsPerMachine.length > 0) {
+        if (html) html += `<div class="planner-rate-tooltip-divider"></div>`;
+        html += rates.outputsPerMachine.map(p => rowHtml(p.item, p.rate, '#00e676')).join('');
+    }
+    if (html) html += `<div class="planner-rate-tooltip-divider"></div>`;
+    if (rates.heatItemsPerMachine > 0.0001) {        
+        html += rowHtml(DB.settings.defaultFuel, -rates.heatItemsPerMachine, '#ff5722');
+    }
+    if (rates.fertItemsPerMachine > 0.0001) {
+        html += rowHtml(DB.settings.defaultFert, -rates.fertItemsPerMachine, '#76ff03');
+    }
+
+    html += `<div class="planner-rate-tooltip-footer">${t('per machine (/min)', 'ui')}</div>`;
+    return html;
+}
+
+function showPlannerRateTooltip(anchorEl, rates) {
+    hidePlannerRateTooltip();
+    if (!rates) return;
+
+    const tip = document.createElement('div');
+    tip.id = 'planner-rate-tooltip';
+    tip.className = 'planner-rate-tooltip';
+    tip.innerHTML = buildPlannerRateTooltipHtml(rates);
+    document.body.appendChild(tip);
+
+    const rect = anchorEl.getBoundingClientRect();
+    const tipRect = tip.getBoundingClientRect();
+    let left = rect.left;
+    let top = rect.top - tipRect.height - 6;
+    if (left + tipRect.width > window.innerWidth) left = window.innerWidth - tipRect.width - 8;
+    if (top < 4) top = rect.bottom + 6; // 上方空間不足時改顯示在下方
+    tip.style.left = Math.max(4, left) + 'px';
+    tip.style.top = top + 'px';
+}
+
+function hidePlannerRateTooltip() {
+    const tip = document.getElementById('planner-rate-tooltip');
+    if (tip) tip.remove();
 }
 
 /* ---------------- FLOW RESOLUTION (Phase 3) ---------------- */
@@ -292,6 +1023,8 @@ function renderPlanner() {
     });
     applyPlannerViewportTransform();
     renderPlannerEdges(flows);
+    updateAllPlannerLinkButtons();
+    renderPlannerSummary(flows);
 }
 
 /** 輕量刷新：重算流量後只 patch 既有節點卡片內容與邊線，不重建節點 DOM (保留拖曳/輸入焦點狀態) */
@@ -299,6 +1032,7 @@ function recomputeAndRefreshPlanner() {
     const flows = plannerResolveFlows();
     Object.values(plannerState.nodes).forEach(node => patchPlannerNodeDisplay(node, flows));
     renderPlannerEdges(flows);
+    renderPlannerSummary(flows);
     return flows;
 }
 
@@ -317,20 +1051,34 @@ function createPlannerNodeEl(node, flows) {
     ? `<img src="img/machines/${machineKey.toLowerCase().replaceAll(' ', '-')}.png" class="planner-node-icon" onerror="this.style.opacity='0'">`
     : `<span class="planner-node-icon"></span>`;
 
+    const heatTag = ports.heatItemsPerMin > 0 ? 'heat' : '';
     wrap.innerHTML = `
-        <div class="planner-node-header">
+        <div class="planner-node-header ${heatTag}" 
+             onmouseenter="onPlannerHeaderHover(this, '${node.id}')"
+             onmouseleave="hidePlannerRateTooltip()">
             ${machineIconHtml}
-            <span class="planner-node-title" title="${mainOut}">${machineName}</span>
-            <button class="planner-gear-btn" title="${t('Node Settings', 'ui')}" onclick="openPlannerNodeModal('${node.id}')">⚙</button>
+            <span class="planner-node-title">${machineName}</span>            
             <button class="planner-close-btn" title="${t('Remove Node', 'ui')}" onclick="removePlannerNode('${node.id}')">✕</button>
         </div>
         <div class="planner-node-body" id="planner-node-body-${node.id}">
             ${renderPlannerPortsHtml(node, ports, flows)}
             <div class="planner-machine-count-row">
-                <label>${t('Machine Count', 'ui')}</label>
                 <input type="number" min="0" step="1" value="${node.machineCount}"
-                       data-mc-for="${node.id}"
-                       oninput="updatePlannerMachineCount('${node.id}', this.value)">
+                    title="${t('Machine Count', 'ui')}"
+                    data-mc-for="${node.id}"
+                    onfocus="onPlannerMachineCountFocus('${node.id}', this)"
+                    onblur="onPlannerMachineCountBlur('${node.id}', this)"
+                    oninput="updatePlannerMachineCount('${node.id}', this.value)">
+                <button class="planner-link-btn ${_plannerLinkMode ? 'active' : ''}"
+                        data-link-for="${node.id}"
+                        onclick="togglePlannerLinkMode()"
+                        title="${t('Link machine count changes', 'ui')}">                        
+                            <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                            <path d="M9 17H7A5 5 0 0 1 7 7h2"/>
+                            <path d="M15 7h2a5 5 0 1 1 0 10h-2"/>
+                            <line x1="8" y1="12" x2="16" y2="12"/>
+                            </svg>                        
+                        </button>
             </div>
             <div class="planner-heatfert-row" id="planner-heatfert-${node.id}">
                 ${renderPlannerHeatFertHtml(ports)}
@@ -340,6 +1088,14 @@ function createPlannerNodeEl(node, flows) {
 
     attachPlannerNodeDrag(wrap, node);
     return wrap;
+}
+
+function onPlannerHeaderHover(headerEl, nodeId) {
+    const node = plannerState.nodes[nodeId];
+    if (!node) return;
+    const rates = plannerGetRecipeRates(node.recipeId, node.recipeModifiers);
+    if (!rates) return; // 無 recipe 不顯示
+    showPlannerRateTooltip(headerEl, rates);
 }
 
 function renderPlannerPortsHtml(node, ports, flows) {
@@ -441,73 +1197,84 @@ function patchPlannerNodeDisplay(node, flows) {
     }
 }
 
-/* ---------------- NODE SETTINGS MODAL (gear button) ---------------- */
-
-function openPlannerNodeModal(nodeId) {
-    const modalBody = document.getElementById('planner-node-modal-body');
-    if (!modalBody) return;
-    modalBody.dataset.nodeId = nodeId;
-    renderPlannerNodeModalBody(nodeId);
-    document.getElementById('planner-node-modal').style.display = 'flex';
-}
-
-function renderPlannerNodeModalBody(nodeId) {
-    const node = plannerState.nodes[nodeId];
-    const modalBody = document.getElementById('planner-node-modal-body');
-    if (!node || !modalBody) return;
-
-    const flows = plannerResolveFlows();
-    const ports = flows.nodePortsCache[nodeId] || computeNodePorts(node);
-    const mainOut = plannerMainOutput(node.recipeId);
-    const itemDef = mainOut ? (DB.items[mainOut] || {}) : {};
-
-    const titleEl = document.getElementById('planner-node-modal-title');
-    if (titleEl) {
-        titleEl.innerHTML = mainOut
-            ? `<img src="img/item${itemDef.id ?? 0}.png" width="20" height="20" style="vertical-align:middle; margin-bottom:2px;"> ${mainOut}`
-            : t('No Recipe', 'ui');
+/** 以 sourceNodeId 為起點，用 BFS 找出整個無向連通分量內的所有節點 id (含自己) */
+function getPlannerConnectedNodeIds(startNodeId) {
+    const adjacency = {};
+    Object.values(plannerState.edges).forEach(e => {
+        (adjacency[e.fromNode] = adjacency[e.fromNode] || []).push(e.toNode);
+        (adjacency[e.toNode] = adjacency[e.toNode] || []).push(e.fromNode);
+    });
+    const visited = new Set([startNodeId]);
+    const queue = [startNodeId];
+    while (queue.length) {
+        const cur = queue.shift();
+        (adjacency[cur] || []).forEach(nb => {
+            if (!visited.has(nb)) { visited.add(nb); queue.push(nb); }
+        });
     }
-
-    const recipeInfoHtml = ports.recipe
-        ? `<div style="display:flex; align-items:center; gap:8px;">
-               <strong>${t(ports.recipe.machine, 'machines')}</strong>
-               <span style="opacity:0.7; font-size:0.85em;">(${ports.recipe.baseTime ?? '—'} s)</span>
-               <button class="swap-btn" style="width:auto; padding:2px 10px; border-radius:4px;"
-                       onclick="openPlannerRecipeSwitch('${node.id}')">🔄 ${t('Swap Recipe', 'ui')}</button>
-           </div>`
-        : `<div style="display:flex; align-items:center; gap:8px; color:var(--danger);">
-               ${t('No recipe selected', 'ui')}
-               ${mainOut ? `<button class="swap-btn" style="width:auto; padding:2px 10px; border-radius:4px;"
-                       onclick="openPlannerRecipeSwitch('${node.id}')">${t('Select Recipe', 'ui')}</button>` : ''}
-           </div>`;
-
-    modalBody.innerHTML = `
-        <div style="padding:12px; display:flex; flex-direction:column; gap:12px;">
-            ${recipeInfoHtml}
-            <div class="planner-machine-count-row" style="border-top:1px dashed #444; padding-top:10px;">
-                <label>${t('Machine Count', 'ui')}</label>
-                <input type="number" min="0" step="1" value="${node.machineCount}"
-                       data-mc-for="${node.id}"
-                       oninput="updatePlannerMachineCount('${node.id}', this.value)">
-            </div>
-            ${renderPlannerPortsHtml(node, ports, flows)}
-            <div class="planner-heatfert-row">${renderPlannerHeatFertHtml(ports)}</div>
-        </div>
-    `;
+    return [...visited];
 }
 
-// 新增：把 node.recipeId 換成使用者選的新配方（不寫入全域 preferredRecipes）
-function openPlannerRecipeSwitch(nodeId) {
+function togglePlannerLinkMode() {
+    _plannerLinkMode = !_plannerLinkMode;
+    updateAllPlannerLinkButtons();
+}
+
+function updateAllPlannerLinkButtons() {
+    document.querySelectorAll('.planner-link-btn').forEach(btn => {
+        btn.classList.toggle('active', _plannerLinkMode);
+    });
+}
+
+function onPlannerMachineCountFocus(nodeId, inputEl) {
+    if (!_plannerLinkMode) return;
     const node = plannerState.nodes[nodeId];
-    if (!node) return;
-    const mainOut = plannerMainOutput(node.recipeId);
-    if (!mainOut) return; // 沒有 raw 配方可查，無法判斷候選清單
-
-    openRecipeModal(mainOut, '', (newRecipeId) => {
-        node.recipeId = newRecipeId;
-        savePlannerState();
-    }, node.recipeId);
+    inputEl.dataset.oldVal = node ? node.machineCount : inputEl.value;
 }
+
+function onPlannerMachineCountBlur(nodeId, inputEl) {
+    if (!_plannerLinkMode) { delete inputEl.dataset.oldVal; return; }
+    const oldVal = parseFloat(inputEl.dataset.oldVal);
+    const node = plannerState.nodes[nodeId];
+    const newVal = node ? node.machineCount : parseFloat(inputEl.value);
+    delete inputEl.dataset.oldVal;
+
+    if (!oldVal || !newVal || oldVal === newVal) return; // 舊值0/新值0/未變化 -> 不傳播
+
+    const ratio = newVal / oldVal;
+    propagatePlannerMachineRatio(nodeId, ratio);
+}
+
+function propagatePlannerMachineRatio(sourceNodeId, ratio) {
+    const connected = getPlannerConnectedNodeIds(sourceNodeId).filter(id => id !== sourceNodeId);
+    if (connected.length === 0) return;
+
+    connected.forEach(id => {
+        const n = plannerState.nodes[id];
+        if (n) n.machineCount = Math.max(0, Math.round(n.machineCount * ratio * 1e6) / 1e6);
+    });
+
+    recomputeAndRefreshPlanner();
+    savePlannerState();
+    flashPlannerLinkFeedback(sourceNodeId, connected);
+}
+
+/** 對符合 selector 的元素套用一次性 flash 動畫 (先移除再重新加上 class，觸發 reflow 重啟動畫) */
+function flashPlannerElements(selector, flashClass, duration = 500) {
+    document.querySelectorAll(selector).forEach(el => {
+        el.classList.remove(flashClass);
+        void el.offsetWidth;
+        el.classList.add(flashClass);
+        setTimeout(() => el.classList.remove(flashClass), duration);
+    });
+}
+
+function flashPlannerLinkFeedback(sourceNodeId, affectedNodeIds) {
+    flashPlannerElements(`[data-link-for="${sourceNodeId}"]`, 'link-flash');
+    affectedNodeIds.forEach(id => flashPlannerElements(`[data-mc-for="${id}"]`, 'mc-flash'));
+}
+
+
 
 /**
  * 由 alchemy_ui.js 在配方/催化劑/自訂輸入變更時呼叫 (共用全域設定變更通知)。
@@ -534,10 +1301,16 @@ function attachPlannerNodeDrag(wrap, node) {
         header.classList.add('dragging');
         const startX = e.clientX, startY = e.clientY;
         const originX = node.x, originY = node.y;
+        hidePlannerRateTooltip();
 
         const onMove = (ev) => {
-            node.x = originX + (ev.clientX - startX);
-            node.y = originY + (ev.clientY - startY);
+            const zoom = plannerState.viewport.zoom || 1;
+            node.x = originX + (ev.clientX - startX) / zoom;
+            node.y = originY + (ev.clientY - startY) / zoom;
+            if (plannerState.gridSize) {
+                node.x = plannerSnapVal(node.x);
+                node.y = plannerSnapVal(node.y);
+            }
             wrap.style.left = node.x + 'px';
             wrap.style.top = node.y + 'px';
             if (_plannerLastFlows) renderPlannerEdges(_plannerLastFlows);
@@ -546,6 +1319,15 @@ function attachPlannerNodeDrag(wrap, node) {
             header.removeEventListener('pointermove', onMove);
             header.removeEventListener('pointerup', onUp);
             header.classList.remove('dragging');
+
+            // Grid Snap: 節點左上角座標を対象に丸める
+            if (plannerState.gridSize) {
+                node.x = plannerSnapVal(node.x);
+                node.y = plannerSnapVal(node.y);
+                wrap.style.left = node.x + 'px';
+                wrap.style.top = node.y + 'px';
+                if (_plannerLastFlows) renderPlannerEdges(_plannerLastFlows);
+            }
             savePlannerState();
         };
         header.addEventListener('pointermove', onMove);
@@ -562,7 +1344,10 @@ function attachPlannerCanvasPan() {
 
     canvas.addEventListener('pointerdown', (e) => {
         if (e.target.closest('.planner-node')) return;
-        if (e.button !== 0) return; // 只用左鍵拖曳平移；右鍵保留給新增節點
+        if (e.target.closest('.planner-edge-group')) return;
+        if (e.target.closest('.planner-view-controls')) return;
+        if (e.target.closest('.planner-summary-panel')) return;
+        if (e.button !== 0) return;
         canvas.setPointerCapture(e.pointerId);
         canvas.classList.add('panning');
         const startX = e.clientX, startY = e.clientY;
@@ -572,12 +1357,12 @@ function attachPlannerCanvasPan() {
             plannerState.viewport.x = originX + (ev.clientX - startX);
             plannerState.viewport.y = originY + (ev.clientY - startY);
             applyPlannerViewportTransform();
+            if (_plannerLastFlows) renderPlannerEdges(_plannerLastFlows);   // 追加：pan中も邊線を追従
         };
         const onUp = () => {
             canvas.removeEventListener('pointermove', onMove);
             canvas.removeEventListener('pointerup', onUp);
             canvas.classList.remove('panning');
-            savePlannerState();
         };
         canvas.addEventListener('pointermove', onMove);
         canvas.addEventListener('pointerup', onUp);
@@ -716,21 +1501,41 @@ function tryCreatePlannerEdgeFromDots(sourceNodeId, item, sourceDir, targetDotEl
     const targetItem = targetDotEl.dataset.item;
     const targetDir = targetDotEl.dataset.dir;
 
-    if (targetItem !== item) { alert(t('Ports must be the same item to connect.', 'ui')); return; }
-    if (targetDir === sourceDir) { alert(t('Cannot connect two ports of the same direction.', 'ui')); return; }
+    if (targetItem !== item) { console.log(t('Ports must be the same item to connect.', 'ui')); return; }
+    if (targetDir === sourceDir) { console.log(t('Cannot connect two ports of the same direction.', 'ui')); return; }
 
     const fromNode = sourceDir === 'out' ? sourceNodeId : targetNodeId;
     const toNode = sourceDir === 'out' ? targetNodeId : sourceNodeId;
 
     const dup = Object.values(plannerState.edges).some(e =>
         e.fromNode === fromNode && e.toNode === toNode && e.item === item);
-    if (dup) { alert(t('These two ports are already connected.', 'ui')); return; }
+    if (dup) { console.log(t('These two ports are already connected.', 'ui')); return; }
 
     plannerState._edgeSeq = (plannerState._edgeSeq || 0) + 1;
     const edgeId = 'pedge_' + plannerState._edgeSeq;
     plannerState.edges[edgeId] = { id: edgeId, item, fromNode, toNode, createdAt: plannerState._edgeSeq };
 
-    recomputeAndRefreshPlanner();
+    let flows = recomputeAndRefreshPlanner();
+
+    // 從 sourceNode 的輸入端拉線連接時，若連上後 sourceNode 對此 item 仍然短缺，
+    // 自動提升 targetNode 的機器數以補足短缺量。
+    if (sourceDir !== 'out') {
+        const sourceInKey = plannerPortKey(sourceNodeId, item, 'in');
+        const shortage = flows.portRemaining[sourceInKey] || 0;
+        if (shortage > 0.001) {
+            const targetNode = plannerState.nodes[targetNodeId];
+            const rates = targetNode ? plannerGetRecipeRates(targetNode.recipeId, targetNode.recipeModifiers) : null;
+            const perMachineRate = rates
+                ? (rates.outputsPerMachine.find(p => p.item === item) || {}).rate || 0
+                : 0;
+            if (targetNode && perMachineRate > 0) {
+                targetNode.machineCount += shortage / perMachineRate;
+                flows = recomputeAndRefreshPlanner();
+                flashPlannerElements(`[data-mc-for="${targetNodeId}"]`, 'mc-flash');
+            }
+        }
+    }
+
     savePlannerState();
 }
 
@@ -757,7 +1562,7 @@ function openPlannerEdgeModal(edgeId) {
             <div><strong>${t('From', 'ui')}:</strong> ${fromRecipe ? t(fromRecipe.machine, 'machines') : '?'} (${fromMain ?? '?'})</div>
             <div><strong>${t('To', 'ui')}:</strong> ${toRecipe ? t(toRecipe.machine, 'machines') : '?'} (${toMain ?? '?'})</div>
             <div><strong>${t('Current Flow', 'ui')}:</strong> ${formatVal(flow)}/min</div>
-            <button class="reset-btn" style="margin-top:8px;" onclick="deletePlannerEdge('${edgeId}')">${t('Delete Connection', 'ui')}</button>
+            <button class="reset-btn" style="margin-top:8px; font-size:1em" onclick="deletePlannerEdge('${edgeId}')">${t('Delete Connection', 'ui')}</button>
         </div>
     `;
     document.getElementById('planner-edge-modal').style.display = 'flex';
@@ -893,25 +1698,12 @@ function createPlannerNodeFromPicker(candidate, ctx) {
     const consuming = ctx.originDir === 'out';
     const targetRate = plannerGetAvailableRateAtPort(ctx.sourceNodeId, ctx.item, ctx.originDir);
 
-    const speedMult = getSpeedMult(DB.settings.lvlSpeed || 0);
-    const alchemyMult = getAlchemyMult(DB.settings.lvlAlchemy || 0);
-    const recipeTime = plannerGetRecipeTime(recipe);
-    const batchRatePerMachine = (60 / (recipeTime || 1)) * speedMult;
+    const rates = plannerGetRecipeRates(recipe.id);
+    const portList = consuming ? rates.inputsPerMachine : rates.outputsPerMachine;
+    const perMachineRate = (portList.find(p => p.item === ctx.item) || {}).rate || 0;
 
-    let machineCount;
-    if (consuming) {
-        const qty = recipe.inputs[ctx.item] || 0;
-        machineCount = (qty > 0 && targetRate > 0) ? targetRate / (qty * batchRatePerMachine) : 1;
-    } else {
-        let qty = recipe.outputs[ctx.item] || 0;
-        qty = applyAlchemyMult(recipe.machine, qty, alchemyMult);
-        machineCount = (qty > 0 && targetRate > 0) ? targetRate / (qty * batchRatePerMachine) : 1;
-    }
+    let machineCount = (perMachineRate > 0 && targetRate > 0) ? targetRate / perMachineRate : 1;
     machineCount = Math.max(0.000001, Math.round(machineCount * 1000000) / 1000000);
-
-    // 移除：不再需要寫入全域 preferredRecipes，節點自己記著 recipeId 即可
-    // DB.settings.preferredRecipes[itemTarget] = recipe.id;
-    // persist();
 
     plannerState._nodeSeq = (plannerState._nodeSeq || 0) + 1;
     const nodeId = 'pnode_' + plannerState._nodeSeq;
@@ -928,4 +1720,204 @@ function createPlannerNodeFromPicker(candidate, ctx) {
 
     renderPlanner();
     savePlannerState();
+}
+
+/* ==========================================================================
+   SECTION: SUMMARY PANEL (top-left overlay)
+   ========================================================================== */
+
+function _injectPlannerSummaryStyles() {
+    if (document.getElementById('planner-summary-styles')) return;
+    const s = document.createElement('style');
+    s.id = 'planner-summary-styles';
+    s.textContent = `
+        .planner-summary-panel {
+            position: absolute; top: 14px; left: 14px; z-index: 50;
+            width: 240px; max-height: calc(100% - 28px);
+            background: rgba(26,26,26,0.95); border: 1px solid var(--border,#444);
+            border-radius: 6px; box-shadow: 0 4px 14px rgba(0,0,0,0.45);
+            display: flex; flex-direction: column; overflow: hidden;
+            font-size: 0.85em;
+        }
+        .planner-summary-panel.collapsed { width: auto; background: transparent; border: none; box-shadow: none; }
+        .planner-summary-min-btn {
+            background: rgba(26,26,26,0.95); border: 1px solid var(--border,#444); color: #ddd;
+            border-radius: 6px; padding: 7px 12px; cursor: pointer; font-size: 0.95em;
+            box-shadow: 0 4px 14px rgba(0,0,0,0.45);
+        }
+        .planner-summary-min-btn:hover { border-color: var(--accent); color: #fff; }
+        .planner-summary-header {
+            display: flex; align-items: center; justify-content: space-between;
+            padding: 8px 10px; border-bottom: 1px solid var(--border,#444);
+            flex-shrink: 0; background: #202020;
+        }
+        .planner-summary-title { font-weight: bold; color: #eee; letter-spacing: 0.03em; text-transform: uppercase; font-size: 0.85em; }
+        .planner-summary-close-btn {
+            background: transparent; border: none; color: #999; cursor: pointer;
+            font-size: 1.1em; line-height: 1; padding: 0 2px;
+        }
+        .planner-summary-close-btn:hover { color: #fff; }
+        .planner-summary-body { overflow-y: auto; padding: 4px 0; }
+        .planner-summary-section { border-bottom: 1px solid #2e2e2e; }
+        .planner-summary-section:last-child { border-bottom: none; }
+        .planner-summary-section-header {
+            display: flex; align-items: center; gap: 6px;
+            padding: 7px 10px; cursor: pointer; user-select: none;
+            color: #ccc; font-weight: bold;
+        }
+        .planner-summary-section-header:hover { background: #262626; }
+        .planner-summary-arrow { font-size: 0.75em; color: #888; width: 10px; flex-shrink: 0; }
+        .planner-summary-count {
+            margin-left: auto; background: #333; color: #aaa; border-radius: 8px;
+            padding: 0 7px; font-size: 0.8em; font-weight: normal;
+        }
+        .planner-summary-section-body { padding: 2px 10px 8px 10px; }
+        .planner-summary-row {
+            display: flex; align-items: center; gap: 6px;
+            padding: 3px 0; font-size: 0.95em; color: #ddd;
+        }
+        .planner-summary-row span:nth-child(2) { flex: 1; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+        .planner-summary-val { font-weight: bold; flex-shrink: 0; }
+        .planner-summary-empty { color: #666; font-style: italic; font-size: 0.9em; padding: 2px 0; }
+    `;
+    document.head.appendChild(s);
+}
+
+function ensurePlannerSummaryPanel() {
+    let panel = document.getElementById('planner-summary-panel');
+    if (panel) return panel;
+    const canvas = document.getElementById('planner-canvas');
+    if (!canvas) return null;
+    panel = document.createElement('div');
+    panel.id = 'planner-summary-panel';
+    panel.className = 'planner-summary-panel';
+    canvas.appendChild(panel);
+    return panel;
+}
+
+function togglePlannerSummaryPanel() {
+    _plannerSummaryCollapsed = !_plannerSummaryCollapsed;
+    renderPlannerSummary(_plannerLastFlows);
+}
+
+function togglePlannerSummarySection(key) {
+    _plannerSummarySectionCollapsed[key] = !_plannerSummarySectionCollapsed[key];
+    renderPlannerSummary(_plannerLastFlows);
+}
+
+/** 依 flows 彙總: 金錢/燃料/肥料消耗、機器數、輸出剩餘、輸入短缺 */
+function computePlannerSummaryStats(flows) {
+    const machineCounts = {};
+    let heatTotal = 0, fertTotal = 0;
+
+    Object.values(plannerState.nodes).forEach(node => {
+        const ports = flows.nodePortsCache[node.id];
+        if (!ports) return;
+        if (ports.recipe && node.machineCount > 0) {
+            const count = Math.ceil(node.machineCount - 0.000001);
+            machineCounts[ports.recipe.machine] = (machineCounts[ports.recipe.machine] || 0) + count;
+        }
+        heatTotal += ports.heatItemsPerMin || 0;
+        fertTotal += ports.fertItemsPerMin || 0;
+    });
+
+    const outputSurplus = {};
+    const inputShortage = {};
+    Object.keys(flows.portRemaining).forEach(key => {
+        const val = flows.portRemaining[key];
+        if (!(val > 0.001)) return;
+        const parts = key.split('::'); // nodeId::item::dir
+        const item = parts[1];
+        const dir = parts[2];
+        if (dir === 'out') outputSurplus[item] = (outputSurplus[item] || 0) + val;
+        else if (dir === 'in') inputShortage[item] = (inputShortage[item] || 0) + val;
+    });
+
+    let goldTotal = 0;
+    Object.entries(inputShortage).forEach(([item, qty]) => {
+        const def = DB.items[item];
+        if (def && def.buyPrice) goldTotal += def.buyPrice * qty;
+    });
+
+    return { machineCounts, heatTotal, fertTotal, outputSurplus, inputShortage, goldTotal };
+}
+
+function renderPlannerSummary(flows) {
+    const panel = ensurePlannerSummaryPanel();
+    if (!panel) return;
+    flows = flows || plannerResolveFlows();
+
+    if (_plannerSummaryCollapsed) {
+        panel.classList.add('collapsed');
+        panel.innerHTML = `<button class="planner-summary-min-btn" onclick="togglePlannerSummaryPanel()">☰ ${t('Summary', 'ui')}</button>`;
+        return;
+    }
+    panel.classList.remove('collapsed');
+
+    const stats = computePlannerSummaryStats(flows);
+
+    const sectionHtml = (key, titleHtml, bodyHtml, count) => {
+        const collapsed = _plannerSummarySectionCollapsed[key];
+        return `
+            <div class="planner-summary-section">
+                <div class="planner-summary-section-header" onclick="togglePlannerSummarySection('${key}')">
+                    <span class="planner-summary-arrow">${collapsed ? '▶' : '▼'}</span>
+                    <span>${titleHtml}</span>
+                    ${count != null ? `<span class="planner-summary-count">${count}</span>` : ''}
+                </div>
+                ${collapsed ? '' : `<div class="planner-summary-section-body">${bodyHtml}</div>`}
+            </div>`;
+    };
+
+    // --- Section 1: Cost & Resources ---
+    let costRows = '';
+    if (stats.goldTotal > 0.0001) {
+        costRows += `<div class="planner-summary-row"><img src="img/copper.png" class="item-icon-small"><span>${t('Coin', 'ui')}</span><span class="planner-summary-val" style="color:var(--gold);">${Math.ceil(stats.goldTotal).toLocaleString()}</span></div>`;
+    }
+    if (stats.heatTotal > 0.0001) {
+        const fuelDef = DB.items[DB.settings.defaultFuel] || {};
+        costRows += `<div class="planner-summary-row"><img src="img/item${fuelDef.id ?? 0}.png" class="item-icon-small"><span>${DB.settings.defaultFuel}</span><span class="planner-summary-val" style="color:var(--fuel);">${formatVal(stats.heatTotal)}/m</span></div>`;
+    }
+    if (stats.fertTotal > 0.0001) {
+        const fertDef = DB.items[DB.settings.defaultFert] || {};
+        costRows += `<div class="planner-summary-row"><img src="img/item${fertDef.id ?? 0}.png" class="item-icon-small"><span>${DB.settings.defaultFert}</span><span class="planner-summary-val" style="color:var(--bio);">${formatVal(stats.fertTotal)}/m</span></div>`;
+    }
+    if (!costRows) costRows = `<div class="planner-summary-empty">${t('None', 'ui')}</div>`;
+
+    // --- Section 2: Machines ---
+    const machineEntries = Object.entries(stats.machineCounts).sort((a, b) => b[1] - a[1]);
+    let machineRows = machineEntries.map(([name, count]) => {
+        const icon = `<img src="img/machines/${name.toLowerCase().replaceAll(' ', '-')}.png" class="item-icon-small" onerror="this.style.opacity='0'">`;
+        return `<div class="planner-summary-row">${icon}<span>${t(name, 'machines')}</span><span class="planner-summary-val">${count}</span></div>`;
+    }).join('');
+    if (!machineRows) machineRows = `<div class="planner-summary-empty">${t('None', 'ui')}</div>`;
+
+    // --- Section 3: Output surplus ---
+    const outputEntries = Object.entries(stats.outputSurplus).sort((a, b) => b[1] - a[1]);
+    let outputRows = outputEntries.map(([item, qty]) => {
+        const def = DB.items[item] || {};
+        return `<div class="planner-summary-row"><img src="img/item${def.id ?? 0}.png" class="item-icon-small"><span>${item}</span><span class="planner-summary-val" style="color:var(--profit);">${formatVal(qty)}/m</span></div>`;
+    }).join('');
+    if (!outputRows) outputRows = `<div class="planner-summary-empty">${t('None', 'ui')}</div>`;
+
+    // --- Section 4: Input shortage ---
+    const inputEntries = Object.entries(stats.inputShortage).sort((a, b) => b[1] - a[1]);
+    let inputRows = inputEntries.map(([item, qty]) => {
+        const def = DB.items[item] || {};
+        return `<div class="planner-summary-row"><img src="img/item${def.id ?? 0}.png" class="item-icon-small"><span>${item}</span><span class="planner-summary-val" style="color:var(--danger);">${formatVal(qty)}/m</span></div>`;
+    }).join('');
+    if (!inputRows) inputRows = `<div class="planner-summary-empty">${t('None', 'ui')}</div>`;
+
+    panel.innerHTML = `
+        <div class="planner-summary-header">
+            <span class="planner-summary-title">${t('Summary', 'ui')}</span>
+            <button class="planner-summary-close-btn" onclick="togglePlannerSummaryPanel()" title="${t('Minimize', 'ui')}">×</button>
+        </div>
+        <div class="planner-summary-body">
+            ${sectionHtml('cost', t('Total Load', 'ui'), costRows)}
+            ${sectionHtml('output', t('Output', 'ui'), outputRows, outputEntries.length)}
+            ${sectionHtml('input', t('Input', 'ui'), inputRows, inputEntries.length)}            
+            ${sectionHtml('machines', t('Machines', 'ui'), machineRows, machineEntries.reduce((s, [, c]) => s + c, 0))}
+        </div>
+    `;
 }

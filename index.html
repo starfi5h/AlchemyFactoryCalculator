@@ -35,7 +35,7 @@
         <div class="tabs">
             <div class="tab-btn active" onclick="switchTab('calc')">Calculator</div>
             <div class="tab-btn" onclick="switchTab('cauldron')">Cauldron</div>
-            <!-- <div class="tab-btn" onclick="switchTab('planner')">Planner</div> -->
+            <div class="tab-btn" onclick="switchTab('planner')">Planner</div>
             <!-- <div class="tab-btn" onclick="switchTab('recipes')">Recipes</div> -->
             <!-- <div class="tab-btn" onclick="switchTab('itemvalue')">Item Value</div> -->
             <div class="tab-btn" onclick="switchTab('help')">Wiki</div>
@@ -63,6 +63,28 @@
                 </div>
                 <div id="cauldron-recipe-modal-body">
                     <!-- 由 JS 動態渲染 -->
+                </div>
+            </div>
+        </div>
+
+        <!-- Planner Manager Modal -->
+        <div id="planner-manage-modal" class="modal-overlay" onclick="closeModal('planner-manage-modal')">
+            <div class="modal-content" onclick="event.stopPropagation()" style="min-width:420px; max-width:560px;">
+                <div class="modal-header">
+                    <h2 style="margin:0; font-size:1em;">Manage Plans</h2>
+                    <button class="close-modal" onclick="closeModal('planner-manage-modal')">&times;</button>
+                </div>
+                <div id="planner-plan-list" class="planner-plan-list"></div>
+                <div class="planner-plan-actions-row" id="planner-plan-actions-row">
+                    <button class="split-btn" onclick="managePlannerLoadSelected()">▶ Load</button>
+                    <button class="split-btn" onclick="managePlannerRenameSelected()">✎ Rename</button>
+                    <button class="split-btn" onclick="managePlannerDuplicateSelected()">⧉ Duplicate</button>
+                    <button class="split-btn" style="color:var(--danger); border-color:var(--danger);" onclick="managePlannerDeleteSelected()">🗑 Delete</button>
+                    <button class="split-btn" onclick="managePlannerExportSelected()">⭳ Export</button>
+                </div>
+                <div class="planner-plan-bottom-row">
+                    <button class="save-btn" style="width:auto; margin:0;" onclick="managePlannerCreateNew()">New Plan</button>
+                    <button class="save-btn" style="width:auto; margin:0; background:var(--panel); border-style:dashed;" onclick="managePlannerImport()">Import</button>
                 </div>
             </div>
         </div>
@@ -706,13 +728,24 @@
 
         <div id="view-planner" class="view">
             <div class="planner-toolbar">
-                <button class="split-btn" style="width:auto; padding:6px 14px;" onclick="onPlannerAddNodeClick()">+ Add Node</button>
-                <span class="planner-toolbar-hint">Right-click canvas to add a node here. Drag node header to move. Drag empty canvas to pan.</span>
+                <select id="planner-plan-select" class="planner-plan-select" onchange="switchPlannerPlan(this.value)"></select>
+                <button class="split-btn" style="max-width:150px; padding:6px 14px;" onclick="openPlannerManageModal()">📁 Manage Plans</button>
+                <span class="planner-toolbar-divider"></span>
+                <button class="split-btn" style="max-width:150px; padding:6px 14px;" onclick="onPlannerAddNodeClick()">+ Add Node</button>
+                <button id="planner-undo-btn" class="split-btn" onclick="plannerUndo()" title="Undo (Ctrl+Z)">↺ Undo</button>
+                <button id="planner-redo-btn" class="split-btn" onclick="plannerRedo()" title="Redo (Ctrl+Y)">↻ Redo</button>
             </div>
             <div id="planner-canvas" class="planner-canvas" oncontextmenu="onPlannerCanvasContextMenu(event)">
                 <div id="planner-viewport" class="planner-viewport">
                     <svg id="planner-svg-layer" class="planner-svg-layer"></svg>
                     <div id="planner-nodes-layer" class="planner-nodes-layer"></div>
+                </div>
+
+                <div class="planner-view-controls">
+                    <button id="planner-grid-btn" class="planner-view-btn" onclick="plannerCycleGridSnap()" title="Grid Snap">⊞</button>
+                    <button class="planner-view-btn" onclick="plannerZoomIn()" title="Zoom In (+)">+</button>
+                    <button class="planner-view-btn" onclick="plannerZoomOut()" title="Zoom Out (-)">−</button>
+                    <button class="planner-view-btn" onclick="plannerFitToView()" title="Fit to View (F)">⤢</button>
                 </div>
             </div>
         </div>

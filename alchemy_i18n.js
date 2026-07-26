@@ -192,6 +192,7 @@ window.ALCHEMY_I18N = {
         
 
         // --- 3. Tree & Nodes ---
+        "Summary": "摘要",
         "Gross Output": "总产出",
         "Total Load": "总负载",
         "Unit Cost": "单位成本",
@@ -211,6 +212,7 @@ window.ALCHEMY_I18N = {
         "Un-recycle All": "全部不回收",
         "Swap Recipe": "替换配方",
         "Input": "输入",
+        "Output": "输出",
         "Yields": "产出",
         "Avail": "可用",
         "Used": "已用",
@@ -363,17 +365,45 @@ window.ALCHEMY_I18N = {
         "Item data not found": "未找到物品数据",
         "Machine data not found": "未找到机器数据",
 
+        "per machine (/min)": "每单位机器 (/min)",
         "Apply": "应用",
 
         // --- Planner ---
         "Planner": "规划器",
         "+ Add Node": "+ 新增节点",
-        "Right-click canvas to add a node here. Drag node header to move. Drag empty canvas to pan.": "在畫布上按右鍵可在該處新增節點。拖曳節點標題列可移動節點，拖曳空白畫布可平移視角。",
+        "↺ Undo": "↺ 撤销",
+        "↻ Redo": "↻ 重做",
+
+        "Link machine count changes": "链接机器数变化",
         "This item has no recipe and cannot be added as a Planner node.": "该物品没有生产配方，无法新增为节点。",
         "Node Settings": "节点设置",
         "Remove Node": "移除节点",
+        "Delete Connection": "删除连接",
         "No Recipe": "无配方",
-        "No recipe selected": "尚未选择配方"
+        "No recipe selected": "尚未选择配方", 
+
+        // --- Planner: Plan Library ---
+        "Manage Plans": "管理方案",
+        "📁 Manage Plans": "📁 管理方案",
+        "New Plan": "新方案",
+        "Default Plan": "預設方案",
+        "Imported Plan": "已匯入方案",
+        "(Copy)": "(複製)",
+        "Active": "使用中",
+        "Delete this plan?": "確定要刪除此方案嗎?",
+        "Failed to import plan: ": "匯入方案失敗: ",
+
+        "just now": "剛剛",
+        "min ago": "分鐘前",
+        "hr ago": "小時前",
+        "days ago": "天前",
+
+        "▶ Load": "▶ 載入",
+        "✎ Rename": "✎ 重新命名",
+        "⧉ Duplicate": "⧉ 複製",
+        "🗑 Delete": "🗑 刪除",
+        "⭳ Export": "⭳ 匯出",
+        "Import": "匯入"
     },
     "items": {
         // Game version: 0.4.3.4071
