@@ -1,9 +1,9 @@
 window.ALCHEMY_DB = {
-    "version": 47,
-    "date": "2026.07.10",
+    "version": 48,
+    "date": "2026.07.27",
     "gameVersion": "0.5.4539",
     "items": {
-        // --- 1. RAW RESOURCES ---
+        // --- RAW RESOURCES ---
         "Logs": { "id": 1, "category": "Raw Materials", "buyPrice": 200, "maxStack": -200, "heat": 2000, "baseCost": 1, "cauldronCost": 0.8, "paradoxTime": 9.375, "tier": 1 },
         "Limestone": { "id": 2, "category": "Raw Materials", "buyPrice": 600, "maxStack": -150, "baseCost": 4, "cauldronCost": 3, "paradoxTime": 3.333, "tier": 2 },
         "Iron Ore": { "id": 3, "category": "Raw Materials", "buyPrice": 1200, "maxStack": -100, "baseCost": 12, "cauldronCost": 11, "paradoxTime": 1.364, "tier": 3 },
@@ -15,16 +15,16 @@ window.ALCHEMY_DB = {
         "Quartz Ore": { "id": 24, "category": "Raw Materials", "buyPrice": 44000, "maxStack": -80, "baseCost": 550, "cauldronCost": 230, "paradoxTime": 0.082, "tier": 7 },
         "Meteorite": { "id": 26, "category": "Raw Materials", "buyPrice": 2000000, "maxStack": -1000, "baseCost": 2000, "cauldronCost": 800, "paradoxTime": 0.002, "tier": 9 },
 
-        // --- 2. SEEDS ---
-        "Flax Seeds": { "id":4, "category": "Seeds", "buyPrice": 280, "maxStack": 20, "baseCost": 280, "cauldronCost": 115, "paradoxTime": 13.043, "tier": 2 },
-        "Sage Seeds": {  "id":7, "category": "Seeds", "buyPrice": 360, "maxStack": 20, "baseCost": 360, "cauldronCost": 175, "paradoxTime": 8.571, "tier": 3 },
-        "Redcurrant Seeds": { "id":12, "category": "Seeds", "buyPrice": 1300, "maxStack": 20, "baseCost": 1300, "cauldronCost": 650, "paradoxTime": 2.308, "tier": 4 },
-        "Chamomile Seeds": { "id":16, "category": "Seeds", "buyPrice": 6000, "maxStack": 20, "baseCost": 6000, "cauldronCost": 2300, "paradoxTime": 0.652, "tier": 6 },
-        "Lavender Seeds": { "id":14, "category": "Seeds", "buyPrice": 16000, "maxStack": 20, "baseCost": 16000, "cauldronCost": 6000, "paradoxTime": 0.250, "tier": 7 },
-        "Gentian Seeds": { "id":19, "category": "Seeds", "buyPrice": 64000, "maxStack": 20, "baseCost": 64000, "cauldronCost": 29000, "paradoxTime": 0.052, "tier": 8 },
-        "World Tree Seed": { "id":29, "category": "Seeds", "buyPrice": 5000000, "maxStack": 20, "baseCost": 5000000, "cauldronCost": 5000000, "paradoxTime": 0.0003, "tier": 8 },
+        // --- SEEDS ---
+        "Flax Seeds": { "id":4, "category": "Raw Materials", "buyPrice": 280, "maxStack": 20, "baseCost": 280, "cauldronCost": 115, "paradoxTime": 13.043, "tier": 2 },
+        "Sage Seeds": {  "id":7, "category": "Raw Materials", "buyPrice": 360, "maxStack": 20, "baseCost": 360, "cauldronCost": 175, "paradoxTime": 8.571, "tier": 3 },
+        "Redcurrant Seeds": { "id":12, "category": "Raw Materials", "buyPrice": 1300, "maxStack": 20, "baseCost": 1300, "cauldronCost": 650, "paradoxTime": 2.308, "tier": 4 },
+        "Chamomile Seeds": { "id":16, "category": "Raw Materials", "buyPrice": 6000, "maxStack": 20, "baseCost": 6000, "cauldronCost": 2300, "paradoxTime": 0.652, "tier": 6 },
+        "Lavender Seeds": { "id":14, "category": "Raw Materials", "buyPrice": 16000, "maxStack": 20, "baseCost": 16000, "cauldronCost": 6000, "paradoxTime": 0.250, "tier": 7 },
+        "Gentian Seeds": { "id":19, "category": "Raw Materials", "buyPrice": 64000, "maxStack": 20, "baseCost": 64000, "cauldronCost": 29000, "paradoxTime": 0.052, "tier": 8 },
+        "World Tree Seed": { "id":29, "category": "Raw Materials", "buyPrice": 5000000, "maxStack": 20, "baseCost": 5000000, "cauldronCost": 5000000, "paradoxTime": 0.0003, "tier": 8 },
 
-        // --- 3. HERBS ---
+        // --- HERBS ---
         "Flax": { "id": 5, "category": "Herbs", "nutrientCost": 24, "baseCost": 2, "cauldronCost": 2, "paradoxTime": 750, "tier": 2 },
         "Sage": { "id": 6, "category": "Herbs", "nutrientCost": 36, "baseCost": 3, "cauldronCost": 3, "paradoxTime": 500, "tier": 3 },
         "Redcurrant": { "id": 11, "category": "Herbs", "nutrientCost": 144, "baseCost": 12, "cauldronCost": 12, "paradoxTime": 125, "tier": 4 },
@@ -36,8 +36,21 @@ window.ALCHEMY_DB = {
         "World Tree Leaf": { "id": 27, "category": "Herbs", "nutrientCost": 30000, "baseCost": 2500, "cauldronCost": 2500, "paradoxTime": 0.6, "tier": 8 },
         "World Tree Core": { "id": 28, "category": "Herbs", "nutrientCost": 3000000, "baseCost": 250000, "cauldronCost": 250000, "paradoxTime": 0.006, "tier": 8 },
         
-        // --- 4. FUELS ---
-        "Plank": { "id": 101, "category": "Fuel", "heat": 20, "maxStack": 600, "baseCost": 1, "cauldronCost": 1, "cauldronMulti": 1, "cauldronTarget": 0.1, "tier": 1 },
+        // --- Bio-Based ---
+        "Flax Fiber": { "id": 204, "category": "Bio-Based", "cauldronCost": 2.5, "tier": 2 },
+        "Linen Thread": { "id": 205, "category": "Bio-Based", "maxStack": 200, "cauldronCost": 9, "tier": 2 },
+        "Linen Rope": { "id": 206, "category": "Bio-Based", "sellPrice": 36, "maxStack": 200, "cauldronCost": 13, "tier": 2 },        
+        "Linen": { "id": 307, "category": "Bio-Based", "sellPrice": 165, "cauldronCost": 60, "tier": 3 },
+        "Plant Ash": { "id": 304, "category": "Bio-Based", "cauldronCost": 4, "tier": 3 },
+        "Sage Powder": { "id": 305, "category": "Bio-Based", "cauldronCost": 3.5, "tier": 3 },
+        "Soap": { "id": 413, "category": "Bio-Based", "sellPrice": 60, "cauldronCost": 23, "tier": 4 },
+        "Soap Powder": { "id": 414, "category": "Bio-Based", "cauldronCost": 24, "tier": 4 },
+        "Chamomile Powder": { "id": 601, "category": "Bio-Based", "cauldronCost": 57, "tier": 6 },
+        "Perfumed Soap": { "id": 707, "category": "Bio-Based", "sellPrice": 2590, "cauldronCost": 1216.4, "tier": 7 },
+        "Perfumed Soap Powder": { "id": 708, "category": "Bio-Based", "cauldronCost": 1216.4, "tier": 8 },
+        "Gentian Powder": { "id": 801, "category": "Bio-Based", "cauldronCost": 430, "tier": 8 },        
+
+        // --- FUELS ---
         "Charcoal": { "id": 403, "category": "Fuel", "heat": 40, "baseCost": 2, "cauldronCost": 2, "cauldronMulti": 1, "cauldronTarget": 2, "tier": 3 },
         "Charcoal Powder": { "id": 404, "category": "Fuel", "heat": 48, "baseCost": 2, "cauldronCost": 2.5, "tier": 3 },
         "Coke": { "id": 503, "category": "Fuel", "heat": 600, "baseCost": 30, "cauldronCost": 29, "cauldronMulti": 1, "cauldronTarget": 30, "tier": 5 },
@@ -45,11 +58,11 @@ window.ALCHEMY_DB = {
         "Coal": { "id": 604, "category": "Fuel", "heat": 540, "baseCost": 40, "cauldronCost": 40, "cauldronMulti": 1, "cauldronTarget": 40, "tier": 5 },
         "Black Powder": { "id": 614, "category": "Fuel", "heat": 6000, "sellPrice": 660, "baseCost": 300, "cauldronCost": 300, "cauldronMulti": 1, "cauldronTarget": 300, "tier": 6 },
 
-        // --- 5. FERTILIZERS ---
+        // --- FERTILIZERS ---
         "Basic Fertilizer": { "id": 416, "category": "Fertilizer", "nutrientValue": 144, "maxFertility": 12, "baseCost": 10, "cauldronCost": 10, "tier": 4 },
         "Advanced Fertilizer": { "id": 511, "category": "Fertilizer", "nutrientValue": 720, "maxFertility": 144, "baseCost": 56, "cauldronCost": 58, "tier": 5 },
 
-        // --- 6. POTIONS ---
+        // --- POTIONS ---
         "Healing Potion": { "id": 306, "category": "Potion", "sellPrice": 85, "baseCost": 30, "cauldronCost": 30, "tier": 3 },
         "Vitality Potion": { "id": 415, "category": "Potion", "sellPrice": 330, "baseCost": 120, "cauldronCost": 125, "tier": 4 },
         "Transformation Potion": { "id": 508, "category": "Potion", "sellPrice": 620, "baseCost": 240, "cauldronCost": 240, "tier": 5 },
@@ -57,44 +70,51 @@ window.ALCHEMY_DB = {
         "Blast Potion": { "id": 705, "category": "Potion", "heat": 24000, "sellPrice": 2557, "baseCost": 1197, "cauldronCost": 1197, "tier": 7 },
         "Panacea Potion": { "id": 816, "category": "Potion", "nutrientValue": 200000, "maxFertility": 20000, "heat": 320000, "sellPrice": 30000, "baseCost": 15288.12, "cauldronCost": 15288.12, "tier": 8 },
 
-        // --- 7. SOLIDS ---        
-        "Stone": { "id": 201, "category": "Solid", "maxStack": 600, "cauldronCost": 4, "cauldronMulti": 1, "cauldronTarget": 4, "tier": 2 },
-        "Iron Ingot": { "id": 301, "category": "Solid", "maxStack": 200, "cauldronCost": 15, "tier": 3 },
-        "Quicklime": { "id": 401, "category": "Solid", "cauldronCost": 6, "cauldronMulti": 1, "cauldronTarget": 6, "tier": 3 },
-        "Clay": { "id": 406, "category": "Solid", "maxStack": 200, "cauldronCost": 21, "cauldronMulti": 1, "cauldronTarget": 20, "tier": 4 },
-        "Brick": { "id": 408, "category": "Misc", "maxStack": 200, "cauldronCost": 25, "tier": 4 },
-        "Glass": { "id": 412, "category": "Misc", "sellPrice": 75, "maxStack": 200, "cauldronCost": 27, "tier": 4 },
-        "Steel Ingot": { "id": 505, "category": "Solid", "maxStack": 200, "cauldronCost": 161, "tier": 5 },
-        "Sulfur": { "id": 602, "category": "Solid", "cauldronCost": 166, "cauldronMulti": 1, "cauldronTarget": 246, "tier": 6 },
-        "Bronze Ingot": { "id": 609, "category": "Solid", "maxStack": 200, "cauldronCost": 155, "tier": 6 },
-        "Copper Ingot": { "id": 610, "category": "Solid", "maxStack": 200, "cauldronCost": 293, "tier": 6 },           
-        "Silver Ingot": { "id": 808, "category": "Solid", "maxStack": 100, "cauldronCost": 4516, "tier": 8 },
-        "Gold Ingot": { "id": 905, "category": "Solid", "maxStack": 100, "cauldronCost": 88181.6, "tier": 9 },
-
-
         // --- Crystal ---
-        "Crude Shard": { "id": 627, "category": "Crystal", "baseCost": 512, "cauldronCost": 272, "cauldronMulti": 1, "cauldronTarget": 512, "tier": 6 },
-        "Broken Shard": { "id": 628, "category": "Crystal", "baseCost": 1024, "cauldronCost": 824, "cauldronMulti": 1, "cauldronTarget": 1024, "tier": 6 },
-        "Dull Shard": { "id": 629, "category": "Crystal", "baseCost": 2048, "cauldronCost": 1548, "cauldronMulti": 1, "cauldronTarget": 2048, "tier": 6 },
-        "Shattered Crystal": { "id": 630, "category": "Crystal", "baseCost": 4096, "cauldronCost": 3496, "cauldronMulti": 1, "cauldronTarget": 4096, "tier": 6 },
-        "Crude Crystal": { "id": 631, "category": "Crystal", "baseCost": 8192, "cauldronCost": 6692, "cauldronMulti": 1, "cauldronTarget": 8192, "tier": 6 },
-        "Polished Crystal": { "id": 632, "category": "Crystal", "baseCost": 16384, "cauldronCost": 14384, "cauldronMulti": 1, "cauldronTarget": 16384, "tier": 6 },
-        "Adamant": { "id": 633, "category": "Crystal", "baseCost": 32768, "cauldronCost": 30768, "cauldronMulti": 1, "cauldronTarget": 32768, "tier": 6 },
-        "Diamond": { "id": 634, "category": "Crystal", "baseCost": 65536, "sellPrice": 100000, "cauldronCost": 65536, "cauldronMulti": 1, "cauldronTarget": 65536, "tier": 6 },
-        "Perfect Diamond": { "id": 635, "category": "Crystal", "baseCost": 131072, "cauldronCost": 131072, "cauldronMulti": 1, "cauldronTarget": 131072, "tier": 6 },
+        // Set to tier 7 as tier 6 has too many item
+        "Crude Shard": { "id": 627, "category": "Crystal", "baseCost": 512, "cauldronCost": 272, "cauldronMulti": 1, "cauldronTarget": 512, "tier": 7 },
+        "Broken Shard": { "id": 628, "category": "Crystal", "baseCost": 1024, "cauldronCost": 824, "cauldronMulti": 1, "cauldronTarget": 1024, "tier": 7 },
+        "Dull Shard": { "id": 629, "category": "Crystal", "baseCost": 2048, "cauldronCost": 1548, "cauldronMulti": 1, "cauldronTarget": 2048, "tier": 7 },
+        "Shattered Crystal": { "id": 630, "category": "Crystal", "baseCost": 4096, "cauldronCost": 3496, "cauldronMulti": 1, "cauldronTarget": 4096, "tier": 7 },
+        "Crude Crystal": { "id": 631, "category": "Crystal", "baseCost": 8192, "cauldronCost": 6692, "cauldronMulti": 1, "cauldronTarget": 8192, "tier": 7 },
+        "Polished Crystal": { "id": 632, "category": "Crystal", "baseCost": 16384, "cauldronCost": 14384, "cauldronMulti": 1, "cauldronTarget": 16384, "tier": 7 },
+        "Adamant": { "id": 633, "category": "Crystal", "baseCost": 32768, "cauldronCost": 30768, "cauldronMulti": 1, "cauldronTarget": 32768, "tier": 7 },
+        "Diamond": { "id": 634, "category": "Crystal", "baseCost": 65536, "sellPrice": 100000, "cauldronCost": 65536, "cauldronMulti": 1, "cauldronTarget": 65536, "tier": 7 },
+        "Perfect Diamond": { "id": 635, "category": "Crystal", "baseCost": 131072, "cauldronCost": 131072, "cauldronMulti": 1, "cauldronTarget": 131072, "tier": 7 },
 
-        // --- 9. COMPONENTS ---
-        "Linen Thread": { "id": 205, "category": "Component", "maxStack": 200, "cauldronCost": 9, "tier": 2 },
-        "Linen Rope": { "id": 206, "category": "Component", "sellPrice": 36, "maxStack": 200, "cauldronCost": 13, "tier": 2 },
+        // --- COMPONENTS ---
+        "Plank": { "id": 101, "category": "Component", "heat": 20, "maxStack": 600, "baseCost": 1, "cauldronCost": 1, "cauldronMulti": 1, "cauldronTarget": 0.1, "tier": 1 },
         "Large Wooden Gear": { "id": 102, "category": "Component", "sellPrice": 5, "maxStack": 100, "cauldronCost": 1.5, "tier": 1 },
         "Small Wooden Gear": { "id": 207, "category": "Component", "sellPrice": 8, "maxStack": 200, "cauldronCost": 0.3333333333, "tier": 2 },
         "Iron Nails": { "id": 302, "category": "Component", "sellPrice": 16, "maxStack": 600, "cauldronCost": 5, "tier": 3 },
+        "Stone": { "id": 201, "category": "Component", "maxStack": 600, "cauldronCost": 4, "cauldronMulti": 1, "cauldronTarget": 4, "tier": 2 },
+        "Clay": { "id": 406, "category": "Component", "maxStack": 200, "cauldronCost": 21, "cauldronMulti": 1, "cauldronTarget": 20, "tier": 4 },
+        "Brick": { "id": 408, "category": "Component", "maxStack": 200, "cauldronCost": 25, "tier": 4 },        
+        "Glass": { "id": 412, "category": "Component", "sellPrice": 75, "maxStack": 200, "cauldronCost": 27, "tier": 4 },
         "Wooden Pulley": { "id": 405, "category": "Component", "sellPrice": 44, "maxStack": 50, "cauldronCost": 14, "tier": 4 },
         "Steel Gear": { "id": 506, "category": "Component", "sellPrice": 450, "maxStack": 200, "cauldronCost": 170, "tier": 5 },
         "Copper Bearing": { "id": 612, "category": "Component", "sellPrice": 300, "maxStack": 200, "cauldronCost": 136.5, "tier": 6 },
         "Bronze Rivet": { "id": 613, "category": "Component", "sellPrice": 120, "maxStack": 200, "cauldronCost": 51, "tier": 6 },
 
-        // --- 10. LIQUIDS ---
+        // --- METAL ---
+        "Iron Ingot": { "id": 301, "category": "Metal", "maxStack": 200, "cauldronCost": 15, "tier": 3 },
+        "Steel Ingot": { "id": 505, "category": "Metal", "maxStack": 200, "cauldronCost": 161, "tier": 5 },
+        "Bronze Ingot": { "id": 609, "category": "Metal", "maxStack": 200, "cauldronCost": 155, "tier": 6 },
+        "Copper Ingot": { "id": 610, "category": "Metal", "maxStack": 200, "cauldronCost": 293, "tier": 6 },           
+        "Silver Ingot": { "id": 808, "category": "Metal", "maxStack": 100, "cauldronCost": 4516, "tier": 8 },
+        "Gold Ingot": { "id": 905, "category": "Metal", "maxStack": 100, "cauldronCost": 88181.6, "tier": 9 },
+        "Iron Sand": { "id": 303, "category": "Metal", "cauldronCost": 15.5, "cauldronMulti": 1, "cauldronTarget": 15, "tier": 3 },
+        "Impure Copper Powder": { "id": 607, "category": "Metal", "cauldronCost": 150, "cauldronMulti": 1, "cauldronTarget": 180, "tier": 6 },
+        "Copper Powder": { "id": 608, "category": "Metal", "cauldronCost": 290, "cauldronMulti": 1, "cauldronTarget": 350, "tier": 6 },
+        "Crude Silver Powder": { "id": 803, "category": "Metal", "cauldronCost": 1216.0, "cauldronMulti": 1, "cauldronTarget": 1416.0, "tier": 8 },
+        "Impure Silver Powder": { "id": 804, "category": "Metal", "cauldronCost": 2432.0, "cauldronMulti": 1, "cauldronTarget": 3232.0, "tier": 8 },
+        "Silver Powder": { "id": 805, "category": "Metal", "cauldronCost": 4512.0, "cauldronMulti": 1, "cauldronTarget": 4512.0, "tier": 8 },
+        "Crude Gold Dust": { "id": 901, "category": "Metal", "cauldronCost": 10925.2, "cauldronMulti": 1, "cauldronTarget": 12925.2, "tier": 9 },
+        "Impure Gold Dust": { "id": 902, "category": "Metal", "cauldronCost": 21850.4, "cauldronMulti": 1, "cauldronTarget": 22850.4, "tier": 9 },
+        "Gold Dust": { "id": 903, "category": "Metal", "cauldronCost": 42836.8, "cauldronMulti": 1, "cauldronTarget": 52836.8, "tier": 9 },
+        "Pure Gold Dust": { "id": 904, "category": "Metal", "cauldronCost": 85673.6, "cauldronMulti": 1, "cauldronTarget": 100673.6, "tier": 9 },       
+
+        // --- LIQUIDS ---
         "Linseed Oil": { "id": 409, "category": "Liquid", "liquid": true, "cauldronCost": 0.04, "tier": 4 },
         "Fruit Wine": { "id": 410, "category": "Liquid", "liquid": true, "cauldronCost": 1.2, "tier": 4 },
         "Limewater": { "id": 411, "category": "Liquid", "liquid": true, "cauldronCost": 0.2, "tier": 4 },
@@ -109,63 +129,37 @@ window.ALCHEMY_DB = {
 
         // --- MASH ---
         "Sand": { "id": 202, "category": "Mash", "cauldronCost": 4.5, "tier": 2 },
-        "Flax Fiber": { "id": 204, "category": "Mash", "cauldronCost": 2.5, "tier": 2 },        
-        "Plant Ash": { "id": 304, "category": "Mash", "cauldronCost": 4, "tier": 3 },
-        "Sage Powder": { "id": 305, "category": "Mash", "cauldronCost": 3.5, "tier": 3 },
+        "Quicklime": { "id": 401, "category": "Mash", "cauldronCost": 6, "cauldronMulti": 1, "cauldronTarget": 6, "tier": 3 },
         "Quicklime Powder": { "id": 402, "category": "Mash", "cauldronCost": 7, "tier": 3 },
         "Clay Powder": { "id": 407, "category": "Mash", "cauldronCost": 22, "tier": 4 },
-        "Soap Powder": { "id": 414, "category": "Mash", "cauldronCost": 24, "tier": 4 },
         "Yeast Powder": { "id": 507, "category": "Mash", "cauldronCost": 88, "cauldronMulti": 1, "cauldronTarget": 88, "tier": 5 },
+        "Gloom Fungus": { "id": 509, "category": "Mash", "cauldronCost": 26, "tier": 5 },
         "Gloom Spores": { "id": 510, "category": "Mash", "cauldronCost": 220, "wholesalePrice": 360, "cauldronMulti": 1, "cauldronTarget": 280, "tier": 5 },
-        "Chamomile Powder": { "id": 601, "category": "Mash", "cauldronCost": 57, "tier": 6 },
+        "Salt": { "id": 605, "category": "Mash", "sellPrice": 100, "cauldronCost": 65, "cauldronMulti": 1, "cauldronTarget": 65, "tier": 6 },
+        "Sulfur": { "id": 602, "category": "Mash", "cauldronCost": 166, "cauldronMulti": 1, "cauldronTarget": 246, "tier": 6 },
         "Sulfur Powder": { "id": 603, "category": "Mash", "cauldronCost": 200, "tier": 6 },        
-        "Perfumed Soap Powder": { "id": 708, "category": "Mash", "cauldronCost": 1216.4, "tier": 8 },
-        "Gentian Powder": { "id": 801, "category": "Mash", "cauldronCost": 430, "tier": 8 },        
         // temp move Volcanic Ash id from 29 to 807
         "Volcanic Ash": { "id": 807, "category": "Mash", "cauldronCost": 5404, "tier": 8 },
 
-        // --- METAL MASH ---
-        "Iron Sand": { "id": 303, "category": "Metal Mash", "cauldronCost": 15.5, "cauldronMulti": 1, "cauldronTarget": 15, "tier": 3 },
-        "Impure Copper Powder": { "id": 607, "category": "Metal Mash", "cauldronCost": 150, "cauldronMulti": 1, "cauldronTarget": 180, "tier": 6 },
-        "Copper Powder": { "id": 608, "category": "Metal Mash", "cauldronCost": 290, "cauldronMulti": 1, "cauldronTarget": 350, "tier": 6 },
-        "Crude Silver Powder": { "id": 803, "category": "Metal Mash", "cauldronCost": 1216.0, "cauldronMulti": 1, "cauldronTarget": 1416.0, "tier": 8 },
-        "Impure Silver Powder": { "id": 804, "category": "Metal Mash", "cauldronCost": 2432.0, "cauldronMulti": 1, "cauldronTarget": 3232.0, "tier": 8 },
-        "Silver Powder": { "id": 805, "category": "Metal Mash", "cauldronCost": 4512.0, "cauldronMulti": 1, "cauldronTarget": 4512.0, "tier": 8 },
-        "Crude Gold Dust": { "id": 901, "category": "Metal Mash", "cauldronCost": 10925.2, "cauldronMulti": 1, "cauldronTarget": 12925.2, "tier": 9 },
-        "Impure Gold Dust": { "id": 902, "category": "Metal Mash", "cauldronCost": 21850.4, "cauldronMulti": 1, "cauldronTarget": 22850.4, "tier": 9 },
-        "Gold Dust": { "id": 903, "category": "Metal Mash", "cauldronCost": 42836.8, "cauldronMulti": 1, "cauldronTarget": 52836.8, "tier": 9 },
-        "Pure Gold Dust": { "id": 904, "category": "Metal Mash", "cauldronCost": 85673.6, "cauldronMulti": 1, "cauldronTarget": 100673.6, "tier": 9 },
-
-        // --- 11. CATALYSTS ---		
+        // --- CATALYSTS ---		
         "Unstable Catalyst": { "id": 616, "category": "Catalyst", "charges": 180, "baseCost": 480, "cauldronCost": 740, "cauldronMulti": 1, "cauldronTarget": 740, "tier": 6 },
         "Fertile Catalyst": { "id": 706, "category": "Catalyst", "charges": 240, "nutrientValue": 24000, "maxFertility": 6000, "wholesalePrice": 3000, "baseCost": 2061.84, "cauldronCost": 4061.84, "cauldronMulti": 1, "cauldronTarget": 3561.84, "tier": 7 },
         "Resonant Catalyst": { "id": 815, "category": "Catalyst", "charges": 1500, "baseCost": 12977.44, "cauldronCost": 23977.44, "cauldronMulti": 1, "cauldronTarget": 27977.44, "tier": 8 },
         "Eternal Catalyst": { "id": 908, "category": "Catalyst", "charges": 99999, "baseCost": 1194661.6, "cauldronCost": 1194661.6, "tier": 9 },
 
-        // --- 12. Magic ---
+        // --- Magic ---
         "Philosopherˈs Stone": { "id": 33, "category": "Magic", "cauldronCost": 1000000, "cauldronMulti": 1, "cauldronTarget": 1000000, "tier": 9 },
         "Oblivion Essence": { "id": 25, "category": "Magic", "cauldronCost": 600, "cauldronMulti": 1, "cauldronTarget": 600, "tier": 7 },
         "Vitality Essence": { "id": 709, "category": "Magic", "cauldronCost": 900, "cauldronMulti": 1, "cauldronTarget": 900, "tier": 7 },
         "Star Dust": { "id": 909, "category": "Magic", "cauldronCost": 41490, "cauldronMulti": 1, "cauldronTarget": 81490, "tier": 9 },
         "Fairy Dust": { "id": 910, "category": "Magic", "cauldronCost": 3060, "cauldronMulti": 1, "cauldronTarget": 3760, "tier": 9 },
 
-        // -------
-
-        // --- 13. GOODS & CURRENCY ---
+        // --- CURRENCY ---
         "Copper Coin": { "id": 611, "category": "Currency", "sellPrice": 1, "baseCost": 0.9766666667, "cauldronCost": 0.6766666667, "paradoxTime": 2216.75, "tier": 6 },
         "Silver Coin": { "id": 809, "category": "Currency", "sellPrice": 1000, "baseCost": 903.2, "cauldronCost": 903.2, "paradoxTime": 1.6608, "tier": 8 },
         "Gold Coin": { "id": 906, "category": "Currency", "sellPrice": 100000, "baseCost": 85681.6, "cauldronCost": 90681.6, "paradoxTime": 0.0165, "tier": 9 },
         
-        "Gloom Fungus": { "id": 509, "category": "Misc", "cauldronCost": 26, "tier": 5 },
-        "Mortar": { "id": 203, "category": "Misc", "sellPrice": 48, "cauldronCost": 18, "tier": 2 },
-        "Salt": { "id": 605, "category": "Misc", "sellPrice": 100, "cauldronCost": 65, "cauldronMulti": 1, "cauldronTarget": 65, "tier": 6 },
-        "Linen": { "id": 307, "category": "Misc", "sellPrice": 165, "cauldronCost": 60, "tier": 3 },
-        "Bandage": { "id": 308, "category": "Misc", "sellPrice": 350, "wholesalePrice": 240, "cauldronCost": 120, "tier": 3 },
-        "Soap": { "id": 413, "category": "Misc", "sellPrice": 60, "cauldronCost": 23, "tier": 4 },
-        "Perfumed Soap": { "id": 707, "category": "Misc", "sellPrice": 2590, "cauldronCost": 1216.4, "tier": 7 },
-        "Moonlit Soap": { "id": 913, "category": "Misc", "sellPrice": 995280, "wholesalePrice": 600000, "cauldronCost": 485822.8, "tier": 9 },
-
-        // --- 14. Jewelry ---
+        // --- Jewelry ---
         "Ruby": { "id": 30, "category": "Jewelry", "sellPrice": 250000, "cauldronCost": 200000, "cauldronMulti": 1, "cauldronTarget": 200000, "tier": 9 },
         "Sapphire": { "id": 31, "category": "Jewelry", "sellPrice": 480000, "cauldronCost": 400000, "cauldronMulti": 1, "cauldronTarget": 400000, "tier": 9 },
         "Emerald": { "id": 32, "category": "Jewelry", "sellPrice": 700000, "cauldronCost": 600000, "cauldronMulti": 1, "cauldronTarget": 600000, "tier": 9 },
@@ -179,7 +173,7 @@ window.ALCHEMY_DB = {
         "Lapis Lazuli": { "id": 813, "category": "Jewelry", "sellPrice": 32000, "maxStack": 50, "cauldronCost": 15624, "cauldronMulti": 1, "cauldronTarget": 40624, "tier": 8 },
         "Crown": { "id": 907, "category": "Jewelry", "sellPrice": 1600000, "cauldronCost": 854167.8, "tier": 9 },
 
-        // --- 15. RELICS ---
+        // --- RELICS ---
         "Jupiter": { "id": 502, "category": "Relic", "sellPrice": 30000, "maxStack": -300, "cauldronCost": 34, "tier": 5 },
         "Saturn": { "id": 619, "category": "Relic", "sellPrice": 150000, "maxStack": -100, "cauldronCost": 714, "tier": 6 },
         "Mars": { "id": 620, "category": "Relic", "sellPrice": 280000, "maxStack": -75, "cauldronCost": 1678, "tier": 6 },
@@ -188,10 +182,13 @@ window.ALCHEMY_DB = {
         "Luna": { "id": 914, "category": "Relic", "sellPrice": 18500000, "maxStack": -75, "cauldronCost": 187482.6, "tier": 9 },
         "Sol": { "id": 1001, "category": "Relic", "sellPrice": 42000000, "maxStack": -5, "cauldronCost": 5591400.6, "tier": 9 },
 
-        // --- 16. OTHER ---
+        // --- OTHER ---        
         "Portal Sigil": { "id": 2001, "category": "Other", "buyPrice": 1500, "baseCost": 1500, "cauldronCost": 750, "paradoxTime": 2, "tier": 4 },
         "Gelatinous Gridlock": { "id": 2002, "category": "Other", "buyPrice": 100, "baseCost": 100, "cauldronCost": 100, "paradoxTime": 15, "tier": 1 },
-        //"Automatic Cashier": { "id": 2003, "category": "Other", "buyPrice": 3000, "cauldronCost": 1400 }
+        "Automatic Cashier": { "id": 2003, "category": "Other", "virtual": true, "buyPrice": 3000, "cauldronCost": 1400, "tier": 4 },
+        "Mortar": { "id": 203, "category": "Other", "sellPrice": 48, "cauldronCost": 18, "tier": 2 },
+        "Bandage": { "id": 308, "category": "Other", "sellPrice": 350, "wholesalePrice": 240, "cauldronCost": 120, "tier": 3 },        
+        "Moonlit Soap": { "id": 913, "category": "Other", "sellPrice": 995280, "wholesalePrice": 600000, "cauldronCost": 485822.8, "tier": 9 },        
     },
     
     "machines": {

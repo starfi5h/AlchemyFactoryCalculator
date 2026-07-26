@@ -628,8 +628,8 @@ window.ALCHEMY_I18N = {
         "Bank Portal": "银行传送门"
     },
     "categories": {
-        "Raw Materials": "原材料", "Seeds": "种子", "Herbs": "草药", "Fuel": "燃料", "Fertilizer": "肥料", "Solid": "固体", "Crystal": "晶石", "Component": "零件", "Liquid": "液体",
-        "Mash": "研磨物", "Metal Mash": "金属粉", "Potion": "药水", "Catalyst": "催化剂", "Magic": "魔法", "Jewelry": "珠宝", "Relic": "圣物", "Currency": "货币", "Misc" : "杂项", "Other": "其他",
+        "Raw Materials": "原材料", "Seeds": "种子", "Herbs": "草药", "Bio-Based": "植物基", "Fuel": "燃料", "Fertilizer": "肥料", "Solid": "固体", "Crystal": "晶石", "Component": "建材", "Liquid": "液体",
+        "Mash": "研磨物", "Metal": "金属", "Potion": "药水", "Catalyst": "催化剂", "Magic": "魔法", "Jewelry": "珠宝", "Relic": "圣物", "Currency": "货币", "Other": "其他",
         "[All]": "[ 全部 ]", "[Include]": "[ 选取 ]", "[Exclude]": "[ 排除 ]", "[Product]": "[ 产物 ]"
     }
 };
