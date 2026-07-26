@@ -1046,7 +1046,7 @@ function createPlannerNodeEl(node, flows) {
     const ports = flows.nodePortsCache[node.id] || computeNodePorts(node);
     const machineKey = ports.recipe ? ports.recipe.machine : '';
     const mainOut = ports.recipe ? Object.keys(ports.recipe.outputs)[0] : plannerMainOutput(node.recipeId) || '';
-    const machineName = ports.recipe ? t(ports.recipe.machine, 'machines') : t('No Recipe', 'ui');
+    const machineName = ports.recipe ? t(ports.recipe.machine, 'machines').replace('Advanced', 'Adv.') : t('No Recipe', 'ui');
     const machineIconHtml = machineKey
     ? `<img src="img/machines/${machineKey.toLowerCase().replaceAll(' ', '-')}.png" class="planner-node-icon" onerror="this.style.opacity='0'">`
     : `<span class="planner-node-icon"></span>`;
@@ -1058,11 +1058,17 @@ function createPlannerNodeEl(node, flows) {
              onmouseleave="hidePlannerRateTooltip()">
             ${machineIconHtml}
             <span class="planner-node-title">${machineName}</span>            
+            <button class="planner-gear-btn" title="${t('Node Settings', 'ui')}" onclick="event.stopPropagation(); openPlannerNodeModal('${node.id}')">⚙</button>
             <button class="planner-close-btn" title="${t('Remove Node', 'ui')}" onclick="removePlannerNode('${node.id}')">✕</button>
         </div>
         <div class="planner-node-body" id="planner-node-body-${node.id}">
             ${renderPlannerPortsHtml(node, ports, flows)}
             <div class="planner-machine-count-row">
+                <button class="planner-gear-btn" title="${t('Auto-generate upstream', 'ui')}" onclick="autoGenerateUpstreamNodes('${node.id}')">
+                    <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round">
+                    <path d="M12 2L6 12h5l-1 8 7-12h-5l1-6z"/>
+                    </svg>                
+                </button>
                 <input type="number" min="0" step="1" value="${node.machineCount}"
                     title="${t('Machine Count', 'ui')}"
                     data-mc-for="${node.id}"
@@ -1113,7 +1119,7 @@ function renderPlannerPortRow(nodeId, port, dir, flows) {
     const connected = flows && (flows.portConnections[key] || []).length > 0;
     const remaining = flows ? (flows.portRemaining[key] ?? port.rate) : port.rate;
 
-    let colorClass = dir === 'in' ? 'planner-port-gray' : 'planner-port-yellow';
+    let colorClass = 'planner-port-gray';
     let rateClass = '';
     let badgeHtml = '';
 
@@ -1125,7 +1131,10 @@ function renderPlannerPortRow(nodeId, port, dir, flows) {
                 colorClass = rateClass = 'planner-port-yellow';
             }
         } else {
-            colorClass = port.rate > 0.0001 ? 'planner-port-yellow' : 'planner-port-gray';
+            if (port.rate > 0.001) {
+                badgeHtml = `<span class="planner-port-badge planner-badge-surplus">+${formatVal(port.rate)}</span>`;
+                colorClass = 'planner-port-yellow';
+            }
         }
     } else {
         if (connected) {
@@ -1140,13 +1149,12 @@ function renderPlannerPortRow(nodeId, port, dir, flows) {
         }
     }
 
-
     const dot = `<span class="planner-port-dot ${colorClass}" data-item="${port.item}" data-dir="${dir}"></span>`;
     const icon = `<img src="img/item${itemDef.id ?? 0}.png" width="16" height="16">`;
     const name = `<span class="planner-port-name">${port.item}</span>`;
-    const rate = `<span class="planner-port-rate ${rateClass}">${formatVal(port.rate)}</span>`;
-    if (dir === 'in') return `<div class="planner-port planner-port-in">${badgeHtml}${dot}${rate}${icon}${name}</div>`;
-    return `<div class="planner-port planner-port-out">${name}${icon}${rate}${dot}${badgeHtml}</div>`;
+    const rate = `<span class="planner-port-rate">${formatVal(port.rate)}</span>`;
+    if (dir === 'in') return `<div class="planner-port planner-port-in ${rateClass}">${badgeHtml}${dot}${rate}${icon}${name}</div>`;
+    return `<div class="planner-port planner-port-out ${rateClass}">${name}${icon}${rate}${dot}${badgeHtml}</div>`;
 }
 
 function renderPlannerHeatFertHtml(ports) {
@@ -1274,20 +1282,183 @@ function flashPlannerLinkFeedback(sourceNodeId, affectedNodeIds) {
     affectedNodeIds.forEach(id => flashPlannerElements(`[data-mc-for="${id}"]`, 'mc-flash'));
 }
 
+/* ==========================================================================
+   SECTION: NODE SETTINGS MODAL - recipe modifiers (catalysts / custom input)
+   + recipe switching (grouped by the node's main output item)
+   ========================================================================== */
 
+function openPlannerNodeModal(nodeId) {
+    if (!plannerState.nodes[nodeId]) return;
+    renderPlannerNodeModalBody(nodeId);
+    document.getElementById('planner-node-modal').style.display = 'flex';
+}
 
-/**
- * 由 alchemy_ui.js 在配方/催化劑/自訂輸入變更時呼叫 (共用全域設定變更通知)。
- * 因為機台/圖示等 header 內容也可能一併改變，這裡做完整重建。
- */
-function notifyPlannerRecipeChanged() {
-    if (!document.getElementById('planner-nodes-layer')) return;
-    renderPlanner();
-    const modalBody = document.getElementById('planner-node-modal-body');
-    const modalEl = document.getElementById('planner-node-modal');
-    if (modalBody && modalBody.dataset.nodeId && modalEl && modalEl.style.display === 'flex') {
-        renderPlannerNodeModalBody(modalBody.dataset.nodeId);
+function renderPlannerNodeModalBody(nodeId) {
+    const node = plannerState.nodes[nodeId];
+    const body = document.getElementById('planner-node-modal-body');
+    if (!node || !body) return;
+    body.dataset.nodeId = nodeId;
+
+    const rawRecipe = plannerGetRawRecipe(node.recipeId);
+    const mainOut = rawRecipe ? Object.keys(rawRecipe.outputs)[0] : null;
+
+    const titleEl = document.getElementById('planner-node-modal-title');
+    if (titleEl) {
+        titleEl.innerText = t('Node Settings', 'ui') + (mainOut ? ' — ' + t(mainOut, 'items') : '');
     }
+
+    body.innerHTML = `
+        <div class="planner-modifier-section">
+            ${_buildPlannerNodeModifierHtml(node, rawRecipe)}
+        </div>
+        <div style="height:1px; background:var(--border); margin:12px 0;"></div>
+        <div class="planner-recipe-switch-section">
+            <div style="font-size:0.78em; color:#888; text-transform:uppercase; letter-spacing:0.05em; margin-bottom:6px;">
+                ${t('Select Recipe', 'ui')}
+            </div>
+            <div class="planner-picker-list" style="max-height:240px; overflow-y:auto; padding:0;">
+                ${mainOut ? _buildPlannerNodeRecipeSwitchHtml(node, mainOut) : `<div class="planner-picker-empty">${t('No recipe selected', 'ui')}</div>`}
+            </div>
+        </div>
+    `;
+}
+
+/** 顯示目前配方的內容(套用 node 自己的 recipeModifiers 後)，固定佔用一塊版面，
+ *  並依機器種類提供對應的修飾控制 (高級煉金爐催化劑 / 悖論坩堝自訂輸入) */
+function _buildPlannerNodeModifierHtml(node, rawRecipe) {
+    if (!rawRecipe) {
+        return `<div class="planner-picker-empty">${t('No recipe selected', 'ui')}</div>`;
+    }
+
+    let effRecipe = rawRecipe;
+    if (typeof getRecipeById === 'function') {
+        effRecipe = getRecipeById(node.recipeId, node.recipeModifiers) || rawRecipe;
+    }
+
+    const inputsHtml = _plannerFormatIOList(effRecipe.inputs);
+    const outputsHtml = _plannerFormatIOList(effRecipe.outputs);
+
+    let controlsHtml = '';
+    if (rawRecipe.machine === 'Advanced Athanor') {
+        const activeCats = node.recipeModifiers?.catalysts || [];
+        const btns = ATHANOR_CATALYSTS.map(c => {
+            const isActive = activeCats.includes(c.id);
+            return `<button class="catalyst-btn${isActive ? ' active' : ''}" onclick="plannerToggleCatalyst('${node.id}','${c.id}')">${t(c.label)}</button>`;
+        }).join('');
+        controlsHtml = `<div class="catalyst-row" style="margin-top:10px; padding-top:8px; border-top:1px dashed var(--border);">${t('Catalysts')} ${btns}</div>`;
+    } else if (rawRecipe.machine === 'Paradox Crucible' && rawRecipe.customInputSlot) {
+        const selectedItem = node.recipeModifiers?.customInput;
+        const inputDef = selectedItem ? DB.items[selectedItem] : null;
+        controlsHtml = `
+            <div style="margin-top:10px; padding-top:8px; border-top:1px dashed var(--border); display:flex; align-items:center; gap:8px;">
+                <span style="font-size:0.82em; color:#aaa;">${t('Input')}:</span>
+                <span class="mini-picker" style="display:inline-flex; align-items:center; gap:4px;" onclick="plannerPickCustomInput('${node.id}')">
+                    ${inputDef ? `<img src="img/item${inputDef.id ?? 0}.png" width="18" height="18">` : ''}
+                    <span>${selectedItem ? selectedItem : t('Select Input Item')}</span>
+                </span>
+            </div>`;
+    }
+
+    return `
+        <div>
+            <div style="font-weight:bold; color:#eee; margin-bottom:8px;">${t(rawRecipe.machine, 'machines')}</div>
+            <div style="display:flex; align-items:center; flex-wrap:wrap; gap:4px;">
+                <span style="display:flex; flex-wrap:wrap; gap:4px;">${inputsHtml || `<em style="font-size:0.8em;color:#666;">—</em>`}</span>
+                <span style="color:#666; margin:0 4px;">→</span>
+                <span style="display:flex; flex-wrap:wrap; gap:4px;">${outputsHtml}</span>
+            </div>
+            ${controlsHtml}
+        </div>`;
+}
+
+function _plannerFormatIOList(ioObj) {
+    const entries = Object.entries(ioObj || {});
+    if (entries.length === 0) return '';
+    return entries.map(([name, qty]) => {
+        const d = DB.items[name] || {};
+        const qtyNum = typeof qty === 'number' ? qty : (parseFloat(qty) || 0);
+        const qtyStr = Number.isInteger(qtyNum) ? qtyNum : Number(qtyNum.toFixed(3));
+        return `<span style="display:inline-flex; align-items:center; gap:2px;" title="${name} ×${qtyStr}">
+            <img src="img/item${d.id ?? 0}.png" width="20" height="20">
+            <span style="font-size:0.75em; color:var(--accent); font-weight:bold;">×${qtyStr}</span>
+        </span>`;
+    }).join('');
+}
+
+/** 列出所有輸出 mainOut 的配方 (與目前節點的配方同群)，點擊即切換該節點的 recipeId */
+function _buildPlannerNodeRecipeSwitchHtml(node, mainOut) {
+    const candidates = getRecipesFor(mainOut);
+    if (!candidates || candidates.length === 0) {
+        return `<div class="planner-picker-empty">${t('No recipes found', 'ui')}</div>`;
+    }
+    return candidates.map(r => {
+        const isActive = r.id === node.recipeId;
+        const inputIcons = Object.keys(r.inputs || {}).map(name => {
+            const d = DB.items[name] || {};
+            return `<img src="img/item${d.id ?? 0}.png" width="18" height="18" title="${name}">`;
+        }).join('');
+        const outDef = DB.items[mainOut] || {};
+        const machineIconSrc = `img/machines/${r.machine.toLowerCase().replaceAll(' ', '-')}.png`;
+        const activeStyle = isActive
+            ? 'background:rgba(76,175,80,0.12); border:1px solid var(--accent);'
+            : 'border:1px solid transparent;';
+        return `
+            <div class="planner-picker-row" style="${activeStyle}" onclick="plannerSwitchNodeRecipe('${node.id}','${r.id}')">
+                <div class="planner-picker-flow">
+                    ${inputIcons}<span class="planner-picker-arrow">→</span><img src="img/item${outDef.id ?? 0}.png" width="20" height="20">
+                </div>
+                <span class="planner-picker-machine">
+                    <img src="${machineIconSrc}" width="18" height="18" onerror="this.style.opacity='0'">${t(r.machine, 'machines')}
+                </span>
+                ${isActive ? '<span style="color:var(--accent); font-weight:bold; margin-left:4px;">✓</span>' : ''}
+            </div>`;
+    }).join('');
+}
+
+/** 重新整理 modal 內容 + 節點卡片/連線/摘要面板，並存檔 */
+function _plannerNodeModalRefresh(nodeId) {
+    renderPlannerNodeModalBody(nodeId);
+    recomputeAndRefreshPlanner();
+    savePlannerState();
+}
+
+function plannerToggleCatalyst(nodeId, catalystId) {
+    const node = plannerState.nodes[nodeId];
+    if (!node) return;
+    if (!node.recipeModifiers) node.recipeModifiers = {};
+    if (!node.recipeModifiers.catalysts) node.recipeModifiers.catalysts = [];
+    const cats = node.recipeModifiers.catalysts;
+    const idx = cats.indexOf(catalystId);
+    if (idx >= 0) cats.splice(idx, 1); else cats.push(catalystId);
+    if (cats.length === 0) delete node.recipeModifiers.catalysts;
+    if (node.recipeModifiers && Object.keys(node.recipeModifiers).length === 0) delete node.recipeModifiers;
+    _plannerNodeModalRefresh(nodeId);
+}
+
+function plannerPickCustomInput(nodeId) {
+    const node = plannerState.nodes[nodeId];
+    if (!node) return;
+    const originalSelectItem = window.selectItem;
+    window.selectItem = (name) => {
+        if (!node.recipeModifiers) node.recipeModifiers = {};
+        node.recipeModifiers.customInput = name;
+        window.selectItem = originalSelectItem;
+        closeModal('picker-modal');
+        _plannerNodeModalRefresh(nodeId);
+    };
+    openItemPicker();
+}
+
+/** 切換節點的配方 (依舊配方 mainOut 分組挑選)；因催化劑/自訂輸入是綁定特定配方 id 的，
+ *  換配方後重置該節點的 recipeModifiers。失效的連線由 plannerResolveFlows() 自動清除。 */
+function plannerSwitchNodeRecipe(nodeId, recipeId) {
+    const node = plannerState.nodes[nodeId];
+    if (!node || node.recipeId === recipeId) return;
+    node.recipeId = recipeId;
+    delete node.recipeModifiers;
+    renderPlannerNodeModalBody(nodeId);
+    renderPlanner();
+    savePlannerState();
 }
 
 /* ---------------- DRAG NODE (header only) ---------------- */
@@ -1365,7 +1536,8 @@ function attachPlannerCanvasPan() {
             canvas.classList.remove('panning');
         };
         canvas.addEventListener('pointermove', onMove);
-        canvas.addEventListener('pointerup', onUp);
+        canvas.addEventListener('pointerup', onUp);        
+        hidePlannerRateTooltip();
     });
 }
 
@@ -1717,6 +1889,125 @@ function createPlannerNodeFromPicker(candidate, ctx) {
     const fromNode = consuming ? ctx.sourceNodeId : nodeId;
     const toNode = consuming ? nodeId : ctx.sourceNodeId;
     plannerState.edges[edgeId] = { id: edgeId, item: ctx.item, fromNode, toNode, createdAt: plannerState._edgeSeq };
+
+    renderPlanner();
+    savePlannerState();
+}
+
+/* ---------------- AUTO-GENERATE UPSTREAM NODES ---------------- */
+
+/** 估算節點卡片高度：116px 基礎 + 24px * max(input埠數, output埠數) */
+function estimatePlannerNodeHeight(recipe) {
+    if (!recipe) return 116;
+    const inCount = Object.keys(recipe.inputs || {}).length;
+    const outCount = Object.keys(recipe.outputs || {}).length;
+    return 116 + 24 * Math.max(inCount, outCount);
+}
+
+/**
+ * 依來源節點的目前 input 缺額，在其左側自動生成上游節點 (套用 preferred 配方)，
+ * 並自動連線。只展開這一層，不遞迴往上補。
+ */
+function autoGenerateUpstreamNodes(nodeId) {
+    const sourceNode = plannerState.nodes[nodeId];
+    if (!sourceNode) return;
+
+    const flows = plannerResolveFlows();
+    const ports = flows.nodePortsCache[nodeId];
+    if (!ports) return;
+
+    // 找出有缺額的 input port
+    const deficits = [];
+    ports.inputs.forEach(p => {
+        const key = plannerPortKey(nodeId, p.item, 'in');
+        const remaining = flows.portRemaining[key] ?? 0;
+        if (remaining > 0.001) deficits.push({ item: p.item, deficit: remaining });
+    });
+    if (deficits.length === 0) return; // no-op
+
+    // 為每個缺額物品準備配方與機器數，過濾掉沒有配方/無法生產的
+    const plans = [];
+    deficits.forEach(({ item, deficit }) => {
+        const recipe = getActiveRecipe(item);
+        if (!recipe) return; // 跳過無配方物品 (原料/外部輸入)
+
+        const rates = plannerGetRecipeRates(recipe.id, DB.settings.recipeModifiers?.[recipe.id]);
+        if (!rates) return;
+        const perMachineRate = (rates.outputsPerMachine.find(p => p.item === item) || {}).rate || 0;
+        if (perMachineRate <= 0) return;
+
+        let machineCount = deficit / perMachineRate;
+        machineCount = Math.max(0.000001, Math.round(machineCount * 1000000) / 1000000);
+
+        plans.push({ item, recipe, recipeModifiers: DB.settings.recipeModifiers?.[recipe.id], machineCount });
+    });
+    if (plans.length === 0) return;
+
+    // 計算擺放位置
+    const sourceEl = document.getElementById('planner-node-' + nodeId);
+    const sourceHeight = sourceEl ? sourceEl.offsetHeight : 116;
+    const newNodeWidth = 200;
+
+    let x = sourceNode.x - newNodeWidth - 120;
+    if (plannerState.gridSize) x = plannerSnapVal(x);
+
+    const heights = plans.map(p => estimatePlannerNodeHeight(p.recipe));
+    const baseGap = plannerState.gridSize ? Math.min(80, Math.max(20, plannerState.gridSize)) : 20;
+    const count = plans.length;
+
+    const yPositions = new Array(count);
+
+    if (count % 2 === 1) {
+        // 奇數個：正中央那個節點的上緣與來源節點上緣對齊，其餘依序往上/往下排開
+        const midIdx = Math.floor(count / 2);
+        yPositions[midIdx] = sourceNode.y;
+
+        // 往上排 (index 遞減)
+        let curTop = sourceNode.y;
+        for (let i = midIdx - 1; i >= 0; i--) {
+            curTop -= (baseGap + heights[i + 1]); // 減去「上一個(較靠中央)節點的高度」與間距
+            yPositions[i] = curTop;
+        }
+
+        // 往下排 (index 遞增)
+        let curBottom = sourceNode.y + heights[midIdx];
+        for (let i = midIdx + 1; i < count; i++) {
+            yPositions[i] = curBottom + baseGap;
+            curBottom = yPositions[i] + heights[i];
+        }
+    } else {
+        // 偶數個：維持整體置中分佈
+        const totalHeight = heights.reduce((s, h) => s + h, 0) + baseGap * (count - 1);
+        const sourceCenterY = sourceNode.y + sourceHeight / 2;
+        let curY = sourceCenterY - totalHeight / 2;
+        for (let i = 0; i < count; i++) {
+            yPositions[i] = curY;
+            curY += heights[i] + baseGap;
+        }
+    }
+
+    plans.forEach((plan, i) => {
+        let y = yPositions[i];
+        if (plannerState.gridSize) y = plannerSnapVal(y);
+
+        plannerState._nodeSeq = (plannerState._nodeSeq || 0) + 1;
+        const newNodeId = 'pnode_' + plannerState._nodeSeq;
+        plannerState.nodes[newNodeId] = {
+            id: newNodeId,
+            recipeId: plan.recipe.id,
+            recipeModifiers: plan.recipeModifiers,
+            machineCount: plan.machineCount,
+            x: Math.round(x),
+            y: Math.round(y)
+        };
+
+        plannerState._edgeSeq = (plannerState._edgeSeq || 0) + 1;
+        const edgeId = 'pedge_' + plannerState._edgeSeq;
+        plannerState.edges[edgeId] = {
+            id: edgeId, item: plan.item, fromNode: newNodeId, toNode: nodeId,
+            createdAt: plannerState._edgeSeq
+        };
+    });
 
     renderPlanner();
     savePlannerState();

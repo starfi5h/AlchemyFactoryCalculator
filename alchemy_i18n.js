@@ -375,7 +375,8 @@ window.ALCHEMY_I18N = {
         "↻ Redo": "↻ 重做",
 
         "Link machine count changes": "链接机器数变化",
-        "This item has no recipe and cannot be added as a Planner node.": "该物品没有生产配方，无法新增为节点。",
+        "This item has no recipe and cannot be added as a Planner node.": "该物品没有生产配方，无法新增为节点。",        
+        "Auto-generate upstream": "自動生成上游节点",
         "Node Settings": "节点设置",
         "Remove Node": "移除节点",
         "Delete Connection": "删除连接",

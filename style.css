@@ -979,15 +979,16 @@ button.reset-btn:hover { background: var(--danger); color: white; }
 
 .planner-node-body { padding: 8px; display: flex; flex-direction: column; gap: 8px; position: relative; }
 .planner-ports-row { display: flex; gap: 4px; }
-.planner-ports-col { display: flex; flex-direction: column; gap: 4px; flex: 1; min-width: 0; width: 100%; }
+.planner-ports-col { display: block; flex: 1; min-width: 0; width: 100%; }
 .planner-ports-in { border-right: 1px dashed #3a3a3a; }
 .planner-ports-out { align-items: flex-end; }
 
 .planner-port {
     position: relative; display: flex; align-items: center; gap: 4px;
-    font-size: 0.8em; white-space: nowrap; padding: 2px 2px;
+    font-size: 0.8em; white-space: nowrap; padding: 2px 2px; min-width: 0;
 }
-.planner-port-name { color: #ccc; overflow: hidden; text-overflow: ellipsis; max-width: 90px; }
+.planner-port-name { color: #ccc; overflow: hidden; text-overflow: ellipsis; max-width: 90px; min-width: 0; flex-shrink: 1; flex: 1 1 auto; }
+.planner-port-out > .planner-port-name { text-align: right; }
 .planner-port-rate { color: #fff; font-weight: bold; flex-shrink: 0; }
 .planner-port-empty { color: #555; font-style: italic; font-size: 0.8em; padding: 2px 12px; }
 

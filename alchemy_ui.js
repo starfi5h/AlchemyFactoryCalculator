@@ -1062,7 +1062,7 @@ function _renderRecipeModalScopeBar() {
     bar.innerHTML = `
         <button class="tab-btn mini-tab ${_recipeModalScope === 'global' ? 'active' : ''}"
             onclick="_setRecipeModalScope('global')">🌐 ${t('Global')}</button>
-        <button class="tab-btn mini-tab ${_recipeModalScope === 'node' ? 'active' : ''}"
+        <button class="tab-btn mini-tab ${_recipeModalScope === 'node' ? 'active' : '' }" title="${_recipeModalPathKey}"
             onclick="_setRecipeModalScope('node')">📍 ${t('This Node Only')}</button>
     `;
     document.getElementById('recipe-list').insertAdjacentElement('beforebegin', bar);
@@ -1111,12 +1111,9 @@ function _renderRecipeModalList() {
                     DB.settings.preferredRecipes[item] = r.id;
                     delete DB.settings.nodeRecipeOverrides[pathKey];
                 }                
-                
-            }
+            }            
             persist();
-            closeModal('recipe-modal');            
-            console.log("pathKey1 = " + pathKey);
-            console.log(getActiveRecipe(item, pathKey));
+            closeModal('recipe-modal');
             calculate();
         };
 
@@ -1152,9 +1149,7 @@ function _renderRecipeModalList() {
             div.onclick = (e) => {
                 if (e.target.closest('.mini-picker')) return;
                 if (!isReady) return;
-                DB.settings.preferredRecipes[item] = r.id; persist();
-                if (typeof notifyPlannerRecipeChanged === 'function') notifyPlannerRecipeChanged();
-                closeModal('recipe-modal'); calculate();
+                applyRecipe();
             };
 
             list.appendChild(div);
@@ -1199,9 +1194,7 @@ function _renderRecipeModalList() {
 
         div.onclick = (e) => {
             if (e.target.closest('.catalyst-row')) return;
-            DB.settings.preferredRecipes[item] = r.id; persist();
-            if (typeof notifyPlannerRecipeChanged === 'function') notifyPlannerRecipeChanged();
-            closeModal('recipe-modal'); calculate();
+            applyRecipe();
         };
 
         if (r.machine === 'Advanced Athanor') {
@@ -1230,7 +1223,6 @@ function pickCustomRecipeInput(recipeId, forItem) {
         if (!DB.settings.recipeModifiers[recipeId]) DB.settings.recipeModifiers[recipeId] = {};
         DB.settings.recipeModifiers[recipeId].customInput = name;
         persist();
-        if (typeof notifyPlannerRecipeChanged === 'function') notifyPlannerRecipeChanged();
 
         window.selectItem = originalSelectItem;
         closeModal('picker-modal');
