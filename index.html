@@ -80,11 +80,11 @@
                     <button class="split-btn" onclick="managePlannerRenameSelected()">✎ Rename</button>
                     <button class="split-btn" onclick="managePlannerDuplicateSelected()">⧉ Duplicate</button>
                     <button class="split-btn" style="color:var(--danger); border-color:var(--danger);" onclick="managePlannerDeleteSelected()">🗑 Delete</button>
-                    <button class="split-btn" onclick="managePlannerExportSelected()">⭳ Export</button>
                 </div>
                 <div class="planner-plan-bottom-row">
-                    <button class="save-btn" style="width:auto; margin:0;" onclick="managePlannerCreateNew()">New Plan</button>
-                    <button class="save-btn" style="width:auto; margin:0; background:var(--panel); border-style:dashed;" onclick="managePlannerImport()">Import</button>
+                    <button class="save-btn" style="width:50%; margin:0;" onclick="managePlannerCreateNew()">New Plan</button>
+                    <button class="split-btn" onclick="managePlannerImport()">⭱ Import</button>
+                    <button class="split-btn" onclick="managePlannerExportSelected()">⭳ Export</button>
                 </div>
             </div>
         </div>
@@ -386,7 +386,7 @@
                                 <label id="lvlBelt-title">Logistics Efficiency</label>
                                 <div class="spinner-wrapper">
                                     <button class="spinner-btn left first" onclick="adjustInput('lvlBelt', -1); updateFromSlider();">-</button>
-                                    <input type="number" id="lvlBelt" value="0" min="0" oninput="updateFromSlider()">
+                                    <input type="number" id="lvlBelt" value="0" min="0" oninput="updateFromSlider()" onchange="saveSettings()">
                                     <button class="spinner-btn right last" onclick="adjustInput('lvlBelt', 1); updateFromSlider();">+</button>
                                 </div>
                             </div>
@@ -394,7 +394,7 @@
                                 <label id="lvlSpeed-title">Factory Efficiency</label>
                                 <div class="spinner-wrapper">
                                     <button class="spinner-btn left first" onclick="adjustInput('lvlSpeed', -1); calculate();">-</button>
-                                    <input type="number" id="lvlSpeed" value="0" min="0" oninput="calculate()">
+                                    <input type="number" id="lvlSpeed" value="0" min="0" oninput="calculate()" onchange="saveSettings()">
                                     <button class="spinner-btn right last" onclick="adjustInput('lvlSpeed', 1); calculate();">+</button>
                                 </div>
                             </div>
@@ -402,7 +402,7 @@
                                 <label id="lvlAlchemy-title">Alchemy Skill</label>
                                 <div class="spinner-wrapper">
                                     <button class="spinner-btn left first" onclick="adjustInput('lvlAlchemy', -1); calculate();">-</button>
-                                    <input type="number" id="lvlAlchemy" value="0" min="0" oninput="calculate()">
+                                    <input type="number" id="lvlAlchemy" value="0" min="0" oninput="calculate()" onchange="saveSettings()">
                                     <button class="spinner-btn right last" onclick="adjustInput('lvlAlchemy', 1); calculate();">+</button>
                                 </div>
                             </div>
@@ -410,7 +410,7 @@
                                 <label id="lvlFuel-title">Fuel Efficiency</label>
                                 <div class="spinner-wrapper">
                                     <button class="spinner-btn left first" onclick="adjustInput('lvlFuel', -1); calculate();">-</button>
-                                    <input type="number" id="lvlFuel" value="0" min="0" oninput="calculate()">
+                                    <input type="number" id="lvlFuel" value="0" min="0" oninput="calculate()" onchange="saveSettings()">
                                     <button class="spinner-btn right last" onclick="adjustInput('lvlFuel', 1); calculate();">+</button>
                                 </div>
                             </div>
@@ -418,7 +418,7 @@
                                 <label id="lvlFert-title">Fert Efficiency</label>
                                 <div class="spinner-wrapper">
                                     <button class="spinner-btn left first" onclick="adjustInput('lvlFert', -1); calculate();">-</button>
-                                    <input type="number" id="lvlFert" value="0" min="0" oninput="calculate()">
+                                    <input type="number" id="lvlFert" value="0" min="0" oninput="calculate()" onchange="saveSettings()">
                                     <button class="spinner-btn right last" onclick="adjustInput('lvlFert', 1); calculate();">+</button>
                                 </div>
                             </div>
@@ -426,7 +426,7 @@
                                 <label id="lvlSell-title">Sales Ability</label>
                                 <div class="spinner-wrapper">
                                     <button class="spinner-btn left first" onclick="adjustInput('lvlSell', -1); calculate();">-</button>
-                                    <input type="number" id="lvlSell" value="0" min="0" oninput="calculate()">
+                                    <input type="number" id="lvlSell" value="0" min="0" oninput="calculate()" onchange="saveSettings()">
                                     <button class="spinner-btn right last" onclick="adjustInput('lvlSell', 1); calculate();">+</button>
                                 </div>
                             </div>
@@ -440,7 +440,7 @@
                         </div>
                         <div class="panel-body">
                             <span id="db-gameversion-text"></span>
-                            <button class="save-btn" onclick="saveSettings(event)">Save Upgrades</button>
+                            <button class="save-btn" onclick="saveSettings(); flashButton(event.currentTarget);">Save Upgrades</button>
                             <button class="reset-btn" onclick="resetRecips()">Reset Recipes</button>
                             <button class="reset-btn" onclick="resetTranslations()">Reset Translations</button>
                             <button class="reset-btn" onclick="resetAllData()">All Data Reset</button>
@@ -729,9 +729,11 @@
         <div id="view-planner" class="view">
             <div class="planner-toolbar">
                 <select id="planner-plan-select" class="planner-plan-select" onchange="switchPlannerPlan(this.value)"></select>
-                <button class="split-btn" style="max-width:150px; padding:6px 14px;" onclick="openPlannerManageModal()">📁 Manage Plans</button>
+                <button class="split-btn" onclick="openPlannerManageModal()">📁 Manage Plans</button>
                 <span class="planner-toolbar-divider"></span>
-                <button class="split-btn" style="max-width:150px; padding:6px 14px;" onclick="onPlannerAddNodeClick()">+ Add Node</button>
+                <button class="split-btn" onclick="onPlannerAddNodeClick()">+ Add Node</button>
+                <button id="planner-select-btn" class="split-btn" onclick="togglePlannerSelectMode()" title="Box Select (Delete key to remove selected)">▭ Select Mode</button>
+                <span class="planner-toolbar-divider"></span>
                 <button id="planner-undo-btn" class="split-btn" onclick="plannerUndo()" title="Undo (Ctrl+Z)">↺ Undo</button>
                 <button id="planner-redo-btn" class="split-btn" onclick="plannerRedo()" title="Redo (Ctrl+Y)">↻ Redo</button>
             </div>

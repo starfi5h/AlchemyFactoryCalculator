@@ -371,6 +371,7 @@ window.ALCHEMY_I18N = {
         // --- Planner ---
         "Planner": "规划器",
         "+ Add Node": "+ 新增节点",
+        "▭ Select Mode": "▭ 框选模式",
         "↺ Undo": "↺ 撤销",
         "↻ Redo": "↻ 重做",
 
@@ -379,9 +380,13 @@ window.ALCHEMY_I18N = {
         "Auto-generate upstream": "自動生成上游节点",
         "Node Settings": "节点设置",
         "Remove Node": "移除节点",
+        "Graph Tools": "图表工具",
+        "Auto-Layout Upstream": "自动布局上游节点",
+        "Populate All Upstream": "填充所有上游节点",
+        "Clear All Upstream": "清空所有上游节点",
         "Delete Connection": "删除连接",
         "No Recipe": "无配方",
-        "No recipe selected": "尚未选择配方", 
+        "No recipe selected": "尚未选择配方",
 
         // --- Planner: Plan Library ---
         "Manage Plans": "管理方案",
@@ -404,7 +409,7 @@ window.ALCHEMY_I18N = {
         "⧉ Duplicate": "⧉ 複製",
         "🗑 Delete": "🗑 刪除",
         "⭳ Export": "⭳ 匯出",
-        "Import": "匯入"
+        "⭱ Import": "⭱ 匯入"
     },
     "items": {
         // Game version: 0.4.3.4071

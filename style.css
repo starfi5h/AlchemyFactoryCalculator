@@ -265,6 +265,11 @@ input:disabled { opacity: 0.5; cursor: not-allowed; background: #2a2a2a; color: 
 .split-btn { flex: 1; padding: 6px 4px; border: 1px solid #555; border-radius: 4px; cursor: pointer; font-size: 0.8em; font-weight: bold; transition: 0.2s; color: #ddd; background: #333; text-align: center; }
 .split-btn:disabled { opacity: 0.4; cursor: not-allowed; }
 .split-btn:hover:not(:disabled) { background: #444; color: #fff; }
+.split-btn.active {
+    background: var(--accent) !important;
+    color: #fff !important;
+    border-color: var(--accent) !important;
+}
 .btn-active-green { background: #2e7d32 !important; border-color: #4caf50 !important; color: white !important; }
 .btn-inactive-red { background: #333 !important; color: #aaa !important; }
 .checkbox-row { display: flex; align-items: center; font-size: 0.9em; color: #ccc; }
@@ -951,6 +956,24 @@ button.reset-btn:hover { background: var(--danger); color: white; }
     overflow: visible; pointer-events: none;
 }
 .planner-nodes-layer { position: absolute; top: 0; left: 0; }
+
+
+/* Select Mode */
+.planner-canvas.select-mode { cursor: crosshair; }
+.planner-canvas.select-mode .planner-node { cursor: default; }
+.planner-select-box {
+    position: absolute; z-index: 60; pointer-events: none;
+    border: 1px solid var(--accent);
+    background: rgba(76,175,80,0.12);
+}
+.planner-node.selected {
+    outline: 2px solid var(--accent);
+    outline-offset: 1px;
+}
+.planner-node.selected .planner-node-header {
+    background: rgba(76,175,80,0.18);
+}
+
 
 .planner-node {
     position: absolute; width: 200px;

@@ -809,7 +809,7 @@ function onLogisticsChange() {
     calculate();
 }
 
-function saveSettings(e) { ['lvlBelt','lvlSpeed','lvlAlchemy','lvlFuel','lvlFert'].forEach(k => { DB.settings[k] = parseInt(document.getElementById(k).value) || 0; }); persist(); flashButton(e.currentTarget); }
+function saveSettings(e) { ['lvlBelt','lvlSpeed','lvlAlchemy','lvlFuel','lvlFert'].forEach(k => { DB.settings[k] = parseInt(document.getElementById(k).value) || 0; }); persist(); }
 
 function resetRecips() {
     if(confirm(t('Reset Recipes', 'ui') + "?")) {
@@ -872,7 +872,7 @@ function adjustRate(delta) {
     calculate(); 
 }
 
-function adjustInput(id, delta) { const el = document.getElementById(id); let val = parseInt(el.value) || 0; el.value = Math.max(0, val + delta); }
+function adjustInput(id, delta) { const el = document.getElementById(id); let val = parseInt(el.value) || 0; el.value = Math.max(0, val + delta); saveSettings(); }
 
 
 /* ==========================================================================

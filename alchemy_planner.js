@@ -1,11 +1,9 @@
 /* ==========================================================================
    SECTION: PLANNER TAB
-   Phase 1: 自由節點圖 - 手動放置節點、設定機器數，即時算出各 port 速率
-   Phase 2: 手動拉線建立/刪除連線
-   Phase 3: 依 edge 建立順序做流量分配，port 變色 + 卡片外 +N/-N 標籤
    ========================================================================== */
 
 const PLANNER_LIBRARY_KEY = "alchemy_planner_library_v1";
+const PLANNER_SETTINGS_KEY = "alchemy_planner_settings_v1";
 
 /**
  * plannerLibrary: 存放所有「方案(Plan)」的容器，會整包寫入 localStorage。
@@ -23,14 +21,65 @@ let plannerLibrary = {
     plans: {}
 };
 
+/* ==========================================================================
+   SECTION: DATA STRUCTURE REFERENCE (for future maintainers)
+   ==========================================================================
+
+   plannerState (== plannerLibrary.plans[activePlanId].data):
+   {
+       nodes: {
+           [nodeId]: {
+               id: string,              // "pnode_<seq>"
+               recipeId: string,        // 對應 DB.recipes[].id
+               recipeModifiers: object, // 選用，例如高級煉金爐催化劑設定 (從 DB.settings.recipeModifiers 複製快照)
+               machineCount: number,    // 該節點的機器台數，可為小數
+               x: number,               // 節點左上角在「圖座標系」(graph space) 中的位置
+               y: number
+           }
+       },
+       edges: {
+           [edgeId]: {
+               id: string,       // "pedge_<seq>"
+               item: string,     // 這條連線傳輸的物品名稱 (英文 key)
+               fromNode: string, // 來源節點 id (該物品從這裡的 output port 流出)
+               toNode: string,   // 目標節點 id (流入這裡的 input port)
+               createdAt: number // = plannerState._edgeSeq 建立當下的值，用來決定流量分配的優先順序
+           }
+       },
+       _edgeSeq: number,  // 自增序號，用於產生 edgeId 與 createdAt 排序
+       _nodeSeq: number,  // 自增序號，用於產生 nodeId
+       
+   }
+
+   節點的「port」(輸入/輸出接點) 不是存在 node 物件裡的欄位，而是每次由
+   computeNodePorts(node) 依 node.recipeId + node.machineCount 即時算出：
+   { recipe, inputs: [{item, rate}], outputs: [{item, rate}], heatItemsPerMin, fertItemsPerMin }
+
+   node 沒有 width/height 欄位；卡片實際尺寸由 CSS 決定 (.planner-node 寬度固定
+   200px，高度依 port 數量、是否有 heat/fert row 等內容而變動)，需要時得從
+   document.getElementById('planner-node-' + id) 讀取 offsetWidth/offsetHeight。
+   
+   ========================================================================== */
+
 // plannerState 永遠指向「目前作用中 plan」的 data 物件參照；
-// 畫布相關的所有函式維持讀寫 plannerState，不需要知道 library 的存在。
 let plannerState = null;
 
+/*
+    Planner Settings (runtime state)
+    viewport: { x: number, y: number, zoom: number }, // canvas 平移/縮放狀態
+    gridSize: number   // 0 = 不吸附；否則為 snap 網格像素大小 (見 PLANNER_GRID_STEPS)
+*/
+
+let _plannerSettings = {
+    viewport: { x: 0, y: 0, zoom: 1 },
+    gridSize: 40
+};
 let _plannerLastFlows = null; // 上一次 resolveFlows() 的結果快取 (供拖曳節點時即時重繪邊線用)
 let _plannerCanvasHovered = false;
 let _plannerManageSelectedId = null; // 「方案管理」Modal 內目前選中(highlight)的 plan id
 let _plannerLinkMode = false;
+let _plannerSelectMode = false;
+let _plannerSelectedNodeIds = new Set();
 let _plannerSummaryCollapsed = false;
 let _plannerSummarySectionCollapsed = { cost: false, output: false, input: false, machines: true };
 const PLANNER_ZOOM_MIN = 0.2;
@@ -50,17 +99,47 @@ const PLANNER_HISTORY_LIMIT = 10;
 function initPlannerPage() {
     _injectPlannerSummaryStyles();
     loadPlannerLibrary();
+    loadPlannerSettings();
     renderPlannerToolbarSelect();
 
     renderPlanner();
     attachPlannerCanvasPan();
     attachPlannerPortDragHandlers();
+    attachPlannerBoxSelect();
     attachPlannerWheelZoom();
     attachPlannerPinchZoom();
     attachPlannerKeyboardShortcuts();
     updatePlannerGridButton();
     updatePlannerGridBackground();
     updatePlannerUndoRedoButtons();
+}
+
+// 讀取UI全局設定
+function loadPlannerSettings() {
+    try {
+        const saved = JSON.parse(localStorage.getItem(PLANNER_SETTINGS_KEY) || '{}');
+
+        _plannerSettings.viewport = {
+            x: saved.viewport?.x ?? 0,
+            y: saved.viewport?.y ?? 0,
+            zoom: saved.viewport?.zoom ?? 1
+        };
+
+        _plannerSettings.gridSize = saved.gridSize ?? 0;
+    } catch {
+        _plannerSettings = {
+            viewport: { x: 0, y: 0, zoom: 1 },
+            gridSize: 0
+        };
+    }
+}
+
+// 寫入UI全局設定
+function savePlannerSettings() {
+    localStorage.setItem(
+        PLANNER_SETTINGS_KEY,
+        JSON.stringify(_plannerSettings)
+    );
 }
 
 /** 建立一個全新、空白的 plan 資料本體 (即原本 plannerState 的初始值) */
@@ -118,9 +197,6 @@ function _activatePlanData(planId) {
     const plan = plannerLibrary.plans[planId];
     if (!plan) return;
     plannerState = plan.data;
-    if (!plannerState.viewport) plannerState.viewport = { x: 0, y: 0, zoom: 1 };
-    if (!plannerState.viewport.zoom) plannerState.viewport.zoom = 1;
-    if (plannerState.gridSize === undefined) plannerState.gridSize = 0;
     _plannerLastFlows = null;
     _ensurePlannerHistory(planId);
 }
@@ -196,6 +272,7 @@ function plannerUndo() {
     if (!hist || hist.index <= 0) return;
     hist.index--;
     _restorePlannerHistorySnapshot(planId, hist);
+    hidePlannerRateTooltip();
 }
 
 function plannerRedo() {
@@ -204,6 +281,7 @@ function plannerRedo() {
     if (!hist || hist.index >= hist.stack.length - 1) return;
     hist.index++;
     _restorePlannerHistorySnapshot(planId, hist);
+    hidePlannerRateTooltip();
 }
 
 /* ==========================================================================
@@ -509,23 +587,156 @@ function managePlannerImport() {
 function plannerScreenToGraph(clientX, clientY) {
     const canvas = document.getElementById('planner-canvas');
     const rect = canvas.getBoundingClientRect();
-    const zoom = plannerState.viewport.zoom || 1;
+    const zoom = _plannerSettings.viewport.zoom || 1;
     return {
-        x: (clientX - rect.left - plannerState.viewport.x) / zoom,
-        y: (clientY - rect.top - plannerState.viewport.y) / zoom
+        x: (clientX - rect.left - _plannerSettings.viewport.x) / zoom,
+        y: (clientY - rect.top - _plannerSettings.viewport.y) / zoom
     };
 }
 
 function applyPlannerViewportTransform() {
     const vp = document.getElementById('planner-viewport');
-    const zoom = plannerState.viewport.zoom || 1;
-    if (vp) vp.style.transform = `translate(${plannerState.viewport.x}px, ${plannerState.viewport.y}px) scale(${zoom})`;
+    const zoom = _plannerSettings.viewport.zoom || 1;
+    if (vp) vp.style.transform = `translate(${_plannerSettings.viewport.x}px, ${_plannerSettings.viewport.y}px) scale(${zoom})`;
     updatePlannerGridBackground();
+}
+
+/* ==========================================================================
+   SECTION: SELECT MODE
+   ========================================================================== */
+
+function togglePlannerSelectMode() {
+    _plannerSelectMode = !_plannerSelectMode;
+    if (!_plannerSelectMode) clearPlannerSelection();
+    updatePlannerSelectModeButton();
+}
+
+function updatePlannerSelectModeButton() {
+    const btn = document.getElementById('planner-select-btn');
+    if (btn) btn.classList.toggle('active', _plannerSelectMode);
+    const canvas = document.getElementById('planner-canvas');
+    if (canvas) canvas.classList.toggle('select-mode', _plannerSelectMode);
+}
+
+function clearPlannerSelection() {
+    if (_plannerSelectedNodeIds.size === 0) return;
+    _plannerSelectedNodeIds.clear();
+    document.querySelectorAll('.planner-node.selected').forEach(el => el.classList.remove('selected'));
+}
+
+function attachPlannerBoxSelect() {
+    const canvas = document.getElementById('planner-canvas');
+    if (!canvas || canvas.dataset.boxSelectBound) return;
+    canvas.dataset.boxSelectBound = "1";
+
+    canvas.addEventListener('pointerdown', (e) => {
+        if (!_plannerSelectMode) return;
+        if (e.target.closest('.planner-node')) return;
+        if (e.target.closest('.planner-view-controls')) return;
+        if (e.target.closest('.planner-summary-panel')) return;
+        if (e.button !== 0) return;
+
+        e.preventDefault();
+        canvas.setPointerCapture(e.pointerId);
+        const rect = canvas.getBoundingClientRect();
+        const startX = e.clientX, startY = e.clientY;
+
+        const box = document.createElement('div');
+        box.className = 'planner-select-box';
+        canvas.appendChild(box);
+
+        const updateBox = (x2, y2) => {
+            const left = Math.min(startX, x2), top = Math.min(startY, y2);
+            const w = Math.abs(x2 - startX), h = Math.abs(y2 - startY);
+            box.style.left = (left - rect.left) + 'px';
+            box.style.top = (top - rect.top) + 'px';
+            box.style.width = w + 'px';
+            box.style.height = h + 'px';
+            return { left, top, right: left + w, bottom: top + h };
+        };
+        let lastBounds = updateBox(startX, startY);
+
+        const onMove = (ev) => { lastBounds = updateBox(ev.clientX, ev.clientY); };
+        const onUp = () => {
+            canvas.removeEventListener('pointermove', onMove);
+            canvas.removeEventListener('pointerup', onUp);
+            box.remove();
+            applyPlannerBoxSelection(lastBounds);
+        };
+        canvas.addEventListener('pointermove', onMove);
+        canvas.addEventListener('pointerup', onUp);
+        hidePlannerRateTooltip();
+    });
+}
+
+function applyPlannerBoxSelection(bounds) {
+    _plannerSelectedNodeIds.clear();
+    document.querySelectorAll('.planner-node').forEach(el => {
+        const r = el.getBoundingClientRect();
+        const hit = r.left < bounds.right && r.right > bounds.left &&
+                    r.top < bounds.bottom && r.bottom > bounds.top;
+        el.classList.toggle('selected', hit);
+        if (hit) _plannerSelectedNodeIds.add(el.id.replace('planner-node-', ''));
+    });
+}
+
+function deletePlannerSelectedNodes() {
+    const ids = [..._plannerSelectedNodeIds];
+    if (ids.length === 0) return;
+    ids.forEach(id => {
+        delete plannerState.nodes[id];
+        Object.keys(plannerState.edges).forEach(eid => {
+            const e = plannerState.edges[eid];
+            if (e.fromNode === id || e.toNode === id) delete plannerState.edges[eid];
+        });
+    });
+    _plannerSelectedNodeIds.clear();
+    renderPlanner();
+    savePlannerState();
+    hidePlannerRateTooltip();
 }
 
 /* ==========================================================================
    SECTION: VIEW CONTROLS - ZOOM / GRID SNAP / FIT TO VIEW
    ========================================================================== */
+
+function attachPlannerCanvasPan() {
+    const canvas = document.getElementById('planner-canvas');
+    if (!canvas || canvas.dataset.panBound) return;
+    canvas.dataset.panBound = "1";
+
+    canvas.addEventListener('pointerdown', (e) => {
+         if (_plannerSelectMode) return; // 交給 box-select 處理
+        if (e.target.closest('.planner-node')) return;
+        if (e.target.closest('.planner-edge-group')) return;
+        if (e.target.closest('.planner-view-controls')) return;
+        if (e.target.closest('.planner-summary-panel')) return;
+        if (e.button !== 0) return;
+        canvas.setPointerCapture(e.pointerId);
+        canvas.classList.add('panning');
+        const startX = e.clientX, startY = e.clientY;
+        const originX = _plannerSettings.viewport.x, originY = _plannerSettings.viewport.y;
+        let moved = 0;
+
+        const onMove = (ev) => {
+            moved = Math.max(moved, Math.hypot(ev.clientX - startX, ev.clientY - startY));
+            _plannerSettings.viewport.x = originX + (ev.clientX - startX);
+            _plannerSettings.viewport.y = originY + (ev.clientY - startY);
+            applyPlannerViewportTransform();
+            if (_plannerLastFlows) renderPlannerEdges(_plannerLastFlows);
+        };
+        const onUp = () => {
+            canvas.removeEventListener('pointermove', onMove);
+            canvas.removeEventListener('pointerup', onUp);
+            canvas.classList.remove('panning');
+            savePlannerSettings();
+            if (moved < 3) clearPlannerSelection();   // 新增：純點擊 → 清空選取
+        };
+        canvas.addEventListener('pointermove', onMove);
+        canvas.addEventListener('pointerup', onUp);        
+        hidePlannerRateTooltip();
+    });
+}
 
 function plannerSetZoom(newZoom, anchorClientX, anchorClientY) {
     const canvas = document.getElementById('planner-canvas');
@@ -533,25 +744,25 @@ function plannerSetZoom(newZoom, anchorClientX, anchorClientY) {
     const rect = canvas.getBoundingClientRect();
     const ax = anchorClientX ?? (rect.left + rect.width / 2);
     const ay = anchorClientY ?? (rect.top + rect.height / 2);
-    const oldZoom = plannerState.viewport.zoom || 1;
+    const oldZoom = _plannerSettings.viewport.zoom || 1;
 
     newZoom = Math.min(PLANNER_ZOOM_MAX, Math.max(PLANNER_ZOOM_MIN, newZoom));
     if (Math.abs(newZoom - oldZoom) < 0.0001) return;
 
-    // アンカー下のグラフ座標を保ったままズーム
-    const graphX = (ax - rect.left - plannerState.viewport.x) / oldZoom;
-    const graphY = (ay - rect.top - plannerState.viewport.y) / oldZoom;
+    const graphX = (ax - rect.left - _plannerSettings.viewport.x) / oldZoom;
+    const graphY = (ay - rect.top - _plannerSettings.viewport.y) / oldZoom;
 
-    plannerState.viewport.zoom = newZoom;
-    plannerState.viewport.x = (ax - rect.left) - graphX * newZoom;
-    plannerState.viewport.y = (ay - rect.top) - graphY * newZoom;
+    _plannerSettings.viewport.zoom = newZoom;
+    _plannerSettings.viewport.x = (ax - rect.left) - graphX * newZoom;
+    _plannerSettings.viewport.y = (ay - rect.top) - graphY * newZoom;
 
     applyPlannerViewportTransform();
     if (_plannerLastFlows) renderPlannerEdges(_plannerLastFlows);
+    savePlannerSettings();
 }
 
-function plannerZoomIn()  { plannerSetZoom((plannerState.viewport.zoom || 1) * 1.2); }
-function plannerZoomOut() { plannerSetZoom((plannerState.viewport.zoom || 1) / 1.2); }
+function plannerZoomIn()  { plannerSetZoom((_plannerSettings.viewport.zoom || 1) * 1.2); }
+function plannerZoomOut() { plannerSetZoom((_plannerSettings.viewport.zoom || 1) / 1.2); }
 
 function attachPlannerWheelZoom() {
     const canvas = document.getElementById('planner-canvas');
@@ -560,7 +771,7 @@ function attachPlannerWheelZoom() {
     canvas.addEventListener('wheel', (e) => {
         e.preventDefault();
         const factor = e.deltaY < 0 ? 1.1 : 1 / 1.1;
-        plannerSetZoom((plannerState.viewport.zoom || 1) * factor, e.clientX, e.clientY);
+        plannerSetZoom((_plannerSettings.viewport.zoom || 1) * factor, e.clientX, e.clientY);
     }, { passive: false });
 }
 
@@ -578,7 +789,7 @@ function attachPlannerPinchZoom() {
             e.preventDefault();
             const [t1, t2] = e.touches;
             pinchStartDist = Math.hypot(t2.clientX - t1.clientX, t2.clientY - t1.clientY);
-            pinchStartZoom = plannerState.viewport.zoom || 1;
+            pinchStartZoom = _plannerSettings.viewport.zoom || 1;
             pinchMidpoint = { x: (t1.clientX + t2.clientX) / 2, y: (t1.clientY + t2.clientY) / 2 };
         }
     }, { passive: false });
@@ -620,23 +831,23 @@ function attachPlannerKeyboardShortcuts() {
 }
 
 function plannerSnapVal(v) {
-    const g = plannerState.gridSize || 0;
+    const g = _plannerSettings.gridSize || 0;
     if (!g) return v;
     return Math.round(v / g) * g;
 }
 
 function plannerCycleGridSnap() {
-    const idx = PLANNER_GRID_STEPS.indexOf(plannerState.gridSize || 0);
-    plannerState.gridSize = PLANNER_GRID_STEPS[(idx + 1) % PLANNER_GRID_STEPS.length];
+    const idx = PLANNER_GRID_STEPS.indexOf(_plannerSettings.gridSize || 0);
+    _plannerSettings.gridSize = PLANNER_GRID_STEPS[(idx + 1) % PLANNER_GRID_STEPS.length];
     updatePlannerGridButton();
     updatePlannerGridBackground();
-    savePlannerLibraryMeta(); // 純視圖操作 (格線設定)：只寫入 localStorage，不計入 undo 歷史
+    savePlannerSettings();
 }
 
 function updatePlannerGridButton() {
     const btn = document.getElementById('planner-grid-btn');
     if (!btn) return;
-    const g = plannerState.gridSize || 0;
+    const g = _plannerSettings.gridSize || 0;
     btn.textContent = g ? `⊞${g}` : '⊞';
     btn.title = g ? `Grid Snap: ${g}px` : 'Grid Snap: Off';
     btn.classList.toggle('active', !!g);
@@ -645,8 +856,8 @@ function updatePlannerGridButton() {
 function updatePlannerGridBackground() {
     const canvas = document.getElementById('planner-canvas');
     if (!canvas) return;
-    const g = plannerState.gridSize || 0;
-    const zoom = plannerState.viewport.zoom || 1;
+    const g = _plannerSettings.gridSize || 0;
+    const zoom = _plannerSettings.viewport.zoom || 1;
 
     if (!g) {
         canvas.style.backgroundImage = 'radial-gradient(#2a2a2a 1px, transparent 1px)';
@@ -658,7 +869,7 @@ function updatePlannerGridBackground() {
             'linear-gradient(to bottom, rgba(255,255,255,0.07) 1px, transparent 1px)';
         canvas.style.backgroundSize = `${size}px ${size}px`;
     }
-    canvas.style.backgroundPosition = `${plannerState.viewport.x}px ${plannerState.viewport.y}px`;
+    canvas.style.backgroundPosition = `${_plannerSettings.viewport.x}px ${_plannerSettings.viewport.y}px`;
 }
 
 function plannerFitToView() {
@@ -667,9 +878,9 @@ function plannerFitToView() {
     if (!canvas) return;
 
     if (nodes.length === 0) {
-        plannerState.viewport = { x: 0, y: 0, zoom: 1 };
+        _plannerSettings.viewport = { x: 0, y: 0, zoom: 1 };
         applyPlannerViewportTransform();
-        savePlannerLibraryMeta(); // 純視圖操作 (fit to view)：只寫入 localStorage，不計入 undo 歷史
+        savePlannerSettings();
         return;
     }
 
@@ -693,13 +904,13 @@ function plannerFitToView() {
     let zoom = Math.min(rect.width / graphW, rect.height / graphH);
     zoom = Math.min(PLANNER_ZOOM_MAX, Math.max(PLANNER_ZOOM_MIN, zoom));
 
-    plannerState.viewport.zoom = zoom;
-    plannerState.viewport.x = (rect.width - graphW * zoom) / 2 - minX * zoom;
-    plannerState.viewport.y = (rect.height - graphH * zoom) / 2 - minY * zoom;
+    _plannerSettings.viewport.zoom = zoom;
+    _plannerSettings.viewport.x = (rect.width - graphW * zoom) / 2 - minX * zoom;
+    _plannerSettings.viewport.y = (rect.height - graphH * zoom) / 2 - minY * zoom;
 
     applyPlannerViewportTransform();
     if (_plannerLastFlows) renderPlannerEdges(_plannerLastFlows);
-    savePlannerLibraryMeta(); // 純視圖操作 (fit to view)：只寫入 localStorage，不計入 undo 歷史
+    savePlannerSettings();
 }
 
 /* ---------------- ADD / REMOVE NODES ---------------- */
@@ -708,10 +919,9 @@ function onPlannerAddNodeClick() {
     const canvas = document.getElementById('planner-canvas');
     if (!canvas) return;
     const rect = canvas.getBoundingClientRect();
-    const zoom = plannerState.viewport.zoom || 1;
-    const stackOffset = (Object.keys(plannerState.nodes).length % 6) * 26;
-    const graphX = (rect.width / 2 - plannerState.viewport.x) / zoom - 110 + stackOffset;
-    const graphY = (rect.height / 2 - plannerState.viewport.y) / zoom - 60 + stackOffset;
+    const zoom = _plannerSettings.viewport.zoom || 1;
+    const graphX = plannerSnapVal((rect.width / 2 - _plannerSettings.viewport.x) / zoom - 110);
+    const graphY = plannerSnapVal((rect.height / 2 - _plannerSettings.viewport.y) / zoom - 60);
     openPlannerItemPicker(graphX, graphY);
 }
 
@@ -761,6 +971,7 @@ function removePlannerNode(nodeId) {
     });
     renderPlanner();
     savePlannerState();
+    hidePlannerRateTooltip();
 }
 
 /* ---------------- RECIPE / RATE CALCULATION ---------------- */
@@ -1019,7 +1230,9 @@ function renderPlanner() {
     const flows = plannerResolveFlows();
     layer.innerHTML = '';
     Object.values(plannerState.nodes).forEach(node => {
-        layer.appendChild(createPlannerNodeEl(node, flows));
+        const el = createPlannerNodeEl(node, flows);
+        if (_plannerSelectedNodeIds.has(node.id)) el.classList.add('selected');
+        layer.appendChild(el);
     });
     applyPlannerViewportTransform();
     renderPlannerEdges(flows);
@@ -1069,7 +1282,7 @@ function createPlannerNodeEl(node, flows) {
                     <path d="M12 2L6 12h5l-1 8 7-12h-5l1-6z"/>
                     </svg>                
                 </button>
-                <input type="number" min="0" step="1" value="${node.machineCount}"
+                <input type="number" min="0" step="1" value="${Number(node.machineCount.toFixed(6))}"
                     title="${t('Machine Count', 'ui')}"
                     data-mc-for="${node.id}"
                     onfocus="onPlannerMachineCountFocus('${node.id}', this)"
@@ -1259,7 +1472,7 @@ function propagatePlannerMachineRatio(sourceNodeId, ratio) {
 
     connected.forEach(id => {
         const n = plannerState.nodes[id];
-        if (n) n.machineCount = Math.max(0, Math.round(n.machineCount * ratio * 1e6) / 1e6);
+        if (n) n.machineCount = Math.max(0, n.machineCount * ratio);
     });
 
     recomputeAndRefreshPlanner();
@@ -1320,6 +1533,21 @@ function renderPlannerNodeModalBody(nodeId) {
                 ${mainOut ? _buildPlannerNodeRecipeSwitchHtml(node, mainOut) : `<div class="planner-picker-empty">${t('No recipe selected', 'ui')}</div>`}
             </div>
         </div>
+        <div style="height:1px; background:var(--border); margin:12px 0;"></div>
+        <div class="planner-node-actions-section" style="display:flex; flex-direction:column; gap:6px;">
+            <div style="font-size:0.78em; color:#888; text-transform:uppercase; letter-spacing:0.05em; margin-bottom:2px;">
+                ${t('Graph Tools', 'ui')}
+            </div>
+            <button class="split-btn" style="width:100%;" onclick="plannerAutoLayoutUpstream('${node.id}')">
+                ⇶ ${t('Auto-Layout Upstream', 'ui')}
+            </button>
+            <button class="split-btn" style="width:100%;" onclick="autoGenerateAllUpstreamNodes('${node.id}')">
+                ⚡ ${t('Populate All Upstream', 'ui')}
+            </button>
+            <button class="split-btn" style="width:100%;" onclick="removeAllUpsteamNodes('${node.id}')">
+                × ${t('Clear All Upstream', 'ui')}
+            </button>
+        </div>
     `;
 }
 
@@ -1361,7 +1589,7 @@ function _buildPlannerNodeModifierHtml(node, rawRecipe) {
 
     return `
         <div>
-            <div style="font-weight:bold; color:#eee; margin-bottom:8px;">${t(rawRecipe.machine, 'machines')}</div>
+            <div style="font-weight:bold; color:#eee; margin-bottom:8px;">${t(rawRecipe.machine, 'machines')} ( ${rawRecipe.baseTime} sec )</div>
             <div style="display:flex; align-items:center; flex-wrap:wrap; gap:4px;">
                 <span style="display:flex; flex-wrap:wrap; gap:4px;">${inputsHtml || `<em style="font-size:0.8em;color:#666;">—</em>`}</span>
                 <span style="color:#666; margin:0 4px;">→</span>
@@ -1474,70 +1702,36 @@ function attachPlannerNodeDrag(wrap, node) {
         const originX = node.x, originY = node.y;
         hidePlannerRateTooltip();
 
+        const isGroupDrag = _plannerSelectedNodeIds.has(node.id) && _plannerSelectedNodeIds.size > 1;
+        const origins = isGroupDrag
+            ? [..._plannerSelectedNodeIds]
+                .map(id => plannerState.nodes[id])
+                .filter(Boolean)
+                .map(n => ({ id: n.id, x: n.x, y: n.y }))
+            : [{ id: node.id, x: node.x, y: node.y }];
+
         const onMove = (ev) => {
-            const zoom = plannerState.viewport.zoom || 1;
-            node.x = originX + (ev.clientX - startX) / zoom;
-            node.y = originY + (ev.clientY - startY) / zoom;
-            if (plannerState.gridSize) {
-                node.x = plannerSnapVal(node.x);
-                node.y = plannerSnapVal(node.y);
-            }
-            wrap.style.left = node.x + 'px';
-            wrap.style.top = node.y + 'px';
+            const zoom = _plannerSettings.viewport.zoom || 1;
+            const dx = (ev.clientX - startX) / zoom;
+            const dy = (ev.clientY - startY) / zoom;
+            origins.forEach(o => {
+                const n = plannerState.nodes[o.id];
+                if (!n) return;
+                n.x = plannerSnapVal(o.x + dx);
+                n.y = plannerSnapVal(o.y + dy);
+                const el = document.getElementById('planner-node-' + o.id);
+                if (el) { el.style.left = n.x + 'px'; el.style.top = n.y + 'px'; }
+            });
             if (_plannerLastFlows) renderPlannerEdges(_plannerLastFlows);
         };
         const onUp = () => {
             header.removeEventListener('pointermove', onMove);
             header.removeEventListener('pointerup', onUp);
             header.classList.remove('dragging');
-
-            // Grid Snap: 節點左上角座標を対象に丸める
-            if (plannerState.gridSize) {
-                node.x = plannerSnapVal(node.x);
-                node.y = plannerSnapVal(node.y);
-                wrap.style.left = node.x + 'px';
-                wrap.style.top = node.y + 'px';
-                if (_plannerLastFlows) renderPlannerEdges(_plannerLastFlows);
-            }
             savePlannerState();
         };
         header.addEventListener('pointermove', onMove);
         header.addEventListener('pointerup', onUp);
-    });
-}
-
-/* ---------------- CANVAS PAN (drag empty background) ---------------- */
-
-function attachPlannerCanvasPan() {
-    const canvas = document.getElementById('planner-canvas');
-    if (!canvas || canvas.dataset.panBound) return;
-    canvas.dataset.panBound = "1";
-
-    canvas.addEventListener('pointerdown', (e) => {
-        if (e.target.closest('.planner-node')) return;
-        if (e.target.closest('.planner-edge-group')) return;
-        if (e.target.closest('.planner-view-controls')) return;
-        if (e.target.closest('.planner-summary-panel')) return;
-        if (e.button !== 0) return;
-        canvas.setPointerCapture(e.pointerId);
-        canvas.classList.add('panning');
-        const startX = e.clientX, startY = e.clientY;
-        const originX = plannerState.viewport.x, originY = plannerState.viewport.y;
-
-        const onMove = (ev) => {
-            plannerState.viewport.x = originX + (ev.clientX - startX);
-            plannerState.viewport.y = originY + (ev.clientY - startY);
-            applyPlannerViewportTransform();
-            if (_plannerLastFlows) renderPlannerEdges(_plannerLastFlows);   // 追加：pan中も邊線を追従
-        };
-        const onUp = () => {
-            canvas.removeEventListener('pointermove', onMove);
-            canvas.removeEventListener('pointerup', onUp);
-            canvas.classList.remove('panning');
-        };
-        canvas.addEventListener('pointermove', onMove);
-        canvas.addEventListener('pointerup', onUp);        
-        hidePlannerRateTooltip();
     });
 }
 
@@ -1875,13 +2069,13 @@ function createPlannerNodeFromPicker(candidate, ctx) {
     const perMachineRate = (portList.find(p => p.item === ctx.item) || {}).rate || 0;
 
     let machineCount = (perMachineRate > 0 && targetRate > 0) ? targetRate / perMachineRate : 1;
-    machineCount = Math.max(0.000001, Math.round(machineCount * 1000000) / 1000000);
+    machineCount = Math.max(0.000001, machineCount);
 
     plannerState._nodeSeq = (plannerState._nodeSeq || 0) + 1;
     const nodeId = 'pnode_' + plannerState._nodeSeq;
     plannerState.nodes[nodeId] = {
         id: nodeId, recipeId: recipe.id, machineCount,
-        x: Math.round(ctx.graphX - 115), y: Math.round(ctx.graphY - 40)
+        x: plannerSnapVal(Math.round(ctx.graphX - 115)), y: plannerSnapVal(Math.round(ctx.graphY - 40))
     };
 
     plannerState._edgeSeq = (plannerState._edgeSeq || 0) + 1;
@@ -1906,26 +2100,25 @@ function estimatePlannerNodeHeight(recipe) {
 
 /**
  * 依來源節點的目前 input 缺額，在其左側自動生成上游節點 (套用 preferred 配方)，
- * 並自動連線。只展開這一層，不遞迴往上補。
+ * 並自動連線。只展開這一層，不遞迴往上補 (遞迴版見 autoGenerateAllUpstreamNodes)。
+ * 回傳這次呼叫新建立的節點 id 陣列 (供遞迴使用)，不做任何 render/save (由呼叫端負責)。
  */
-function autoGenerateUpstreamNodes(nodeId) {
+function _autoGenerateUpstreamNodesCore(nodeId) {
     const sourceNode = plannerState.nodes[nodeId];
-    if (!sourceNode) return;
+    if (!sourceNode) return [];
 
     const flows = plannerResolveFlows();
     const ports = flows.nodePortsCache[nodeId];
-    if (!ports) return;
+    if (!ports) return [];
 
-    // 找出有缺額的 input port
     const deficits = [];
     ports.inputs.forEach(p => {
         const key = plannerPortKey(nodeId, p.item, 'in');
         const remaining = flows.portRemaining[key] ?? 0;
         if (remaining > 0.001) deficits.push({ item: p.item, deficit: remaining });
     });
-    if (deficits.length === 0) return; // no-op
+    if (deficits.length === 0) return [];
 
-    // 為每個缺額物品準備配方與機器數，過濾掉沒有配方/無法生產的
     const plans = [];
     deficits.forEach(({ item, deficit }) => {
         const recipe = getActiveRecipe(item);
@@ -1937,46 +2130,36 @@ function autoGenerateUpstreamNodes(nodeId) {
         if (perMachineRate <= 0) return;
 
         let machineCount = deficit / perMachineRate;
-        machineCount = Math.max(0.000001, Math.round(machineCount * 1000000) / 1000000);
+        machineCount = Math.max(0, machineCount);
 
         plans.push({ item, recipe, recipeModifiers: DB.settings.recipeModifiers?.[recipe.id], machineCount });
     });
-    if (plans.length === 0) return;
+    if (plans.length === 0) return [];
 
-    // 計算擺放位置
     const sourceEl = document.getElementById('planner-node-' + nodeId);
     const sourceHeight = sourceEl ? sourceEl.offsetHeight : 116;
     const newNodeWidth = 200;
-
-    let x = sourceNode.x - newNodeWidth - 120;
-    if (plannerState.gridSize) x = plannerSnapVal(x);
+    let x = plannerSnapVal(sourceNode.x - newNodeWidth - 120);
 
     const heights = plans.map(p => estimatePlannerNodeHeight(p.recipe));
-    const baseGap = plannerState.gridSize ? Math.min(80, Math.max(20, plannerState.gridSize)) : 20;
+    const baseGap = _plannerSettings.gridSize ? Math.min(80, Math.max(20, _plannerSettings.gridSize)) : 20;
     const count = plans.length;
-
     const yPositions = new Array(count);
 
     if (count % 2 === 1) {
-        // 奇數個：正中央那個節點的上緣與來源節點上緣對齊，其餘依序往上/往下排開
         const midIdx = Math.floor(count / 2);
         yPositions[midIdx] = sourceNode.y;
-
-        // 往上排 (index 遞減)
         let curTop = sourceNode.y;
         for (let i = midIdx - 1; i >= 0; i--) {
-            curTop -= (baseGap + heights[i + 1]); // 減去「上一個(較靠中央)節點的高度」與間距
+            curTop -= (baseGap + heights[i + 1]);
             yPositions[i] = curTop;
         }
-
-        // 往下排 (index 遞增)
         let curBottom = sourceNode.y + heights[midIdx];
         for (let i = midIdx + 1; i < count; i++) {
             yPositions[i] = curBottom + baseGap;
             curBottom = yPositions[i] + heights[i];
         }
     } else {
-        // 偶數個：維持整體置中分佈
         const totalHeight = heights.reduce((s, h) => s + h, 0) + baseGap * (count - 1);
         const sourceCenterY = sourceNode.y + sourceHeight / 2;
         let curY = sourceCenterY - totalHeight / 2;
@@ -1986,9 +2169,9 @@ function autoGenerateUpstreamNodes(nodeId) {
         }
     }
 
+    const createdIds = [];
     plans.forEach((plan, i) => {
-        let y = yPositions[i];
-        if (plannerState.gridSize) y = plannerSnapVal(y);
+        let y = plannerSnapVal(yPositions[i]);
 
         plannerState._nodeSeq = (plannerState._nodeSeq || 0) + 1;
         const newNodeId = 'pnode_' + plannerState._nodeSeq;
@@ -2007,10 +2190,218 @@ function autoGenerateUpstreamNodes(nodeId) {
             id: edgeId, item: plan.item, fromNode: newNodeId, toNode: nodeId,
             createdAt: plannerState._edgeSeq
         };
+
+        createdIds.push(newNodeId);
     });
+
+    return createdIds;
+}
+
+/** 對外版本：單層展開，展開後立即 render + 存檔 */
+function autoGenerateUpstreamNodes(nodeId) {
+    const created = _autoGenerateUpstreamNodesCore(nodeId);
+    if (created.length === 0) return;
+    renderPlanner();
+    savePlannerState();
+}
+
+/**
+ * 遞迴版本：以 nodeId 為起點，持續往上游展開，直到每個節點都沒有缺額為止。
+ * 用 visited set 保證每個節點只處理一次，天然避免環路造成的無窮遞迴。
+ */
+function autoGenerateAllUpstreamNodes(nodeId) {
+    const visited = new Set();
+    const queue = [nodeId];
+    let anyCreated = false;
+    let guard = 0; // 保險上限，避免極端情況跑太久
+
+    while (queue.length && guard < 5000) {
+        guard++;
+        const cur = queue.shift();
+        if (visited.has(cur)) continue;
+        visited.add(cur);
+
+        const created = _autoGenerateUpstreamNodesCore(cur);
+        if (created.length) {
+            anyCreated = true;
+            created.forEach(id => { if (!visited.has(id)) queue.push(id); });
+        }
+    }
+
+    if (anyCreated) {
+        renderPlanner();
+        savePlannerState();
+    }
+}
+
+function removeAllUpsteamNodes(rootNodeId) {
+    const root = plannerState.nodes[rootNodeId];
+    if (!root) return;
+
+    const outAdj = {}, inAdj = {};
+    Object.keys(plannerState.nodes).forEach(id => { outAdj[id] = []; inAdj[id] = []; });
+    Object.values(plannerState.edges).forEach(e => {
+        if (!outAdj[e.fromNode] || !inAdj[e.toNode]) return;
+        outAdj[e.fromNode].push(e.toNode);
+        inAdj[e.toNode].push(e.fromNode);
+    });
+
+    const upstreamIds = _plannerCollectUpstream(rootNodeId, inAdj);
+    if (upstreamIds.length === 0) return; // 沒有上游節點可刪
+    upstreamIds.forEach(nId => delete plannerState.nodes[nId]);
 
     renderPlanner();
     savePlannerState();
+}
+
+/* ==========================================================================
+   SECTION: LAYOUT UPSTREAM (from a given node)
+   ========================================================================== */
+
+const PLANNER_LAYOUT_COL_GAP = 280;   // 每層 (rank) 之間的水平間距 (含節點寬度)
+const PLANNER_LAYOUT_ROW_GAP = 40;    // 同層節點之間的垂直間距
+
+/**
+ * 以 rootNodeId 為根，只排版它的上游節點 (沿 input edge 反向可達的節點群)。
+ * root 本身位置不變；上游節點以 root 的 x 為起點往左展開分層，
+ * 每一層則以 root.y 為中心整體置中對齊。
+ */
+function plannerAutoLayoutUpstream(rootNodeId) {
+    const root = plannerState.nodes[rootNodeId];
+    if (!root) return;
+
+    const outAdj = {}, inAdj = {};
+    Object.keys(plannerState.nodes).forEach(id => { outAdj[id] = []; inAdj[id] = []; });
+    Object.values(plannerState.edges).forEach(e => {
+        if (!outAdj[e.fromNode] || !inAdj[e.toNode]) return;
+        outAdj[e.fromNode].push(e.toNode);
+        inAdj[e.toNode].push(e.fromNode);
+    });
+
+    const upstreamIds = _plannerCollectUpstream(rootNodeId, inAdj);
+    if (upstreamIds.length === 0) return; // 沒有上游節點可排
+
+    const groupIds = [rootNodeId, ...upstreamIds];
+    // 分層/排序的「正向」方向改成 inAdj (沿著上游走)，故把 outAdj/inAdj 對調傳入
+    const rank = _plannerAssignRanks(groupIds, inAdj, outAdj);
+    const order = _plannerReduceCrossings(groupIds, inAdj, outAdj, rank);
+    _plannerAssignUpstreamCoordinates(rootNodeId, upstreamIds, rank, order);
+
+    renderPlanner();
+    savePlannerState();
+    //requestAnimationFrame(() => plannerFitToView());
+}
+
+/** BFS，只沿 inAdj 方向走 (即沿著 edge 反向)，收集 rootId 的所有上游可達節點 (不含 rootId 本身) */
+function _plannerCollectUpstream(rootId, inAdj) {
+    const visited = new Set([rootId]);
+    const result = [];
+    const queue = [...inAdj[rootId]];
+    queue.forEach(id => visited.add(id));
+    while (queue.length) {
+        const cur = queue.shift();
+        result.push(cur);
+        (inAdj[cur] || []).forEach(nb => {
+            if (!visited.has(nb)) { visited.add(nb); queue.push(nb); }
+        });
+    }
+    return result;
+}
+
+/**
+ * 分層 (rank = 該節點所在的水平層數，0 為最左)。
+ * 用 Kahn's algorithm 做拓撲排序；遇到環 (back-edge) 時會被自然忽略，
+ * 最後再用保險邏輯把因環路而卡住的節點依前驅補上 rank。
+ */
+function _plannerAssignRanks(groupIds, outAdj, inAdj) {
+    const rank = {};
+    const remainingIn = {};
+    groupIds.forEach(id => { rank[id] = 0; remainingIn[id] = inAdj[id].filter(n => groupIds.includes(n)).length; });
+
+    const queue = groupIds.filter(id => remainingIn[id] === 0);
+    if (queue.length === 0 && groupIds.length > 0) queue.push(groupIds[0]);
+
+    const processed = new Set();
+    while (queue.length) {
+        const cur = queue.shift();
+        if (processed.has(cur)) continue;
+        processed.add(cur);
+        outAdj[cur].forEach(nb => {
+            if (!groupIds.includes(nb)) return;
+            rank[nb] = Math.max(rank[nb], rank[cur] + 1);
+            remainingIn[nb]--;
+            if (remainingIn[nb] <= 0 && !processed.has(nb)) queue.push(nb);
+        });
+    }
+    groupIds.forEach(id => {
+        if (!processed.has(id)) {
+            const preds = inAdj[id].filter(n => groupIds.includes(n) && processed.has(n));
+            rank[id] = preds.length ? Math.max(...preds.map(p => rank[p] + 1)) : 0;
+        }
+    });
+    return rank;
+}
+
+/** 減少交叉：以 barycenter heuristic 迭代排序同一層內的節點順序 */
+function _plannerReduceCrossings(groupIds, outAdj, inAdj, rank) {
+    const maxRank = Math.max(...groupIds.map(id => rank[id]));
+    const layers = [];
+    for (let r = 0; r <= maxRank; r++) layers.push(groupIds.filter(id => rank[id] === r));
+
+    const ITERATIONS = 4;
+    for (let iter = 0; iter < ITERATIONS; iter++) {
+        for (let r = 1; r <= maxRank; r++) _plannerBarycenterSort(layers[r], layers[r - 1], inAdj);
+        for (let r = maxRank - 1; r >= 0; r--) _plannerBarycenterSort(layers[r], layers[r + 1], outAdj);
+    }
+
+    const order = {};
+    layers.forEach(layer => layer.forEach((id, idx) => { order[id] = idx; }));
+    return order;
+}
+
+function _plannerBarycenterSort(layer, refLayer, adjTowardRef) {
+    const refIndex = {};
+    refLayer.forEach((id, idx) => { refIndex[id] = idx; });
+
+    const scores = layer.map(id => {
+        const neighbors = adjTowardRef[id].filter(n => refIndex[n] !== undefined);
+        const avg = neighbors.length
+            ? neighbors.reduce((s, n) => s + refIndex[n], 0) / neighbors.length
+            : refIndex[id] ?? 0;
+        return { id, avg };
+    });
+    scores.sort((a, b) => a.avg - b.avg);
+    scores.forEach((s, idx) => { layer[idx] = s.id; });
+}
+
+/**
+ * 依 rank/order 計算上游節點座標。x 以 root.x 為第 0 層基準往左延伸；
+ * y 讓每一層的節點群整體置中對齊 root.y。
+ */
+function _plannerAssignUpstreamCoordinates(rootId, upstreamIds, rank, order) {
+    const root = plannerState.nodes[rootId];
+    const maxRank = Math.max(...upstreamIds.map(id => rank[id]));
+
+    for (let r = 1; r <= maxRank; r++) {
+        const idsInRank = upstreamIds.filter(id => rank[id] === r)
+            .sort((a, b) => order[a] - order[b]);
+        if (idsInRank.length === 0) continue;
+
+        const heights = idsInRank.map(id => {
+            const el = document.getElementById('planner-node-' + id);
+            return el ? el.offsetHeight : 140;
+        });
+        const totalHeight = heights.reduce((s, h) => s + h, 0)
+            + (idsInRank.length - 1) * PLANNER_LAYOUT_ROW_GAP;
+
+        let y = root.y - totalHeight / 2;
+        idsInRank.forEach((id, idx) => {
+            const node = plannerState.nodes[id];
+            node.x = root.x - r * PLANNER_LAYOUT_COL_GAP; // 往左延伸
+            node.y = y;
+            y += heights[idx] + PLANNER_LAYOUT_ROW_GAP;
+        });
+    }
 }
 
 /* ==========================================================================
@@ -2163,7 +2554,7 @@ function renderPlannerSummary(flows) {
     // --- Section 1: Cost & Resources ---
     let costRows = '';
     if (stats.goldTotal > 0.0001) {
-        costRows += `<div class="planner-summary-row"><img src="img/copper.png" class="item-icon-small"><span>${t('Coin', 'ui')}</span><span class="planner-summary-val" style="color:var(--gold);">${Math.ceil(stats.goldTotal).toLocaleString()}</span></div>`;
+        costRows += `<div class="planner-summary-row"><img src="img/copper.png" class="item-icon-small"><span>${t('Coin', 'ui')}</span><span class="planner-summary-val" style="color:var(--gold);">${Math.ceil(stats.goldTotal).toLocaleString()}/m</span></div>`;
     }
     if (stats.heatTotal > 0.0001) {
         const fuelDef = DB.items[DB.settings.defaultFuel] || {};
