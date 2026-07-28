@@ -1517,7 +1517,7 @@ function renderPlannerNodeModalBody(nodeId) {
 
     const titleEl = document.getElementById('planner-node-modal-title');
     if (titleEl) {
-        titleEl.innerText = t('Node Settings', 'ui') + (mainOut ? ' — ' + t(mainOut, 'items') : '');
+        titleEl.innerText = t('Node Settings', 'ui') + (mainOut ? ' — ' + mainOut : '');
     }
 
     body.innerHTML = `
@@ -1803,7 +1803,9 @@ function attachPlannerPortDragHandlers() {
     if (!layer || layer.dataset.portDragBound) return;
     layer.dataset.portDragBound = "1";
     layer.addEventListener('pointerdown', (e) => {
-        const dot = e.target.closest('.planner-port-dot');
+        const row = e.target.closest('.planner-port');
+        if (!row) return;
+        const dot = row.querySelector('.planner-port-dot');
         if (!dot) return;
         e.stopPropagation();
         e.preventDefault();
@@ -1820,8 +1822,20 @@ function startPlannerConnectionDrag(dotEl, e) {
 
     let previewEl = null;
     const updatePreview = (clientX, clientY) => {
-        const cur = plannerScreenToGraph(clientX, clientY);
-        const d = dir === 'out' ? buildPlannerEdgePathD(startPos, cur) : buildPlannerEdgePathD(cur, startPos);
+        // 若目前懸停在一個「方向相反、item相同」的合法 port 上，讓預覽線終點吸附到該 port 的 dot
+        let endPos = plannerScreenToGraph(clientX, clientY);
+        const hoverEl = document.elementFromPoint(clientX, clientY);
+        const hoverRow = hoverEl ? hoverEl.closest('.planner-port') : null;
+        if (hoverRow) {
+            const hoverDot = hoverRow.querySelector('.planner-port-dot');
+            if (hoverDot && hoverDot !== dotEl && hoverDot.dataset.item === item && hoverDot.dataset.dir !== dir) {
+                const hoverNodeId = hoverRow.closest('.planner-node').id.replace('planner-node-', '');
+                const snapped = getPlannerPortGraphPos(hoverNodeId, hoverDot.dataset.item, hoverDot.dataset.dir);
+                if (snapped) endPos = snapped;
+            }
+        }
+
+        const d = dir === 'out' ? buildPlannerEdgePathD(startPos, endPos) : buildPlannerEdgePathD(endPos, startPos);
         if (!previewEl) {
             previewEl = document.createElementNS('http://www.w3.org/2000/svg', 'path');
             previewEl.setAttribute('class', 'planner-edge-line planner-edge-preview');
@@ -1838,7 +1852,8 @@ function startPlannerConnectionDrag(dotEl, e) {
         if (previewEl) previewEl.remove();
 
         const dropEl = document.elementFromPoint(ev.clientX, ev.clientY);
-        const targetDot = dropEl ? dropEl.closest('.planner-port-dot') : null;
+        const targetRow = dropEl ? dropEl.closest('.planner-port') : null;
+        const targetDot = targetRow ? targetRow.querySelector('.planner-port-dot') : null;
 
         if (targetDot && targetDot !== dotEl) {
             tryCreatePlannerEdgeFromDots(nodeId, item, dir, targetDot);
@@ -1854,7 +1869,7 @@ function startPlannerConnectionDrag(dotEl, e) {
                 clientX: ev.clientX, clientY: ev.clientY
             });
         }
-        // 放到卡片上但不是 port dot -> 取消，不做任何事
+        // 放到卡片上但不是 port row -> 取消，不做任何事
     };
     document.addEventListener('pointermove', onMove);
     document.addEventListener('pointerup', onUp);
@@ -2207,31 +2222,36 @@ function autoGenerateUpstreamNodes(nodeId) {
 
 /**
  * 遞迴版本：以 nodeId 為起點，持續往上游展開，直到每個節點都沒有缺額為止。
- * 用 visited set 保證每個節點只處理一次，天然避免環路造成的無窮遞迴。
  */
-function autoGenerateAllUpstreamNodes(nodeId) {
-    const visited = new Set();
-    const queue = [nodeId];
-    let anyCreated = false;
-    let guard = 0; // 保險上限，避免極端情況跑太久
+function autoGenerateAllUpstreamNodes(rootNodeId) {
+    const expandingRecipes = new Set();
+    let nodeCount = 0;
 
-    while (queue.length && guard < 5000) {
-        guard++;
-        const cur = queue.shift();
-        if (visited.has(cur)) continue;
-        visited.add(cur);
+    function dfs(nodeId) {
+        const node = plannerState.nodes[nodeId];
+        if (!node) return;
 
-        const created = _autoGenerateUpstreamNodesCore(cur);
-        if (created.length) {
-            anyCreated = true;
-            created.forEach(id => { if (!visited.has(id)) queue.push(id); });
+        if (nodeId != rootNodeId) {
+            const cats = node.recipeModifiers?.catalysts;
+            if (cats && cats.length > 0) return; //不展開有催化劑的子節點
         }
+
+        if (expandingRecipes.has(node.recipeId))
+            return;
+
+        expandingRecipes.add(node.recipeId);
+
+        const created = _autoGenerateUpstreamNodesCore(nodeId);
+        nodeCount += created.length || 0;
+        created.forEach(dfs);
+
+        expandingRecipes.delete(node.recipeId);
     }
 
-    if (anyCreated) {
-        renderPlanner();
-        savePlannerState();
-    }
+    dfs(rootNodeId);
+    console.info('Create upstream nodes: ' + nodeCount);
+    renderPlanner();
+    savePlannerState();
 }
 
 function removeAllUpsteamNodes(rootNodeId) {
@@ -2246,57 +2266,9 @@ function removeAllUpsteamNodes(rootNodeId) {
         inAdj[e.toNode].push(e.fromNode);
     });
 
-    const upstreamIds = _plannerCollectUpstream(rootNodeId, inAdj);
-    if (upstreamIds.length === 0) return; // 沒有上游節點可刪
-    upstreamIds.forEach(nId => delete plannerState.nodes[nId]);
-
-    renderPlanner();
-    savePlannerState();
-}
-
-/* ==========================================================================
-   SECTION: LAYOUT UPSTREAM (from a given node)
-   ========================================================================== */
-
-const PLANNER_LAYOUT_COL_GAP = 280;   // 每層 (rank) 之間的水平間距 (含節點寬度)
-const PLANNER_LAYOUT_ROW_GAP = 40;    // 同層節點之間的垂直間距
-
-/**
- * 以 rootNodeId 為根，只排版它的上游節點 (沿 input edge 反向可達的節點群)。
- * root 本身位置不變；上游節點以 root 的 x 為起點往左展開分層，
- * 每一層則以 root.y 為中心整體置中對齊。
- */
-function plannerAutoLayoutUpstream(rootNodeId) {
-    const root = plannerState.nodes[rootNodeId];
-    if (!root) return;
-
-    const outAdj = {}, inAdj = {};
-    Object.keys(plannerState.nodes).forEach(id => { outAdj[id] = []; inAdj[id] = []; });
-    Object.values(plannerState.edges).forEach(e => {
-        if (!outAdj[e.fromNode] || !inAdj[e.toNode]) return;
-        outAdj[e.fromNode].push(e.toNode);
-        inAdj[e.toNode].push(e.fromNode);
-    });
-
-    const upstreamIds = _plannerCollectUpstream(rootNodeId, inAdj);
-    if (upstreamIds.length === 0) return; // 沒有上游節點可排
-
-    const groupIds = [rootNodeId, ...upstreamIds];
-    // 分層/排序的「正向」方向改成 inAdj (沿著上游走)，故把 outAdj/inAdj 對調傳入
-    const rank = _plannerAssignRanks(groupIds, inAdj, outAdj);
-    const order = _plannerReduceCrossings(groupIds, inAdj, outAdj, rank);
-    _plannerAssignUpstreamCoordinates(rootNodeId, upstreamIds, rank, order);
-
-    renderPlanner();
-    savePlannerState();
-    //requestAnimationFrame(() => plannerFitToView());
-}
-
-/** BFS，只沿 inAdj 方向走 (即沿著 edge 反向)，收集 rootId 的所有上游可達節點 (不含 rootId 本身) */
-function _plannerCollectUpstream(rootId, inAdj) {
-    const visited = new Set([rootId]);
+    const visited = new Set([rootNodeId]);
     const result = [];
-    const queue = [...inAdj[rootId]];
+    const queue = [...inAdj[rootNodeId]];
     queue.forEach(id => visited.add(id));
     while (queue.length) {
         const cur = queue.shift();
@@ -2305,103 +2277,140 @@ function _plannerCollectUpstream(rootId, inAdj) {
             if (!visited.has(nb)) { visited.add(nb); queue.push(nb); }
         });
     }
-    return result;
+    if (result.length === 0) return; // 沒有上游節點可刪
+    console.info('Remove upstream nodes: ' + result.length);
+    result.forEach(nId => delete plannerState.nodes[nId]);
+
+    renderPlanner();
+    savePlannerState();
+}
+
+/* ==========================================================================
+   SECTION: LAYOUT UPSTREAM (BFS spanning tree, RT-style layout)
+   ========================================================================== */
+
+const PLANNER_LAYOUT_COL_GAP = 280;   // 每層 (depth) 之間的水平間距 (含節點寬度)
+const PLANNER_LAYOUT_ROW_GAP = 40;    // 同層節點之間的最小垂直間距
+
+/**
+ * 以 rootNodeId 為根，只排版它的上游節點。
+ * 做法：先用 BFS 沿著 input edge 反向走，建出一棵 spanning tree
+ * (每個節點只認第一次被走到的那條邊當 parent，其餘跨子樹的邊直接忽略，不影響排版)。
+ * 再用 post-order 算出每個子樹需要的垂直空間，最後 pre-order 由上而下指定座標，
+ * 父節點置中對齊自己所有子節點的中心範圍 (視覺概念類似 D3 tree / Reingold-Tilford)。
+ * root 本身位置不變；上游節點以 root 的 x 為起點往左展開分層。
+ */
+function plannerAutoLayoutUpstream(rootNodeId) {
+    const root = plannerState.nodes[rootNodeId];
+    if (!root) return;
+
+    const inAdj = {};
+    Object.keys(plannerState.nodes).forEach(id => { inAdj[id] = []; });
+    Object.values(plannerState.edges).forEach(e => {
+        if (!inAdj[e.toNode] || !plannerState.nodes[e.fromNode]) return;
+        inAdj[e.toNode].push(e.fromNode);
+    });
+
+    const children = _plannerBuildUpstreamTree(rootNodeId, inAdj);
+    if (Object.keys(children).length === 0 || (children[rootNodeId] || []).length === 0) return; // 沒有上游節點可排
+
+    const extents = {};
+    _plannerComputeExtent(rootNodeId, children, extents);
+    _plannerAssignTreeCoordinates(rootNodeId, children, extents);
+
+    renderPlanner();
+    savePlannerState();
+    requestAnimationFrame(() => plannerFitToView());
 }
 
 /**
- * 分層 (rank = 該節點所在的水平層數，0 為最左)。
- * 用 Kahn's algorithm 做拓撲排序；遇到環 (back-edge) 時會被自然忽略，
- * 最後再用保險邏輯把因環路而卡住的節點依前驅補上 rank。
+ * BFS 沿著 inAdj 方向走 (即沿著 edge 反向，往上游走)，建出以 rootId 為根的 spanning tree。
+ * 每個節點只會被指定唯一一個 parent (第一次走訪到它的節點)；若某個節點同時是多個
+ * 下游節點的上游 (匯流)，只有第一條路徑會被視為 tree edge，其餘邊被忽略不畫入排版計算。
+ * 回傳 { [nodeId]: childNodeId[] }，只包含有子節點的項目 (leaf 不會出現在裡面)。
  */
-function _plannerAssignRanks(groupIds, outAdj, inAdj) {
-    const rank = {};
-    const remainingIn = {};
-    groupIds.forEach(id => { rank[id] = 0; remainingIn[id] = inAdj[id].filter(n => groupIds.includes(n)).length; });
-
-    const queue = groupIds.filter(id => remainingIn[id] === 0);
-    if (queue.length === 0 && groupIds.length > 0) queue.push(groupIds[0]);
-
-    const processed = new Set();
+function _plannerBuildUpstreamTree(rootId, inAdj) {
+    const visited = new Set([rootId]);
+    const children = {};
+    const queue = [rootId];
     while (queue.length) {
         const cur = queue.shift();
-        if (processed.has(cur)) continue;
-        processed.add(cur);
-        outAdj[cur].forEach(nb => {
-            if (!groupIds.includes(nb)) return;
-            rank[nb] = Math.max(rank[nb], rank[cur] + 1);
-            remainingIn[nb]--;
-            if (remainingIn[nb] <= 0 && !processed.has(nb)) queue.push(nb);
+        (inAdj[cur] || []).forEach(parent => {
+            if (visited.has(parent)) return; // 已經被其他節點認領走了，當作 cross edge 忽略
+            visited.add(parent);
+            (children[cur] = children[cur] || []).push(parent);
+            queue.push(parent);
         });
     }
-    groupIds.forEach(id => {
-        if (!processed.has(id)) {
-            const preds = inAdj[id].filter(n => groupIds.includes(n) && processed.has(n));
-            rank[id] = preds.length ? Math.max(...preds.map(p => rank[p] + 1)) : 0;
-        }
-    });
-    return rank;
-}
-
-/** 減少交叉：以 barycenter heuristic 迭代排序同一層內的節點順序 */
-function _plannerReduceCrossings(groupIds, outAdj, inAdj, rank) {
-    const maxRank = Math.max(...groupIds.map(id => rank[id]));
-    const layers = [];
-    for (let r = 0; r <= maxRank; r++) layers.push(groupIds.filter(id => rank[id] === r));
-
-    const ITERATIONS = 4;
-    for (let iter = 0; iter < ITERATIONS; iter++) {
-        for (let r = 1; r <= maxRank; r++) _plannerBarycenterSort(layers[r], layers[r - 1], inAdj);
-        for (let r = maxRank - 1; r >= 0; r--) _plannerBarycenterSort(layers[r], layers[r + 1], outAdj);
-    }
-
-    const order = {};
-    layers.forEach(layer => layer.forEach((id, idx) => { order[id] = idx; }));
-    return order;
-}
-
-function _plannerBarycenterSort(layer, refLayer, adjTowardRef) {
-    const refIndex = {};
-    refLayer.forEach((id, idx) => { refIndex[id] = idx; });
-
-    const scores = layer.map(id => {
-        const neighbors = adjTowardRef[id].filter(n => refIndex[n] !== undefined);
-        const avg = neighbors.length
-            ? neighbors.reduce((s, n) => s + refIndex[n], 0) / neighbors.length
-            : refIndex[id] ?? 0;
-        return { id, avg };
-    });
-    scores.sort((a, b) => a.avg - b.avg);
-    scores.forEach((s, idx) => { layer[idx] = s.id; });
+    return children;
 }
 
 /**
- * 依 rank/order 計算上游節點座標。x 以 root.x 為第 0 層基準往左延伸；
- * y 讓每一層的節點群整體置中對齊 root.y。
+ * Post-order 遞迴計算每個子樹所需的垂直空間 (extent)。
+ * Leaf：extent = 自己卡片的實際高度。
+ * 非 leaf：extent = 所有子節點 extent 累加 + 間距，且至少要 ≥ 自己卡片高度
  */
-function _plannerAssignUpstreamCoordinates(rootId, upstreamIds, rank, order) {
-    const root = plannerState.nodes[rootId];
-    const maxRank = Math.max(...upstreamIds.map(id => rank[id]));
+function _plannerComputeExtent(nodeId, children, extents) {
+    const el = document.getElementById('planner-node-' + nodeId);
+    const ownHeight = el ? el.offsetHeight : 140;
+    const kids = children[nodeId] || [];
 
-    for (let r = 1; r <= maxRank; r++) {
-        const idsInRank = upstreamIds.filter(id => rank[id] === r)
-            .sort((a, b) => order[a] - order[b]);
-        if (idsInRank.length === 0) continue;
-
-        const heights = idsInRank.map(id => {
-            const el = document.getElementById('planner-node-' + id);
-            return el ? el.offsetHeight : 140;
-        });
-        const totalHeight = heights.reduce((s, h) => s + h, 0)
-            + (idsInRank.length - 1) * PLANNER_LAYOUT_ROW_GAP;
-
-        let y = root.y - totalHeight / 2;
-        idsInRank.forEach((id, idx) => {
-            const node = plannerState.nodes[id];
-            node.x = root.x - r * PLANNER_LAYOUT_COL_GAP; // 往左延伸
-            node.y = y;
-            y += heights[idx] + PLANNER_LAYOUT_ROW_GAP;
-        });
+    if (kids.length === 0) {
+        extents[nodeId] = ownHeight;
+        return ownHeight;
     }
+
+    let childrenTotal = 0;
+    kids.forEach(childId => {
+        childrenTotal += _plannerComputeExtent(childId, children, extents);
+    });
+    childrenTotal += (kids.length - 1) * PLANNER_LAYOUT_ROW_GAP;
+
+    const extent = Math.max(ownHeight, childrenTotal);
+    extents[nodeId] = extent;
+    return extent;
+}
+
+/**
+ * Pre-order 由上而下指定座標。
+ * 每個節點分配到一段垂直區間 [top, top+extent)；
+ * 若有子節點，子節點群依序疊放在這個區間裡置中，
+ * 父節點自己的 y 則對齊「第一個子節點中心」到「最後一個子節點中心」的中點。
+ * x 座標單純由深度(depth)決定，root 深度為 0，每往上游一層往左移動一個 COL_GAP。
+ */
+function _plannerAssignTreeCoordinates(rootId, children, extents) {
+    const root = plannerState.nodes[rootId];
+
+    function place(nodeId, depth, top, extent) {
+        const kids = children[nodeId] || [];
+        const node = plannerState.nodes[nodeId];
+
+        if (depth > 0) node.x = root.x - depth * PLANNER_LAYOUT_COL_GAP;
+
+        if (kids.length === 0) {
+            if (depth > 0) node.y = top; // leaf 直接佔滿分配到的區間頂端 (區間高度 = 自己高度)
+            return;
+        }
+
+        // 依序疊放子節點，並記錄各自的中心 y，供最後置中父節點使用
+        let cursor = top;
+        const childCenters = [];
+        kids.forEach(childId => {
+            const childExtent = extents[childId];
+            place(childId, depth + 1, cursor, childExtent);
+            childCenters.push(cursor + childExtent / 2);
+            cursor += childExtent + PLANNER_LAYOUT_ROW_GAP;
+        });
+
+        if (depth > 0) {
+            const centerY = (childCenters[0] + childCenters[childCenters.length - 1]) / 2;
+            const el = document.getElementById('planner-node-' + nodeId);
+            const ownHeight = el ? el.offsetHeight : 140;
+            node.y = centerY - ownHeight / 2;
+        }
+    }
+
+    place(rootId, 0, root.y - extents[rootId] / 2, extents[rootId]);
 }
 
 /* ==========================================================================

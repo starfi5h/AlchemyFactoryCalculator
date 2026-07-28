@@ -1015,20 +1015,24 @@ function syncCauldronToMainDB(notify = false) {
     // 2. 转换并导入
     let importedCount = 0;
     favs.forEach((fav, index) => {
-        const targetItem = fav.output;
-        const targetDef = DB.items[targetItem];
+
+        const outputName = DB.items[fav.output] ? fav.output : queryDualItemName(fav.output);
+        const inputNames = fav.inputs.map(input => {
+            return DB.items[input] ? input : queryDualItemName(input);
+        });
+        const outputDef = DB.items[outputName];
         // 檢查目標物品是否存在, 檢查 inputs 陣列中的所有名稱是否都在 DB 中
-        const isValid = targetDef !== undefined && 
-                        fav.inputs.every(name => DB.items[name] !== undefined);
-        if (!isValid) return;        
+        const isValid = outputDef !== undefined && 
+                        inputNames.every(name => DB.items[name] !== undefined);
+        if (!isValid) return;
 
         // 计算插值数据
-        const stats = getCauldronStats(targetDef.cauldronTarget || 0);
+        const stats = getCauldronStats(outputDef.cauldronTarget || 0);
 
         // 处理输入物品计数 (例如 [Plank, Plank, Stone] -> {Plank: 2, Stone: 1})
         const inputCounts = {};
         let itemIdString = "";
-        fav.inputs.forEach(name => {
+        inputNames.forEach(name => {
             // 對於原料或聖物, 它們的maxStack是負數, 每次只會使用一小部分
             const inputDef = DB.items[name];
             let inputCount = 1;
@@ -1037,12 +1041,12 @@ function syncCauldronToMainDB(notify = false) {
             itemIdString += `_${inputDef?.id ?? 0}`;
         });
 
-        const machineType = fav.inputs.length === 3 ? "Cauldron" : "Advanced Cauldron";
+        const machineType = inputNames.length === 3 ? "Cauldron" : "Advanced Cauldron";
         const newRecipe = {
             id: `AUTO_GENERATED_CAULDRON` + itemIdString,
             machine: machineType,
             inputs: inputCounts,
-            outputs: { [targetItem]: 1 },
+            outputs: { [outputName]: 1 },
             baseTime: parseFloat(stats.time),
             // 注意：主数据库的 recipes 通常不直接存 heatCost，
             // 但为了兼容计算逻辑，我们可以把它作为一个特殊属性存入
@@ -1053,7 +1057,7 @@ function syncCauldronToMainDB(notify = false) {
         DB.recipes.push(newRecipe);
         importedCount++;
     });
-    console.log(`Synced ${importedCount} recipes from cauldron`);
+    console.info(`Synced ${importedCount} recipes from cauldron`);
     if (notify) alert(`Synced ${importedCount} recipes to the Production Tab! You can now select them in the calculator.`);
 }
 

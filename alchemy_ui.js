@@ -1349,23 +1349,12 @@ function toggleLanguage() {
     // --- translate the 'item' param to match the new language ---
     const itemParam = url.searchParams.get('item');
     if (itemParam) {
-        const i18n = window.ALCHEMY_I18N;
-        const goingToEnglish = i18n.enabled === false; // state AFTER the toggle above
-        let translated = itemParam;
+        url.searchParams.set('item', queryDualItemName(itemParam));
+    }    
+    DB.settings.defaultFuel = queryDualItemName(DB.settings.defaultFuel);
+    DB.settings.defaultFert = queryDualItemName(DB.settings.defaultFert);
+    saveSettings();
 
-        if (i18n.items) {
-            if (goingToEnglish) {
-                // itemParam is currently Chinese -> find matching English key
-                const found = Object.entries(i18n.items).find(([, zh]) => zh === itemParam);
-                if (found) translated = found[0];
-            } else {
-                // itemParam is currently English -> look up Chinese value
-                translated = i18n.items[itemParam] || itemParam;
-            }
-        }
-        url.searchParams.set('item', translated);
-    }
-    
     window.location.href = url.toString();
 }
 

@@ -382,11 +382,13 @@ window.ALCHEMY_I18N = {
         "Remove Node": "移除节点",
         "Graph Tools": "图表工具",
         "Auto-Layout Upstream": "自动布局上游节点",
-        "Populate All Upstream": "填充所有上游节点",
+        "Populate All Upstream": "生成所有上游节点",
         "Clear All Upstream": "清空所有上游节点",
         "Delete Connection": "删除连接",
         "No Recipe": "无配方",
         "No recipe selected": "尚未选择配方",
+        "CONSUME": "消耗",
+        "PRODUCE": "生产",
 
         // --- Planner: Plan Library ---
         "Manage Plans": "管理方案",

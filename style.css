@@ -1008,7 +1008,7 @@ button.reset-btn:hover { background: var(--danger); color: white; }
 
 .planner-port {
     position: relative; display: flex; align-items: center; gap: 4px;
-    font-size: 0.8em; white-space: nowrap; padding: 2px 2px; min-width: 0;
+    font-size: 0.8em; white-space: nowrap; padding: 2px 2px; min-width: 0; cursor: crosshair;
 }
 .planner-port-name { color: #ccc; overflow: hidden; text-overflow: ellipsis; max-width: 90px; min-width: 0; flex-shrink: 1; flex: 1 1 auto; }
 .planner-port-out > .planner-port-name { text-align: right; }
