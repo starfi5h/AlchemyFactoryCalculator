@@ -996,8 +996,7 @@ function plannerMainOutput(recipeId) {
 function plannerGetRecipeTime(recipe) {
     let recipeTime = recipe.baseTime || 1;
     const nutrientCost = recipe.nutrientCost || 0;
-    const isNursery = recipe.machine === "Nursery" || recipe.machine === "World Tree Nursery";
-    if (nutrientCost > 0 && isNursery) {
+    if (nutrientCost > 0 && recipe.machine === "Nursery") {
         const fertSpeed = DB.items[DB.settings.defaultFert]?.maxFertility || 1;
         recipeTime = nutrientCost / fertSpeed;
     }
@@ -2729,7 +2728,7 @@ function togglePlannerSummarySection(key) {
 /** 依 flows 彙總: 金錢/燃料/肥料消耗、機器數、輸出剩餘、輸入短缺 */
 function computePlannerSummaryStats(flows) {
     const machineCounts = {};
-    let heatTotal = 0, fertTotal = 0;
+    let heatTotal = 0, fertTotal = 0, goldTotal = 0;
 
     Object.values(plannerState.nodes).forEach(node => {
         const ports = flows.nodePortsCache[node.id];
@@ -2740,6 +2739,14 @@ function computePlannerSummaryStats(flows) {
         }
         heatTotal += ports.heatItemsPerMin || 0;
         fertTotal += ports.fertItemsPerMin || 0;
+
+        // Bank Portal: 依輸出的貨幣 rate * sellPrice 計入金錢消耗 (對齊 calc_engine 的 buildNode 邏輯)
+        if (ports.recipe && ports.recipe.machine === "Bank Portal") {
+            ports.outputs.forEach(p => {
+                const itemDef = DB.items[p.item] || {};
+                if (itemDef.sellPrice) goldTotal += p.rate * itemDef.sellPrice;
+            });
+        }
     });
 
     const outputSurplus = {};
@@ -2754,7 +2761,6 @@ function computePlannerSummaryStats(flows) {
         else if (dir === 'in') inputShortage[item] = (inputShortage[item] || 0) + val;
     });
 
-    let goldTotal = 0;
     Object.entries(inputShortage).forEach(([item, qty]) => {
         const def = DB.items[item];
         if (def && def.buyPrice) goldTotal += def.buyPrice * qty;
