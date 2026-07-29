@@ -826,7 +826,11 @@ function attachPlannerKeyboardShortcuts() {
         else if (e.key === '-' || e.key === '_') { e.preventDefault(); plannerZoomOut(); }
         else if (e.key === 'f' || e.key === 'F') { e.preventDefault(); plannerFitToView(); }
         else if ((e.ctrlKey || e.metaKey) && e.key.toLowerCase() === 'z') { e.preventDefault(); plannerUndo(); }
-        else if ((e.ctrlKey || e.metaKey) && e.key.toLowerCase() === 'y') { e.preventDefault(); plannerRedo(); }
+        else if ((e.ctrlKey || e.metaKey) && e.key.toLowerCase() === 'y') { e.preventDefault(); plannerRedo(); }        
+        else if ((e.key === 'Delete' || e.key === 'Backspace') && _plannerSelectedNodeIds.size > 0) {
+            e.preventDefault();
+            deletePlannerSelectedNodes();
+        }
     });
 }
 
@@ -872,8 +876,12 @@ function updatePlannerGridBackground() {
     canvas.style.backgroundPosition = `${_plannerSettings.viewport.x}px ${_plannerSettings.viewport.y}px`;
 }
 
-function plannerFitToView() {
-    const nodes = Object.values(plannerState.nodes);
+function plannerFitToView(nodeIds = []) {
+    let nodes = Object.values(plannerState.nodes);
+    if(nodeIds.length > 0) {
+        const nodeIdSet = new Set(nodeIds);
+        nodes = nodes.filter(node => nodeIdSet.has(node.id));
+    }
     const canvas = document.getElementById('planner-canvas');
     if (!canvas) return;
 
@@ -2412,6 +2420,228 @@ function _plannerAssignTreeCoordinates(rootId, children, extents) {
 
     place(rootId, 0, root.y - extents[rootId] / 2, extents[rootId]);
 }
+
+/* ==========================================================================
+   SECTION: IMPORT FROM CALCULATOR RESULT
+   ========================================================================== */
+
+/**
+ * 將 Calculator 分頁目前的計算結果 (calcResult = AlchemyCalcEngine.runCalculation 的回傳值)
+ * 轉換成 Planner 節點圖，疊加到目前作用中的 plan。
+ *
+ * Stage 1: 遍歷 treeRoots，依 recipe.id 聚合成節點 (machineCount 加總)，跳過 raw/external 葉節點
+ * Stage 2: 建立 parent-child 主要 edges
+ * Stage 3: 依 byproducts[].producers 的正負配對，建立回收 edges
+ *          (負值 entry 的 pathKey 是「產出該副產物的節點自己」，回收邊真正該接的是它的父節點，
+ *           因為父節點才是實際消耗這個副產物的配方)
+ * Stage 4: 疊加到目前 plan，依現有節點 bounding box 做座標偏移避免重疊
+ * Stage 5: 重用 RT-style 排版 (虛擬 root 包裝多個真實 root)
+ * Stage 6: resolveFlows 後，砍掉流量趨近於 0 的回收邊
+ */
+function plannerImportFromCalcResult(calcResult, params) {
+    if (!calcResult || !calcResult.treeRoots || calcResult.treeRoots.length === 0) {
+        alert(t('No calculation result to import.', 'ui'));
+        return;
+    }
+
+    const aggMap = {};          // recipeId -> { recipeId, recipeModifiers, machineCount }
+    const pathKeyToAgg = {};    // pathKey -> recipeId (只記有被聚合成節點的路徑)
+    const parentOfPathKey = {}; // pathKey -> 父節點的 pathKey (或 null)
+    const pendingEdgeSet = new Set();
+    const pendingEdges = [];    // { fromKey, toKey, item, isRecycle }
+    const rootAggKeys = new Set();
+
+    function addPendingEdge(fromKey, toKey, item, isRecycle) {
+        if (!fromKey || !toKey) return;
+        const dedupeKey = `${fromKey}|${toKey}|${item}`;
+        if (pendingEdgeSet.has(dedupeKey)) return;
+        pendingEdgeSet.add(dedupeKey);
+        pendingEdges.push({ fromKey, toKey, item, isRecycle: !!isRecycle });
+    }
+
+    // ---- Stage 1 + 2: 遍歷樹，聚合節點 + 建立主要 edges ----
+    function walk(node, parentPathKey, parentAggKey) {
+        parentOfPathKey[node.pathKey] = parentPathKey;
+
+        const isAggregatable = node.recipe && !node.isRaw && !node.isExternal;
+        if (!isAggregatable) return; // raw/external/無配方的葉節點：跳過，不生成節點
+
+        const key = node.recipe.id;
+        pathKeyToAgg[node.pathKey] = key;
+        if (!aggMap[key]) {
+            aggMap[key] = {
+                recipeId: node.recipe.id,
+                recipeModifiers: DB.settings.recipeModifiers?.[node.recipe.id],
+                machineCount: 0
+            };
+        }
+        aggMap[key].machineCount += node.machineCount;
+
+        if (parentAggKey) {
+            addPendingEdge(key, parentAggKey, node.item, false);
+        }
+
+        node.children.forEach(child => walk(child, node.pathKey, key));
+    }
+
+    calcResult.treeRoots.forEach(entry => {
+        walk(entry.root, null, null);
+        if (entry.root.recipe && !entry.root.isRaw && !entry.root.isExternal) {
+            rootAggKeys.add(entry.root.recipe.id);
+        }
+    });
+    // internalModules (燃料/肥料模組) 依需求不處理
+
+    // machineCount <= 0 的聚合節點不生成
+    Object.keys(aggMap).forEach(key => {
+        if (aggMap[key].machineCount <= 0.000001) {
+            delete aggMap[key];
+            rootAggKeys.delete(key);
+        }
+    });
+
+    // ---- Stage 3: 回收 edges ----
+    (calcResult.byproducts || []).forEach(bypEntry => {
+        const item = bypEntry.item;
+        const positives = []; // 供給端 (產出這個副產物的節點)
+        const negatives = []; // 需求端 (該節點的父節點，即真正消耗此副產物的配方)
+
+        (bypEntry.producers || []).forEach(p => {
+            if (p.rate > 0.0001) {
+                const aggKey = pathKeyToAgg[p.pathKey];
+                if (aggKey && aggMap[aggKey]) positives.push(aggKey);
+            } else if (p.rate < -0.0001) {
+                const parentPathKey = parentOfPathKey[p.pathKey];
+                const parentAggKey = parentPathKey ? pathKeyToAgg[parentPathKey] : null;
+                if (parentAggKey && aggMap[parentAggKey]) negatives.push(parentAggKey);
+            }
+        });
+
+        positives.forEach(fromKey => {
+            negatives.forEach(toKey => addPendingEdge(fromKey, toKey, item, true));
+        });
+    });
+
+    if (Object.keys(aggMap).length === 0) {
+        alert(t('Nothing to import (no producible nodes).', 'ui'));
+        return;
+    }
+
+    // ---- Stage 4: 疊加到目前 plan，計算座標偏移 ----
+    const hasExisting = Object.keys(plannerState.nodes).length > 0;
+    let existingMaxX = -Infinity, existingMinY = Infinity;
+    if (hasExisting) {
+        Object.values(plannerState.nodes).forEach(n => {
+            existingMaxX = Math.max(existingMaxX, n.x + 200); // 200 = 卡片寬度
+            existingMinY = Math.min(existingMinY, n.y);
+        });
+    }
+    const offsetX = hasExisting ? existingMaxX + 150 : 0;
+    const offsetY = hasExisting ? existingMinY : 0;
+
+    // 建立實際節點
+    const keyToNodeId = {};
+    Object.entries(aggMap).forEach(([key, agg]) => {
+        plannerState._nodeSeq = (plannerState._nodeSeq || 0) + 1;
+        const nodeId = 'pnode_' + plannerState._nodeSeq;
+        keyToNodeId[key] = nodeId;
+        plannerState.nodes[nodeId] = {
+            id: nodeId,
+            recipeId: agg.recipeId,
+            recipeModifiers: agg.recipeModifiers,
+            machineCount: agg.machineCount,
+            x: 0, y: 0
+        };
+    });
+
+
+    // ---- 建立實際 edges，回收邊給予比所有現有邊都更小的 createdAt，享有最高優先度 ----
+
+    let existingMinCreatedAt = 0;
+    Object.values(plannerState.edges).forEach(e => {
+        existingMinCreatedAt = Math.min(existingMinCreatedAt, e.createdAt);
+    });
+    let nextRecycleCreatedAt = existingMinCreatedAt - 1; // 遞減，確保回收邊全部排在最前面
+
+    const recycleEdgeIds = [];
+    pendingEdges.forEach(({ fromKey, toKey, item, isRecycle }) => {
+        const fromNode = keyToNodeId[fromKey], toNode = keyToNodeId[toKey];
+        if (!fromNode || !toNode) return;
+        plannerState._edgeSeq = (plannerState._edgeSeq || 0) + 1;
+        const edgeId = 'pedge_' + plannerState._edgeSeq;
+        const createdAt = isRecycle ? (nextRecycleCreatedAt--) : plannerState._edgeSeq;
+        plannerState.edges[edgeId] = { id: edgeId, item, fromNode, toNode, createdAt };
+        if (isRecycle) recycleEdgeIds.push(edgeId);
+    });
+
+    // ---- Stage 5: 排版 ----
+    const newNodeIds = Object.values(keyToNodeId);
+    const rootNodeIds = [...rootAggKeys].map(k => keyToNodeId[k]).filter(Boolean);
+    _plannerLayoutImportedGraph(newNodeIds, rootNodeIds, offsetX, offsetY);
+
+    // ---- Stage 6: 清掉流量趨近 0 的回收邊 ----
+    const flows = plannerResolveFlows();
+    recycleEdgeIds.forEach(eid => {
+        if (plannerState.edges[eid] && (flows.edgeFlow[eid] || 0) < 0.001) {
+            delete plannerState.edges[eid];
+        }
+    });
+
+    renderPlanner();
+    savePlannerState();
+    requestAnimationFrame(() => plannerFitToView(newNodeIds));
+}
+
+/**
+ * 對一批新匯入的節點套用 RT-style 排版：
+ * 用一個不會真正生成節點的「虛擬 root」把所有真實 root 接在它下面，
+ * 重用 _plannerBuildUpstreamTree / _plannerComputeExtent / _plannerAssignTreeCoordinates，
+ * 排版完成後刪除虛擬 root，再依 offsetX/offsetY 把整批節點平移到指定位置。
+ */
+function _plannerLayoutImportedGraph(newNodeIds, rootNodeIds, offsetX, offsetY) {
+    if (newNodeIds.length === 0) return;
+
+    const virtualId = '__virtual_root__';
+    plannerState.nodes[virtualId] = { id: virtualId, x: 0, y: 0, machineCount: 0, recipeId: null };
+
+    // 先 render 一次，讓新節點的 DOM 卡片存在，才能量測高度供 _plannerComputeExtent 使用
+    renderPlanner();
+
+    const idSet = new Set(newNodeIds);
+    const inAdj = {};
+    newNodeIds.forEach(id => inAdj[id] = []);
+    inAdj[virtualId] = rootNodeIds.length > 0 ? rootNodeIds : newNodeIds;
+
+    Object.values(plannerState.edges).forEach(e => {
+        if (idSet.has(e.fromNode) && idSet.has(e.toNode) && inAdj[e.toNode]) {
+            inAdj[e.toNode].push(e.fromNode);
+        }
+    });
+
+    const children = _plannerBuildUpstreamTree(virtualId, inAdj);
+    const extents = {};
+    _plannerComputeExtent(virtualId, children, extents);
+    _plannerAssignTreeCoordinates(virtualId, children, extents);
+
+    delete plannerState.nodes[virtualId];
+
+    let minX = Infinity, minY = Infinity;
+    newNodeIds.forEach(id => {
+        const n = plannerState.nodes[id];
+        if (!n) return;
+        minX = Math.min(minX, n.x);
+        minY = Math.min(minY, n.y);
+    });
+    if (!isFinite(minX)) { minX = 0; minY = 0; }
+
+    newNodeIds.forEach(id => {
+        const n = plannerState.nodes[id];
+        if (!n) return;
+        n.x = plannerSnapVal(n.x - minX + offsetX);
+        n.y = plannerSnapVal(n.y - minY + offsetY);
+    });
+}
+
 
 /* ==========================================================================
    SECTION: SUMMARY PANEL (top-left overlay)

@@ -253,6 +253,7 @@ window.ALCHEMY_I18N = {
         "Sales Ability": "销售能力",
 
         // --- 6. Save/Reset ---
+        "Send to Planner": "传至规划器",
         "Save/Reset": "保存/重置",
         "Save Upgrades": "保存设置",
         "Reset Recipes": "重置配方数据",

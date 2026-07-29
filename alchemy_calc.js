@@ -9,6 +9,9 @@ const GLOBAL_CALC_STATE = {
     collapsedNode: new Set(['ext_gold', 'ext_fuel', 'ext_fert'])
 };
 
+let _lastCalcResult = null;
+let _lastCalcParams = null;
+
 /* ==========================================================================
    SECTION: HELPER MATH FUNCTIONS
    ========================================================================== */
@@ -174,6 +177,8 @@ function calculate() {
                 customCosts: DB.settings.customCosts
             }
         });
+        _lastCalcResult = result;
+        _lastCalcParams = params;
 
         renderCalculationResult(params, result);
 
@@ -182,6 +187,16 @@ function calculate() {
         updateURL();
 
     } catch(e) { console.error(e); }
+}
+
+function sendCalcResultToPlanner() {
+    if (!_lastCalcResult) return;
+    if (typeof plannerImportFromCalcResult !== 'function') {
+        console.error("alchemy_planner.js not loaded");
+        return;
+    }
+    switchTab('planner');
+    plannerImportFromCalcResult(_lastCalcResult, _lastCalcParams);
 }
 
 /**

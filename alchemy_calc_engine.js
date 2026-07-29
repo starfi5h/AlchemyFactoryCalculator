@@ -342,6 +342,21 @@
                 isInternalModule
             };
 
+            const recipe = getActiveRecipe(db, state, item, pathKey);
+
+            if (recipe) {
+                const hasSameRecipeAncestor = ancestors.some((ancestorItem, idx) => {
+                    if (ancestorItem !== item) return false;
+                    const ancestorPathKey = `${ancestors.slice(0, idx).join(">")}>${ancestorItem}`;
+                    const ancestorRecipe = getActiveRecipe(db, state, ancestorItem, ancestorPathKey);
+                    return ancestorRecipe === recipe;
+                });
+                if (hasSameRecipeAncestor) {
+                    shouldExpand = false;
+                    console.warn("Loop detected: " + pathKey);
+                }
+            }
+
             if (isExternalInput || depth >= 20 || !shouldExpand) {
                 if (!effectiveGhost && netRate > 0) {
                     aggregates.forcedItems[item] = (aggregates.forcedItems[item] || 0) + netRate;
@@ -358,8 +373,7 @@
                 }
                 return effectiveGhost ? null : node;
             }
-
-            const recipe = getActiveRecipe(db, state, item, pathKey);
+            
             if (!recipe) {
                 if (!effectiveGhost) {
                     const customCost = getCustomCost(state, item);
