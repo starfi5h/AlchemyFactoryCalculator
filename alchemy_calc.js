@@ -951,7 +951,11 @@ function updateSummaryBox(p, heatPerSec, nutrPerSec, goldPerMin, actualFuelNeed,
     if (p.targets.length <= 1) {
         outputHtml += `<span class="stat-value net-positive">${targetRate.toFixed(1)} / min <img src="img/item${DB.items[targetItem]?.id ?? 0}.png" width="24" height="24" style="vertical-align: middle; margin-bottom: 4px;" title="${targetItem}"></span>
             ${usedRate > Number.EPSILON ? `<span class="stat-sub net-positive" onclick="recalculate('${targetItem}' , ${refRate})">Net: ${(targetRate - usedRate).toFixed(1)} / min <br>Used: ${usedRate.toFixed(1)} / min</span>` : ''}
-            </div>`;
+            `;
+        if (targetItemDef.exp) {
+            outputHtml += `<span class="stat-value net-positive">${formatVal(targetRate * targetItemDef.exp)} ${t('Exp')} / min</spn>`;
+        }
+        outputHtml += `</div>`;
     } else {
         p.targets.forEach((target) => {
             if (!DB.items[target.item]) return;
@@ -968,7 +972,18 @@ function updateSummaryBox(p, heatPerSec, nutrPerSec, goldPerMin, actualFuelNeed,
     if (goldPerMin > 0) loadHtml += `<span class="stat-value" style="color:var(--gold);" title="${Math.ceil(goldPerMin).toLocaleString()}/min">${t('Coin')}: ${formatCoinIcons(goldPerMin)}/ min</span>`;
     if (heatPerSec > 0) {
         if (p.selectedHeatingDevice === 'Steam Heating Pad') {
-            loadHtml += `<span class="stat-value" style="color:var(--fuel);">${t('Steam')}: ${(heatPerSec * 60 / 20).toLocaleString()} /min</span>`;
+            const steamIcon = `<img src="img/item9002.png" width="24" height="24" style="vertical-align: middle; margin-bottom: 4px;">`;
+            const steamPerMin = heatPerSec * 60 / 20;
+            loadHtml += `
+                <span class="stat-value stat-flex-row" style="color:var(--fuel);">
+                    <span style="color:var(--fuel);">
+                        ${t('Steam')}: ${(steamPerMin).toLocaleString()} ${steamIcon} / min
+                    </span>
+                    <span class="stat-extra" style="color:var(--warn);">
+                        (${(steamPerMin / 9000).toFixed(2)} ${t('Steam Boiler', 'machines')})
+                    </span>
+                </span>
+            `;
         }
         loadHtml += `<span class="stat-value stat-flex-row" style="color:var(--fuel);">`;
         loadHtml += `<span>${t('Heat')}: ${(actualFuelNeed).toLocaleString()}<img src="img/item${DB.items[selectedFuel]?.id ?? 0}.png" alt="${selectedFuel}" width="24" height="24" style="vertical-align: middle; margin-bottom: 4px;">/ min</span>`;
@@ -1004,7 +1019,18 @@ function updateSummaryBox(p, heatPerSec, nutrPerSec, goldPerMin, actualFuelNeed,
         if (goldPerMin > 0) costHtml += `<span class="stat-value" style="color:var(--gold); title="${(goldPerMin / netRate).toLocaleString()}">${t('Coin')}: ${formatCoinIcons(goldPerMin/netRate)}</span>`;
         if (heatPerSec > 0) {
             if (p.selectedHeatingDevice === 'Steam Heating Pad') {
-                costHtml += `<span class="stat-value" style="color:var(--fuel);">${t('Steam')}: ${(heatPerSec * 60 / netRate / 20).toLocaleString()}</span>`;
+                const steamIcon = `<img src="img/item9002.png" width="24" height="24" style="vertical-align: middle; margin-bottom: 4px;">`;
+                const steamPerItem = heatPerSec * 60 / netRate / 20;
+                costHtml += `
+                    <span class="stat-value stat-flex-row" style="color:var(--fuel);">
+                        <span style="color:var(--fuel);">
+                            ${t('Steam')}: ${(steamPerItem).toLocaleString()} ${steamIcon}
+                        </span>
+                        <span class="stat-extra" style="color:var(--warn);">
+                            (${(steamPerItem / 9000).toFixed(2)} ${t('Steam Boiler', 'machines')})
+                        </span>
+                    </span>
+                `;
             }
             costHtml += `<span class="stat-value stat-flex-row" style="color:var(--fuel);">`;
             costHtml += `<span>${t('Heat')}: ${(actualFuelNeed/netRate).toLocaleString()}<img src="img/item${DB.items[selectedFuel]?.id ?? 0}.png" alt="${selectedFuel}" width="24" height="24" style="vertical-align: middle; margin-bottom: 4px;"> </span>`;
@@ -1042,7 +1068,9 @@ function updateSummaryBox(p, heatPerSec, nutrPerSec, goldPerMin, actualFuelNeed,
             valueHtml += `<span class="stat-value gold-profit">${t('Wholesale Price')}: ${targetItemDef.wholesalePrice.toLocaleString()} </span>`;
             if (margin > -1) valueHtml += margin > 0 ? `<span class="stat-pos">(+${(margin*100).toFixed(0)}%)</span>` : `<span class="stat-sub">(${(margin*100).toFixed(0)}%)</span>`;
             valueHtml += `</span>`
-
+        }
+        if (targetItemDef.exp) {
+            valueHtml += `<span class="stat-value gold-profit">${t('Cost Per Exp   ')}: ${Math.ceil(convertedCost/targetItemDef.exp).toLocaleString()}</span>`;
         }
     }
     valueHtml += `</div>`;

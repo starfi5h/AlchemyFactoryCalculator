@@ -204,6 +204,7 @@ window.ALCHEMY_I18N = {
         "Conversion Cost": "总成本",
         "Retail Price   ": "零售价",
         "Wholesale Price": "批发价",
+        "Cost Per Exp   ": "每经验成本",
         "Fuel Value": "燃料换算价值",
         "Fert Value": "肥料换算价值",
 
@@ -305,6 +306,7 @@ window.ALCHEMY_I18N = {
         "Global": "全局",
         "This Node Only": "仅此节点",
         "Catalysts": "催化剂",
+        "Charge Cost": "消耗充能",
         "🧪 Unstable": "🧪 不稳定",
         "🌿 Fertile": "🌿 丰饶",
         "✨ Resonant": "✨ 共振",
@@ -341,6 +343,7 @@ window.ALCHEMY_I18N = {
         "Cauldron Target": "炼金目标",
         "Charges": "充能数",
         "Max Stack": "最大堆叠",
+        "Exp": "经验",
 
         "Production Recipes": "生产配方",
         "Used In": "使用于",
@@ -543,6 +546,7 @@ window.ALCHEMY_I18N = {
         "Aqua Vitae": "生命之水",
         "Fairy Tear": "精灵之泪",
         "Moon Tear": "月之泪",
+        "Steam": "蒸气",
 
         // --- POTIONS ---
         "Healing Potion": "治疗药水",
@@ -611,6 +615,7 @@ window.ALCHEMY_I18N = {
         "Paradox Crucible": "悖论坩埚",
         "Cauldron": "炼金锅",
         "Advanced Cauldron": "高级炼金锅",
+        "Steam Boiler": "蒸气锅炉",
         "Kiln": "土窑",
         "Iron Smelter": "炼铁炉",
         "Refiner": "精炼机",

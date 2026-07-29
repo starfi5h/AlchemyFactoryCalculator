@@ -1,6 +1,6 @@
 window.ALCHEMY_DB = {
-    "version": 48,
-    "date": "2026.07.27",
+    "version": 49,
+    "date": "2026.07.29",
     "gameVersion": "0.5.4539",
     "items": {
         // --- RAW RESOURCES ---
@@ -89,7 +89,7 @@ window.ALCHEMY_DB = {
         "Iron Nails": { "id": 302, "category": "Component", "sellPrice": 16, "maxStack": 600, "cauldronCost": 5, "tier": 3 },
         "Stone": { "id": 201, "category": "Component", "maxStack": 600, "cauldronCost": 4, "cauldronMulti": 1, "cauldronTarget": 4, "tier": 2 },
         "Clay": { "id": 406, "category": "Component", "maxStack": 200, "cauldronCost": 21, "cauldronMulti": 1, "cauldronTarget": 20, "tier": 4 },
-        "Brick": { "id": 408, "category": "Component", "maxStack": 200, "cauldronCost": 25, "tier": 4 },        
+        "Brick": { "id": 408, "category": "Component", "maxStack": 200, "sellPrice": 70, "cauldronCost": 25, "tier": 4 },
         "Glass": { "id": 412, "category": "Component", "sellPrice": 75, "maxStack": 200, "cauldronCost": 27, "tier": 4 },
         "Wooden Pulley": { "id": 405, "category": "Component", "sellPrice": 44, "maxStack": 50, "cauldronCost": 14, "tier": 4 },
         "Steel Gear": { "id": 506, "category": "Component", "sellPrice": 450, "maxStack": 200, "cauldronCost": 170, "tier": 5 },
@@ -100,7 +100,7 @@ window.ALCHEMY_DB = {
         "Iron Ingot": { "id": 301, "category": "Metal", "maxStack": 200, "cauldronCost": 15, "tier": 3 },
         "Steel Ingot": { "id": 505, "category": "Metal", "maxStack": 200, "cauldronCost": 161, "tier": 5 },
         "Bronze Ingot": { "id": 609, "category": "Metal", "maxStack": 200, "cauldronCost": 155, "tier": 6 },
-        "Copper Ingot": { "id": 610, "category": "Metal", "maxStack": 200, "cauldronCost": 293, "tier": 6 },           
+        "Copper Ingot": { "id": 610, "category": "Metal", "maxStack": 200, "cauldronCost": 293, "tier": 6 },
         "Silver Ingot": { "id": 808, "category": "Metal", "maxStack": 100, "cauldronCost": 4516, "tier": 8 },
         "Gold Ingot": { "id": 905, "category": "Metal", "maxStack": 100, "cauldronCost": 88181.6, "tier": 9 },
         "Iron Sand": { "id": 303, "category": "Metal", "cauldronCost": 15.5, "cauldronMulti": 1, "cauldronTarget": 15, "tier": 3 },
@@ -112,7 +112,7 @@ window.ALCHEMY_DB = {
         "Crude Gold Dust": { "id": 901, "category": "Metal", "cauldronCost": 10925.2, "cauldronMulti": 1, "cauldronTarget": 12925.2, "tier": 9 },
         "Impure Gold Dust": { "id": 902, "category": "Metal", "cauldronCost": 21850.4, "cauldronMulti": 1, "cauldronTarget": 22850.4, "tier": 9 },
         "Gold Dust": { "id": 903, "category": "Metal", "cauldronCost": 42836.8, "cauldronMulti": 1, "cauldronTarget": 52836.8, "tier": 9 },
-        "Pure Gold Dust": { "id": 904, "category": "Metal", "cauldronCost": 85673.6, "cauldronMulti": 1, "cauldronTarget": 100673.6, "tier": 9 },       
+        "Pure Gold Dust": { "id": 904, "category": "Metal", "cauldronCost": 85673.6, "cauldronMulti": 1, "cauldronTarget": 100673.6, "tier": 9 },
 
         // --- LIQUIDS ---
         "Linseed Oil": { "id": 409, "category": "Liquid", "liquid": true, "cauldronCost": 0.04, "tier": 4 },
@@ -126,6 +126,7 @@ window.ALCHEMY_DB = {
         "Aqua Vitae": { "id": 812, "category": "Liquid", "liquid": true, "cauldronCost": 459.3, "tier": 8 },
         "Fairy Tear": { "id": 911, "category": "Liquid", "liquid": true, "cauldronCost": 3060, "tier": 9 },
         "Moon Tear": { "id": 912, "category": "Liquid", "liquid": true, "cauldronCost": 96678, "tier": 9 },
+        "Steam": { "id": 9002, "category": "Liquid", "virtual": true, "liquid": true, "cauldronCost": 1, "tier": 6 },
 
         // --- MASH ---
         "Sand": { "id": 202, "category": "Mash", "cauldronCost": 4.5, "tier": 2 },
@@ -174,13 +175,13 @@ window.ALCHEMY_DB = {
         "Crown": { "id": 907, "category": "Jewelry", "sellPrice": 1600000, "cauldronCost": 854167.8, "tier": 9 },
 
         // --- RELICS ---
-        "Jupiter": { "id": 502, "category": "Relic", "sellPrice": 30000, "maxStack": -300, "cauldronCost": 34, "tier": 5 },
-        "Saturn": { "id": 619, "category": "Relic", "sellPrice": 150000, "maxStack": -100, "cauldronCost": 714, "tier": 6 },
-        "Mars": { "id": 620, "category": "Relic", "sellPrice": 280000, "maxStack": -75, "cauldronCost": 1678, "tier": 6 },
-        "Venus": { "id": 710, "category": "Relic", "sellPrice": 1000000, "maxStack": -200, "cauldronCost": 2549.6, "tier": 7 },
-        "Mercury": { "id": 814, "category": "Relic", "sellPrice": 5200000, "maxStack": -100, "cauldronCost": 26783.3, "tier": 8 },
-        "Luna": { "id": 914, "category": "Relic", "sellPrice": 18500000, "maxStack": -75, "cauldronCost": 187482.6, "tier": 9 },
-        "Sol": { "id": 1001, "category": "Relic", "sellPrice": 42000000, "maxStack": -5, "cauldronCost": 5591400.6, "tier": 9 },
+        "Jupiter": { "id": 502, "category": "Relic", "exp": 10, "sellPrice": 30000, "maxStack": -300, "cauldronCost": 34, "tier": 5 },
+        "Saturn": { "id": 619, "category": "Relic", "exp": 71.5, "sellPrice": 150000, "maxStack": -100, "cauldronCost": 714, "tier": 6 },
+        "Mars": { "id": 620, "category": "Relic", "exp": 126, "sellPrice": 280000, "maxStack": -75, "cauldronCost": 1678, "tier": 6 },
+        "Venus": { "id": 710, "category": "Relic", "exp": 510, "sellPrice": 1000000, "maxStack": -200, "cauldronCost": 2549.6, "tier": 7 },
+        "Mercury": { "id": 814, "category": "Relic", "exp": 2693, "sellPrice": 5200000, "maxStack": -100, "cauldronCost": 26783.3, "tier": 8 },
+        "Luna": { "id": 914, "category": "Relic", "exp": 9537.5, "sellPrice": 18500000, "maxStack": -75, "cauldronCost": 187482.6, "tier": 9 },
+        "Sol": { "id": 1001, "category": "Relic", "exp": 24439, "sellPrice": 42000000, "maxStack": -5, "cauldronCost": 5591400.6, "tier": 9 },
 
         // --- OTHER ---        
         "Portal Sigil": { "id": 2001, "category": "Other", "buyPrice": 1500, "baseCost": 1500, "cauldronCost": 750, "paradoxTime": 2, "tier": 4 },
@@ -188,7 +189,7 @@ window.ALCHEMY_DB = {
         "Automatic Cashier": { "id": 2003, "category": "Other", "virtual": true, "buyPrice": 3000, "cauldronCost": 1400, "tier": 4 },
         "Mortar": { "id": 203, "category": "Other", "sellPrice": 48, "cauldronCost": 18, "tier": 2 },
         "Bandage": { "id": 308, "category": "Other", "sellPrice": 350, "wholesalePrice": 240, "cauldronCost": 120, "tier": 3 },        
-        "Moonlit Soap": { "id": 913, "category": "Other", "sellPrice": 995280, "wholesalePrice": 600000, "cauldronCost": 485822.8, "tier": 9 },        
+        "Moonlit Soap": { "id": 913, "category": "Other", "sellPrice": 995280, "wholesalePrice": 600000, "cauldronCost": 485822.8, "tier": 9 },
     },
     
     "machines": {
@@ -206,6 +207,7 @@ window.ALCHEMY_DB = {
         // Cauldron heatCost is depend on the recipe. Use a non-zero value as placeholder here
         "Cauldron": { "heatCost": -1,  "buildCost": { "Bronze Ingot": 20 }, "tier": 6 },
         "Advanced Cauldron": { "heatCost": -1,  "buildCost": { "Silver Ingot": 20 }, "tier": 8 },
+        "Steam Boiler": { "heatCost": -1,  "buildCost": { "Iron Ingot": 20, "Steel Ingot": 5 }, "tier": 6 },
 
         // --- Advanced Crafting ---
         "Processor": { "buildCost": { "Plank": 12, "Large Wooden Gear": 3 }, "tier": 2 },
@@ -608,6 +610,7 @@ window.ALCHEMY_DB = {
         { "id": "Fairy Tear_Thermal", "machine": "Thermal Extractor", "inputs": { "Fairy Dust": 1 }, "outputs": { "Fairy Tear": 1 }, "baseTime": 4.0 },
 
         // --- VIRTUAL RECIPES ---
-        { "id": "Unstable Catalyst (Gentian Mixture)", "machine": "Cauldron", "inputs": { "Gentian Mixture": 1, "Gentian Nectar": 1, "Gentian": 1 }, "outputs": { "Unstable Catalyst": 1 }, "baseTime": 10.3, "heatCost": 148.0 }
+        { "id": "Unstable Catalyst (Gentian Mixture)", "machine": "Cauldron", "inputs": { "Gentian Mixture": 1, "Gentian Nectar": 1, "Gentian": 1 }, "outputs": { "Unstable Catalyst": 1 }, "baseTime": 10.3, "heatCost": 148.0 },
+        { "id": "Steam Boiler (High)", "machine": "Steam Boiler", "outputs": { "Steam": 300 }, "baseTime": 2, "heatCost": 3000 }
     ]
 };

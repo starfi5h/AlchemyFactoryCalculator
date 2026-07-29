@@ -1002,10 +1002,10 @@ function renderItemPicker() {
 }
 
 const ATHANOR_CATALYSTS = [
-    { id: 'unstable', label: '🧪 Unstable' },
-    { id: 'fertile',  label: '🌿 Fertile'  },
-    { id: 'resonant', label: '✨ Resonant' },
-    { id: 'eternal',  label: '♾️ Eternal'  },
+    { id: 'unstable', label: '🧪 Unstable', charges: 180 },
+    { id: 'fertile',  label: '🌿 Fertile', charges: 240  },
+    { id: 'resonant', label: '✨ Resonant', charges: 1500 },
+    { id: 'eternal',  label: '♾️ Eternal', charges: 99999  },
 ];
 
 function toggleCatalyst(recipeId, catalystId, item, btn) {
@@ -1201,9 +1201,9 @@ function _renderRecipeModalList() {
             const activeCats = DB.settings.recipeModifiers[r.id]?.catalysts || [];
             const btns = ATHANOR_CATALYSTS.map(c => {
                 const isActive = activeCats.includes(c.id);
-                return `<button class="catalyst-btn${isActive ? ' active' : ''}" onclick="toggleCatalyst('${r.id}', '${c.id}', '${item}', this)">${t(c.label)}</button>`;
+                return `<button class="catalyst-btn${isActive ? ' active' : ''}" onclick="toggleCatalyst('${r.id}', '${c.id}', '${item}', this)" title="${t('Charges')}: ${c.charges}">${t(c.label)}</button>`;
             }).join('');
-            content += `<div class="catalyst-row">${t('Catalysts')} ${btns}</div>`;
+            content += `<div class="catalyst-row">${t('Catalysts')} (${t('Charge Cost')}:${r.ChargeCost}) ${btns}</div>`;
         }
 
         div.innerHTML = content;

@@ -904,6 +904,7 @@ function _renderItemDetail(itemName) {
     if (def.cauldronTarget != null) stats.push([_tn('Cauldron Target'), def.cauldronTarget]);
     if (def.charges        != null) stats.push([_tn('Charges'),         def.charges]);
     if (def.maxStack       != null) stats.push([_tn('Max Stack'),       def.maxStack]);
+    if (def.exp            != null) stats.push([_tn('Exp'),             def.exp]);
 
     var statsHTML = stats.length
         ? '<div class="wiki-stats-grid">' + stats.map(function(s) {
