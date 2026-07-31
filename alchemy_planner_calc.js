@@ -1,0 +1,730 @@
+// Main calculation engine in Planner Tab | Planner的核心計算函數
+// Global Memeber Used: DB, plannerState
+// Dependency: alchemy_planner.js
+
+/* ==========================================================================
+   SECTION: RECIPE / RATE CALCULATION
+   ========================================================================== */
+
+function plannerGetRawRecipe(recipeId) {
+    return (DB.recipes || []).find(r => r.id === recipeId) || null;
+}
+
+function plannerMainOutput(recipeId) {
+    const r = plannerGetRawRecipe(recipeId);
+    return r ? Object.keys(r.outputs)[0] : null;
+}
+
+function plannerGetRecipeTime(recipe) {
+    let recipeTime = recipe.baseTime || 1;
+    const nutrientCost = recipe.nutrientCost || 0;
+    if (nutrientCost > 0 && recipe.machine === "Nursery") {
+        const fertSpeed = DB.items[DB.settings.defaultFert]?.maxFertility || 1;
+        recipeTime = nutrientCost / fertSpeed;
+    }
+    return recipeTime;
+}
+
+/**
+ * 依配方 id (與可選的 recipeModifiers，例如高級煉金爐催化劑) 算出「單台機器」的
+ * input/output/heat/fert per-min 速率，不受任何節點的 machineCount 影響。
+ * 回傳: { recipe, inputsPerMachine, outputsPerMachine, heatItemsPerMachine, fertItemsPerMachine }
+ */
+function plannerGetRecipeRates(recipeId, recipeModifiers) {
+    const recipe = getRecipeById(recipeId, recipeModifiers);
+    if (!recipe) return null;
+
+    const lvlBelt = DB.settings.lvlBelt || 0;
+    const lvlSpeed = DB.settings.lvlSpeed || 0;
+    const lvlAlchemy = DB.settings.lvlAlchemy || 0;
+    const lvlFuel = DB.settings.lvlFuel || 0;
+    const lvlFert = DB.settings.lvlFert || 0;    
+    const beltSpeed = getBeltSpeed(lvlBelt);
+    const speedMult = getSpeedMult(lvlSpeed);
+    const alchemyMult = getAlchemyMult(lvlAlchemy);
+
+    const recipeTime = plannerGetRecipeTime(recipe);    
+    const mainOut = Object.keys(recipe.outputs)[0];
+    const nutrientCost = recipe.nutrientCost || 0;
+    const isNursery = recipe.machine === "Nursery" || recipe.machine === "World Tree Nursery";    
+
+    let batchesPerMinPerMachine = (60 / (recipeTime || 1)) * speedMult;
+    const inputsPerMachine = Object.entries(recipe.inputs || {}).map(([item, qty]) => ({
+        item, rate: qty * batchesPerMinPerMachine
+    }));
+    const outputsPerMachine = Object.entries(recipe.outputs || {}).map(([item, qty]) => {
+        const effQty = item === mainOut ? applyAlchemyMult(recipe.machine, qty, alchemyMult) : qty;
+        return { item, rate: effQty * batchesPerMinPerMachine };
+    });
+
+    // 檢查端口傳送帶速度限制。inputsPerMachine因為有雕刻機多個入口，暫時不檢查
+    let batchesRatio = 1.0;
+    for (const { item, rate } of outputsPerMachine) {
+        const itemDef = DB.items[item];
+        if (itemDef && !itemDef.liquid) {
+            let effectiveBeltSpeed = beltSpeed;
+            if (itemDef.category === "Currency") effectiveBeltSpeed *= 50;
+            else if (recipe.sharedOutputs) effectiveBeltSpeed /= recipe.sharedOutputs;
+            if (rate > effectiveBeltSpeed) {
+                batchesRatio = Math.min(batchesRatio, effectiveBeltSpeed/rate);
+            }
+        }
+    }
+
+    if (batchesRatio < 1) {
+        batchesPerMinPerMachine *= batchesRatio;
+        inputsPerMachine.forEach(io => io.rate *= batchesRatio);
+        outputsPerMachine.forEach(io => io.rate *= batchesRatio);
+    }
+
+    // 燃料消耗 (heatCost -> 燃料物品/分鐘, 每台機器)
+    let heatItemsPerMachine = 0;
+    const machineDef = DB.machines[recipe.machine];
+    if (machineDef && machineDef.heatCost) {
+        const heatingDeviceName = DB.settings.selectedHeatingDevice || "Stone Furnace";
+        const heatingDevice = DB.machines[heatingDeviceName]?.isGenerator
+            ? DB.machines[heatingDeviceName]
+            : (DB.machines["Stone Furnace"] || { heatSelf: 0, slots: 3 });
+        const slotsRequired = machineDef.slotsRequired || 1;
+        const heatingSlots = heatingDevice.slots || 3;
+        let activeHeat = machineDef.heatCost * speedMult;
+        if (machineDef.heatCost < 0) activeHeat = (recipe.heatCost ?? 0) * speedMult;
+        const heatingDevicesNeededPerMachine = 1 / (heatingSlots / slotsRequired);
+        const totalHeatPerSecPerMachine = heatingDevicesNeededPerMachine * (heatingDevice.heatSelf || 0) * speedMult
+            + activeHeat;
+        const fuelDef = DB.items[DB.settings.defaultFuel] || {};
+        const grossFuelEnergy = (fuelDef.heat || 1) * (1 + lvlFuel * 0.10);
+        heatItemsPerMachine = (totalHeatPerSecPerMachine * 60) / grossFuelEnergy;
+    }
+
+    // 肥料消耗 (Nursery, 每台機器)
+    let fertItemsPerMachine = 0;
+    if (isNursery) {
+        const totalNutrientsPerMinPerMachine = batchesPerMinPerMachine * nutrientCost;
+        const fertDef = DB.items[DB.settings.defaultFert] || { nutrientValue: 144 };
+        const grossFertVal = fertDef.nutrientValue * (1 + lvlFert * 0.10);
+        fertItemsPerMachine = totalNutrientsPerMinPerMachine / grossFertVal;
+    }
+
+    return { recipe, inputsPerMachine, outputsPerMachine, heatItemsPerMachine, fertItemsPerMachine };
+}
+
+/**
+ * 依節點目前的機器數與全域共用設定(preferredRecipes/recipeModifiers/升級等級)，
+ * 算出這個節點所有 input/output port 的速率，以及機台本身的燃料/肥料消耗。
+ */
+function computeNodePorts(node) {
+    const rates = plannerGetRecipeRates(node.recipeId, node.recipeModifiers);
+    const result = { recipe: rates ? rates.recipe : null, inputs: [], outputs: [], heatItemsPerMin: 0, fertItemsPerMin: 0 };
+    if (!rates) return result;
+
+    const mc = node.machineCount;
+    result.inputs = rates.inputsPerMachine.map(p => ({ item: p.item, rate: p.rate * mc }));
+    result.outputs = rates.outputsPerMachine.map(p => ({ item: p.item, rate: p.rate * mc }));
+    result.heatItemsPerMin = rates.heatItemsPerMachine * mc;
+    result.fertItemsPerMin = rates.fertItemsPerMachine * mc;
+    return result;
+}
+
+
+/* ==========================================================================
+   SECTION: FLOW RESOLUTION
+   ========================================================================== */
+
+function plannerPortKey(nodeId, item, dir) {
+    return `${nodeId}::${item}::${dir}`;
+}
+
+/**
+ * 重新計算整張圖：
+ * 1) 每個節點各 port 的理論速率
+ * 2) 清掉配方已改變導致無效的邊 (item 不再是該節點的 port)
+ * 3) 依 edge 建立順序 (createdAt) 依序分配流量：先建立的邊優先拿滿自己需要的量
+ */
+function plannerResolveFlows() {
+    const nodePortsCache = {};
+    Object.values(plannerState.nodes).forEach(node => {
+        nodePortsCache[node.id] = computeNodePorts(node);
+    });
+
+    // 清理失效的邊 (例如節點配方切換後，該 item 不再是 input/output)
+    let changed = false;
+    Object.keys(plannerState.edges).forEach(eid => {
+        const e = plannerState.edges[eid];
+        const fromPorts = nodePortsCache[e.fromNode];
+        const toPorts = nodePortsCache[e.toNode];
+        const fromOk = fromPorts && fromPorts.outputs.some(p => p.item === e.item);
+        const toOk = toPorts && toPorts.inputs.some(p => p.item === e.item);
+        if (!fromOk || !toOk) { delete plannerState.edges[eid]; changed = true; }
+    });
+    if (changed) savePlannerState();
+
+    const portTheoretical = {};
+    Object.entries(nodePortsCache).forEach(([nodeId, ports]) => {
+        ports.inputs.forEach(p => { portTheoretical[plannerPortKey(nodeId, p.item, 'in')] = p.rate; });
+        ports.outputs.forEach(p => { portTheoretical[plannerPortKey(nodeId, p.item, 'out')] = p.rate; });
+    });
+
+    const portRemaining = Object.assign({}, portTheoretical);
+    const portConnections = {};
+    const edgeFlow = {};
+
+    const sortedEdges = Object.values(plannerState.edges).sort((a, b) => a.createdAt - b.createdAt);
+    sortedEdges.forEach(edge => {
+        const outKey = plannerPortKey(edge.fromNode, edge.item, 'out');
+        const inKey = plannerPortKey(edge.toNode, edge.item, 'in');
+        (portConnections[outKey] = portConnections[outKey] || []).push(edge.id);
+        (portConnections[inKey] = portConnections[inKey] || []).push(edge.id);
+
+        const supply = portRemaining[outKey] ?? 0;
+        const demand = portRemaining[inKey] ?? 0;
+        const flow = Math.max(0, Math.min(supply, demand));
+        edgeFlow[edge.id] = flow;
+        portRemaining[outKey] = supply - flow;
+        portRemaining[inKey] = demand - flow;
+    });
+
+    const flows = { nodePortsCache, portTheoretical, portRemaining, portConnections, edgeFlow };
+    _plannerLastFlows = flows;
+    return flows;
+}
+
+function plannerGetAvailableRateAtPort(nodeId, item, dir) {
+    const flows = plannerResolveFlows();
+    const key = plannerPortKey(nodeId, item, dir);
+    return flows.portRemaining[key] ?? (flows.portTheoretical[key] ?? 0);
+}
+
+
+/* ==========================================================================
+   SECTION: AUTO-GENERATE UPSTREAM NODES
+   ========================================================================== */
+
+/** 估算節點卡片高度：116px 基礎 + 24px * max(input埠數, output埠數) */
+function estimatePlannerNodeHeight(recipe) {
+    if (!recipe) return 116;
+    const inCount = Object.keys(recipe.inputs || {}).length;
+    const outCount = Object.keys(recipe.outputs || {}).length;
+    return 116 + 24 * Math.max(inCount, outCount);
+}
+
+/**
+ * 依來源節點的目前 input 缺額，在其左側自動生成上游節點 (套用 preferred 配方)，
+ * 並自動連線。只展開這一層，不遞迴往上補 (遞迴版見 autoGenerateAllUpstreamNodes)。
+ * 回傳這次呼叫新建立的節點 id 陣列 (供遞迴使用)，不做任何 render/save (由呼叫端負責)。
+ */
+function _autoGenerateUpstreamNodesCore(nodeId) {
+    const sourceNode = plannerState.nodes[nodeId];
+    if (!sourceNode) return [];
+
+    const flows = plannerResolveFlows();
+    const ports = flows.nodePortsCache[nodeId];
+    if (!ports) return [];
+
+    const deficits = [];
+    ports.inputs.forEach(p => {
+        const key = plannerPortKey(nodeId, p.item, 'in');
+        const remaining = flows.portRemaining[key] ?? 0;
+        if (remaining > 0.001) deficits.push({ item: p.item, deficit: remaining });
+    });
+    if (deficits.length === 0) return [];
+
+    const plans = [];
+    deficits.forEach(({ item, deficit }) => {
+        const recipe = getActiveRecipe(item);
+        if (!recipe) return; // 跳過無配方物品 (原料/外部輸入)
+
+        const rates = plannerGetRecipeRates(recipe.id, DB.settings.recipeModifiers?.[recipe.id]);
+        if (!rates) return;
+        const perMachineRate = (rates.outputsPerMachine.find(p => p.item === item) || {}).rate || 0;
+        if (perMachineRate <= 0) return;
+
+        let machineCount = deficit / perMachineRate;
+        machineCount = Math.max(0, machineCount);
+
+        plans.push({ item, recipe, recipeModifiers: DB.settings.recipeModifiers?.[recipe.id], machineCount });
+    });
+    if (plans.length === 0) return [];
+
+    const sourceEl = document.getElementById('planner-node-' + nodeId);
+    const sourceHeight = sourceEl ? sourceEl.offsetHeight : 116;
+    const newNodeWidth = 200;
+    let x = plannerSnapVal(sourceNode.x - newNodeWidth - 120);
+
+    const heights = plans.map(p => estimatePlannerNodeHeight(p.recipe));
+    const baseGap = _plannerSettings.gridSize ? Math.min(80, Math.max(20, _plannerSettings.gridSize)) : 20;
+    const count = plans.length;
+    const yPositions = new Array(count);
+
+    if (count % 2 === 1) {
+        const midIdx = Math.floor(count / 2);
+        yPositions[midIdx] = sourceNode.y;
+        let curTop = sourceNode.y;
+        for (let i = midIdx - 1; i >= 0; i--) {
+            curTop -= (baseGap + heights[i + 1]);
+            yPositions[i] = curTop;
+        }
+        let curBottom = sourceNode.y + heights[midIdx];
+        for (let i = midIdx + 1; i < count; i++) {
+            yPositions[i] = curBottom + baseGap;
+            curBottom = yPositions[i] + heights[i];
+        }
+    } else {
+        const totalHeight = heights.reduce((s, h) => s + h, 0) + baseGap * (count - 1);
+        const sourceCenterY = sourceNode.y + sourceHeight / 2;
+        let curY = sourceCenterY - totalHeight / 2;
+        for (let i = 0; i < count; i++) {
+            yPositions[i] = curY;
+            curY += heights[i] + baseGap;
+        }
+    }
+
+    const createdIds = [];
+    plans.forEach((plan, i) => {
+        let y = plannerSnapVal(yPositions[i]);
+
+        plannerState._nodeSeq = (plannerState._nodeSeq || 0) + 1;
+        const newNodeId = 'pnode_' + plannerState._nodeSeq;
+        plannerState.nodes[newNodeId] = {
+            id: newNodeId,
+            recipeId: plan.recipe.id,
+            recipeModifiers: plan.recipeModifiers,
+            machineCount: plan.machineCount,
+            x: Math.round(x),
+            y: Math.round(y)
+        };
+
+        plannerState._edgeSeq = (plannerState._edgeSeq || 0) + 1;
+        const edgeId = 'pedge_' + plannerState._edgeSeq;
+        plannerState.edges[edgeId] = {
+            id: edgeId, item: plan.item, fromNode: newNodeId, toNode: nodeId,
+            createdAt: plannerState._edgeSeq
+        };
+
+        createdIds.push(newNodeId);
+    });
+
+    return createdIds;
+}
+
+/** 對外版本：單層展開，展開後立即 render + 存檔 */
+function autoGenerateUpstreamNodes(nodeId) {
+    const created = _autoGenerateUpstreamNodesCore(nodeId);
+    if (created.length === 0) return;
+    renderPlanner();
+    savePlannerState();
+}
+
+/**
+ * 遞迴版本：以 nodeId 為起點，持續往上游展開，直到每個節點都沒有缺額為止。
+ */
+function autoGenerateAllUpstreamNodes(rootNodeId) {
+    const expandingRecipes = new Set();
+    let nodeCount = 0;
+
+    function dfs(nodeId) {
+        const node = plannerState.nodes[nodeId];
+        if (!node) return;
+
+        if (nodeId != rootNodeId) {
+            const cats = node.recipeModifiers?.catalysts;
+            if (cats && cats.length > 0) return; //不展開有催化劑的子節點
+        }
+
+        if (expandingRecipes.has(node.recipeId))
+            return;
+
+        expandingRecipes.add(node.recipeId);
+
+        const created = _autoGenerateUpstreamNodesCore(nodeId);
+        nodeCount += created.length || 0;
+        created.forEach(dfs);
+
+        expandingRecipes.delete(node.recipeId);
+    }
+
+    dfs(rootNodeId);
+    console.info('Create upstream nodes: ' + nodeCount);
+    renderPlanner();
+    savePlannerState();
+}
+
+function removeAllUpsteamNodes(rootNodeId) {
+    const root = plannerState.nodes[rootNodeId];
+    if (!root) return;
+
+    const outAdj = {}, inAdj = {};
+    Object.keys(plannerState.nodes).forEach(id => { outAdj[id] = []; inAdj[id] = []; });
+    Object.values(plannerState.edges).forEach(e => {
+        if (!outAdj[e.fromNode] || !inAdj[e.toNode]) return;
+        outAdj[e.fromNode].push(e.toNode);
+        inAdj[e.toNode].push(e.fromNode);
+    });
+
+    const visited = new Set([rootNodeId]);
+    const result = [];
+    const queue = [...inAdj[rootNodeId]];
+    queue.forEach(id => visited.add(id));
+    while (queue.length) {
+        const cur = queue.shift();
+        result.push(cur);
+        (inAdj[cur] || []).forEach(nb => {
+            if (!visited.has(nb)) { visited.add(nb); queue.push(nb); }
+        });
+    }
+    if (result.length === 0) return; // 沒有上游節點可刪
+    console.info('Remove upstream nodes: ' + result.length);
+    result.forEach(nId => delete plannerState.nodes[nId]);
+
+    renderPlanner();
+    savePlannerState();
+}
+
+/* ==========================================================================
+   SECTION: LAYOUT UPSTREAM (BFS spanning tree, RT-style layout)
+   ========================================================================== */
+
+const PLANNER_LAYOUT_COL_GAP = 280;   // 每層 (depth) 之間的水平間距 (含節點寬度)
+const PLANNER_LAYOUT_ROW_GAP = 40;    // 同層節點之間的最小垂直間距
+
+/**
+ * 以 rootNodeId 為根，只排版它的上游節點。
+ * 做法：先用 BFS 沿著 input edge 反向走，建出一棵 spanning tree
+ * (每個節點只認第一次被走到的那條邊當 parent，其餘跨子樹的邊直接忽略，不影響排版)。
+ * 再用 post-order 算出每個子樹需要的垂直空間，最後 pre-order 由上而下指定座標，
+ * 父節點置中對齊自己所有子節點的中心範圍 (視覺概念類似 D3 tree / Reingold-Tilford)。
+ * root 本身位置不變；上游節點以 root 的 x 為起點往左展開分層。
+ */
+function plannerAutoLayoutUpstream(rootNodeId) {
+    const root = plannerState.nodes[rootNodeId];
+    if (!root) return;
+
+    const inAdj = {};
+    Object.keys(plannerState.nodes).forEach(id => { inAdj[id] = []; });
+    Object.values(plannerState.edges).forEach(e => {
+        if (!inAdj[e.toNode] || !plannerState.nodes[e.fromNode]) return;
+        inAdj[e.toNode].push(e.fromNode);
+    });
+
+    const children = _plannerBuildUpstreamTree(rootNodeId, inAdj);
+    if (Object.keys(children).length === 0 || (children[rootNodeId] || []).length === 0) return; // 沒有上游節點可排
+
+    const extents = {};
+    _plannerComputeExtent(rootNodeId, children, extents);
+    _plannerAssignTreeCoordinates(rootNodeId, children, extents);
+
+    renderPlanner();
+    savePlannerState();
+    requestAnimationFrame(() => plannerFitToView());
+}
+
+/**
+ * BFS 沿著 inAdj 方向走 (即沿著 edge 反向，往上游走)，建出以 rootId 為根的 spanning tree。
+ * 每個節點只會被指定唯一一個 parent (第一次走訪到它的節點)；若某個節點同時是多個
+ * 下游節點的上游 (匯流)，只有第一條路徑會被視為 tree edge，其餘邊被忽略不畫入排版計算。
+ * 回傳 { [nodeId]: childNodeId[] }，只包含有子節點的項目 (leaf 不會出現在裡面)。
+ */
+function _plannerBuildUpstreamTree(rootId, inAdj) {
+    const visited = new Set([rootId]);
+    const children = {};
+    const queue = [rootId];
+    while (queue.length) {
+        const cur = queue.shift();
+        (inAdj[cur] || []).forEach(parent => {
+            if (visited.has(parent)) return; // 已經被其他節點認領走了，當作 cross edge 忽略
+            visited.add(parent);
+            (children[cur] = children[cur] || []).push(parent);
+            queue.push(parent);
+        });
+    }
+    return children;
+}
+
+/**
+ * Post-order 遞迴計算每個子樹所需的垂直空間 (extent)。
+ * Leaf：extent = 自己卡片的實際高度。
+ * 非 leaf：extent = 所有子節點 extent 累加 + 間距，且至少要 ≥ 自己卡片高度
+ */
+function _plannerComputeExtent(nodeId, children, extents) {
+    const el = document.getElementById('planner-node-' + nodeId);
+    const ownHeight = el ? el.offsetHeight : 140;
+    const kids = children[nodeId] || [];
+
+    if (kids.length === 0) {
+        extents[nodeId] = ownHeight;
+        return ownHeight;
+    }
+
+    let childrenTotal = 0;
+    kids.forEach(childId => {
+        childrenTotal += _plannerComputeExtent(childId, children, extents);
+    });
+    childrenTotal += (kids.length - 1) * PLANNER_LAYOUT_ROW_GAP;
+
+    const extent = Math.max(ownHeight, childrenTotal);
+    extents[nodeId] = extent;
+    return extent;
+}
+
+/**
+ * Pre-order 由上而下指定座標。
+ * 每個節點分配到一段垂直區間 [top, top+extent)；
+ * 若有子節點，子節點群依序疊放在這個區間裡置中，
+ * 父節點自己的 y 則對齊「第一個子節點中心」到「最後一個子節點中心」的中點。
+ * x 座標單純由深度(depth)決定，root 深度為 0，每往上游一層往左移動一個 COL_GAP。
+ */
+function _plannerAssignTreeCoordinates(rootId, children, extents) {
+    const root = plannerState.nodes[rootId];
+
+    function place(nodeId, depth, top, extent) {
+        const kids = children[nodeId] || [];
+        const node = plannerState.nodes[nodeId];
+
+        if (depth > 0) node.x = root.x - depth * PLANNER_LAYOUT_COL_GAP;
+
+        if (kids.length === 0) {
+            if (depth > 0) node.y = top; // leaf 直接佔滿分配到的區間頂端 (區間高度 = 自己高度)
+            return;
+        }
+
+        // 依序疊放子節點，並記錄各自的中心 y，供最後置中父節點使用
+        let cursor = top;
+        const childCenters = [];
+        kids.forEach(childId => {
+            const childExtent = extents[childId];
+            place(childId, depth + 1, cursor, childExtent);
+            childCenters.push(cursor + childExtent / 2);
+            cursor += childExtent + PLANNER_LAYOUT_ROW_GAP;
+        });
+
+        if (depth > 0) {
+            const centerY = (childCenters[0] + childCenters[childCenters.length - 1]) / 2;
+            const el = document.getElementById('planner-node-' + nodeId);
+            const ownHeight = el ? el.offsetHeight : 140;
+            node.y = centerY - ownHeight / 2;
+        }
+    }
+
+    place(rootId, 0, root.y - extents[rootId] / 2, extents[rootId]);
+}
+
+/* ==========================================================================
+   SECTION: IMPORT FROM CALCULATOR RESULT
+   ========================================================================== */
+
+/**
+ * 將 Calculator 分頁目前的計算結果 (calcResult = AlchemyCalcEngine.runCalculation 的回傳值)
+ * 轉換成 Planner 節點圖，疊加到目前作用中的 plan。
+ *
+ * Stage 1: 遍歷 treeRoots，依 recipe.id 聚合成節點 (machineCount 加總)，跳過 raw/external 葉節點
+ * Stage 2: 建立 parent-child 主要 edges
+ * Stage 3: 依 byproducts[].producers 的正負配對，建立回收 edges
+ *          (負值 entry 的 pathKey 是「產出該副產物的節點自己」，回收邊真正該接的是它的父節點，
+ *           因為父節點才是實際消耗這個副產物的配方)
+ * Stage 4: 疊加到目前 plan，依現有節點 bounding box 做座標偏移避免重疊
+ * Stage 5: 重用 RT-style 排版 (虛擬 root 包裝多個真實 root)
+ * Stage 6: resolveFlows 後，砍掉流量趨近於 0 的回收邊
+ */
+function plannerImportFromCalcResult(calcResult, params) {
+    if (!calcResult || !calcResult.treeRoots || calcResult.treeRoots.length === 0) {
+        alert(t('No calculation result to import.', 'ui'));
+        return;
+    }
+
+    const aggMap = {};          // recipeId -> { recipeId, recipeModifiers, machineCount }
+    const pathKeyToAgg = {};    // pathKey -> recipeId (只記有被聚合成節點的路徑)
+    const parentOfPathKey = {}; // pathKey -> 父節點的 pathKey (或 null)
+    const pendingEdgeSet = new Set();
+    const pendingEdges = [];    // { fromKey, toKey, item, isRecycle }
+    const rootAggKeys = new Set();
+
+    function addPendingEdge(fromKey, toKey, item, isRecycle) {
+        if (!fromKey || !toKey) return;
+        const dedupeKey = `${fromKey}|${toKey}|${item}`;
+        if (pendingEdgeSet.has(dedupeKey)) return;
+        pendingEdgeSet.add(dedupeKey);
+        pendingEdges.push({ fromKey, toKey, item, isRecycle: !!isRecycle });
+    }
+
+    // ---- Stage 1 + 2: 遍歷樹，聚合節點 + 建立主要 edges ----
+    function walk(node, parentPathKey, parentAggKey) {
+        parentOfPathKey[node.pathKey] = parentPathKey;
+
+        const isAggregatable = node.recipe && !node.isRaw && !node.isExternal;
+        if (!isAggregatable) return; // raw/external/無配方的葉節點：跳過，不生成節點
+
+        const key = node.recipe.id;
+        pathKeyToAgg[node.pathKey] = key;
+        if (!aggMap[key]) {
+            aggMap[key] = {
+                recipeId: node.recipe.id,
+                recipeModifiers: DB.settings.recipeModifiers?.[node.recipe.id],
+                machineCount: 0
+            };
+        }
+        aggMap[key].machineCount += node.machineCount;
+
+        if (parentAggKey) {
+            addPendingEdge(key, parentAggKey, node.item, false);
+        }
+
+        node.children.forEach(child => walk(child, node.pathKey, key));
+    }
+
+    calcResult.treeRoots.forEach(entry => {
+        walk(entry.root, null, null);
+        if (entry.root.recipe && !entry.root.isRaw && !entry.root.isExternal) {
+            rootAggKeys.add(entry.root.recipe.id);
+        }
+    });
+    // internalModules (燃料/肥料模組) 依需求不處理
+
+    // machineCount <= 0 的聚合節點不生成
+    Object.keys(aggMap).forEach(key => {
+        if (aggMap[key].machineCount <= 0.000001) {
+            delete aggMap[key];
+            rootAggKeys.delete(key);
+        }
+    });
+
+    // ---- Stage 3: 回收 edges ----
+    (calcResult.byproducts || []).forEach(bypEntry => {
+        const item = bypEntry.item;
+        const positives = []; // 供給端 (產出這個副產物的節點)
+        const negatives = []; // 需求端 (該節點的父節點，即真正消耗此副產物的配方)
+
+        (bypEntry.producers || []).forEach(p => {
+            if (p.rate > 0.0001) {
+                const aggKey = pathKeyToAgg[p.pathKey];
+                if (aggKey && aggMap[aggKey]) positives.push(aggKey);
+            } else if (p.rate < -0.0001) {
+                const parentPathKey = parentOfPathKey[p.pathKey];
+                const parentAggKey = parentPathKey ? pathKeyToAgg[parentPathKey] : null;
+                if (parentAggKey && aggMap[parentAggKey]) negatives.push(parentAggKey);
+            }
+        });
+
+        positives.forEach(fromKey => {
+            negatives.forEach(toKey => addPendingEdge(fromKey, toKey, item, true));
+        });
+    });
+
+    if (Object.keys(aggMap).length === 0) {
+        alert(t('Nothing to import (no producible nodes).', 'ui'));
+        return;
+    }
+
+    // ---- Stage 4: 疊加到目前 plan，計算座標偏移 ----
+    const hasExisting = Object.keys(plannerState.nodes).length > 0;
+    let existingMaxX = -Infinity, existingMinY = Infinity;
+    if (hasExisting) {
+        Object.values(plannerState.nodes).forEach(n => {
+            existingMaxX = Math.max(existingMaxX, n.x + 200); // 200 = 卡片寬度
+            existingMinY = Math.min(existingMinY, n.y);
+        });
+    }
+    const offsetX = hasExisting ? existingMaxX + 150 : 0;
+    const offsetY = hasExisting ? existingMinY : 0;
+
+    // 建立實際節點
+    const keyToNodeId = {};
+    Object.entries(aggMap).forEach(([key, agg]) => {
+        plannerState._nodeSeq = (plannerState._nodeSeq || 0) + 1;
+        const nodeId = 'pnode_' + plannerState._nodeSeq;
+        keyToNodeId[key] = nodeId;
+        plannerState.nodes[nodeId] = {
+            id: nodeId,
+            recipeId: agg.recipeId,
+            recipeModifiers: agg.recipeModifiers,
+            machineCount: agg.machineCount,
+            x: 0, y: 0
+        };
+    });
+
+
+    // ---- 建立實際 edges，回收邊給予比所有現有邊都更小的 createdAt，享有最高優先度 ----
+
+    let existingMinCreatedAt = 0;
+    Object.values(plannerState.edges).forEach(e => {
+        existingMinCreatedAt = Math.min(existingMinCreatedAt, e.createdAt);
+    });
+    let nextRecycleCreatedAt = existingMinCreatedAt - 1; // 遞減，確保回收邊全部排在最前面
+
+    const recycleEdgeIds = [];
+    pendingEdges.forEach(({ fromKey, toKey, item, isRecycle }) => {
+        const fromNode = keyToNodeId[fromKey], toNode = keyToNodeId[toKey];
+        if (!fromNode || !toNode) return;
+        plannerState._edgeSeq = (plannerState._edgeSeq || 0) + 1;
+        const edgeId = 'pedge_' + plannerState._edgeSeq;
+        const createdAt = isRecycle ? (nextRecycleCreatedAt--) : plannerState._edgeSeq;
+        plannerState.edges[edgeId] = { id: edgeId, item, fromNode, toNode, createdAt };
+        if (isRecycle) recycleEdgeIds.push(edgeId);
+    });
+
+    // ---- Stage 5: 排版 ----
+    const newNodeIds = Object.values(keyToNodeId);
+    const rootNodeIds = [...rootAggKeys].map(k => keyToNodeId[k]).filter(Boolean);
+    _plannerLayoutImportedGraph(newNodeIds, rootNodeIds, offsetX, offsetY);
+
+    // ---- Stage 6: 清掉流量趨近 0 的回收邊 ----
+    const flows = plannerResolveFlows();
+    recycleEdgeIds.forEach(eid => {
+        if (plannerState.edges[eid] && (flows.edgeFlow[eid] || 0) < 0.001) {
+            delete plannerState.edges[eid];
+        }
+    });
+
+    renderPlanner();
+    savePlannerState();
+    requestAnimationFrame(() => plannerFitToView(newNodeIds));
+}
+
+/**
+ * 對一批新匯入的節點套用 RT-style 排版：
+ * 用一個不會真正生成節點的「虛擬 root」把所有真實 root 接在它下面，
+ * 重用 _plannerBuildUpstreamTree / _plannerComputeExtent / _plannerAssignTreeCoordinates，
+ * 排版完成後刪除虛擬 root，再依 offsetX/offsetY 把整批節點平移到指定位置。
+ */
+function _plannerLayoutImportedGraph(newNodeIds, rootNodeIds, offsetX, offsetY) {
+    if (newNodeIds.length === 0) return;
+
+    const virtualId = '__virtual_root__';
+    plannerState.nodes[virtualId] = { id: virtualId, x: 0, y: 0, machineCount: 0, recipeId: null };
+
+    // 先 render 一次，讓新節點的 DOM 卡片存在，才能量測高度供 _plannerComputeExtent 使用
+    renderPlanner();
+
+    const idSet = new Set(newNodeIds);
+    const inAdj = {};
+    newNodeIds.forEach(id => inAdj[id] = []);
+    inAdj[virtualId] = rootNodeIds.length > 0 ? rootNodeIds : newNodeIds;
+
+    Object.values(plannerState.edges).forEach(e => {
+        if (idSet.has(e.fromNode) && idSet.has(e.toNode) && inAdj[e.toNode]) {
+            inAdj[e.toNode].push(e.fromNode);
+        }
+    });
+
+    const children = _plannerBuildUpstreamTree(virtualId, inAdj);
+    const extents = {};
+    _plannerComputeExtent(virtualId, children, extents);
+    _plannerAssignTreeCoordinates(virtualId, children, extents);
+
+    delete plannerState.nodes[virtualId];
+
+    let minX = Infinity, minY = Infinity;
+    newNodeIds.forEach(id => {
+        const n = plannerState.nodes[id];
+        if (!n) return;
+        minX = Math.min(minX, n.x);
+        minY = Math.min(minY, n.y);
+    });
+    if (!isFinite(minX)) { minX = 0; minY = 0; }
+
+    newNodeIds.forEach(id => {
+        const n = plannerState.nodes[id];
+        if (!n) return;
+        n.x = plannerSnapVal(n.x - minX + offsetX);
+        n.y = plannerSnapVal(n.y - minY + offsetY);
+    });
+}
