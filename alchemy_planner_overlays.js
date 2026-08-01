@@ -61,21 +61,57 @@ function openPlannerManageModal() {
     document.getElementById('planner-manage-modal').style.display = 'flex';
 }
 
-/** 重繪 Modal 內的方案清單 (含拖曳排序 handle 綁定) */
+/** 重繪 Modal 內的方案清單 (含拖曳排序 handle 綁定 + 模組依賴關係強調) */
 function renderPlannerManageList() {
     const container = document.getElementById('planner-plan-list');
     if (!container) return;
+
+    // 預先計算目前選中 plan 的依賴 / 被依賴集合，供其他列 highlight 使用
+    let selectedDeps = new Set();
+    let selectedDependents = new Set();
+    if (_plannerManageSelectedId && plannerLibrary.plans[_plannerManageSelectedId]) {
+        const dep = getPlannerModulesUsedBy(_plannerManageSelectedId);
+        selectedDeps = new Set(dep.modules.filter(id => id !== _plannerManageSelectedId));
+        selectedDependents = new Set(getPlannerModulesUsingPlan(_plannerManageSelectedId).filter(id => id !== _plannerManageSelectedId));
+    }
+
     container.innerHTML = plannerLibrary.planOrder
         .filter(id => plannerLibrary.plans[id])
         .map(id => {
             const plan = plannerLibrary.plans[id];
             const isSelected = id === _plannerManageSelectedId;
             const isActive = id === plannerLibrary.activePlanId;
+
+            const depInfo = getPlannerModulesUsedBy(id);
+            const depCount = depInfo.modules.length;
+            const usedByCount = getPlannerModulesUsingPlan(id).length;
+
+            const isDep = !isSelected && selectedDeps.has(id);
+            const isDependent = !isSelected && selectedDependents.has(id);
+            const isBoth = isDep && isDependent;
+
+            const classes = ['planner-plan-row'];
+            if (isSelected) classes.push('selected');
+            if (depInfo.hasCycle) classes.push('has-cycle');
+            else if (isBoth) classes.push('rel-both');
+            else if (isDep) classes.push('rel-dep');
+            else if (isDependent) classes.push('rel-dependent');
+
+            const depTag = depCount > 0
+                ? `<span class="planner-plan-tag-dep" title="${t('Uses N modules', 'ui')}">⇐${depCount}</span>` : '';
+            const usedTag = usedByCount > 0
+                ? `<span class="planner-plan-tag-used" title="${t('Used by N plans', 'ui')}">⇒${usedByCount}</span>` : '';
+            const cycleTag = depInfo.hasCycle
+                ? `<span class="planner-plan-tag-cycle" title="${t('Circular module reference', 'ui')}">⚠ ${t('Cycle', 'ui')}</span>` : '';
+
             return `
-                <div class="planner-plan-row ${isSelected ? 'selected' : ''}" data-plan-id="${id}" onclick="selectPlannerManageRow('${id}')">
+                <div class="${classes.join(' ')}" data-plan-id="${id}" onclick="selectPlannerManageRow('${id}')">
                     <span class="planner-plan-drag-handle" title="Drag to reorder">⠿</span>
                     <span class="planner-plan-name">${_escapeHtml(plan.name)}</span>
                     ${isActive ? `<span class="planner-plan-active-tag">${t('Active', 'ui')}</span>` : ''}
+                    ${depTag}
+                    ${usedTag}
+                    ${cycleTag}
                     <span class="planner-plan-meta">${_formatPlannerTime(plan.updatedAt)}</span>
                 </div>`;
         }).join('');
@@ -251,6 +287,32 @@ function managePlannerExportSelected() {
     a.click();
     document.body.removeChild(a);
     URL.revokeObjectURL(url);
+}
+
+function managePlannerImportAsModule() {
+    const moduleId = _plannerManageSelectedId;
+    if (!moduleId) return;
+
+    const canvas = document.getElementById('planner-canvas');
+    const rect = canvas.getBoundingClientRect();
+    const zoom = _plannerSettings.viewport.zoom || 1;
+    const graphX = plannerSnapVal((rect.width / 2 - _plannerSettings.viewport.x) / zoom - 110);
+    const graphY = plannerSnapVal((rect.height / 2 - _plannerSettings.viewport.y) / zoom - 60);
+
+    const plan = plannerLibrary.plans[moduleId];
+    if (!plan) return;
+    plannerState._nodeSeq = (plannerState._nodeSeq || 0) + 1;
+    const id = 'pnode_' + plannerState._nodeSeq;
+    plannerState.nodes[id] = {
+        id,
+        recipeId: null,
+        moduleId,
+        machineCount: 1,
+        x: Math.round(graphX),
+        y: Math.round(graphY)
+    };
+    renderPlanner();
+    savePlannerState();
 }
 
 /* ---- Modal 底部操作：新方案 / 匯入 (與選中列無關的全域操作) ---- */
@@ -686,7 +748,7 @@ function createPlannerNodeFromPicker(candidate, ctx) {
    SECTION: Rate Per Machine Tooltip 
    ========================================================================== */
 
-/** 依 plannerGetRecipeRates() 的結果，組出 hover tooltip 的 HTML 內容 */
+/** 依 plannerGetNodeRates() 的結果，組出 hover tooltip 的 HTML 內容 */
 function buildPlannerRateTooltipHtml(rates) {
     if (!rates) return '';
 

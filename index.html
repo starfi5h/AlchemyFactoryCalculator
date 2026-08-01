@@ -78,13 +78,14 @@
                 <div class="planner-plan-actions-row" id="planner-plan-actions-row">
                     <button class="split-btn" onclick="managePlannerLoadSelected()">▶ Load</button>
                     <button class="split-btn" onclick="managePlannerRenameSelected()">✎ Rename</button>
-                    <button class="split-btn" onclick="managePlannerDuplicateSelected()">⧉ Duplicate</button>
-                    <button class="split-btn" style="color:var(--danger); border-color:var(--danger);" onclick="managePlannerDeleteSelected()">🗑 Delete</button>
+                    <button class="split-btn" onclick="managePlannerDuplicateSelected()">⧉ Duplicate</button>                                   
+                    <button class="split-btn" onclick="managePlannerImportAsModule()">📦 Import as Module</button>
                 </div>
                 <div class="planner-plan-bottom-row">
-                    <button class="save-btn" style="width:50%; margin:0;" onclick="managePlannerCreateNew()">New Plan</button>
+                    <button class="save-btn" style="width:24%; margin:0;" onclick="managePlannerCreateNew()">New Plan</button>
                     <button class="split-btn" onclick="managePlannerImport()">⭱ Import</button>
                     <button class="split-btn" onclick="managePlannerExportSelected()">⭳ Export</button>
+                    <button class="split-btn" style="color:var(--danger); border-color:var(--danger);" onclick="managePlannerDeleteSelected()">🗑 Delete</button>
                 </div>
             </div>
         </div>

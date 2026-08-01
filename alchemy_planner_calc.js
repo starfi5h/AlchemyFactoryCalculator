@@ -3,6 +3,57 @@
 // Dependency: alchemy_planner.js
 
 /* ==========================================================================
+   SECTION: PLAN DEPENDENCY ANALYSIS (module usage / cycle detection)
+   ========================================================================== */
+
+/** 取得某個 plan 內，所有模組節點直接引用的 moduleId (去重) */
+function _getDirectModuleIds(plan) {
+    const ids = new Set();
+    Object.values(plan.data.nodes || {}).forEach(node => {
+        if (node.moduleId) ids.add(node.moduleId);
+    });
+    return [...ids];
+}
+
+/**
+ * 遞迴 (BFS) 展開 planId 用到的所有模組 (含間接引用)，並偵測是否存在循環引用。
+ * 循環的判定：展開過程中若重新走回 planId 自己，才視為環；
+ * 單純多個模組共用同一個下層模組 (菱形依賴) 不算循環。
+ * @returns { modules: string[], hasCycle: boolean }
+ */
+function getPlannerModulesUsedBy(planId) {
+    const originPlan = plannerLibrary.plans[planId];
+    if (!originPlan) return { modules: [], hasCycle: false };
+
+    const visited = new Set();
+    let hasCycle = false;
+    const queue = [..._getDirectModuleIds(originPlan)];
+
+    while (queue.length) {
+        const cur = queue.shift();
+        if (cur === planId) { hasCycle = true; continue; }
+        if (visited.has(cur)) continue;
+        visited.add(cur);
+        const curPlan = plannerLibrary.plans[cur];
+        if (!curPlan) continue; // 引用已不存在的 plan，跳過 (broken reference)
+        _getDirectModuleIds(curPlan).forEach(id => queue.push(id));
+    }
+
+    return { modules: [...visited], hasCycle };
+}
+
+/** 找出哪些 plan (直接或間接) 把 planId 當作模組使用 */
+function getPlannerModulesUsingPlan(planId) {
+    const users = [];
+    plannerLibrary.planOrder.forEach(id => {
+        if (id === planId || !plannerLibrary.plans[id]) return;
+        const { modules } = getPlannerModulesUsedBy(id);
+        if (modules.includes(planId)) users.push(id);
+    });
+    return users;
+}
+
+/* ==========================================================================
    SECTION: RECIPE / RATE CALCULATION
    ========================================================================== */
 
@@ -32,7 +83,7 @@ function plannerGetRecipeTime(recipe) {
  */
 function plannerGetRecipeRates(recipeId, recipeModifiers) {
     const recipe = getRecipeById(recipeId, recipeModifiers);
-    if (!recipe) return null;
+    if (!recipe) return { recipe: null, inputsPerMachine: [], outputsPerMachine: [], heatItemsPerMachine: 0, fertItemsPerMachine: 0, errorCode: 'Missing Recipe' };
 
     const lvlBelt = DB.settings.lvlBelt || 0;
     const lvlSpeed = DB.settings.lvlSpeed || 0;
@@ -106,24 +157,109 @@ function plannerGetRecipeRates(recipeId, recipeModifiers) {
         fertItemsPerMachine = totalNutrientsPerMinPerMachine / grossFertVal;
     }
 
-    return { recipe, inputsPerMachine, outputsPerMachine, heatItemsPerMachine, fertItemsPerMachine };
+    return { recipe, inputsPerMachine, outputsPerMachine, heatItemsPerMachine, fertItemsPerMachine, errorCode: '' };
 }
 
 /**
  * 依節點目前的機器數與全域共用設定(preferredRecipes/recipeModifiers/升級等級)，
  * 算出這個節點所有 input/output port 的速率，以及機台本身的燃料/肥料消耗。
+ * 回傳: { recipe, inputs, outputs, heatItemsPerMachine, fertItemsPerMachine, errorCode }
  */
 function computeNodePorts(node) {
-    const rates = plannerGetRecipeRates(node.recipeId, node.recipeModifiers);
-    const result = { recipe: rates ? rates.recipe : null, inputs: [], outputs: [], heatItemsPerMin: 0, fertItemsPerMin: 0 };
-    if (!rates) return result;
+    const rates = plannerGetNodeRates(node);
+    const result = { recipe : null, inputs: [], outputs: [], heatItemsPerMin: 0, fertItemsPerMin: 0, errorCode: '' };
+    
+    if (rates.errorCode) return { ...result, errorCode: rates.errorCode };
 
     const mc = node.machineCount;
+    result.recipe = rates.recipe;
     result.inputs = rates.inputsPerMachine.map(p => ({ item: p.item, rate: p.rate * mc }));
     result.outputs = rates.outputsPerMachine.map(p => ({ item: p.item, rate: p.rate * mc }));
     result.heatItemsPerMin = rates.heatItemsPerMachine * mc;
     result.fertItemsPerMin = rates.fertItemsPerMachine * mc;
     return result;
+}
+
+/* ==========================================================================
+   SECTION: MODULE NODES (plan-as-virtual-recipe)
+   ========================================================================== */
+
+/**
+ * 依節點類型 (一般配方 / 模組) dispatch 到對應的「每台機器/每單位倍率」速率計算。
+ * 回傳格式與 plannerGetRecipeRates() 一致：
+ * { recipe, inputsPerMachine, outputsPerMachine, heatItemsPerMachine, fertItemsPerMachine, errorCode }
+ */
+function plannerGetNodeRates(node) {
+    if (node.moduleId) return plannerGetModuleRates(node.moduleId);
+    return plannerGetRecipeRates(node.recipeId, node.recipeModifiers);
+}
+
+/**
+ * 計算某個模組plan (moduleId) 「倍率=1」時，對外暴露的 input/output/heat/fert 速率 * 
+ * 如果plannerLibrary.plans[moduleId]不存在，回傳 errorCode = 'Missing Reference'
+ * getPlannerModulesUsedBy(planId) 檢查是否存在循環引用，是則回傳 errorCode = 'Circular Reference'
+ * { recipe, inputsPerMachine, outputsPerMachine, heatItemsPerMachine, fertItemsPerMachine, errorCode }
+ */
+function plannerGetModuleRates(moduleId) {
+    const result = { recipe: null, inputsPerMachine: [], outputsPerMachine: [], heatItemsPerMachine: 0, fertItemsPerMachine: 0, errorCode: '' };
+    try {
+        const plan = plannerLibrary.plans[moduleId];
+        if (!plan) return {...result, errorCode: 'Missing Reference'};
+        if (getPlannerModulesUsedBy(moduleId).hasCycle) return {...result, errorCode: 'Circular Reference'};
+
+        const base = _computeFlowsForPlanData(plan);
+        if (!base) return {...result, errorCode: 'Missing Reference'};
+
+        return {
+            recipe: null,
+            inputsPerMachine: Object.entries(base.inputShortage).map(([item, qty]) => ({ item, rate: qty })),
+            outputsPerMachine: Object.entries(base.outputSurplus).map(([item, qty]) => ({ item, rate: qty })),
+            heatItemsPerMachine: base.heatTotal,
+            fertItemsPerMachine: base.fertTotal,
+            errorCode: ''
+        };
+    }
+    catch (e) {
+        console.error(e);
+        return {...result, errorCode: 'Unkown Error'};
+    }
+}
+
+/**
+ * 唯讀計算：給定 planId，算出這個 plan 整體對外的
+ * input 短缺 / output 剩餘 / heat / fert / gold 總量 (機器數=1 時的基準值)。
+ * 不寫入/不修改 plannerState、不呼叫 savePlannerState、不清除失效邊。
+ */
+function _computeFlowsForPlanData(plan) {
+    if (!plan || !plan.data) return null;
+
+    const flow = plannerResolveFlows(plan.data);
+
+    const inputShortage = {};
+    const outputSurplus = {};
+    let heatTotal = 0, fertTotal = 0, goldTotal = 0;
+
+    Object.values(flow.nodePortsCache).forEach(ports => {
+        heatTotal += ports.heatItemsPerMin || 0;
+        fertTotal += ports.fertItemsPerMin || 0;
+    });
+
+    Object.keys(flow.portRemaining).forEach(key => {
+        const val = flow.portRemaining[key];
+        if (!(val > 0.001)) return;
+        const parts = key.split('::'); // nodeId::item::dir
+        const item = parts[1];
+        const dir = parts[2];
+        if (dir === 'out') outputSurplus[item] = (outputSurplus[item] || 0) + val;
+        else inputShortage[item] = (inputShortage[item] || 0) + val;
+    });
+
+    Object.entries(inputShortage).forEach(([item, qty]) => {
+        const def = DB.items[item];
+        if (def && def.buyPrice) goldTotal += def.buyPrice * qty;
+    });
+
+    return { inputShortage: inputShortage, outputSurplus: outputSurplus, heatTotal: heatTotal, fertTotal: fertTotal };
 }
 
 
@@ -136,28 +272,40 @@ function plannerPortKey(nodeId, item, dir) {
 }
 
 /**
- * 重新計算整張圖：
- * 1) 每個節點各 port 的理論速率
- * 2) 清掉配方已改變導致無效的邊 (item 不再是該節點的 port)
- * 3) 依 edge 建立順序 (createdAt) 依序分配流量：先建立的邊優先拿滿自己需要的量
+ * 重新計算整張規劃圖的流量與連接埠狀態。
+ *
+ * 計算邏輯包含：
+ * 1. 估算每個節點各端口的理論速率。
+ * 2. 清除因配方變更而失效的無效邊 (item 不再屬於該節點端口)。
+ * 3. 依建立時間 (`createdAt`) 順序依序分配流量（先到先得原則）。
+ *
+ * @param {Object|null} [planData=null] 規劃圖數據資料庫。若為 null，則預設使用全域的 `plannerState` 並註記為主計算。
+ * @returns { nodePortsCache, portTheoretical, portRemaining, portConnections, edgeFlow } 計算完畢的流量與狀態數據物件
  */
-function plannerResolveFlows() {
+function plannerResolveFlows(planData = null) {
+    let isMain = false;
+    if (planData === null) {
+        planData = plannerState;
+        isMain = true;
+    }
     const nodePortsCache = {};
-    Object.values(plannerState.nodes).forEach(node => {
+    Object.values(planData.nodes).forEach(node => {
         nodePortsCache[node.id] = computeNodePorts(node);
     });
 
-    // 清理失效的邊 (例如節點配方切換後，該 item 不再是 input/output)
-    let changed = false;
-    Object.keys(plannerState.edges).forEach(eid => {
-        const e = plannerState.edges[eid];
-        const fromPorts = nodePortsCache[e.fromNode];
-        const toPorts = nodePortsCache[e.toNode];
-        const fromOk = fromPorts && fromPorts.outputs.some(p => p.item === e.item);
-        const toOk = toPorts && toPorts.inputs.some(p => p.item === e.item);
-        if (!fromOk || !toOk) { delete plannerState.edges[eid]; changed = true; }
-    });
-    if (changed) savePlannerState();
+    if (isMain) {
+        // 清理失效的邊 (例如節點配方切換後，該 item 不再是 input/output)
+        let changed = false;
+        Object.keys(planData.edges).forEach(eid => {
+            const e = planData.edges[eid];
+            const fromPorts = nodePortsCache[e.fromNode];
+            const toPorts = nodePortsCache[e.toNode];
+            const fromOk = fromPorts && fromPorts.outputs.some(p => p.item === e.item);
+            const toOk = toPorts && toPorts.inputs.some(p => p.item === e.item);
+            if (!fromOk || !toOk) { delete planData.edges[eid]; changed = true; }
+        });
+        if (changed) savePlannerState();
+    }
 
     const portTheoretical = {};
     Object.entries(nodePortsCache).forEach(([nodeId, ports]) => {
@@ -169,7 +317,7 @@ function plannerResolveFlows() {
     const portConnections = {};
     const edgeFlow = {};
 
-    const sortedEdges = Object.values(plannerState.edges).sort((a, b) => a.createdAt - b.createdAt);
+    const sortedEdges = Object.values(planData.edges).sort((a, b) => a.createdAt - b.createdAt);
     sortedEdges.forEach(edge => {
         const outKey = plannerPortKey(edge.fromNode, edge.item, 'out');
         const inKey = plannerPortKey(edge.toNode, edge.item, 'in');
@@ -185,7 +333,7 @@ function plannerResolveFlows() {
     });
 
     const flows = { nodePortsCache, portTheoretical, portRemaining, portConnections, edgeFlow };
-    _plannerLastFlows = flows;
+    if (isMain) _plannerLastFlows = flows;
     return flows;
 }
 

@@ -34,7 +34,8 @@ let plannerState = null;
        nodes: {
            [nodeId]: {
                id: string,              // "pnode_<seq>"
-               recipeId: string,        // 對應 DB.recipes[].id
+               recipeId: string | null,      // 一般節點: 對應 DB.recipes[recipeId].id
+               moduleId: string | null,      // 模塊節點: 指向 plannerLibrary.plans[moduleId]
                recipeModifiers: object, // 選用，例如高級煉金爐催化劑設定 (從 DB.settings.recipeModifiers 複製快照)
                machineCount: number,    // 該節點的機器台數，可為小數
                x: number,               // 節點左上角在「圖座標系」(graph space) 中的位置
@@ -720,24 +721,43 @@ function createPlannerNodeEl(node, flows) {
     wrap.style.top = node.y + 'px';
 
     const ports = flows.nodePortsCache[node.id] || computeNodePorts(node);
-    const machineKey = ports.recipe ? ports.recipe.machine : '';
-    const mainOut = ports.recipe ? Object.keys(ports.recipe.outputs)[0] : plannerMainOutput(node.recipeId) || '';
-    const machineName = ports.recipe ? t(ports.recipe.machine, 'machines').replace('Advanced', 'Adv.') : t('No Recipe', 'ui');
-    const machineIconHtml = machineKey
-    ? `<img src="img/machines/${machineKey.toLowerCase().replaceAll(' ', '-')}.png" class="planner-node-icon" onerror="this.style.opacity='0'">`
-    : `<span class="planner-node-icon"></span>`;
+    wrap.innerHTML = ``;
 
-    const heatTag = ports.heatItemsPerMin > 0 ? 'heat' : '';
-    wrap.innerHTML = `
-        <div class="planner-node-header ${heatTag}" 
-             onmouseenter="onPlannerHeaderHover(this, '${node.id}')"
-             onmouseleave="hidePlannerRateTooltip()">
-            ${machineIconHtml}
-            <span class="planner-node-title">${machineName}</span>            
+    if (node.recipeId) {        
+        const heatTag = ports.heatItemsPerMin > 0 ? 'heat' : '';
+        const machineKey = ports.recipe ? ports.recipe.machine : '';
+        const mainOut = ports.recipe ? Object.keys(ports.recipe.outputs)[0] : plannerMainOutput(node.recipeId) || '';
+        const machineName = ports.recipe ? t(ports.recipe.machine, 'machines').replace('Advanced', 'Adv.') : t('Missing Recipe', 'ui');
+        const machineIconHtml = machineKey
+        ? `<img src="img/machines/${machineKey.toLowerCase().replaceAll(' ', '-')}.png" class="planner-node-icon" onerror="this.style.opacity='0'">`
+        : `<span class="planner-node-icon"></span>`;
+        wrap.innerHTML += `
+            <div class="planner-node-header ${heatTag}" 
+                onmouseenter="onPlannerHeaderHover(this, '${node.id}')"
+                onmouseleave="hidePlannerRateTooltip()">
+                ${machineIconHtml}
+                <span class="planner-node-title">${machineName}</span>            
+                <button class="planner-gear-btn" title="${t('Node Settings', 'ui')}" onclick="event.stopPropagation(); openPlannerNodeModal('${node.id}')">⚙</button>
+                <button class="planner-close-btn" title="${t('Remove Node', 'ui')}" onclick="removePlannerNode('${node.id}')">✕</button>
+            </div>`;
+    }
+    else {
+        const plan = plannerLibrary.plans[node.moduleId];
+        const titleName = plan ? plan.name : t('Invaild Module', 'ui');
+        wrap.innerHTML += `
+        <div class="planner-node-header module" 
+            onmouseenter="onPlannerHeaderHover(this, '${node.id}')"
+            onmouseleave="hidePlannerRateTooltip()">
+            <span class="planner-node-title">${titleName}</span>            
             <button class="planner-gear-btn" title="${t('Node Settings', 'ui')}" onclick="event.stopPropagation(); openPlannerNodeModal('${node.id}')">⚙</button>
             <button class="planner-close-btn" title="${t('Remove Node', 'ui')}" onclick="removePlannerNode('${node.id}')">✕</button>
-        </div>
+        </div>`;
+    }
+
+    const errorMessage = ports.errorCode ? `<div>${t('Error')}: ${t(ports.errorCode)}</div>` : ``;
+    wrap.innerHTML += `
         <div class="planner-node-body" id="planner-node-body-${node.id}">
+            ${errorMessage}
             ${renderPlannerPortsHtml(node, ports, flows)}
             <div class="planner-machine-count-row">
                 <button class="planner-gear-btn" title="${t('Auto-generate upstream', 'ui')}" onclick="autoGenerateUpstreamNodes('${node.id}')">
@@ -775,8 +795,8 @@ function createPlannerNodeEl(node, flows) {
 function onPlannerHeaderHover(headerEl, nodeId) {
     const node = plannerState.nodes[nodeId];
     if (!node) return;
-    const rates = plannerGetRecipeRates(node.recipeId, node.recipeModifiers);
-    if (!rates) return; // 無 recipe 不顯示
+    const rates = plannerGetNodeRates(node);
+    if (!rates || rates.errorCode) return; // 無 recipe 或已失效(循環/找不到 plan) 不顯示
     showPlannerRateTooltip(headerEl, rates);
 }
 

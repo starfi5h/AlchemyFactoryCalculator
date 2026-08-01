@@ -877,6 +877,18 @@ button.reset-btn:hover { background: var(--danger); color: white; }
 .planner-plan-row.drag-over-top    { box-shadow: 0 -2px 0 var(--accent); }
 .planner-plan-row.drag-over-bottom { box-shadow:  0 2px 0 var(--accent); }
 
+.planner-plan-row.rel-dep      { background: rgba(255,152,0,0.10); border-left:3px solid var(--warn); }
+.planner-plan-row.rel-dependent{ background: rgba(33,150,243,0.10); border-left:3px solid var(--info); }
+.planner-plan-row.rel-both     { background: rgba(244,67,54,0.10); border-left:3px solid var(--danger); }
+.planner-plan-row.has-cycle    { border-left:3px solid var(--danger) !important; }
+
+.planner-plan-tag-dep, .planner-plan-tag-used, .planner-plan-tag-cycle {
+    font-size:0.7em; border-radius:3px; padding:0 5px; flex-shrink:0; font-weight:bold; white-space:nowrap;
+}
+.planner-plan-tag-dep   { color:var(--warn); border:1px solid var(--warn); }
+.planner-plan-tag-used  { color:var(--info); border:1px solid var(--info); }
+.planner-plan-tag-cycle { color:var(--danger); border:1px solid var(--danger); background: rgba(244,67,54,0.08); }
+
 .planner-plan-drag-handle { cursor:grab; color:#555; touch-action:none; }
 .planner-plan-drag-handle:hover { color:#aaa; }
 .planner-plan-drag-handle:active { cursor:grabbing; }
@@ -987,6 +999,7 @@ button.reset-btn:hover { background: var(--danger); color: white; }
     border-radius: 6px 6px 0 0; cursor: move;
 }
 .planner-node-header.heat {background: #512;}
+.planner-node-header.module {background: #125;}
 .planner-node-header.dragging { cursor: move; }
 .planner-node-icon { width: 22px; height: 22px; flex-shrink: 0; }
 .planner-node-title {
