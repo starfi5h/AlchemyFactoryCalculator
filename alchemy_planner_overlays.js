@@ -313,6 +313,7 @@ function managePlannerImportAsModule() {
     };
     renderPlanner();
     savePlannerState();
+    closeModal('planner-manage-modal');
 }
 
 /* ---- Modal 底部操作：新方案 / 匯入 (與選中列無關的全域操作) ---- */
@@ -407,6 +408,9 @@ function renderPlannerNodeModalBody(nodeId) {
             <div style="font-size:0.78em; color:#888; text-transform:uppercase; letter-spacing:0.05em; margin-bottom:2px;">
                 ${t('Graph Tools', 'ui')}
             </div>
+            <button class="split-btn" style="width:100%;" onclick="plannerSelectAllUpstreamNodes('${node.id}')">
+                ▭ ${t('Select All Upstream', 'ui')}
+            </button>
             <button class="split-btn" style="width:100%;" onclick="plannerAutoLayoutUpstream('${node.id}')">
                 ⇶ ${t('Auto-Layout Upstream', 'ui')}
             </button>

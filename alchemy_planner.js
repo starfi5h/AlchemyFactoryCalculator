@@ -200,6 +200,7 @@ function _activatePlanData(planId) {
     if (!plan) return;
     plannerState = plan.data;
     _plannerLastFlows = null;
+    _plannerSelectedNodeIds.clear();
     _ensurePlannerHistory(planId);
 }
 
@@ -260,6 +261,12 @@ function _restorePlannerHistorySnapshot(planId, hist) {
     plannerState = restored;
     _plannerLastFlows = null;
 
+    // Selection is transient UI state and isn't part of history; just prune ids
+    // that no longer exist in the restored snapshot so they don't linger forever.
+    [..._plannerSelectedNodeIds].forEach(id => {
+        if (!plannerState.nodes[id]) _plannerSelectedNodeIds.delete(id);
+    });
+
     renderPlanner();
     updatePlannerGridButton();
     updatePlannerGridBackground();
@@ -311,7 +318,6 @@ function applyPlannerViewportTransform() {
 
 function togglePlannerSelectMode() {
     _plannerSelectMode = !_plannerSelectMode;
-    if (!_plannerSelectMode) clearPlannerSelection();
     updatePlannerSelectModeButton();
 }
 
@@ -899,24 +905,6 @@ function patchPlannerNodeDisplay(node, flows) {
         const modalHeatFert = modalBody.querySelector('.planner-heatfert-row');
         if (modalHeatFert) modalHeatFert.innerHTML = renderPlannerHeatFertHtml(ports);
     }
-}
-
-/** 以 sourceNodeId 為起點，用 BFS 找出整個無向連通分量內的所有節點 id (含自己) */
-function getPlannerConnectedNodeIds(startNodeId) {
-    const adjacency = {};
-    Object.values(plannerState.edges).forEach(e => {
-        (adjacency[e.fromNode] = adjacency[e.fromNode] || []).push(e.toNode);
-        (adjacency[e.toNode] = adjacency[e.toNode] || []).push(e.fromNode);
-    });
-    const visited = new Set([startNodeId]);
-    const queue = [startNodeId];
-    while (queue.length) {
-        const cur = queue.shift();
-        (adjacency[cur] || []).forEach(nb => {
-            if (!visited.has(nb)) { visited.add(nb); queue.push(nb); }
-        });
-    }
-    return [...visited];
 }
 
 function togglePlannerLinkMode() {

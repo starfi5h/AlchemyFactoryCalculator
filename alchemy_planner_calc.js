@@ -345,6 +345,62 @@ function plannerGetAvailableRateAtPort(nodeId, item, dir) {
 
 
 /* ==========================================================================
+   SECTION: GRAPH NODE BFS
+   ========================================================================== */
+
+/** 以 sourceNodeId 為起點，用 BFS 找出整個無向連通分量內的所有節點 id (含自己) */
+function getPlannerConnectedNodeIds(startNodeId) {
+    const adjacency = {};
+    Object.values(plannerState.edges).forEach(e => {
+        (adjacency[e.fromNode] = adjacency[e.fromNode] || []).push(e.toNode);
+        (adjacency[e.toNode] = adjacency[e.toNode] || []).push(e.fromNode);
+    });
+    const visited = new Set([startNodeId]);
+    const queue = [startNodeId];
+    while (queue.length) {
+        const cur = queue.shift();
+        (adjacency[cur] || []).forEach(nb => {
+            if (!visited.has(nb)) { visited.add(nb); queue.push(nb); }
+        });
+    }
+    return [...visited];
+}
+
+/** 沿著 edge 反方向 (toNode -> fromNode) BFS，找出「供給這個節點」的所有上游節點 (含自己) */
+function getPlannerUpstreamNodeIds(startNodeId) {
+    const inAdj = {};
+    Object.values(plannerState.edges).forEach(e => {
+        (inAdj[e.toNode] = inAdj[e.toNode] || []).push(e.fromNode);
+    });
+    const visited = new Set([startNodeId]);
+    const queue = [startNodeId];
+    while (queue.length) {
+        const cur = queue.shift();
+        (inAdj[cur] || []).forEach(nb => {
+            if (!visited.has(nb)) { visited.add(nb); queue.push(nb); }
+        });
+    }
+    return visited;
+}
+
+/** 沿著 edge 正方向 (fromNode -> toNode) BFS，找出「消耗這個節點」的所有下游節點 (含自己) */
+function getPlannerDownstreamNodeIds(startNodeId) {
+    const outAdj = {};
+    Object.values(plannerState.edges).forEach(e => {
+        (outAdj[e.fromNode] = outAdj[e.fromNode] || []).push(e.toNode);
+    });
+    const visited = new Set([startNodeId]);
+    const queue = [startNodeId];
+    while (queue.length) {
+        const cur = queue.shift();
+        (outAdj[cur] || []).forEach(nb => {
+            if (!visited.has(nb)) { visited.add(nb); queue.push(nb); }
+        });
+    }
+    return visited;
+}
+
+/* ==========================================================================
    SECTION: AUTO-GENERATE UPSTREAM NODES
    ========================================================================== */
 
@@ -468,7 +524,7 @@ function autoGenerateUpstreamNodes(nodeId) {
  */
 function autoGenerateAllUpstreamNodes(rootNodeId) {
     const expandingRecipes = new Set();
-    let nodeCount = 0;
+    const allCreated = [];
 
     function dfs(nodeId) {
         const node = plannerState.nodes[nodeId];
@@ -485,45 +541,36 @@ function autoGenerateAllUpstreamNodes(rootNodeId) {
         expandingRecipes.add(node.recipeId);
 
         const created = _autoGenerateUpstreamNodesCore(nodeId);
-        nodeCount += created.length || 0;
+        allCreated.push(...created);
         created.forEach(dfs);
 
         expandingRecipes.delete(node.recipeId);
     }
 
     dfs(rootNodeId);
-    console.info('Create upstream nodes: ' + nodeCount);
+    console.info('Create upstream nodes: ' + allCreated.length);
+
+    _plannerSelectedNodeIds.clear();
+    _plannerSelectedNodeIds.add(rootNodeId);
+    allCreated.forEach(id => _plannerSelectedNodeIds.add(id));
+
     renderPlanner();
     savePlannerState();
 }
 
+/** 選取 rootNodeId 本身 + 所有上游節點 (沿 input edge 反向走的全部祖先)，加入目前選取集合並重繪 */
+function plannerSelectAllUpstreamNodes(rootNodeId) {
+    const visited = getPlannerUpstreamNodeIds(rootNodeId);
+    _plannerSelectedNodeIds.clear();
+    visited.forEach(id => _plannerSelectedNodeIds.add(id));
+    renderPlanner();
+}
+
+/** 刪除 rootNodeId 以外所有上游節點 */
 function removeAllUpsteamNodes(rootNodeId) {
-    const root = plannerState.nodes[rootNodeId];
-    if (!root) return;
-
-    const outAdj = {}, inAdj = {};
-    Object.keys(plannerState.nodes).forEach(id => { outAdj[id] = []; inAdj[id] = []; });
-    Object.values(plannerState.edges).forEach(e => {
-        if (!outAdj[e.fromNode] || !inAdj[e.toNode]) return;
-        outAdj[e.fromNode].push(e.toNode);
-        inAdj[e.toNode].push(e.fromNode);
-    });
-
-    const visited = new Set([rootNodeId]);
-    const result = [];
-    const queue = [...inAdj[rootNodeId]];
-    queue.forEach(id => visited.add(id));
-    while (queue.length) {
-        const cur = queue.shift();
-        result.push(cur);
-        (inAdj[cur] || []).forEach(nb => {
-            if (!visited.has(nb)) { visited.add(nb); queue.push(nb); }
-        });
-    }
-    if (result.length === 0) return; // 沒有上游節點可刪
-    console.info('Remove upstream nodes: ' + result.length);
-    result.forEach(nId => delete plannerState.nodes[nId]);
-
+    const visited = getPlannerUpstreamNodeIds(rootNodeId);
+    visited.delete(rootNodeId);
+    visited.forEach(nId => delete plannerState.nodes[nId]);
     renderPlanner();
     savePlannerState();
 }
@@ -563,7 +610,6 @@ function plannerAutoLayoutUpstream(rootNodeId) {
 
     renderPlanner();
     savePlannerState();
-    requestAnimationFrame(() => plannerFitToView());
 }
 
 /**
@@ -875,4 +921,116 @@ function _plannerLayoutImportedGraph(newNodeIds, rootNodeIds, offsetX, offsetY) 
         n.x = plannerSnapVal(n.x - minX + offsetX);
         n.y = plannerSnapVal(n.y - minY + offsetY);
     });
+}
+
+/* ==========================================================================
+   SECTION: ENCAPSULATE SELECTED NODES INTO MODULE
+   ========================================================================== */
+
+/** 依選取節點的輸出 port，找出 cauldronCost 最高的物品，供命名使用 */
+function _findHighestCauldronCostOutputItem(nodeIds) {
+    let bestItem = null;
+    let bestCost = -Infinity;
+    nodeIds.forEach(id => {
+        const node = plannerState.nodes[id];
+        if (!node) return;
+        const rates = plannerGetRecipeRates(node.recipeId, node.recipeModifiers);
+        if (!rates) return;
+        rates.outputsPerMachine.forEach(({ item }) => {
+            const cost = DB.items[item]?.cauldronCost;
+            if (typeof cost === 'number' && cost > bestCost) {
+                bestCost = cost;
+                bestItem = item;
+            }
+        });
+    });
+    return bestItem;
+}
+
+/** 主功能：將目前選取的節點與其內部連線封裝為一個新的模組 (plan)，並在原位置留下一個模組節點 */
+function encapsulatePlannerSelectedNodes() {
+    const selectedIds = [..._plannerSelectedNodeIds];
+    if (selectedIds.length === 0) return;
+    const selectedSet = new Set(selectedIds);
+
+    // 1. 分類 edges
+    const internalEdges = [];
+    const inEdges = [];
+    const outEdges = [];
+    Object.values(plannerState.edges).forEach(edge => {
+        const fromIn = selectedSet.has(edge.fromNode);
+        const toIn = selectedSet.has(edge.toNode);
+        if (fromIn && toIn) internalEdges.push(edge);
+        else if (toIn) inEdges.push(edge);
+        else if (fromIn) outEdges.push(edge);
+    });
+
+    // 2. 命名：找選取節點中 cauldronCost 最高的輸出物品，否則 fallback 為時間戳
+    const namingItem = _findHighestCauldronCostOutputItem(selectedIds);
+    const planName = namingItem ? `${t('Module', 'ui')} - ${namingItem}` : `${t('Module', 'ui')} - ${Date.now()}`;
+
+    // 3. 計算選取節點的中心位置 (供新模組節點放置用)
+    let sumX = 0, sumY = 0, count = 0;
+    selectedIds.forEach(id => {
+        const node = plannerState.nodes[id];
+        if (!node) return;
+        const el = document.getElementById('planner-node-' + id);
+        const w = el ? el.offsetWidth : 200;
+        const h = el ? el.offsetHeight : 140;
+        sumX += node.x + w / 2;
+        sumY += node.y + h / 2;
+        count++;
+    });
+    const centerX = count > 0 ? sumX / count : 0;
+    const centerY = count > 0 ? sumY / count : 0;
+
+    // 4. 建立新 plan，搬移節點 + internal edges (深拷貝)
+    const newPlan = _createPlan(planName);
+    newPlan.data.nodes = {};
+    selectedIds.forEach(id => {
+        const node = plannerState.nodes[id];
+        if (node) newPlan.data.nodes[id] = JSON.parse(JSON.stringify(node));
+    });
+    newPlan.data.edges = {};
+    internalEdges.forEach(edge => {
+        newPlan.data.edges[edge.id] = JSON.parse(JSON.stringify(edge));
+    });
+    // 避免新 plan 之後自行新增節點/連線時，序號與被搬移過來的舊 id 衝突
+    newPlan.data._nodeSeq = plannerState._nodeSeq || 0;
+    newPlan.data._edgeSeq = plannerState._edgeSeq || 0;
+
+    // 5. 從原 plan 移除選取節點 + internal edges
+    selectedIds.forEach(id => delete plannerState.nodes[id]);
+    internalEdges.forEach(edge => delete plannerState.edges[edge.id]);
+
+    // 6. 在原位置建立新的模組節點
+    plannerState._nodeSeq = (plannerState._nodeSeq || 0) + 1;
+    const moduleNodeId = 'pnode_' + plannerState._nodeSeq;
+    plannerState.nodes[moduleNodeId] = {
+        id: moduleNodeId,
+        recipeId: null,
+        moduleId: newPlan.id,
+        machineCount: 1,
+        x: Math.round(centerX - 100),
+        y: Math.round(centerY - 70)
+    };
+
+    // 7. in/out edges 改指向新模組節點
+    inEdges.forEach(edge => { edge.toNode = moduleNodeId; });
+    outEdges.forEach(edge => { edge.fromNode = moduleNodeId; });
+
+    // 8. 將新 plan 註冊進 library，並建立其初始 undo 歷史快照
+    plannerLibrary.plans[newPlan.id] = newPlan;
+    plannerLibrary.planOrder.push(newPlan.id);
+    plannerHistory[newPlan.id] = {
+        stack: [JSON.parse(JSON.stringify(newPlan.data))],
+        index: 0
+    };
+
+    // 9. 清空選取狀態、重繪、存檔
+    _plannerSelectedNodeIds.clear();
+    renderPlanner();
+    savePlannerState();       // 記錄目前 (原) plan 的這次編輯到 undo 歷史
+    savePlannerLibraryMeta(); // 確保新 plan 被寫入 localStorage
+    renderPlannerToolbarSelect(); // 讓下拉選單能選到新 plan
 }
