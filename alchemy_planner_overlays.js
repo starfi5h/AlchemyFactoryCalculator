@@ -384,18 +384,20 @@ function renderPlannerNodeModalBody(nodeId) {
 
     const rawRecipe = plannerGetRawRecipe(node.recipeId);
     const mainOut = rawRecipe ? Object.keys(rawRecipe.outputs)[0] : null;
+    const flows = _plannerLastFlows || plannerResolveFlows();
 
     const titleEl = document.getElementById('planner-node-modal-title');
     if (titleEl) {
         titleEl.innerText = t('Node Settings', 'ui') + (mainOut ? ' — ' + mainOut : '');
     }
-
-    body.innerHTML = `
+    
+    const recipeSectionHtml = rawRecipe ?
+    `
         <div class="planner-modifier-section">
             ${_buildPlannerNodeModifierHtml(node, rawRecipe)}
         </div>
         <div style="height:1px; background:var(--border); margin:12px 0;"></div>
-        <div class="planner-recipe-switch-section">
+                <div class="planner-recipe-switch-section">
             <div style="font-size:0.78em; color:#888; text-transform:uppercase; letter-spacing:0.05em; margin-bottom:6px;">
                 ${t('Select Recipe', 'ui')}
             </div>
@@ -403,6 +405,22 @@ function renderPlannerNodeModalBody(nodeId) {
                 ${mainOut ? _buildPlannerNodeRecipeSwitchHtml(node, mainOut) : `<div class="planner-picker-empty">${t('No recipe selected', 'ui')}</div>`}
             </div>
         </div>
+    ` : ``;
+
+    const moduleSectionHtml = node.moduleId ?
+    `
+        <div class="planner-module-section">
+            <button class="split-btn" style="width:100%;" onclick="switchPlannerPlan('${node.moduleId}')">
+                📦 ${t('Load Module', 'ui')}
+            </button>
+        </div>
+    ` : ``;
+
+
+    body.innerHTML = `        
+        ${recipeSectionHtml}
+        ${moduleSectionHtml}
+        ${_buildPlannerNodeMismatchSectionHtml(node, flows)}
         <div style="height:1px; background:var(--border); margin:12px 0;"></div>
         <div class="planner-node-actions-section" style="display:flex; flex-direction:column; gap:6px;">
             <div style="font-size:0.78em; color:#888; text-transform:uppercase; letter-spacing:0.05em; margin-bottom:2px;">
@@ -517,9 +535,9 @@ function _buildPlannerNodeRecipeSwitchHtml(node, mainOut) {
 }
 
 /** 重新整理 modal 內容 + 節點卡片/連線/摘要面板，並存檔 */
-function _plannerNodeModalRefresh(nodeId) {
-    renderPlannerNodeModalBody(nodeId);
+function _plannerNodeModalRefresh(nodeId) {    
     recomputeAndRefreshPlanner();
+    renderPlannerNodeModalBody(nodeId);
     savePlannerState();
 }
 
@@ -562,6 +580,126 @@ function plannerSwitchNodeRecipe(nodeId, recipeId) {
     savePlannerState();
 }
 
+/**
+ * 針對 node 的每個有連線的 port，計算「應該滿足的目標速率」：
+ * 對該 port 所有連出/連入的 edge，加總 (該edge目前流量 + 對方那一端 port 的 remaining)。
+ * 若 |target - port.rate| 太小則跳過 (視為已滿足)。
+ * 回傳可讓按鈕直接套用的 { item, target, current, delta, newMachineCount } 清單，分 inputs/outputs。
+ */
+function _plannerGetNodeMismatchButtons(node, flows) {
+    const ports = flows.nodePortsCache[node.id];
+    if (!ports) return { inputs: [], outputs: [] };
+
+    const rates = plannerGetNodeRates(node);
+    const perMachineRateOf = { in: {}, out: {} };
+    if (rates) {
+        rates.inputsPerMachine.forEach(p => { perMachineRateOf.in[p.item] = p.rate; });
+        rates.outputsPerMachine.forEach(p => { perMachineRateOf.out[p.item] = p.rate; });
+    }
+
+    function buildList(portList, dir) {
+        const list = [];
+        portList.forEach(port => {
+            const key = plannerPortKey(node.id, port.item, dir);
+            const edgeIds = flows.portConnections[key] || [];
+            if (edgeIds.length === 0) return; // 未連線，跳過
+
+            let target = 0;
+            edgeIds.forEach(eid => {
+                const edge = plannerState.edges[eid];
+                if (!edge) return;
+                const flow = flows.edgeFlow[eid] || 0;
+                const otherKey = dir === 'out'
+                    ? plannerPortKey(edge.toNode, port.item, 'in')
+                    : plannerPortKey(edge.fromNode, port.item, 'out');
+                const otherRemaining = flows.portRemaining[otherKey] || 0;
+                target += flow + otherRemaining;
+            });
+
+            const delta = target - port.rate;
+            if (Math.abs(delta) < 0.001) return;
+
+            const perMachineRate = perMachineRateOf[dir][port.item] || 0;
+            if (perMachineRate <= 0) return; // 沒有單機速率無法反推機器數變化
+
+            let newMachineCount = node.machineCount + delta / perMachineRate;
+            newMachineCount = Math.max(0, newMachineCount);
+            if (Math.abs(newMachineCount - node.machineCount) < 0.0001) return;
+
+            list.push({ item: port.item, target, current: port.rate, delta, newMachineCount });
+        });
+        return list;
+    }
+
+    return { inputs: buildList(ports.inputs, 'in'), outputs: buildList(ports.outputs, 'out') };
+}
+
+/** 建立「滿足連線」section 的 HTML；若左右都沒有需要調整的 port，回傳空字串 (不顯示整個 section) */
+function _buildPlannerNodeMismatchSectionHtml(node, flows) {
+    const { inputs, outputs } = _plannerGetNodeMismatchButtons(node, flows);
+    if (inputs.length === 0 && outputs.length === 0) return '';
+
+    const buildBtn = (entry) => {
+        const def = DB.items[entry.item] || {};
+        const deltaColor = entry.delta >= 0 ? 'var(--profit)' : 'var(--danger)';
+        const sign = entry.delta >= 0 ? '+' : '';
+        return `<button class="planner-mismatch-btn" data-node="${node.id}" data-new-mc="${entry.newMachineCount}"
+                    onmouseenter="onPlannerMismatchHover(this,true)" onmouseleave="onPlannerMismatchHover(this,false)"
+                    onclick="plannerApplyPortMismatch(this)">
+                <img src="img/item${def.id ?? 0}.png" width="16" height="16">
+                <span>${entry.item}</span>
+                <span style="color:${deltaColor}; font-weight:bold; flex-shrink:0;">${formatVal(entry.target)}/m (${sign}${formatVal(entry.delta)})</span>
+            </button>`;
+    };
+
+    const inputsHtml = inputs.length ? inputs.map(buildBtn).join('') : `<div class="planner-picker-empty" style="padding:6px 0;">${t('None', 'ui')}</div>`;
+    const outputsHtml = outputs.length ? outputs.map(buildBtn).join('') : `<div class="planner-picker-empty" style="padding:6px 0;">${t('None', 'ui')}</div>`;
+
+    return `
+        <div style="height:1px; background:var(--border); margin:12px 0;"></div>
+        <div class="planner-mismatch-section">
+            <div style="font-size:0.78em; color:#888; text-transform:uppercase; letter-spacing:0.05em; margin-bottom:6px;">
+                ${t('Port Balance', 'ui')}
+            </div>
+            <div style="display:flex; gap:10px;">
+                <div style="flex:1; display:flex; flex-direction:column; gap:4px; min-width:0;">${inputsHtml}</div>
+                <div style="flex:1; display:flex; flex-direction:column; gap:4px; min-width:0;">${outputsHtml}</div>
+            </div>
+            <div style="display:flex; justify-content:space-between; align-items:center; margin-top:8px; padding-top:6px; border-top:1px dashed var(--border); font-size:0.82em; color:#aaa;">
+                <span>${t('Machine Count', 'ui')}: <strong style="color:#eee;">${Number(node.machineCount.toFixed(4))}</strong></span>
+                <span id="planner-mismatch-mc-preview-${node.id}" style="font-weight:bold;"></span>
+            </div>
+        </div>`;
+}
+
+/** hover 按鈕時，在 section 底部的括號內即時顯示「若套用後」機器數會變化多少 */
+function onPlannerMismatchHover(btn, show) {
+    const nodeId = btn.dataset.node;
+    const el = document.getElementById('planner-mismatch-mc-preview-' + nodeId);
+    if (!el) return;
+    if (!show) { el.innerText = ''; return; }
+
+    const node = plannerState.nodes[nodeId];
+    const newMc = parseFloat(btn.dataset.newMc);
+    if (!node || isNaN(newMc)) return;
+
+    const delta = newMc - node.machineCount;
+    const sign = delta >= 0 ? '+' : '';
+    el.innerText = `(${sign}${Number(delta.toFixed(4))})`;
+    el.style.color = delta >= 0 ? 'var(--profit)' : 'var(--danger)';
+}
+
+/** 按下按鈕：直接把 machineCount 設為預先算好的目標值 (可能增加或減少) */
+function plannerApplyPortMismatch(btn) {
+    const nodeId = btn.dataset.node;
+    const node = plannerState.nodes[nodeId];
+    if (!node) return;
+    const newMc = parseFloat(btn.dataset.newMc);
+    if (isNaN(newMc)) return;
+    node.machineCount = Math.max(0, newMc);
+    _plannerNodeModalRefresh(nodeId);
+}
+
 
 /* ==========================================================================
    SECTION: Edge Modal (點擊 label / 連線本體)
@@ -575,19 +713,53 @@ function openPlannerEdgeModal(edgeId) {
     const itemDef = DB.items[edge.item] || {};
     const fromNode = plannerState.nodes[edge.fromNode];
     const toNode = plannerState.nodes[edge.toNode];
-    const fromRecipe = fromNode ? getRecipeById(fromNode.recipeId) : null;
-    const toRecipe = toNode ? getRecipeById(toNode.recipeId) : null;
-    const fromMain = fromNode ? plannerMainOutput(fromNode.recipeId) : null;
-    const toMain = toNode ? plannerMainOutput(toNode.recipeId) : null;
+
+    function getNodeTitle(node) {
+        if (!node) return ``;
+        if (node.recipeId) {
+            const recipe = getRecipeById(node.recipeId);
+            const main = plannerMainOutput(node.recipeId);
+            return recipe ? `${t(recipe.machine, 'machines')} (${main ?? '?'})` : `?`;
+        }
+        if (node.moduleId) {
+            const plan = plannerLibrary.plans[node.moduleId];
+            return plan ? plan.name : t('Missing Reference', 'ui');
+        }
+        return '?';
+    }
 
     document.getElementById('planner-edge-modal-title').innerHTML =
-        `<img src="img/item${itemDef.id ?? 0}.png" width="18" height="18" style="vertical-align:middle;"> ${t(edge.item, 'items')}`;
+        `<img src="img/item${itemDef.id ?? 0}.png" width="18" height="18" style="vertical-align:middle;"> ${edge.item}`;
+
+    const plannerEdgeLinkModeNoteText = _plannerLinkMode ?
+        t('Link mode ON: also scales upstream/downstream nodes', 'ui') :
+        t('Link mode OFF: only affects source and target nodes', 'ui');
 
     document.getElementById('planner-edge-modal-body').innerHTML = `
         <div style="padding:12px; display:flex; flex-direction:column; gap:8px; font-size:0.9em;">
-            <div><strong>${t('From', 'ui')}:</strong> ${fromRecipe ? t(fromRecipe.machine, 'machines') : '?'} (${fromMain ?? '?'})</div>
-            <div><strong>${t('To', 'ui')}:</strong> ${toRecipe ? t(toRecipe.machine, 'machines') : '?'} (${toMain ?? '?'})</div>
-            <div><strong>${t('Current Flow', 'ui')}:</strong> ${formatVal(flow)}/min</div>
+            <div><strong>${t('Source', 'ui')}:</strong> ${getNodeTitle(fromNode)}</div>
+            <div><strong>${t('Target', 'ui')}:</strong> ${getNodeTitle(toNode)}</div>
+            <div><strong>${t('Current Flow', 'ui')}:</strong> <span id="planner-edge-modal-current-flow">${formatVal(flow)}</span>/min</div>
+            <div style="display:flex; align-items:center; gap:8px;">
+                <span>${t('Set Flow', 'ui')}:</span>
+                <input type="number" min="0" step="any" id="planner-edge-flow-input"
+                       value="${Number(flow.toFixed(4))}"
+                       style="flex:1; padding:5px 8px; background:#2a2a2a; border:1px solid #555; border-radius:4px; color:#fff;"
+                       onchange="plannerApplyEdgeFlowInput('${edgeId}', this)">
+                <span>/min</span>
+            </div>
+            <div style="display:flex; align-items:center; gap:6px; font-size:1em; color:#999; font-style:italic;">
+                <button class="planner-link-btn ${_plannerLinkMode ? 'active' : ''}"
+                        onclick="togglePlannerLinkMode(); openPlannerEdgeModal('${edgeId}');"
+                        title="${t('Link machine count changes', 'ui')}">
+                    <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                    <path d="M9 17H7A5 5 0 0 1 7 7h2"/>
+                    <path d="M15 7h2a5 5 0 1 1 0 10h-2"/>
+                    <line x1="8" y1="12" x2="16" y2="12"/>
+                    </svg>
+                </button>
+                <span class="planner-edge-linkmode-note">${plannerEdgeLinkModeNoteText}</span>
+            </div>
             <button class="reset-btn" style="margin-top:8px; font-size:1em" onclick="deletePlannerEdge('${edgeId}')">${t('Delete Connection', 'ui')}</button>
         </div>
     `;
@@ -599,6 +771,88 @@ function deletePlannerEdge(edgeId) {
     closeModal('planner-edge-modal');
     recomputeAndRefreshPlanner();
     savePlannerState();
+}
+
+/**
+ * 使用者輸入這條 edge 想要的流量 F，將 fromNode/toNode 的 machineCount 調整到
+ * 剛好能供給/消耗 F (加上該 port 上其他 edge 目前的流量)。
+ * 分配優先權仍依 createdAt 決定，若同一 port 上還有更早建立的 edge，
+ * 實際重新計算後的流量可能與 F 有落差 (approximation，可接受)。
+ */
+function plannerApplyEdgeFlowInput(edgeId, inputEl) {
+    const edge = plannerState.edges[edgeId];
+    if (!edge) return;
+    const targetFlow = Math.max(0, parseFloat(inputEl.value) || 0);
+
+    const flows = _plannerLastFlows || plannerResolveFlows();
+    const fromNode = plannerState.nodes[edge.fromNode];
+    const toNode = plannerState.nodes[edge.toNode];
+    const oldFromCount = fromNode ? fromNode.machineCount : null;
+    const oldToCount = toNode ? toNode.machineCount : null;
+
+    function otherEdgesFlowSum(nodeId, dir) {
+        const key = plannerPortKey(nodeId, edge.item, dir);
+        const edgeIds = flows.portConnections[key] || [];
+        let sum = 0;
+        edgeIds.forEach(eid => {
+            if (eid === edgeId) return;
+            sum += flows.edgeFlow[eid] || 0;
+        });
+        return sum;
+    }
+
+    if (fromNode) {
+        const rates = plannerGetNodeRates(fromNode);
+        const perMachineRate = rates ? (rates.outputsPerMachine.find(p => p.item === edge.item) || {}).rate || 0 : 0;
+        if (perMachineRate > 0) {
+            const newRate = otherEdgesFlowSum(edge.fromNode, 'out') + targetFlow;
+            fromNode.machineCount = Math.max(0, newRate / perMachineRate);
+        }
+    }
+
+    if (toNode) {
+        const rates = plannerGetNodeRates(toNode);
+        const perMachineRate = rates ? (rates.inputsPerMachine.find(p => p.item === edge.item) || {}).rate || 0 : 0;
+        if (perMachineRate > 0) {
+            const newRate = otherEdgesFlowSum(edge.toNode, 'in') + targetFlow;
+            toNode.machineCount = Math.max(0, newRate / perMachineRate);
+        }
+    }
+
+    // Link mode: 將 fromNode 的變化比例套用到它的上游、toNode 的變化比例套用到它的下游。
+    // 兩邊的交集節點 (例如環狀連線) 排除在外，避免被套用兩次比例。
+    if (_plannerLinkMode) {
+        const upstreamIds = fromNode ? getPlannerUpstreamNodeIds(edge.fromNode) : new Set();
+        const downstreamIds = toNode ? getPlannerDownstreamNodeIds(edge.toNode) : new Set();
+        upstreamIds.delete(edge.fromNode);
+        downstreamIds.delete(edge.toNode);
+        const intersection = new Set([...upstreamIds].filter(id => downstreamIds.has(id)));
+        intersection.forEach(id => { upstreamIds.delete(id); downstreamIds.delete(id); });
+
+        if (fromNode && oldFromCount > 0 && fromNode.machineCount !== oldFromCount && upstreamIds.size > 0) {
+            const ratio = fromNode.machineCount / oldFromCount;
+            upstreamIds.forEach(id => {
+                const n = plannerState.nodes[id];
+                if (n) n.machineCount = Math.max(0, n.machineCount * ratio);
+            });
+        }
+        if (toNode && oldToCount > 0 && toNode.machineCount !== oldToCount && downstreamIds.size > 0) {
+            const ratio = toNode.machineCount / oldToCount;
+            downstreamIds.forEach(id => {
+                const n = plannerState.nodes[id];
+                if (n) n.machineCount = Math.max(0, n.machineCount * ratio);
+            });
+        }
+    }
+
+    const newFlows = recomputeAndRefreshPlanner();
+    savePlannerState();
+
+    // 用重新計算後的實際流量刷新 modal 顯示 (可能與輸入值有些微落差)
+    const actualFlow = newFlows.edgeFlow[edgeId] || 0;
+    const flowLabel = document.getElementById('planner-edge-modal-current-flow');
+    if (flowLabel) flowLabel.innerText = formatVal(actualFlow);
+    inputEl.value = Number(actualFlow.toFixed(4));
 }
 
 /* ==========================================================================

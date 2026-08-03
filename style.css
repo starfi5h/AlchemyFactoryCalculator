@@ -1133,3 +1133,13 @@ button.reset-btn:hover { background: var(--danger); color: white; }
     flex-shrink: 0; white-space: nowrap;
 }
 .planner-picker-empty { padding: 20px; text-align: center; color: #666; font-size: 0.85em; font-style: italic; }
+
+.planner-mismatch-btn {
+    display: flex; align-items: center; gap: 6px; width: 100%; text-align: left;
+    background: #232323; border: 1px solid var(--border,#444); border-radius: 4px;
+    padding: 5px 8px; cursor: pointer; color: #ddd; font-size: 0.82em;
+}
+.planner-mismatch-btn:hover { border-color: var(--accent); background: #2a2a2a; }
+.planner-mismatch-btn span:nth-child(2) {
+    flex: 1; overflow: hidden; text-overflow: ellipsis; white-space: nowrap;
+}

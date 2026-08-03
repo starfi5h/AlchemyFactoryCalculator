@@ -380,17 +380,19 @@ window.ALCHEMY_I18N = {
         "↻ Redo": "↻ 重做",
         "📦 Encapsulate": "📦 封裝模块",
 
-        "Link machine count changes": "链接机器数变化",
-        "This item has no recipe and cannot be added as a Planner node.": "该物品没有生产配方，无法新增为节点。",        
-        "Auto-generate upstream": "自動生成上游节点",
+        // --- Planner: Node ---        
         "Node Settings": "节点设置",
+        "Link machine count changes": "链接机器数变化",
+        "This item has no recipe and cannot be added as a Planner node.": "该物品没有生产配方，无法新增为节点。",
+        "Auto-generate upstream": "自動生成上游节点",
         "Remove Node": "移除节点",
+        "Load Module": "載入模块",
+        "Port Balance": "端口平衡",
         "Graph Tools": "图表工具",
         "Select All Upstream": "选取所有上游节点",
         "Auto-Layout Upstream": "自动布局上游节点",
         "Populate All Upstream": "生成所有上游节点",
         "Clear All Upstream": "清空所有上游节点",
-        "Delete Connection": "删除连接",
         "Error": "错误",
         "Module": "模块",
         "Invaild Module": "无效模块",
@@ -400,6 +402,16 @@ window.ALCHEMY_I18N = {
         "No recipe selected": "尚未选择配方",
         "CONSUME": "消耗",
         "PRODUCE": "生产",
+
+        // --- Planner: Edge ---
+        "Source": "来源",
+        "Target": "目标",
+        "Current Flow": "当前流量",
+        "Set Flow": "设置流量",
+        "Link mode ON: also scales upstream/downstream nodes": "链接模式开启：同时缩放上游/下游节点",
+        "Link mode OFF: only affects source and target nodes": "链接模式关闭：仅影响源节点和目标节点",
+        "Delete Connection": "删除连接",
+        
 
         // --- Planner: Plan Library ---
         "Manage Plans": "管理方案",
