@@ -1188,7 +1188,7 @@ function _calcCauldronModalOutput(slots, cauldronType, T) {
             }
             return best;
         } else {
-            const cA = DB.items[nA].cauldronTarget; const cB = DB.items[nB].cauldronTarget;
+            const cA = DB.items[nA].cauldronCost; const cB = DB.items[nB].cauldronCost;
             const higherName = cA > cB ? nA : nB;
             const higherCost = cA > cB ? cA : cB;
             let minDist = Infinity, best = minT.name;

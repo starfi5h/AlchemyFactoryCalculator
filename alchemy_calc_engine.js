@@ -1,5 +1,10 @@
 (function (global) {
     const YIELD_MULTIPLIER_MACHINES = ["Extractor", "Thermal Extractor", "Alembic", "Advanced Alembic"];
+    const CATALYST_CHARGES_MAP = { 180: 'unstable', 240: 'fertile', 1500: 'resonant', 99999: 'eternal' };
+
+    function getCatalystTypeByCharges(charges) {
+        return CATALYST_CHARGES_MAP[charges] || null;
+    }
 
     function getBeltSpeed(lvl) {
         let speed = 60;
@@ -342,6 +347,10 @@
                 isInternalModule
             };
 
+            if (!effectiveGhost) {
+                node.tags.catalystType = getCatalystTypeByCharges(itemDef.charges);
+            }
+
             const recipe = getActiveRecipe(db, state, item, pathKey);
 
             if (recipe) {
@@ -353,7 +362,7 @@
                 });
                 if (hasSameRecipeAncestor) {
                     shouldExpand = false;
-                    console.warn("Loop detected: " + pathKey);
+                    //console.info("Loop detected: " + pathKey);
                 }
             }
 
@@ -558,10 +567,13 @@
                 Object.keys(recipe.inputs).forEach(inputName => {
                     const qtyPerBatch = recipe.inputs[inputName];
                     const requiredInputRate = netBatches * qtyPerBatch;
-                    // 高級煉金爐的催化劑, 因為有迴圈的風險(黑曜石-共振)所以不展開
+                    // 高級煉金爐的催化劑：是否展開子樹由全域設定 state.expandCatalystInputs 決定 (每種催化劑獨立)
                     let shouldExpand = true;
-                    if (recipe.machine === 'Advanced Athanor' && DB.items[inputName]?.charges >= 1) {
-                        shouldExpand = false;
+                    if (recipe.machine === 'Advanced Athanor') {
+                        const catalystType = getCatalystTypeByCharges(db.items[inputName]?.charges);
+                        if (catalystType) {
+                            shouldExpand = !!(state.expandCatalystInputs && state.expandCatalystInputs[catalystType]);
+                        }
                     }
                     const childNode = buildNode(inputName, requiredInputRate, isInternalModule, currentPath, effectiveGhost, depth + 1, shouldExpand);
                     if (!effectiveGhost && childNode) node.children.push(childNode);

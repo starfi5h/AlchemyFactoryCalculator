@@ -187,6 +187,7 @@ window.ALCHEMY_I18N = {
         "UI Size": "版面大小",
         "Show Belt Count": "显示传送带需求",
         "Show Machine Usage": "显示机器消耗用量",
+        "Show Raw Machine Count": "显示浮点机器数",
         "Show Machine Max Cap": "显示机器产能上限",        
         "Show Machine Heat & Nutr": "显示机器热值&肥力用量",
         
@@ -217,6 +218,8 @@ window.ALCHEMY_I18N = {
         "Yields": "产出",
         "Avail": "可用",
         "Used": "已用",
+        "Expand": "展开",
+        "Fold": "收起",
         "Raw Input": "原料输入",
         "External Input": "外部输入",
 

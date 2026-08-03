@@ -87,6 +87,13 @@ function toggleExternal(pathKey) {
     calculate();
 }
 
+function toggleCatalystExpand(catalystType) {
+    if (!DB.settings.expandCatalystInputs) DB.settings.expandCatalystInputs = {};
+    DB.settings.expandCatalystInputs[catalystType] = !DB.settings.expandCatalystInputs[catalystType];
+    persist();
+    calculate();
+}
+
 /**
  * 控制主生產鏈中所有可回收節點的狀態
  * @param {boolean} enable - true 為全部回收, false 為全部不回收
@@ -174,7 +181,8 @@ function calculate() {
                 preferredRecipes: DB.settings.preferredRecipes,
                 nodeRecipeOverrides: DB.settings.nodeRecipeOverrides,
                 recipeModifiers: DB.settings.recipeModifiers,
-                customCosts: DB.settings.customCosts
+                customCosts: DB.settings.customCosts,
+                expandCatalystInputs: DB.settings.expandCatalystInputs
             }
         });
         _lastCalcResult = result;
@@ -283,6 +291,7 @@ function gatherInputs() {
     const showFertCost = false;
     const showBeltCount = document.getElementById('showBeltCount').checked;
     const showFuelFert = document.getElementById('showFuelFert').checked;
+    const showRawMachineCount = document.getElementById('showRawMachineCount').checked;
     const showMaxCap = document.getElementById('showMaxCap').checked;
     const showHeatFert = document.getElementById('showHeatFert').checked;
 
@@ -321,7 +330,7 @@ function gatherInputs() {
         selectedFuel, selfFuel, fuelCost, showFuelCost,
         selectedHeatingDevice,
         selectedFert, selfFert, fertCost, showFertCost,
-        showFuelFert, showBeltCount, showMaxCap, showHeatFert, 
+        showFuelFert, showBeltCount, showRawMachineCount, showMaxCap, showHeatFert, 
         lvlSpeed, lvlBelt, lvlFuel, lvlAlchemy, lvlFert, lvlSell,
         beltSpeed: getBeltSpeed(lvlBelt),
         speedMult: getSpeedMult(lvlSpeed),
@@ -475,7 +484,8 @@ function renderTreeNode(params, node) {
             capTag = `<span class="max-cap-tag" onclick="recalculate('${params.targetItem}', ${params.targetRate / usageRatio})">(Max: ${formatVal(node.maxOutput)}/m)</span>`;
         }
         const machineIcon = node.tags.heat ? '🔥' : (node.tags.bio ? '🌱' : '');
-        machineTag = `<span class="machine-tag" data-tooltip="${tooltipText}">${Math.ceil(node.machineCount - 0.0001)} ${t(node.machine, 'machines')}${capTag} ${machineIcon}</span>`;
+        const machineNumber = params.showRawMachineCount ? Number(node.machineCount.toFixed(2)) : Math.ceil(node.machineCount - 0.0001);
+        machineTag = `<span class="machine-tag" data-tooltip="${tooltipText}">${machineNumber} ${t(node.machine, 'machines')}${capTag} ${machineIcon}</span>`;
         const recipeCandidates = getRecipesFor(node.item);
         const hasCauldronTarget = itemDef && itemDef.cauldronTarget !== undefined;
         const hasRecipeModifier = recipeCandidates?.length === 1 && recipeCandidates[0].machine === 'Advanced Athanor';
@@ -502,6 +512,12 @@ function renderTreeNode(params, node) {
 
     let outputTag = '';
     if (node.tags.output && params.showFuelFert) outputTag = `<span class="output-tag">${t('Yields')}: ${(node.tags.output.multiplier * 100).toFixed(0)}%</span>`;
+
+    let catalystExpandTag = '';
+    if (node.tags.catalystType) {
+        const expanded = !!DB.settings.expandCatalystInputs?.[node.tags.catalystType];
+        catalystExpandTag = `<div><button class="recycle-btn ${expanded ? 'active' : ''}" onclick="toggleCatalystExpand('${node.tags.catalystType}')">🧪${expanded ? t('Expand') : t('Fold')}</button></div>`;
+    }
 
     let recycleTag = '';
     if (node.canRecycle) {
@@ -530,6 +546,7 @@ function renderTreeNode(params, node) {
         ${costTag}
         ${outputTag}
         <div class="push-right"></div>
+        ${catalystExpandTag}
         ${recycleTag}
         ${externalTag}
     </div>`;

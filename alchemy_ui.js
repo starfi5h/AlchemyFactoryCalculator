@@ -22,13 +22,15 @@ const DEFAULT_SETTINGS = {
     nodeSize: 1,
     showBeltCount: true,
     showFuelFert: true,
+    showRawMachineCount: false,
     showMaxCap: false,
     showHeatFert: false,
     preferredRecipes: {},
     nodeRecipeOverrides: {},
     recipeModifiers: {},
     activeRecyclers: {},
-    customCosts: {}
+    customCosts: {},
+    expandCatalystInputs: { unstable: false, fertile: false, resonant: false, eternal: false }
 };
 
 let isSelfFuel = false;
@@ -128,6 +130,7 @@ function init() {
     if(!DB.settings.recipeModifiers)  DB.settings.recipeModifiers = {};
     if(!DB.settings.activeRecyclers) DB.settings.activeRecyclers = {};
     if(!DB.settings.customCosts) DB.settings.customCosts = {};
+    if(!DB.settings.expandCatalystInputs) DB.settings.expandCatalystInputs = { unstable: false, fertile: false, resonant: false, eternal: false };
 
     translateDatabase(DB, true); // Translate DB item key
 
@@ -734,6 +737,7 @@ function loadSettingsToUI() {
         }
         if(DB.settings.showMaxCap) document.getElementById('showMaxCap').checked = DB.settings.showMaxCap;
         if(DB.settings.showFuelFert) document.getElementById('showFuelFert').checked = DB.settings.showFuelFert;
+        if(DB.settings.showRawMachineCount) document.getElementById('showRawMachineCount').checked = DB.settings.showRawMachineCount;
         if(DB.settings.showHeatFert) document.getElementById('showHeatFert').checked = DB.settings.showHeatFert;
         if(DB.settings.showBeltCount) document.getElementById('showBeltCount').checked = DB.settings.showBeltCount;
     }
@@ -802,6 +806,7 @@ function onLogisticsChange() {
     DB.settings.nodeSize = document.getElementById('nodeScaleSlider').value;
     DB.settings.showMaxCap = document.getElementById('showMaxCap').checked;
     DB.settings.showFuelFert = document.getElementById('showFuelFert').checked;
+    DB.settings.showRawMachineCount = document.getElementById('showRawMachineCount').checked;
     DB.settings.showHeatFert = document.getElementById('showHeatFert').checked;
     DB.settings.showBeltCount = document.getElementById('showBeltCount').checked;
     DB.settings.selectedHeatingDevice = curHeatingDevice;
