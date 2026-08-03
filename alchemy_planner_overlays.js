@@ -21,12 +21,25 @@ function renderPlannerToolbarSelect() {
 /** 切換目前作用中的方案：重新指向 plannerState、重繪整個畫布 */
 function switchPlannerPlan(planId) {
     if (!plannerLibrary.plans[planId] || planId === plannerLibrary.activePlanId) return;
+    // 暫存目前 plan 的 viewport，供之後切回來時恢復
+    _plannerViewportCache[plannerLibrary.activePlanId] = { ..._plannerSettings.viewport };
     plannerLibrary.activePlanId = planId;
     _activatePlanData(planId);
 
     renderPlanner();
     updatePlannerGridButton();
     updatePlannerGridBackground();
+
+    const cachedViewport = _plannerViewportCache[planId];
+    if (cachedViewport) {
+        // 之前在本次 session 中已經開過這個 plan -> 恢復當時的視角
+        _plannerSettings.viewport = { ...cachedViewport };
+    } else {
+        // 本次 session 第一次開啟這個 plan -> 自動置中縮放 (plannerFitToView 內部會自動 savePlannerSettings)
+        plannerFitToView();
+        _plannerViewportCache[planId] = { ..._plannerSettings.viewport };
+    }
+
     applyPlannerViewportTransform();
     renderPlannerToolbarSelect();
     updatePlannerUndoRedoButtons();
@@ -1092,13 +1105,9 @@ function _injectPlannerSummaryStyles() {
         .planner-summary-header {
             display: flex; align-items: center; justify-content: space-between;
             padding: 8px 10px; border-bottom: 1px solid var(--border,#444);
-            flex-shrink: 0; background: #202020;
+            flex-shrink: 0; background: #202020; cursor: pointer;
         }
         .planner-summary-title { font-weight: bold; color: #eee; letter-spacing: 0.03em; text-transform: uppercase; font-size: 0.85em; }
-        .planner-summary-close-btn {
-            background: transparent; border: none; color: #999; cursor: pointer;
-            font-size: 1.1em; line-height: 1; padding: 0 2px;
-        }
         .planner-summary-close-btn:hover { color: #fff; }
         .planner-summary-body { overflow-y: auto; padding: 4px 0; }
         .planner-summary-section { border-bottom: 1px solid #2e2e2e; }
@@ -1139,13 +1148,15 @@ function ensurePlannerSummaryPanel() {
 }
 
 function togglePlannerSummaryPanel() {
-    _plannerSummaryCollapsed = !_plannerSummaryCollapsed;
+    _plannerSettings.summaryCollapsed = !_plannerSettings.summaryCollapsed;    
     renderPlannerSummary(_plannerLastFlows);
+    savePlannerSettings();
 }
 
 function togglePlannerSummarySection(key) {
-    _plannerSummarySectionCollapsed[key] = !_plannerSummarySectionCollapsed[key];
+    _plannerSettings.summarySectionCollapsed[key] = !_plannerSettings.summarySectionCollapsed[key];    
     renderPlannerSummary(_plannerLastFlows);
+    savePlannerSettings();
 }
 
 /** 依 flows 彙總: 金錢/燃料/肥料消耗、機器數、輸出剩餘、輸入短缺 */
@@ -1197,7 +1208,7 @@ function renderPlannerSummary(flows) {
     if (!panel) return;
     flows = flows || plannerResolveFlows();
 
-    if (_plannerSummaryCollapsed) {
+    if (_plannerSettings.summaryCollapsed) {
         panel.classList.add('collapsed');
         panel.innerHTML = `<button class="planner-summary-min-btn" onclick="togglePlannerSummaryPanel()">☰ ${t('Summary', 'ui')}</button>`;
         return;
@@ -1207,7 +1218,7 @@ function renderPlannerSummary(flows) {
     const stats = computePlannerSummaryStats(flows);
 
     const sectionHtml = (key, titleHtml, bodyHtml, count) => {
-        const collapsed = _plannerSummarySectionCollapsed[key];
+        const collapsed = _plannerSettings.summarySectionCollapsed[key];
         return `
             <div class="planner-summary-section">
                 <div class="planner-summary-section-header" onclick="togglePlannerSummarySection('${key}')">
@@ -1259,9 +1270,8 @@ function renderPlannerSummary(flows) {
     if (!inputRows) inputRows = `<div class="planner-summary-empty">${t('None', 'ui')}</div>`;
 
     panel.innerHTML = `
-        <div class="planner-summary-header">
-            <span class="planner-summary-title">${t('Summary', 'ui')}</span>
-            <button class="planner-summary-close-btn" onclick="togglePlannerSummaryPanel()" title="${t('Minimize', 'ui')}">×</button>
+        <div class="planner-summary-header" onclick="togglePlannerSummaryPanel()">
+            <span>☰ ${t('Summary', 'ui')}</span>
         </div>
         <div class="planner-summary-body">
             ${sectionHtml('cost', t('Total Load', 'ui'), costRows)}

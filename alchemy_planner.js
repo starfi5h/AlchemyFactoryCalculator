@@ -70,23 +70,32 @@ let plannerState = null;
 /*
     Planner Settings (runtime state)
     viewport: { x: number, y: number, zoom: number }, // canvas 平移/縮放狀態
-    gridSize: number   // 0 = 不吸附；否則為 snap 網格像素大小 (見 PLANNER_GRID_STEPS)
+    gridSize: number   // 0 = 不吸附；否則為 snap 網格像素大小 (見 PLANNER_GRID_STEPS)    
 */
 
 let _plannerSettings = {
     viewport: { x: 0, y: 0, zoom: 1 },
-    gridSize: 40
+    gridSize: 40,
+    summaryCollapsed: false,
+    summarySectionCollapsed: {
+        cost: false,
+        output: false,
+        input: false,
+        machines: true
+    }
 };
 let _plannerLastFlows = null; // 上一次 resolveFlows() 的結果快取 (供拖曳節點時即時重繪邊線用)
 let _plannerCanvasHovered = false;
 let _plannerLinkMode = false;
 let _plannerSelectMode = false;
 let _plannerSelectedNodeIds = new Set();
-let _plannerSummaryCollapsed = false;
-let _plannerSummarySectionCollapsed = { cost: false, output: false, input: false, machines: true };
 const PLANNER_ZOOM_MIN = 0.2;
 const PLANNER_ZOOM_MAX = 3;
 const PLANNER_GRID_STEPS = [40, 20, 0];
+
+/** 每個 plan 各自的 viewport 暫存 (僅存在於本次 session 記憶體中，不寫入 localStorage)。
+ *  key: planId -> { x, y, zoom }。用來在切換 plan 時記得「上次離開這個 plan 時的視角」。 */
+let _plannerViewportCache = {};
 
 /**
  * plannerHistory: 每個 plan 各自獨立的 undo/redo 堆疊，只存在記憶體中 (不寫入 localStorage)。
@@ -103,6 +112,7 @@ function initPlannerPage() {
     loadPlannerLibrary();
     loadPlannerSettings();
     renderPlannerToolbarSelect();
+    _plannerViewportCache[plannerLibrary.activePlanId] = { ..._plannerSettings.viewport };
 
     renderPlanner();
     attachPlannerCanvasPan();
@@ -128,12 +138,28 @@ function loadPlannerSettings() {
         };
 
         _plannerSettings.gridSize = saved.gridSize ?? 0;
+
+        // 读取摘要折叠状态
+        _plannerSettings.summaryCollapsed = saved.summaryCollapsed ?? false;
+        _plannerSettings.summarySectionCollapsed = {
+            cost: saved.summarySectionCollapsed?.cost ?? false,
+            output: saved.summarySectionCollapsed?.output ?? false,
+            input: saved.summarySectionCollapsed?.input ?? false,
+            machines: saved.summarySectionCollapsed?.machines ?? true
+        };
     } catch {
         _plannerSettings = {
             viewport: { x: 0, y: 0, zoom: 1 },
-            gridSize: 0
+            gridSize: 0,
+            summaryCollapsed: false,
+            summarySectionCollapsed: {
+                cost: false,
+                output: false,
+                input: false,
+                machines: true
+            }
         };
-    }
+    }    
 }
 
 // 寫入UI全局設定
