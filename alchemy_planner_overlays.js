@@ -773,10 +773,35 @@ function openPlannerEdgeModal(edgeId) {
                 </button>
                 <span class="planner-edge-linkmode-note">${plannerEdgeLinkModeNoteText}</span>
             </div>
-            <button class="reset-btn" style="margin-top:8px; font-size:1em" onclick="deletePlannerEdge('${edgeId}')">${t('Delete Connection', 'ui')}</button>
+            <div style="height:1px; background:var(--border); margin:12px 0;"></div>
+            <div style="display:flex; align-items:center; gap:8px;">
+                <span>${t('Color', 'ui')}:</span>
+                <input type="color" value="${edge.color || '#4caf50'}" style="boarder:0px;"
+                       onchange="plannerSetEdgeColor('${edgeId}', this.value)">
+                <button class="split-btn" style="margin-top:0px; font-size:0.9em; width: auto"
+                        onclick="plannerClearEdgeColor('${edgeId}')">${t('Reset', 'ui')}</button>
+                <div class="push-right"></div>
+                <button class="reset-btn" style="margin-top:0px; font-size:1em; width: 30%" onclick="deletePlannerEdge('${edgeId}')">${t('Delete Connection', 'ui')}</button>
+            </div>            
         </div>
     `;
     document.getElementById('planner-edge-modal').style.display = 'flex';
+}
+
+function plannerSetEdgeColor(edgeId, color) {
+    const edge = plannerState.edges[edgeId];
+    if (!edge) return;
+    edge.color = color;
+    recomputeAndRefreshPlanner();
+    savePlannerState();
+}
+
+function plannerClearEdgeColor(edgeId) {
+    const edge = plannerState.edges[edgeId];
+    if (!edge) return;
+    delete edge.color;
+    recomputeAndRefreshPlanner();
+    savePlannerState();
 }
 
 function deletePlannerEdge(edgeId) {

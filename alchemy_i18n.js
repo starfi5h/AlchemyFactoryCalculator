@@ -413,6 +413,8 @@ window.ALCHEMY_I18N = {
         "Set Flow": "设置流量",
         "Link mode ON: also scales upstream/downstream nodes": "链接模式开启：同时缩放上游/下游节点",
         "Link mode OFF: only affects source and target nodes": "链接模式关闭：仅影响源节点和目标节点",
+        "Color": "颜色",
+        "Reset": "重置",
         "Delete Connection": "删除连接",
         
 

@@ -1081,13 +1081,15 @@ function renderPlannerEdges(flows) {
         const midX = (p1.x + p2.x) / 2;
         const midY = (p1.y + p2.y) / 2;
         const beltCount = !itemDef.liquid ? (flow / beltSpeed) : null;
+        const lineStyle = edge.color ? ` style="stroke:${edge.color};"` : '';
+        const labelStyle = edge.color ? ` style="border-left:3px solid ${edge.color};"` : '';
 
         html += `
             <g class="planner-edge-group" data-edge-id="${edge.id}">
                 <path class="planner-edge-hit" d="${d}" onclick="openPlannerEdgeModal('${edge.id}')"></path>
-                <path class="planner-edge-line" d="${d}"></path>
+                <path class="planner-edge-line" d="${d}"${lineStyle}></path>
                 <foreignObject x="${midX - 60}" y="${midY - 15}" width="120" height="32" style="overflow:visible;">
-                    <div xmlns="http://www.w3.org/1999/xhtml" class="planner-edge-label" onclick="openPlannerEdgeModal('${edge.id}')">
+                    <div xmlns="http://www.w3.org/1999/xhtml" class="planner-edge-label" onclick="openPlannerEdgeModal('${edge.id}')"${labelStyle}>
                         <img src="img/item${itemDef.id ?? 0}.png" width="16" height="16">
                         <span>${formatVal(flow)}/m</span>
                         ${beltCount !== null ? `<span class="planner-edge-belt">(${beltCount.toFixed(2)})</span>` : ''}

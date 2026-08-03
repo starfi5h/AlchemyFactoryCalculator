@@ -851,7 +851,7 @@ function plannerImportFromCalcResult(calcResult, params) {
         plannerState._edgeSeq = (plannerState._edgeSeq || 0) + 1;
         const edgeId = 'pedge_' + plannerState._edgeSeq;
         const createdAt = isRecycle ? (nextRecycleCreatedAt--) : plannerState._edgeSeq;
-        plannerState.edges[edgeId] = { id: edgeId, item, fromNode, toNode, createdAt };
+        plannerState.edges[edgeId] = { id: edgeId, item, fromNode, toNode, createdAt, ...(isRecycle ? {color: 'var(--byproduct)'} : {}) };
         if (isRecycle) recycleEdgeIds.push(edgeId);
     });
 
