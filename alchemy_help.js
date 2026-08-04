@@ -310,18 +310,35 @@ function _injectHelpStyles() {
         @media (max-width: 720px) {
             .wiki-split-area {
                 flex-direction: column;
+                height: 100%; /* 確保撐滿父容器 */
             }
+
+            /* 預設（無選取）：左側佔滿全部空間 */
             .wiki-left-pane {
-                flex: 1 1 auto;
+                flex: 1 1 100%;
+                min-height: 0;
+                max-height: 100%;
                 border-right: none;
-                max-height: 36vh;  /* 限制左側高度，避免佔滿畫面 */
             }
             .wiki-right-pane {
-                flex: 1 1 auto;
-                min-width: 0;
-                width: 100%;
-                max-height: 64vh;
-                border-top: 1px solid var(--border, #333);
+                display: none;           /* 預設隱藏 */
+                flex: 0 0 auto;
+                border-top: 1px solid var(--border);
+            }
+
+            /* 有選取時：左側讓出部分空間給右側 */
+            .wiki-split-area.has-selection .wiki-left-pane {
+                flex: 0 0 40%;          /* 限制高度，保留空間給右側閱讀 */
+                max-height: 40%;
+                border-bottom: 1px solid var(--border);
+                overflow-y: auto;
+            }
+            .wiki-split-area.has-selection .wiki-right-pane {
+                display: flex;           /* 顯示右側 */
+                flex-direction: column;
+                flex: 1 1 60%;
+                min-height: 0;
+                overflow-y: auto;
             }
         }
 
@@ -871,11 +888,32 @@ function _clearAllChips() {
 
 /* ─── 11. ITEM DETAIL ─────────────────────────────────────────────────────── */
 function wikiSelectItem(name) {
+    if (name === _selectedItem) {
+        // 點擊相同項目 → 取消選取
+        _selectedItem = null;
+        // 移除所有高亮
+        document.querySelectorAll('#wiki-item-grid .wiki-tile').forEach(el => el.classList.remove('selected'));
+        // 清空右側詳細內容
+        const pane = document.getElementById('wiki-right-pane');
+        if (pane) pane.innerHTML = ''; 
+        // 更新版面狀態（窄螢幕下將隱藏右側）
+        _updateLayoutState();
+        return;
+    }
+    // 正常選取流程
     _selectedItem = name;
-    document.querySelectorAll('#wiki-item-grid .wiki-tile').forEach(function(el) {
+    document.querySelectorAll('#wiki-item-grid .wiki-tile').forEach(el => {
         el.classList.toggle('selected', el.dataset.name === name);
     });
     _renderItemDetail(name);
+    _updateLayoutState();
+}
+
+function _updateLayoutState() {
+    var area = document.querySelector('.wiki-split-area');
+    if (!area) return;
+    var hasSelection = (_currentWikiView === 'items' && _selectedItem !== null) || (_currentWikiView === 'machines' && _selectedMachine !== null);
+    area.classList.toggle('has-selection', hasSelection);
 }
 
 function _renderItemDetail(itemName) {
@@ -1009,11 +1047,28 @@ function _refreshMachineList() {
 }
 
 function wikiSelectMachine(name) {
+    // 【切換邏輯】如果點擊的是當前選取的機器 → 取消選取
+    if (name === _selectedMachine) {
+        _selectedMachine = null;
+        // 移除所有高亮樣式
+        document.querySelectorAll('#wiki-machine-grid .wiki-tile').forEach(function(el) {
+            el.classList.remove('selected');
+        });
+        // 清空右側詳細內容
+        var pane = document.getElementById('wiki-right-pane');
+        if (pane) pane.innerHTML = '';
+        // 更新版面狀態（窄螢幕下將收回右側面板）
+        _updateLayoutState();
+        return;
+    }
+
+    // 【正常選取流程】
     _selectedMachine = name;
     document.querySelectorAll('#wiki-machine-grid .wiki-tile').forEach(function(el) {
         el.classList.toggle('selected', el.dataset.name === name);
     });
     _renderMachineDetail(name);
+    _updateLayoutState();
 }
 
 function _renderMachineDetail(machineName) {
@@ -1128,6 +1183,7 @@ function wikiSwitchView(view) {
         area.innerHTML = _buildMachineSplitHTML();
         if (_selectedMachine) _renderMachineDetail(_selectedMachine);
     }
+    _updateLayoutState();
 }
 
 /* ─── 15. ENTRY POINTS ────────────────────────────────────────────────────── */

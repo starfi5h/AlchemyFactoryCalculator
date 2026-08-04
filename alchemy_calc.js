@@ -280,11 +280,11 @@ function gatherInputs() {
     const selectedHeatingDevice = DB.machines[heatingDeviceSelect.value]?.isGenerator
         ? heatingDeviceSelect.value
         : (DB.machines["Stone Furnace"]?.isGenerator ? "Stone Furnace" : Object.keys(DB.machines).find(machineName => DB.machines[machineName]?.isGenerator));
-    const selfFuel = document.getElementById('btnSelfFuel')?.innerText === t("Self-Fuel: ON") && isMulti;
+    const selfFuel = document.getElementById('btnSelfFuel')?.classList.contains('btn-active-green') ?? false;
     const fuelCost = DB.settings.customCosts[selectedFuel] || 0;
 
     const selectedFert = document.getElementById('fertSelect').value;
-    const selfFert = document.getElementById('btnSelfFert')?.innerText === t("Self-Fert: ON") && isMulti;
+    const selfFert = document.getElementById('btnSelfFert')?.classList.contains('btn-active-green') ?? false;
     const fertCost = DB.settings.customCosts[selectedFert] || 0;
 
     const showFuelCost = false;
@@ -974,7 +974,8 @@ function updateSummaryBox(p, heatPerSec, nutrPerSec, goldPerMin, actualFuelNeed,
     if (selfFuel) heatPerSec = 0;
     if (selfFert) nutrPerSec = 0;
     let netRate = targetRate;
-    if (selfFuel && targetItem === selectedFuel || selfFert && targetItem === selectedFert) netRate -= usedRate;
+    if (selfFuel && targetItem === selectedFuel) netRate -= actualFuelNeed;
+    if (selfFert && targetItem === selectedFert) netRate -= actualFertNeed;
     let refRate = targetRate;
     if (netRate > 0) refRate = targetRate * (targetRate / netRate);
 
@@ -1000,7 +1001,8 @@ function updateSummaryBox(p, heatPerSec, nutrPerSec, goldPerMin, actualFuelNeed,
     }
 
     // --- Load Blocks ---
-    let loadHtml = `<div class="stat-block"><span class="stat-label">${t('Total Load')}</span>`;
+    const netText = netRate === targetRate ? '' : `(${t('Net Output')}: ${Number(netRate.toFixed(2))}/min)`;
+    let loadHtml = `<div class="stat-block"><span class="stat-label">${t('Total Load')} ${netText}</span>`;
     if (goldPerMin > 0) loadHtml += `<span class="stat-value" style="color:var(--gold);" title="${Math.ceil(goldPerMin).toLocaleString()}/min">${t('Coin')}: ${formatCoinIcons(goldPerMin)}/ min</span>`;
     if (heatPerSec > 0) {
         if (p.selectedHeatingDevice === 'Steam Heating Pad') {
@@ -1037,15 +1039,37 @@ function updateSummaryBox(p, heatPerSec, nutrPerSec, goldPerMin, actualFuelNeed,
             ? '—'
             : v.toLocaleString(undefined, { maximumFractionDigits: 2 });
 
-        costHtml += `<span class="stat-value" style="color:var(--fuel);">
-            <img src="img/item${DB.items[p.selectedFuel]?.id ?? 0}.png" width="18" height="18" style="vertical-align:middle; margin-bottom:2px;">
-            ${t('Fuel Value')}: ${fmtVal(fuelFertValues.fuelValue)} <img src="img/copper.png" width="16" height="16" style="vertical-align:middle; margin-bottom:2px;">
+        const fuelItemDef = DB.items[p.selectedFuel] || {};
+        const fertItemDef = DB.items[p.selectedFert] || {};
+
+        if (fuelItemDef && fertItemDef) {
+            const coinIcon = `<img src="img/copper.png" width="16" height="16" style="vertical-align:middle; margin-bottom:2px;">`;
+            const fuelIcon = `<img src="img/item${fuelItemDef.id}.png" width="18" height="18" style="vertical-align:middle; margin-bottom:2px;">`;
+            const fertIcon = `<img src="img/item${fertItemDef.id}.png" width="18" height="18" style="vertical-align:middle; margin-bottom:2px;">`;
+
+            costHtml += `<span class="stat-value" style="color:var(--fuel);">
+                ${fuelIcon} ${t('Fuel Value')}: ${fmtVal(fuelFertValues.fuelValue)} ${coinIcon}
+            </span>`;
+
+            costHtml += `<span class="stat-value" style="color:var(--bio);">
+                ${fertIcon} ${t('Fert Value')}: ${fmtVal(fuelFertValues.fertValue)} ${coinIcon}
+            </span>`;
+
             
-        </span>`;
-        costHtml += `<span class="stat-value" style="color:var(--bio);">
-            <img src="img/item${DB.items[p.selectedFert]?.id ?? 0}.png" width="18" height="18" style="vertical-align:middle; margin-bottom:2px;">
-            ${t('Fert Value')}: ${fmtVal(fuelFertValues.fertValue)} <img src="img/copper.png" width="16" height="16" style="vertical-align:middle; margin-bottom:2px;">
-        </span>`;
+            if (fuelFertValues.fuelValue) {
+                const costPerHeat = fuelFertValues.fuelValue / (fuelItemDef.heat * p.fuelMult);
+                costHtml += `<span class="stat-value" style="color:var(--fuel);">
+                    ${fuelIcon} ${t('Cost per Heat')}: ${costPerHeat.toFixed(4)} ${coinIcon}
+                </span>`;
+            }        
+            
+            if (fuelFertValues.fertValue) {
+                const costPerNutr = fuelFertValues.fertValue / (fertItemDef.nutrientValue * p.fertMult);            
+                costHtml += `<span class="stat-value" style="color:var(--bio);">
+                    ${fertIcon} ${t('Cost per Nutr')}: ${costPerNutr.toFixed(4)} ${coinIcon}
+                </span>`;
+            }
+        }
     }
     else {
         if (goldPerMin > 0) costHtml += `<span class="stat-value" style="color:var(--gold); title="${(goldPerMin / netRate).toLocaleString()}">${t('Coin')}: ${formatCoinIcons(goldPerMin/netRate)}</span>`;

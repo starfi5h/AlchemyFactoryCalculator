@@ -777,17 +777,17 @@ function togglePanelCollapse(btn) {
 
 function toggleFuel() {
     const btn = document.getElementById('btnSelfFuel');
-    const enable = btn.innerText === t("Self-Fuel: ON");
-    if(!enable) { btn.innerText = t("Self-Fuel: ON"); btn.classList.remove('btn-inactive-red'); btn.classList.add('btn-active-green'); } 
-    else { btn.innerText = t("Self-Fuel: OFF"); btn.classList.remove('btn-active-green'); btn.classList.add('btn-inactive-red'); }
+    const enable = btn.classList.contains('btn-active-green');
+    if(!enable) { btn.classList.remove('btn-inactive-red'); btn.classList.add('btn-active-green'); }
+    else { btn.classList.remove('btn-active-green'); btn.classList.add('btn-inactive-red'); }
     calculate();
 }
 
 function toggleFert() {
     const btn = document.getElementById('btnSelfFert');
-    const enable = btn.innerText === t("Self-Fert: ON");
-    if(!enable) { btn.innerText = t("Self-Fert: ON"); btn.classList.remove('btn-inactive-red'); btn.classList.add('btn-active-green'); } 
-    else { btn.innerText = t("Self-Fert: OFF"); btn.classList.remove('btn-active-green'); btn.classList.add('btn-inactive-red'); }
+    const enable = btn.classList.contains('btn-active-green');
+    if(!enable) { btn.classList.remove('btn-inactive-red'); btn.classList.add('btn-active-green'); }
+    else { btn.classList.remove('btn-active-green'); btn.classList.add('btn-inactive-red'); }
     calculate();
 }
 
