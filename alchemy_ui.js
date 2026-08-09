@@ -10,6 +10,43 @@ const I18N_BACKUP_KEY = "alchemy_i18n_source_backup_v1";
 const SETTINGS_KEY = "alchemy_settings_v1";
 const SETTINGS_BACKUP_KEY = "alchemy_settings_backup_v1";
 
+/* ==========================================================================
+   SECTION: DB.settings FIELD REFERENCE — three similar-but-different
+   recipe-selection mechanisms, easy to confuse:
+   ==========================================================================
+
+   preferredRecipes[item] = recipeId
+       GLOBAL default: "when producing `item` anywhere with no more specific
+       override, use this recipe." Set via Wiki ★ or Recipe Modal "Global" tab.
+
+   nodeRecipeOverrides[pathKey] = recipeId
+       CALCULATOR-TAB-ONLY, per tree-node override keyed by pathKey (see
+       alchemy_calc_engine.js's pathKey docs). Set via Recipe Modal "This Node
+       Only" tab. Falls back to preferredRecipes if absent. Has NO effect on
+       the Planner tab (which has its own per-node node.recipeId, an entirely
+       separate field on Planner node objects, not this map).
+
+   recipeModifiers[recipeId] = { catalysts: [...] } | { customInput: item }
+       GLOBAL, keyed by recipeId (not item name) — stores Advanced Athanor
+       catalyst selection or Paradox Crucible custom input, applied via
+       applyRecipeModifiers() in alchemy_calc_engine.js. NOTE: Planner nodes
+       copy this into their own node.recipeModifiers at creation time and can
+       diverge from this global copy afterward — see the recipeModifiers
+       cross-reference note in alchemy_planner_calc.js.
+
+   customCosts[item] = number
+       User-defined price override. Affects BOTH gold cost calculation
+       (in place of buyPrice) AND, when `item` is the selected fuel/fert
+       source, the displayed fuel/fert cost-per-min.
+
+   expandCatalystInputs[catalystType] = boolean
+       GLOBAL per catalyst-TYPE (unstable/fertile/resonant/eternal), not per
+       recipe or per node. Controls whether Advanced Athanor catalyst inputs
+       are expanded into their own subtree in the Calculator tab tree, or
+       collapsed into an external-input leaf. Toggled via the 🧪 button on
+       tree nodes (toggleCatalystExpand).
+   ========================================================================== */
+
 const DEFAULT_SETTINGS = {
     lvlBelt: 0,
     lvlSpeed: 0,

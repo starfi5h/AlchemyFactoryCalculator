@@ -1,3 +1,117 @@
+/* ==========================================================================
+   ALCHEMY CALCULATOR CORE ENGINE
+   Handles recursion, math, and tree node generation.
+   ========================================================================== */
+
+/* --- Pipeline Overview ---
+
+   runCalculation({db, params, state})
+            │
+            ▼
+    solveByproducts()
+        │
+        │  Iteratively computes a stable byproduct equilibrium
+        │  using ghost (dry-run) tree construction.
+        ▼
+    buildProductionModel()
+        │
+        ├── recursively builds one production tree per target
+        ├── collects global aggregates
+        ├── optionally builds internal fuel/fertilizer modules
+        └── returns the final calculation model
+        ▼
+    buildResultSections()
+        │
+        ▼
+    tree/UI
+
+   This return value is exactly what alchemy_calc.js's renderCalculationResult()
+   consumes to draw the tree/UI — treat it as the engine's public contract.
+*/
+
+/* ==========================================================================
+   SECTION: DATA STRUCTURE REFERENCE
+   ==========================================================================
+
+   This engine builds a "calculation tree" per target item. Each tree node
+   represents one recipe step and is produced inside buildNode() within
+   buildProductionModel().
+
+   --- pathKey ---
+   pathKey = `${ancestors.join(">")}>${item}`
+   ancestors is the array of item names from the root down to (but not
+   including) this node. Since ancestors starts as [] at the root, the root
+   node's pathKey begins with a leading ">", e.g. ">Steel Ingot".
+   A child's pathKey therefore looks like ">Steel Ingot>Iron Ingot".
+   pathKey is used as a stable per-node identity for:
+     - state.nodeRecipeOverrides[pathKey]   (per-node recipe override)
+     - state.activeRecyclers.has(pathKey)   (is recycling toggled on here)
+     - state.forcedExternals.has(pathKey)   (is this node forced external)
+   It is NOT unique if the same item/recipe appears under different parents
+   with the exact same ancestor chain twice (shouldn't normally happen) but
+   IS expected to repeat across sibling branches with different ancestors.
+
+   --- node object (returned by buildNode) ---
+   {
+     item: string,                // item name (already translated if i18n active)
+     pathKey: string,              // see above
+     ancestors: string[],          // item names from root to parent (exclusive)
+     depth: number,                // 0 = root
+     requestedRate: number,        // rate demanded by the parent (items/min)
+     deductionRate: number,        // portion filled by byproduct recycling
+     netRate: number,              // requestedRate - deductionRate; what's actually produced here
+     machine: string|null,         // recipe.machine, or null if raw/external/no-recipe
+     machineCount: number,         // fractional machine count (ceil when displaying)
+     recipe: object|null,          // the ACTIVE recipe after applyRecipeModifiers() —
+                                    // NOT the raw DB.recipes entry; inputs/outputs may
+                                    // already be modified by catalysts/customInput
+     recipeInfo: object|null,      // { batchYield, recipeTime, machineOutputRate, effectiveBatchesPerMin }
+     recipeTooltipData: object|null,
+     yieldMultiplier: number|null, // set only for Extractor/Alembic/Thermal Extractor family
+     maxOutput: number|null,       // only computed when params.showMaxCap
+     children: node[],             // child nodes for each recipe input
+     tags: {
+       detailsType: 'external'|'raw'|null,  // 'external' = forced/no-recipe-no-price; 'raw' = has buyPrice
+       costEntries: [{type:'gold'|'fuel'|'fert', amount, custom?}],
+       byproducts: [{item, rate}], // OTHER outputs of this recipe (not the main item)
+       heat: {item, rate, heatPerSec, costPerMin} | null,
+       bio:  {item, rate, nutrientPerSec, costPerMin} | null,
+       output: {multiplier} | null, // yield% tag for Extractor-family machines
+       beltRatio: number | null     // requestedRate / effective belt speed
+     },
+     canRecycle: boolean,          // true if a byproduct pool for this item exists
+     recycleAvailable: number,     // pool size available to recycle into this node
+     recycleActive: boolean,       // = state.activeRecyclers.has(pathKey)
+     isExternal: boolean,          // true if forced external OR no recipe & no buyPrice
+     isRaw: boolean,               // true if no recipe but has buyPrice (bought raw material)
+     isInternalModule: boolean     // true if this tree belongs to a self-fuel/self-fert module
+   }
+   Note: isExternal/isRaw/detailsType overlap in meaning but aren't identical —
+   detailsType is only set on effectiveGhost===false passes and drives UI text,
+   isExternal/isRaw are used by planner import (alchemy_planner_calc.js) to
+   decide which nodes are "leaf/non-aggregatable".
+
+   --- aggregates (per buildProductionModel() call) ---
+   Keyed maps built up as the tree is walked; see createAggregates(). Key formats:
+     machineStats[machineName][outputItem] = {rawFloat, nodeSumInt}
+     commonNodesMap[`${item}_${machine}`]   = {item, machine, totalRate, totalMachines,
+                                                totalFuelRate, totalFertRate, instances[]}
+     byproductProducersMap[byproductItem]   = [{rate, recipe, machineCount, pathKey, tooltipData}, ...]
+     externalSourceMap[item]                = [{rate, pathKey}, ...]
+     rawMaterialSourceMap / fuelSourceMap / fertSourceMap = flat arrays of {item/rate/pathKey/...}
+   totalByproducts / availableByproducts are plain {item: qty} maps used by the
+   ghost-pass equilibrium solver (solveByproducts) to converge recycling amounts
+   before the real (non-ghost) tree is built.
+
+   --- ghost passes ---
+   isGhost=true means buildNode() does NOT push into aggregates' per-node arrays
+   or mutate tags — it's a dry run used only to compute stable byproduct/fuel/fert
+   totals (see solveByproducts, and the self-fuel/self-fert iteration in
+   buildProductionModel). Only the isGhost===false final pass produces the actual
+   tree nodes and tags shown in the UI.
+   ========================================================================== */
+
+
 (function (global) {
     const YIELD_MULTIPLIER_MACHINES = ["Extractor", "Thermal Extractor", "Alembic", "Advanced Alembic"];
     const CATALYST_CHARGES_MAP = { 180: 'unstable', 240: 'fertile', 1500: 'resonant', 99999: 'eternal' };

@@ -2,6 +2,80 @@
 // Global Memeber Used: DB, plannerState
 // Dependency: alchemy_planner.js
 
+
+/* ==========================================================================
+   SECTION: DATA STRUCTURE REFERENCE (for future maintainers)
+   ==========================================================================
+
+   --- "rates" objects: per-machine, NOT scaled by machineCount ---
+   Returned by plannerGetRecipeRates(recipeId, recipeModifiers) and
+   plannerGetNodeRates(node) (which dispatches to either the recipe version
+   or plannerGetModuleRates() for module nodes):
+   {
+     recipe: object|null,              // resolved recipe (post-modifiers) or null
+     inputsPerMachine:  [{item, rate}],// rate = units/min for ONE machine
+     outputsPerMachine: [{item, rate}],
+     heatItemsPerMachine: number,      // fuel-item units/min for ONE machine
+     fertItemsPerMachine: number,
+     errorCode: ''|'Missing Recipe'|'Missing Reference'|'Circular Reference'|'Unkown Error'
+   }
+   Use these when you need "what would ONE machine produce" (e.g. to compute
+   how many machines are needed for a given target rate).
+
+   --- "ports" objects: node-level TOTALS (rates * node.machineCount) ---
+   Returned by computeNodePorts(node), consumed by rendering + flow resolution:
+   {
+     recipe: object|null,
+     inputs:  [{item, rate}],   // rate already multiplied by node.machineCount
+     outputs: [{item, rate}],
+     heatItemsPerMin: number,
+     fertItemsPerMin: number,
+     errorCode: string
+   }
+   Do not confuse "ports" (node totals) with "rates" (per-machine) — they share
+   {item, rate} shape but different scale. ports = rates * node.machineCount.
+
+   --- recipeModifiers ---
+   Same shape appears in THREE places and they are independent copies, not
+   shared references:
+     1. DB.settings.recipeModifiers[recipeId]      -- global default, Calculator tab
+     2. node.recipeModifiers                        -- Planner node's own snapshot,
+                                                        set once when the node is created
+                                                        (addPlannerNode copies from #1) and
+                                                        edited independently afterward via
+                                                        plannerToggleCatalyst / plannerPickCustomInput
+     3. DB.settings.nodeRecipeOverrides[pathKey]     -- Calculator tab's per-node override
+                                                        (different mechanism, just an id string,
+                                                        NOT a recipeModifiers object)
+   Shape: { catalysts: ['unstable'|'fertile'|'resonant'|'eternal', ...] }
+       or { customInput: itemName }  (Paradox Crucible custom-input recipes)
+   Editing a Planner node's recipeModifiers does NOT affect DB.settings or other
+   nodes using the same recipeId.
+
+   --- plannerPortKey / flows (plannerResolveFlows return value) ---
+   plannerPortKey(nodeId, item, dir) => `${nodeId}::${item}::${dir}`  (dir = 'in'|'out')
+   flows = {
+     nodePortsCache:  { [nodeId]: ports },              // see above
+     portTheoretical: { [portKey]: rate },              // rate before any edge consumes it
+     portRemaining:   { [portKey]: rate },               // rate left AFTER edges are resolved
+                                                          // (surplus if 'out', shortage if 'in')
+     portConnections: { [portKey]: edgeId[] },           // which edges touch this port
+     edgeFlow:        { [edgeId]: number }               // actual flow assigned to each edge
+   }
+   Edges are resolved in createdAt order (first-created edge gets priority supply/demand).
+   plannerResolveFlows(planData=null) operates on plannerState by default (isMain=true,
+   caches result into _plannerLastFlows and prunes invalid edges + calls savePlannerState());
+   when called with an explicit planData (e.g. from _computeFlowsForPlanData for module
+   rate calculation) it is read-only and does NOT mutate/save anything.
+
+   --- module nodes ---
+   A node is either a recipe node (node.recipeId set, node.moduleId null) or a
+   module node (node.moduleId set, node.recipeId null) wrapping another entire
+   plan as a virtual recipe. plannerGetModuleRates() computes its exposed
+   input/output rates at "quantity = 1" by resolving that plan's own internal
+   flows and summing unmet input demand / unconsumed output surplus.
+   ========================================================================== */
+
 /* ==========================================================================
    SECTION: PLAN DEPENDENCY ANALYSIS (module usage / cycle detection)
    ========================================================================== */

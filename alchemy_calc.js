@@ -1,7 +1,18 @@
 /* ==========================================================================
-   ALCHEMY CALCULATOR CORE ENGINE
-   Handles recursion, math, and tree node generation.
+   ALCHEMY CALCULATOR TAB - UI renderer (DOM, modals, tree nodes)
    ========================================================================== */
+
+/* --------------------------------------------------------------------------
+   GLOBAL_CALC_STATE is in-memory only (NOT persisted to localStorage) —
+   resets on page reload. All three Sets are keyed by pathKey (see
+   alchemy_calc_engine.js's pathKey docs), scoped to the Calculator tab's
+   current tree:
+     activeRecyclers : pathKeys where byproduct recycling is toggled ON
+     forcedExternals : pathKeys manually checked as "External Input"
+     collapsedNode   : pathKeys (plus synthetic keys like 'ext_fuel',
+                       'byp_<item>', 'common_<item>_<machine>') whose subtree
+                       is currently collapsed in the UI
+   -------------------------------------------------------------------------- */
 
 const GLOBAL_CALC_STATE = {
     activeRecyclers: new Set(),
