@@ -4,10 +4,10 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Alchemy Factory Calculator 炼金工厂计算器</title>
-    <script src="alchemy_db.js"></script> 
-    <script src="alchemy_calc_engine.js"></script>
-    <script src="alchemy_constants.js"></script> 
-    <script src="alchemy_i18n.js"></script>
+    <script src="js/alchemy_db.js"></script> 
+    <script src="js/alchemy_calc_engine.js"></script>
+    <script src="js/alchemy_constants.js"></script> 
+    <script src="js/alchemy_i18n.js"></script>
     <link rel="stylesheet" href="style.css">
 
 </head>
@@ -29,7 +29,7 @@
             <span style="margin-left: 10px;">
                 <span id="ui-lang-toggle" style="cursor:pointer; margin-right: 10px;" onclick="toggleLanguage()" title="EN/中文">🌐EN/中文</span>
                 <a href="https://github.com/starfi5h/AlchemyFactoryCalculator" target="_blank" class="repo-link">GitHub Repo</a>
-                <span id="last-updated-time-text">2026.08.04</span>
+                <span id="last-updated-time-text">2026.08.10</span>
             </span>
         </div>
         <div class="tabs">
@@ -348,16 +348,16 @@
                             <label for="showFuelFert" style="display:inline; margin:0; cursor:pointer;">Show Machine Usage</label>
                         </div>
                         <div class="checkbox-row">
-                            <input type="checkbox" id="showRawMachineCount" onchange="onLogisticsChange()">
-                            <label for="showRawMachineCount" style="display:inline; margin:0; cursor:pointer;">Show Raw Machine Count</label>
-                        </div>
-                        <div class="checkbox-row">
                             <input type="checkbox" id="showMaxCap" onchange="onLogisticsChange()">
                             <label for="showMaxCap" style="display:inline; margin:0; cursor:pointer;">Show Machine Max Cap</label>
                         </div>
                         <div class="checkbox-row">
                             <input type="checkbox" id="showHeatFert" onchange="onLogisticsChange()">
                             <label for="showHeatFert" style="display:inline; margin:0; cursor:pointer;">Show Machine Heat & Nutr</label>
+                        </div>
+                        <div class="checkbox-row">
+                            <input type="checkbox" id="showRawMachineCount" onchange="onLogisticsChange()">
+                            <label for="showRawMachineCount" style="display:inline; margin:0; cursor:pointer;">Show Raw Machine Count</label>
                         </div>
                     </div>
                 </div>
@@ -784,14 +784,14 @@
         </div>
     </main>
     
-    <script src="alchemy_ui.js"></script>
-    <script src="alchemy_calc.js"></script>
-    <script src="alchemy_cauldron.js"></script>
-    <script src="alchemy_recipe.js"></script>
-    <script src="alchemy_itemvalue.js"></script>
-    <script src="alchemy_help.js"></script>
-    <script src="alchemy_planner.js"></script>
-    <script src="alchemy_planner_calc.js"></script>
-    <script src="alchemy_planner_overlays.js"></script>
+    <script src="js/alchemy_ui.js"></script>
+    <script src="js/alchemy_calc.js"></script>
+    <script src="js/alchemy_cauldron.js"></script>
+    <script src="js/alchemy_recipe.js"></script>
+    <script src="js/alchemy_itemvalue.js"></script>
+    <script src="js/alchemy_help.js"></script>
+    <script src="js/alchemy_planner.js"></script>
+    <script src="js/alchemy_planner_calc.js"></script>
+    <script src="js/alchemy_planner_overlays.js"></script>
 </body>
 </html>
