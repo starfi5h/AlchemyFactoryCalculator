@@ -8,16 +8,21 @@
    runCalculation({db, params, state})
             │
             ▼
-    solveByproducts()
+    solveEquilibrium()
         │
-        │  Iteratively computes a stable byproduct equilibrium
-        │  using ghost (dry-run) tree construction.
+        │  Iteratively computes a stable joint equilibrium of:
+        │    - byproduct pool (available for recycling)
+        │    - internal fuel-module production rate (if selfFuel)
+        │    - internal fert-module production rate (if selfFert)
+        │  using ghost (dry-run) tree construction that includes the
+        │  fuel/fert module trees on every iteration (not just target trees).
         ▼
     buildProductionModel()
         │
         ├── recursively builds one production tree per target
+        ├── recursively builds the internal fuel/fert module trees
+        │   (using the rates supplied via internalFuelRate/internalFertRate)
         ├── collects global aggregates
-        ├── optionally builds internal fuel/fertilizer modules
         └── returns the final calculation model
         ▼
     buildResultSections()
@@ -83,8 +88,7 @@
      recycleAvailable: number,     // pool size available to recycle into this node
      recycleActive: boolean,       // = state.activeRecyclers.has(pathKey)
      isExternal: boolean,          // true if forced external OR no recipe & no buyPrice
-     isRaw: boolean,               // true if no recipe but has buyPrice (bought raw material)
-     isInternalModule: boolean     // true if this tree belongs to a self-fuel/self-fert module
+     isRaw: boolean                // true if no recipe but has buyPrice (bought raw material)
    }
    Note: isExternal/isRaw/detailsType overlap in meaning but aren't identical —
    detailsType is only set on effectiveGhost===false passes and drives UI text,
@@ -100,15 +104,15 @@
      externalSourceMap[item]                = [{rate, pathKey}, ...]
      rawMaterialSourceMap / fuelSourceMap / fertSourceMap = flat arrays of {item/rate/pathKey/...}
    totalByproducts / availableByproducts are plain {item: qty} maps used by the
-   ghost-pass equilibrium solver (solveByproducts) to converge recycling amounts
-   before the real (non-ghost) tree is built.
+   ghost-pass equilibrium solver (solveEquilibrium) to converge recycling amounts,
+   together with the internal fuel/fert module rates, before the real
+   (non-ghost) tree is built.
 
    --- ghost passes ---
    isGhost=true means buildNode() does NOT push into aggregates' per-node arrays
    or mutate tags — it's a dry run used only to compute stable byproduct/fuel/fert
-   totals (see solveByproducts, and the self-fuel/self-fert iteration in
-   buildProductionModel). Only the isGhost===false final pass produces the actual
-   tree nodes and tags shown in the UI.
+   totals (see solveEquilibrium). Only the isGhost===false final pass produces the
+   actual tree nodes and tags shown in the UI.
    ========================================================================== */
 
 
@@ -397,8 +401,15 @@
         };
     }
 
+    /**
+     * Builds one full production model pass.
+     */
     function buildProductionModel(options) {
-        const { db, params, state, isGhost, initialAvailableByproducts, initialTotalByproducts } = options;
+        const {
+            db, params, state, isGhost,
+            initialAvailableByproducts, initialTotalByproducts,
+            internalFuelRate = 0, internalFertRate = 0
+        } = options;
         const aggregates = createAggregates();
         const availableByproducts = cloneRecord(initialAvailableByproducts || {});
         if (initialTotalByproducts) aggregates.totalByproducts = initialTotalByproducts;
@@ -409,7 +420,7 @@
         const fertDef = db.items[params.selectedFert] || { nutrientValue: 144, maxFertility: 12 };
         const grossFertVal = fertDef.nutrientValue * params.fertMult;
 
-        function buildNode(item, rate, isInternalModule, ancestors = [], forceGhost = false, depth = 0, shouldExpand = true) {
+        function buildNode(item, rate, ancestors = [], forceGhost = false, depth = 0, shouldExpand = true) {
             const effectiveGhost = isGhost || forceGhost;
             const pathKey = `${ancestors.join(">")}>${item}`;
             const currentPath = [...ancestors, item];
@@ -457,8 +468,7 @@
                 recycleAvailable,
                 recycleActive: state.activeRecyclers?.has(pathKey) || false,
                 isExternal: !!isExternalInput,
-                isRaw: false,
-                isInternalModule
+                isRaw: false
             };
 
             if (!effectiveGhost) {
@@ -596,14 +606,12 @@
                 const heatingDevicesNeeded = Math.ceil((machinesNeeded / (heatingSlots / slotsRequired)) - 0.0001);
                 const totalHeatPerSec = (heatingDevicesNeeded * (heatingDevice.heatSelf || 0) * params.speedMult) + (machinesNeeded * activeHeat);
 
-                if (!effectiveGhost) {
-                    aggregates.furnaceSlotDemand[params.selectedHeatingDevice] = (aggregates.furnaceSlotDemand[params.selectedHeatingDevice] || 0) + (Math.ceil(machinesNeeded - 0.0001) * slotsRequired);
-                }
-
                 aggregates.heatLoad += totalHeatPerSec;
                 aggregates.fuelDemandItems += (totalHeatPerSec * 60) / grossFuelEnergy;
 
                 if (!effectiveGhost) {
+                    aggregates.furnaceSlotDemand[params.selectedHeatingDevice] =
+                     (aggregates.furnaceSlotDemand[params.selectedHeatingDevice] || 0) + (Math.ceil(machinesNeeded - 0.0001) * slotsRequired);
                     fuelRate = (totalHeatPerSec * 60) / grossFuelEnergy;
                     node.tags.heat = {
                         item: params.selectedFuel,
@@ -618,22 +626,33 @@
             }
 
             let fertRate = 0;
-            if (!effectiveGhost && (recipe.machine === "Nursery" || recipe.machine === "World Tree Nursery")) {
-                const totalNutrientsNeeded = netRate * (recipe.nutrientCost || 0) / recipeInfo.batchYield;
+            if (recipe.machine === "Nursery" || recipe.machine === "World Tree Nursery") {
+                const totalNutrientsNeeded =
+                    netRate * (recipe.nutrientCost || 0) / recipeInfo.batchYield;
                 const itemsNeeded = totalNutrientsNeeded / grossFertVal;
-                aggregates.fertDemandItems += itemsNeeded;
-                aggregates.bioLoad += (totalNutrientsNeeded / 60);
+                aggregates.bioLoad += totalNutrientsNeeded / 60;
+                aggregates.fertDemandItems += itemsNeeded;                
+                
+                if (!effectiveGhost) {
+                    fertRate = itemsNeeded;
+                    node.tags.bio = {
+                        item: params.selectedFert,
+                        rate: itemsNeeded,
+                        nutrientPerSec: totalNutrientsNeeded / 60,
+                        costPerMin:
+                            params.showFertCost && params.fertCost > Number.EPSILON
+                                ? Math.ceil(itemsNeeded * params.fertCost - Number.EPSILON)
+                                : 0
+                    };
 
-                fertRate = itemsNeeded;
-                node.tags.bio = {
-                    item: params.selectedFert,
-                    rate: itemsNeeded,
-                    nutrientPerSec: totalNutrientsNeeded / 60,
-                    costPerMin: params.showFertCost && params.fertCost > Number.EPSILON ? Math.ceil(itemsNeeded * params.fertCost - Number.EPSILON) : 0
-                };
-                if (node.tags.bio.costPerMin > 0) {
-                    node.tags.costEntries.push({ type: "fert", amount: node.tags.bio.costPerMin });
-                    aggregates.goldPerMin += node.tags.bio.costPerMin;
+                    if (node.tags.bio.costPerMin > 0) {
+                        node.tags.costEntries.push({
+                            type: "fert",
+                            amount: node.tags.bio.costPerMin
+                        });
+
+                        aggregates.goldPerMin += node.tags.bio.costPerMin;
+                    }
                 }
             }
 
@@ -682,14 +701,14 @@
                     const qtyPerBatch = recipe.inputs[inputName];
                     const requiredInputRate = netBatches * qtyPerBatch;
                     // 高級煉金爐的催化劑：是否展開子樹由全域設定 state.expandCatalystInputs 決定 (每種催化劑獨立)
-                    let shouldExpand = true;
+                    let shouldExpandChild = true;
                     if (recipe.machine === 'Advanced Athanor') {
                         const catalystType = getCatalystTypeByCharges(db.items[inputName]?.charges);
                         if (catalystType) {
-                            shouldExpand = !!(state.expandCatalystInputs && state.expandCatalystInputs[catalystType]);
+                            shouldExpandChild = !!(state.expandCatalystInputs && state.expandCatalystInputs[catalystType]);
                         }
                     }
-                    const childNode = buildNode(inputName, requiredInputRate, isInternalModule, currentPath, effectiveGhost, depth + 1, shouldExpand);
+                    const childNode = buildNode(inputName, requiredInputRate, currentPath, effectiveGhost, depth + 1, shouldExpandChild);
                     if (!effectiveGhost && childNode) node.children.push(childNode);
                 });
             }
@@ -700,154 +719,145 @@
         const treeRoots = [];
         params.targets.forEach(target => {
             if (!db.items[target.item]) return;
-            const rootNode = buildNode(target.item, target.rate, false, [], false, 0);
+            const rootNode = buildNode(target.item, target.rate, [], false, 0);
             if (!isGhost && rootNode) {
                 treeRoots.push({ target, root: rootNode });
             }
         });
 
-        const internalModules = [];
-        if (!isGhost) {
-            const shouldInternalFuel = params.selfFuel && !params.targets.some(target => target.item === params.selectedFuel);
-            const shouldInternalFert = params.selfFert && !params.targets.some(target => target.item === params.selectedFert);
-            let stableFuelDemand = aggregates.fuelDemandItems;
-            let stableFertDemand = aggregates.fertDemandItems;
-            const byproductSnapshot = cloneRecord(availableByproducts);
+        // --- Internal fuel/fert module trees ---
+        // Built on EVERY pass (ghost or real) whenever a non-zero rate is
+        // supplied, so their own footprint (heat/fert/byproducts) is part
+        // of the same aggregates as everything else, on every iteration of
+        // solveEquilibrium as well as the single final real pass.
 
-            const baseFuel = aggregates.fuelDemandItems;
-            const baseFert = aggregates.fertDemandItems;
-            const baseHeat = aggregates.heatLoad;
-            const baseBio = aggregates.bioLoad;
-            const baseCost = aggregates.goldPerMin;
-
-            if (shouldInternalFuel || shouldInternalFert) {
-                for (let i = 0; i < 10; i++) {
-                    aggregates.fuelDemandItems = baseFuel;
-                    aggregates.fertDemandItems = baseFert;
-                    aggregates.heatLoad = baseHeat;
-                    aggregates.bioLoad = baseBio;
-                    aggregates.goldPerMin = baseCost;
-
-                    Object.keys(availableByproducts).forEach(key => delete availableByproducts[key]);
-                    Object.assign(availableByproducts, cloneRecord(byproductSnapshot));
-
-                    const prevFuel = stableFuelDemand;
-                    const prevFert = stableFertDemand;
-
-                    if (params.selfFert && prevFert > 0) {
-                        buildNode(params.selectedFert, prevFert, true, [], true, 0);
-                    }
-
-                    if (params.selfFuel && prevFuel > 0) {
-                        buildNode(params.selectedFuel, prevFuel, true, [], true, 0);
-                    }
-
-                    const nextFuel = aggregates.fuelDemandItems;
-                    const nextFert = aggregates.fertDemandItems;
-
-                    if (Math.abs(nextFuel - prevFuel) < 0.01 && Math.abs(nextFert - prevFert) < 0.01) {
-                        stableFuelDemand = nextFuel;
-                        stableFertDemand = nextFert;
-                        break;
-                    }
-
-                    stableFuelDemand = nextFuel;
-                    stableFertDemand = nextFert;
+        if (params.selectedFuel === params.selectedFert) {            
+            const totalRate = internalFuelRate + internalFertRate;
+            if (totalRate > 0) {
+                const totalItem = params.selectedFuel;
+                const totalRoot = buildNode(totalItem, totalRate, [], isGhost, 0);
+                if (!isGhost && totalRoot) {
+                    const target = { item: totalItem, rate: totalRate };
+                    treeRoots.push({ target, root: totalRoot });
                 }
             }
-
-            aggregates.fuelDemandItems = stableFuelDemand;
-            aggregates.fertDemandItems = stableFertDemand;
-
-            if (shouldInternalFert && stableFertDemand > 0) {
-                const fertRoot = buildNode(params.selectedFert, stableFertDemand, true, [], false, 0);
-                if (fertRoot) {
-                    internalModules.push({ type: "fert", item: params.selectedFert, rate: stableFertDemand, root: fertRoot });
+        }
+        else {
+            if (internalFuelRate > 0) {
+                const fuelRoot = buildNode(params.selectedFuel, internalFuelRate, [], isGhost, 0);
+                if (!isGhost && fuelRoot) {
+                    const target = { item: params.selectedFuel, rate: internalFuelRate };
+                    treeRoots.push({ target, root: fuelRoot });
                 }
             }
-
-            if (shouldInternalFuel && stableFuelDemand > 0) {
-                const fuelRoot = buildNode(params.selectedFuel, stableFuelDemand, true, [], false, 0);
-                if (fuelRoot) {
-                    internalModules.push({ type: "fuel", item: params.selectedFuel, rate: stableFuelDemand, root: fuelRoot });
+            if (internalFertRate > 0) {
+                const fertRoot = buildNode(params.selectedFert, internalFertRate, [], isGhost, 0);
+                if (!isGhost && fertRoot) {
+                    const target = { item: params.selectedFert, rate: internalFertRate };
+                    treeRoots.push({ target, root: fertRoot });
                 }
             }
         }
 
         return {
             treeRoots,
-            internalModules,
             availableByproducts,
             aggregates
         };
     }
 
-    function solveByproducts(db, params, state) {
-        let availableByproducts = {};
-        let totalByproducts = {};
-        buildProductionModel({
-            db,
-            params,
-            state,
-            isGhost: true,
-            initialAvailableByproducts: availableByproducts,
-            initialTotalByproducts: totalByproducts
-        });
+    /**
+     * Jointly solves for a stable equilibrium of:
+     *   - the byproduct recycling pool (availableByproducts / totalByproducts)
+     *   - the internal fuel-module production rate (if self-fuel is enabled
+     *     and fuel is not already one of the user's targets)
+     *   - the internal fert-module production rate (if self-fert is enabled
+     *     and fert is not already one of the user's targets)
+     * All three quantities are updated together each iteration.
+     *
+     * Returns { stableByproducts, stableFuelRate, stableFertRate }.
+     */
+    function solveEquilibrium(db, params, state) {
+        const shouldFuel = params.selfFuel && !params.targets.some(target => target.item === params.selectedFuel);
+        const shouldFert = params.selfFert && !params.targets.some(target => target.item === params.selectedFert);
 
-        availableByproducts = cloneRecord(totalByproducts);
-        totalByproducts = {};
-        buildProductionModel({
-            db,
-            params,
-            state,
-            isGhost: true,
-            initialAvailableByproducts: availableByproducts,
-            initialTotalByproducts: totalByproducts
-        });
+        let byproductGuess = {};
+        let fuelGuess = 0;
+        let fertGuess = 0;
 
-        let byproductSnapshot = cloneRecord(totalByproducts);
-        let latestTotal = cloneRecord(totalByproducts);
-        const maxTimes = 60;
-
-        for (let i = 0; i <= maxTimes; i++) {
-            availableByproducts = cloneRecord(byproductSnapshot);
-            totalByproducts = {};
-
-            buildProductionModel({
-                db,
-                params,
-                state,
-                isGhost: true,
-                initialAvailableByproducts: availableByproducts,
-                initialTotalByproducts: totalByproducts
+        // --- Warm-up: 3 ghost passes to get past the "empty pool" transient,
+        //     now also seeding fuel/fert guesses from scratch ---
+        const warmUpCount = (shouldFuel || shouldFert) ? 3 : 1
+        for (let w = 0; w < warmUpCount; w++) {
+            const totalByproducts = {};
+            const model = buildProductionModel({
+                db, params, state, isGhost: true,
+                initialAvailableByproducts: byproductGuess,
+                initialTotalByproducts: totalByproducts,
+                internalFuelRate: fuelGuess,
+                internalFertRate: fertGuess
             });
-
-            latestTotal = cloneRecord(totalByproducts);
-            let maxDiff = 0;
-            const allKeys = [...new Set([...Object.keys(byproductSnapshot), ...Object.keys(totalByproducts)])];
-            allKeys.forEach(key => {
-                const valA = byproductSnapshot[key] || 0;
-                const valB = totalByproducts[key] || 0;
-                if (Math.abs(valA - valB) > maxDiff) maxDiff = Math.abs(valA - valB);
-            });            
-            if (maxDiff < 0.0001) {
-                if (i > 0) console.log("Solve Equilibrium Completed. Oscillation Times = " + i);
-                break;
-            }
-            else if (i >= maxTimes) {                
-                console.log(`Solve Equilibrium Unfinished. Oscillation Times > ${maxTimes}`);
-            }
-
-            allKeys.forEach(key => {
-                // 對於超過15次, 調整damping ratio, 避免過度震盪(e.g. 銀的共振催化劑)
-                const valA = byproductSnapshot[key] || 0;
-                const valB = totalByproducts[key] || 0;
-                const dampingRatio = i < 30 ? (i < 15 ? 0.5 : 0.25) : 0.125;
-                byproductSnapshot[key] = valA + ((valB - valA) * dampingRatio);
-            });
+            byproductGuess = cloneRecord(totalByproducts);
+            fuelGuess = shouldFuel ? model.aggregates.fuelDemandItems : 0;
+            fertGuess = shouldFert ? model.aggregates.fertDemandItems : 0;
         }
 
-        return latestTotal;
+        const maxTimes = 60;
+        for (let i = 0; i <= maxTimes; i++) {
+            const availableByproducts = cloneRecord(byproductGuess);
+            const totalByproducts = {};
+
+            const model = buildProductionModel({
+                db, params, state, isGhost: true,
+                initialAvailableByproducts: availableByproducts,
+                initialTotalByproducts: totalByproducts,
+                internalFuelRate: fuelGuess,
+                internalFertRate: fertGuess
+            });
+
+            const newFuel = shouldFuel ? model.aggregates.fuelDemandItems : 0;
+            const newFert = shouldFert ? model.aggregates.fertDemandItems : 0;
+
+            let maxDiff = 0;
+            const allKeys = [...new Set([...Object.keys(byproductGuess), ...Object.keys(totalByproducts)])];
+            allKeys.forEach(key => {
+                const valA = byproductGuess[key] || 0;
+                const valB = totalByproducts[key] || 0;
+                if (Math.abs(valA - valB) > maxDiff && valA > 0) maxDiff = Math.abs(valA - valB) / valA;
+            });
+
+            if (maxDiff < 0.0001) {
+                if (i > 0) console.log("Solve Equilibrium Completed. Oscillation Times = " + i);
+                byproductGuess = cloneRecord(totalByproducts);
+                fuelGuess = newFuel;
+                fertGuess = newFert;
+                break;
+            }
+            else if (i >= maxTimes) {
+                console.log(`Solve Equilibrium Unfinished. Oscillation Times > ${maxTimes}`);
+                byproductGuess = cloneRecord(totalByproducts);
+                fuelGuess = newFuel;
+                fertGuess = newFert;
+                break;
+            }
+
+            const dampingRatio = i < 30 ? (i < 15 ? 0.5 : 0.25) : 0.125;
+
+            allKeys.forEach(key => {
+                const valA = byproductGuess[key] || 0;
+                const valB = totalByproducts[key] || 0;
+                byproductGuess[key] = valA + ((valB - valA) * dampingRatio);
+            });
+            // Note: fuel and fert rates don't apply dampingRatio as they need fast iteration
+            fuelGuess = newFuel;
+            fertGuess = newFert;
+        }
+
+        return {
+            stableByproducts: byproductGuess,
+            stableFuelRate: fuelGuess,
+            stableFertRate: fertGuess
+        };
     }
 
     function aggregateMachineStats(machineStats, db) {
@@ -929,14 +939,17 @@
     }
 
     function runCalculation({ db, params, state }) {
-        const stableByproducts = solveByproducts(db, params, state);
+        const eq = solveEquilibrium(db, params, state);
+
         const finalModel = buildProductionModel({
             db,
             params,
             state,
             isGhost: false,
-            initialAvailableByproducts: cloneRecord(stableByproducts),
-            initialTotalByproducts: {}
+            initialAvailableByproducts: cloneRecord(eq.stableByproducts),
+            initialTotalByproducts: {},
+            internalFuelRate: eq.stableFuelRate,
+            internalFertRate: eq.stableFertRate
         });
 
         const sections = buildResultSections(db, params, finalModel);

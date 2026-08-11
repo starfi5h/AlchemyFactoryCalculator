@@ -181,6 +181,7 @@ function calculate() {
     try {
         if(!DB || !DB.recipes) return;
         
+        console.time('calculate');
         const params = gatherInputs();
         updateLabels(params);
         const result = AlchemyCalcEngine.runCalculation({
@@ -204,6 +205,7 @@ function calculate() {
         // --- PASS 3: TRANSLATION --- (extra)
         translateText();
         updateURL();
+        console.timeEnd('calculate');
 
     } catch(e) { console.error(e); }
 }
@@ -387,16 +389,6 @@ function renderCalculationResult(params, result) {
         `;
         treeContainer.appendChild(div);
         treeContainer.appendChild(renderTreeNode(params, entry.root));
-    });
-
-    result.internalModules.forEach(module => {
-        const h = document.createElement('div');
-        h.className = 'section-header';
-        h.innerText = module.type === 'fert'
-            ? `--- ${t('Internal Nutrient Module')} (${module.item}) ---`
-            : `--- ${t('Internal Heat Module')} (${module.item}) ---`;
-        treeContainer.appendChild(h);
-        treeContainer.appendChild(renderTreeNode(params, module.root));
     });
 
     renderExternalInputsSection(treeContainer, params, result.externalInputs);
@@ -739,7 +731,7 @@ function renderByproductsSection(treeContainer, byproducts) {
         entry.producers.forEach(inst => {
             childrenHtml += `
                 <div class="node-content" style="margin-bottom:2px; opacity:0.8;">
-                    <span class="qty" style="min-width:60px; display:inline-block; ${inst.rate > 0.0001 ? 'color:var(--byproduct);' : ''}">${formatVal(inst.rate)}/m</span>
+                    <span class="qty" style="min-width:60px; display:inline-block; ${inst.rate > 0.0001 ? 'color:var(--byproduct);' : ''}">${inst.rate > 0.0001 ? formatVal(inst.rate) : formatVal(-inst.rate)}/m</span>
                     <span class="machine-tag" data-tooltip="${buildRecipeTooltip(inst.tooltipData)}">${Math.ceil(inst.machineCount)} ${t(inst.recipe.machine, 'machines')}</span>
                     <span class="details" style="font-size:0.85em; cursor:pointer;" onclick="jumpToNode('${inst.pathKey}')">[ ${inst.pathKey} ]</span>
                 </div>
@@ -1069,16 +1061,28 @@ function updateSummaryBox(p, heatPerSec, nutrPerSec, goldPerMin, actualFuelNeed,
             
             if (fuelFertValues.fuelValue) {
                 const costPerHeat = fuelFertValues.fuelValue / (fuelItemDef.heat * p.fuelMult);
-                costHtml += `<span class="stat-value" style="color:var(--fuel);">
-                    ${fuelIcon} ${t('Cost per Heat')}: ${costPerHeat.toFixed(4)} ${coinIcon}
-                </span>`;
+                costHtml += `
+                    <span class="stat-value stat-flex-row">
+                        <span class="stat-value" style="color:var(--fuel);">
+                            ${fuelIcon} ${t('Cost per Heat')}: ${costPerHeat.toFixed(4)} ${coinIcon}
+                        </span>
+                        <span class="stat-extra" style="color:var(--warn);">
+                            (${(1/costPerHeat).toFixed(2)} P/${t('Coin')})
+                        </span>
+                    </span>`;
             }        
             
             if (fuelFertValues.fertValue) {
                 const costPerNutr = fuelFertValues.fertValue / (fertItemDef.nutrientValue * p.fertMult);            
-                costHtml += `<span class="stat-value" style="color:var(--bio);">
-                    ${fertIcon} ${t('Cost per Nutr')}: ${costPerNutr.toFixed(4)} ${coinIcon}
-                </span>`;
+                costHtml += `
+                    <span class="stat-value stat-flex-row">
+                        <span class="stat-value" style="color:var(--bio);">
+                            ${fertIcon} ${t('Cost per Nutr')}: ${costPerNutr.toFixed(4)} ${coinIcon}
+                        </span>
+                        <span class="stat-extra" style="color:var(--bio);">
+                            (${(1/costPerNutr).toFixed(2)} V/${t('Coin')})
+                        </span>
+                    </span>`;
             }
         }
     }
