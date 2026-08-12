@@ -766,6 +766,71 @@
         };
     }
 
+
+    // 用 3 次採樣 ghost pass 擬合線性映射 newFuel/newFert = A * [fuelGuess, fertGuess] + b，
+    // 直接解不動點方程 (I - A)x = b，取得初始猜測值；若無解或解不合理，視為發散
+    function estimateFuelFertLinearGuess(db, params, state, shouldFuel, shouldFert) {
+        if (!shouldFuel && !shouldFert) return { fuelGuess: 0, fertGuess: 0, divergent: false };
+
+        // 先用 fuelGuess=fertGuess=0 跑一次，取得生產樹本身(含內部模塊此時為0)所產生的副產物池，
+        // 作為後續三次採樣共用的固定回收池近似 (一階近似：忽略池子隨 fuel/fert 增加而變動的二階效應)
+        const basePool = {};
+        buildProductionModel({
+            db, params, state, isGhost: true,
+            initialAvailableByproducts: {},
+            initialTotalByproducts: basePool,
+            internalFuelRate: 0,
+            internalFertRate: 0
+        });
+
+        function sample(fuelRate, fertRate) {
+            const totalByproducts = {};
+            const model = buildProductionModel({
+                db, params, state, isGhost: true,
+                initialAvailableByproducts: cloneRecord(basePool),
+                initialTotalByproducts: totalByproducts,
+                internalFuelRate: fuelRate,
+                internalFertRate: fertRate
+            });
+            return {
+                fuel: shouldFuel ? model.aggregates.fuelDemandItems : 0,
+                fert: shouldFert ? model.aggregates.fertDemandItems : 0
+            };
+        }
+
+        const base = sample(0, 0);
+        const b1 = base.fuel, b2 = base.fert;
+
+        let a11 = 0, a21 = 0, a12 = 0, a22 = 0;
+        if (shouldFuel) {
+            const s1 = sample(1, 0);
+            a11 = s1.fuel - b1;
+            a21 = s1.fert - b2;
+        }
+        if (shouldFert) {
+            const s2 = sample(0, 1);
+            a12 = s2.fuel - b1;
+            a22 = s2.fert - b2;
+        }
+
+        const det = (1 - a11) * (1 - a22) - a12 * a21;
+
+        if (Math.abs(det) < 1e-9) {
+            // (I - A) 奇異矩陣：系統本身不存在唯一不動點 (自耗放大迴路)
+            return { fuelGuess: 0, fertGuess: 0, divergent: true };
+        }
+
+        const fuelGuess = ((1 - a22) * b1 + a12 * b2) / det;
+        const fertGuess = (a21 * b1 + (1 - a11) * b2) / det;
+
+        if (!isFinite(fuelGuess) || !isFinite(fertGuess) || fuelGuess < -1e-6 || fertGuess < -1e-6) {
+            // 解出負值/無限大，物理上不合理，同樣視為無法平衡
+            return { fuelGuess: 0, fertGuess: 0, divergent: true };
+        }
+
+        return { fuelGuess: Math.max(0, fuelGuess), fertGuess: Math.max(0, fertGuess), divergent: false };
+    }
+
     /**
      * Jointly solves for a stable equilibrium of:
      *   - the byproduct recycling pool (availableByproducts / totalByproducts)
@@ -775,22 +840,25 @@
      *     and fert is not already one of the user's targets)
      * All three quantities are updated together each iteration.
      *
-     * Returns { stableByproducts, stableFuelRate, stableFertRate }.
+     * Returns { stableByproducts, stableFuelRate, stableFertRate, equilibriumWarning }.
      */
     function solveEquilibrium(db, params, state) {
-        const shouldFuel = params.selfFuel && !params.targets.some(target => target.item === params.selectedFuel);
-        const shouldFert = params.selfFert && !params.targets.some(target => target.item === params.selectedFert);
-
+        let shouldFuel = params.selfFuel && !params.targets.some(target => target.item === params.selectedFuel);
+        let shouldFert = params.selfFert && !params.targets.some(target => target.item === params.selectedFert);
+        
         let byproductGuess = {};
         let fuelGuess = 0;
-        let fertGuess = 0;
+        let fertGuess = 0;        
+        let fuelWindow = [];
+        let fertWindow = [];
+        let equilibriumWarning = null; // null | 'LowFuel' | 'LowFert' | 'Divergence'
 
         // --- Warm-up: 3 ghost passes to get past the "empty pool" transient,
         //     now also seeding fuel/fert guesses from scratch ---
-        const warmUpCount = (shouldFuel || shouldFert) ? 3 : 1
-        for (let w = 0; w < warmUpCount; w++) {
+        for(;;)
+        {
             const totalByproducts = {};
-            const model = buildProductionModel({
+            let model = buildProductionModel({
                 db, params, state, isGhost: true,
                 initialAvailableByproducts: byproductGuess,
                 initialTotalByproducts: totalByproducts,
@@ -798,8 +866,26 @@
                 internalFertRate: fertGuess
             });
             byproductGuess = cloneRecord(totalByproducts);
-            fuelGuess = shouldFuel ? model.aggregates.fuelDemandItems : 0;
-            fertGuess = shouldFert ? model.aggregates.fertDemandItems : 0;
+
+            // --- 線性前置檢查：偵測發散、並取得較佳的初始猜測值 ---
+            if (shouldFuel || shouldFert) {
+                const linearEstimate = estimateFuelFertLinearGuess(db, params, state, shouldFuel, shouldFert);
+                if (linearEstimate.divergent) {
+                    console.warn("Solve Equilibrium Diverged (linear pre-check): internal fuel/fert module demand exceeds its own supply.");
+                    params.selfFert = false;
+                    shouldFert = false;
+                    fertGuess = 0;
+                    params.selfFuel = false;
+                    shouldFuel = false;
+                    fuelGuess = 0;
+                    equilibriumWarning = 'LowSupply';
+                    continue;
+                }
+                // 用線性解出的值作為疊代起點，取代原本的 0 初始值，減少後續 warm-up/主迴圈所需輪數
+                fuelGuess = linearEstimate.fuelGuess;
+                fertGuess = linearEstimate.fertGuess;
+            }
+            break;
         }
 
         const maxTimes = 60;
@@ -823,10 +909,13 @@
             allKeys.forEach(key => {
                 const valA = byproductGuess[key] || 0;
                 const valB = totalByproducts[key] || 0;
-                if (Math.abs(valA - valB) > maxDiff && valA > 0) maxDiff = Math.abs(valA - valB) / valA;
+                if (Math.abs(valA - valB) > maxDiff && valA > 0.001) maxDiff = Math.abs(valA - valB) / valA;
             });
+            //console.log(`[${i}] fuel:${fuelGuess} fert:${fertGuess} byproduct%:${maxDiff}`);
+            if (fuelGuess > 0) maxDiff = Math.max(maxDiff, Math.abs(fuelGuess - newFuel) / fuelGuess / 10);
+            if (fertGuess > 0) maxDiff = Math.max(maxDiff, Math.abs(fertGuess - newFert) / fertGuess / 10);
 
-            if (maxDiff < 0.0001) {
+            if (maxDiff < 0.00001) {
                 if (i > 0) console.log("Solve Equilibrium Completed. Oscillation Times = " + i);
                 byproductGuess = cloneRecord(totalByproducts);
                 fuelGuess = newFuel;
@@ -834,30 +923,79 @@
                 break;
             }
             else if (i >= maxTimes) {
-                console.log(`Solve Equilibrium Unfinished. Oscillation Times > ${maxTimes}`);
+                console.log(`Solve Equilibrium Unfinished. Oscillation Times > ${maxTimes}. Max Diff = ${maxDiff.toFixed(6)}`);
                 byproductGuess = cloneRecord(totalByproducts);
                 fuelGuess = newFuel;
                 fertGuess = newFert;
+                // 誤差太大(>1%)時再提示
+                if(maxDiff > 0.01) equilibriumWarning = 'Divergence';
                 break;
             }
 
-            const dampingRatio = i < 30 ? (i < 15 ? 0.5 : 0.25) : 0.125;
+            const dampingRatio = i < 40 ? (i < 20 ? (i < 10 ? 0.5 : 0.25) : 0.125) : 0.0625;
 
             allKeys.forEach(key => {
                 const valA = byproductGuess[key] || 0;
                 const valB = totalByproducts[key] || 0;
-                byproductGuess[key] = valA + ((valB - valA) * dampingRatio);
+                byproductGuess[key] = valA + ((valB - valA) * dampingRatio * 1.75);
+                //console.log(`[${i}] ${key}: ${valA} -> ${valB} => ${byproductGuess[key]}`);
             });
-            // Note: fuel and fert rates don't apply dampingRatio as they need fast iteration
-            fuelGuess = newFuel;
-            fertGuess = newFert;
+
+            if (shouldFuel || shouldFert) {
+                if (i <= 20) {
+                    // --- Aitken's Δ² 外推加速 ---
+                    // 每累積滿 3 筆歷史值就嘗試外推一次，成功則直接跳到推算出的極限值並重置視窗，
+                    // 避免每輪都外推導致數值不穩定
+                    fuelGuess = newFuel;
+                    fertGuess = newFert;
+                    if (shouldFuel) {
+                        fuelWindow.push(fuelGuess);
+                        if (fuelWindow.length > 3) fuelWindow.shift();
+                        if (fuelWindow.length === 3) {
+                            const extrapolated = aitkenExtrapolate(fuelWindow);
+                            if (extrapolated !== null) {
+                                fuelGuess = extrapolated;
+                                fuelWindow = [fuelGuess];
+                            }
+                        }
+                    }
+                    if (shouldFert) {
+                        fertWindow.push(fertGuess);
+                        if (fertWindow.length > 3) fertWindow.shift();
+                        if (fertWindow.length === 3) {
+                            const extrapolated = aitkenExtrapolate(fertWindow);
+                            if (extrapolated !== null) {
+                                fertGuess = extrapolated;
+                                fertWindow = [fertGuess];
+                            }
+                        }
+                    }
+                }
+                else {
+                    // Note: fuel and fert rates apply momentum as they need faster iteration
+                    fuelGuess = newFuel + (newFuel - fuelGuess) * dampingRatio * 1.45;
+                    fertGuess = newFert + (newFert - fertGuess) * dampingRatio * 1.45;
+                }
+            }
         }
 
         return {
             stableByproducts: byproductGuess,
             stableFuelRate: fuelGuess,
-            stableFertRate: fertGuess
+            stableFertRate: fertGuess,
+            equilibriumWarning
         };
+    }
+
+    // Aitken's Δ² 外推：從最近 3 個疊代值推算線性收斂數列的極限，加速收斂
+    function aitkenExtrapolate(window) {
+        if (window.length < 3) return null;
+        const [x0, x1, x2] = window;
+        const denom = x2 - 2 * x1 + x0;
+        if (Math.abs(denom) < 1e-9) return null; // 分母趨近 0：數列已幾乎收斂或不穩定，放棄外推
+        const extrapolated = x0 - ((x1 - x0) * (x1 - x0)) / denom;
+        if (!isFinite(extrapolated) || extrapolated < 0) return null; // 外推結果不合理，放棄
+        return extrapolated;
     }
 
     function aggregateMachineStats(machineStats, db) {
@@ -955,8 +1093,8 @@
         const sections = buildResultSections(db, params, finalModel);
         return {
             targets: params.targets,
-            treeRoots: finalModel.treeRoots,
-            internalModules: finalModel.internalModules,
+            treeRoots: finalModel.treeRoots,            
+            equilibriumWarning: eq.equilibriumWarning,
             summary: {
                 heatLoad: finalModel.aggregates.heatLoad,
                 bioLoad: finalModel.aggregates.bioLoad,

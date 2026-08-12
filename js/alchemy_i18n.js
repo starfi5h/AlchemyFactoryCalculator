@@ -230,6 +230,8 @@ window.ALCHEMY_I18N = {
         "Throughput": "单设备产量",
         "Internal Nutrient Module": "内部肥料模块",
         "Internal Heat Module": "内部燃料模块",
+        "Internal fuel/fert module demand exceeds its own supply.": "内部燃料/肥料模块的需求超过了其自身供应量",
+        "By-product Recycling: Value Unconverged.": "副产物回收：数值未达成收敛",
 
         "Common Nodes": "共同节点",
 

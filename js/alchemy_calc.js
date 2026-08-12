@@ -223,15 +223,14 @@ function sendCalcResultToPlanner() {
 /**
  * 計算指定物品在單一機台滿載下的產出速率 (items/min)，
  * 已套用 Alchemy/Speed 倍率並被傳送帶速度上限裁切
+ * @param {string} recipe
  * @param {string} itemName
  * @param {object} [opts] 可選覆寫參數 { lvlAlchemy, lvlSpeed, lvlBelt, selectedFert }
  * @returns {number} ratePerMachine，若無配方則回傳 0
  */
-function getSingleMachineRate(itemName, opts = {}) {
+function getSingleMachineRate(recipe, itemName, opts = {}) {
     const itemDef = DB.items[itemName];
-    if (!itemDef) return 0;
-    const recipe = getActiveRecipe(itemName);
-    if (!recipe) return 0;
+    if (!itemDef || !recipe) return 0;
 
     const lvlAlchemy   = opts.lvlAlchemy   ?? (parseInt(document.getElementById('lvlAlchemy').value) || 0);
     const lvlSpeed     = opts.lvlSpeed     ?? (parseInt(document.getElementById('lvlSpeed').value) || 0);
@@ -316,12 +315,12 @@ function gatherInputs() {
     const lvlSell = parseInt(document.getElementById('lvlSell').value) || 0;
             
     const isMachineMode = document.getElementById('machineModeToggle').checked;
-    const recipe = getActiveRecipe(targetItem);
+    const recipe = getActiveRecipe(targetItem, ">" + targetItem);
     const machineName = recipe ? "(" + t(recipe.machine, 'machines') + ")" : "N/A";
     document.getElementById('active-machine-name').innerText = machineName;        
 
     if (recipe) {
-        const ratePerMachine = getSingleMachineRate(targetItem, { lvlAlchemy, lvlSpeed, lvlBelt, selectedFert });
+        const ratePerMachine = getSingleMachineRate(recipe, targetItem, { lvlAlchemy, lvlSpeed, lvlBelt, selectedFert });
         if (isMachineMode) {
             const machineCount = parseFloat(document.getElementById('targetMachine').value) || 0;
             targetRate = machineCount * ratePerMachine;
@@ -417,6 +416,7 @@ function renderCalculationResult(params, result) {
     );
 
     updateSummaryLineFromResult(params, result.formulaLineData);
+    updateEquilibriumWarning(result.equilibriumWarning);
 }
 
 function createSectionHeader(title) {
@@ -793,6 +793,21 @@ function updateSummaryLineFromResult(params, formulaLineData) {
     });
 
     document.getElementById('summary-line').innerHTML = summaryLine;
+}
+
+function updateEquilibriumWarning(equilibriumWarning) {
+    let el = document.getElementById('equilibrium-warning-line');
+    let warningText = '';
+    switch (equilibriumWarning) {
+        case 'LowSupply': warningText = t('Internal fuel/fert module demand exceeds its own supply.'); break;
+        case 'Divergence': warningText = t('By-product Recycling: Value Unconverged.'); break;
+    }
+    if (warningText) {
+        el.innerText = '⚠︎ ' + warningText;
+        el.style.display = 'block';
+    } else {
+        el.style.display = 'none';
+    }
 }
 
 /* ==========================================================================

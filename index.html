@@ -29,7 +29,7 @@
             <span style="margin-left: 10px;">
                 <span id="ui-lang-toggle" style="cursor:pointer; margin-right: 10px;" onclick="toggleLanguage()" title="EN/中文">🌐EN/中文</span>
                 <a href="https://github.com/starfi5h/AlchemyFactoryCalculator" target="_blank" class="repo-link">GitHub Repo</a>
-                <span id="last-updated-time-text">2026.08.10</span>
+                <span id="last-updated-time-text">2026.08.12</span>
             </span>
         </div>
         <div class="tabs">
@@ -224,8 +224,8 @@
                             <h3 style="margin:0; border:none;">Production Goal</h3>
                             <!-- 模式切換 Toggle -->
                             <div style="display:flex; align-items:center; gap:8px;">
-                                <label id="ui-mode-label" style="font-size:0.8em; color:#aaa; font-weight:bold;">MULTI</label>
-                                <label class="switch">
+                                <label id="ui-mode-label" style="font-size:0.8em; color:#aaa; font-weight:bold;" for="modeToggle">MULTI</label>
+                                <label class="switch" for="modeToggle">
                                     <input type="checkbox" id="modeToggle" onchange="toggleCalcMode()">
                                     <span class="slider-switch"></span>
                                 </label>
@@ -235,7 +235,7 @@
                         <!-- 單產物 UI (保持不變，但在切換時會被隱藏) -->
                         <div id="single-target-ui">
                             <div class="input-group">
-                                <label>Target Item</label>
+                                <label for="targetItemInput">Target Item</label>
                                 <div class="combobox-container" id="targetCombobox">
                                     <div class="input-wrapper" onclick="toggleCombobox()">
                                         <div id="ghost-text" class="ghost-input"></div>
@@ -255,7 +255,7 @@
                             </div>                            
                             <!-- 機器數量輸入 -->
                             <div class="input-group" style="opacity:0.5" id="group-machine" disabled>
-                                <label id="machineLabel">Machine Count</label> <label id="active-machine-name">(None)</label>
+                                <label id="machineLabel" for="targetMachine">Machine Count</label> <label id="active-machine-name" for="targetMachine">(None)</label>
                                 <div class="spinner-wrapper">
                                     <button class="spinner-btn left first" onclick="adjustMachine(-1)">-1</button>
                                     <button class="spinner-btn left" onclick="adjustMachine(-0.1)">-0.1</button>
@@ -266,7 +266,7 @@
                             </div>
                             <!-- 速率輸入 -->
                             <div class="input-group" id="group-rate">
-                                <label>Rate (Items/Min)</label>
+                                <label for="targetRate">Rate (Items/Min)</label>
                                 <div class="spinner-wrapper">
                                     <button class="spinner-btn left first" onclick="adjustRate(-1)">-1</button>
                                     <button class="spinner-btn left" onclick="adjustRate(-0.1)">-0.1</button>
@@ -276,7 +276,7 @@
                                 </div>
                             </div>
                             <div class="input-group">
-                                <label>Belt Load Fraction</label> <label id="rateLabel">100%</label>
+                                <label for="beltSlider">Belt Load Fraction</label> <label id="rateLabel" for="beltSlider">100%</label>
                                 <div class="slider-container">
                                     <input type="range" id="beltSlider" min="0" max="100" step="1" oninput="updateFromSlider()">
                                     <div id="sliderTicks" class="slider-ticks"></div>
@@ -305,13 +305,13 @@
                         <h3>Logistics</h3>
                         <div class="input-group">
                             <div>
-                                <label>Heating Device</label>
+                                <label for="heatingDeviceSelect">Heating Device</label>
                             </div>
                             <select id="heatingDeviceSelect" onchange="onLogisticsChange()"></select>
                         </div>
                         <div class="input-group">
                             <div style="display:flex; align-items:center; gap:6px; flex-wrap:wrap;">
-                                <label>Fuel Source</label>
+                                <label for="fuelSelect">Fuel Source</label>
                                 <span id="fuelSourceDetail" style="color:var(--gold); font-size:0.85em;"></span>
                             </div>
                             <div style="display:flex; align-items:center; gap:6px;">
@@ -321,7 +321,7 @@
                         </div>
                         <div class="input-group">
                             <span style="display:flex; align-items:center; gap:6px; flex-wrap:wrap;">
-                                <label>Fertilizer Source</label>
+                                <label for="fertSelect">Fertilizer Source</label>
                                 <span id="fertSourceDetail" style="color:var(--gold); font-size:0.85em;"></span>
                             </span>
                             <div style="display:flex; align-items:center; gap:6px;">
@@ -335,7 +335,7 @@
                         </button>
 
                         <div class="input-group">
-                            <label id="nodeSizeLabel">Node Size: 100%</label>
+                            <label id="nodeSizeLabel" for="nodeScaleSlider">Node Size: 100%</label>
                             <input type="range" id="nodeScaleSlider" min="0.5" max="1.5" step="0.05" value="1"
                                 oninput="setNodeScale(this.value); onLogisticsChange();">
                         </div>
@@ -366,6 +366,7 @@
                     <div id="summary-container"></div>
                     <div id="summary-icons"></div>
                     <div id="summary-line" style="margin-bottom: 5px;"></div>
+                    <div id="equilibrium-warning-line" style="margin: 4px 0 8px; font-size: 0.95em; display:block; color: var(--warn);"></div>
                     <div id="tree"></div>
                 </div>
 
@@ -390,7 +391,7 @@
                         </div>
                         <div class="panel-body">
                             <div class="input-group">
-                                <label id="lvlBelt-title">Logistics Efficiency</label>
+                                <label id="lvlBelt-title" for="lvlBelt">Logistics Efficiency</label>
                                 <div class="spinner-wrapper">
                                     <button class="spinner-btn left first" onclick="adjustInput('lvlBelt', -1); updateFromSlider();">-</button>
                                     <input type="number" id="lvlBelt" value="0" min="0" oninput="updateFromSlider()" onchange="saveSettings()">
@@ -398,7 +399,7 @@
                                 </div>
                             </div>
                             <div class="input-group">
-                                <label id="lvlSpeed-title">Factory Efficiency</label>
+                                <label id="lvlSpeed-title" for="lvlSpeed">Factory Efficiency</label>
                                 <div class="spinner-wrapper">
                                     <button class="spinner-btn left first" onclick="adjustInput('lvlSpeed', -1); calculate();">-</button>
                                     <input type="number" id="lvlSpeed" value="0" min="0" oninput="calculate()" onchange="saveSettings()">
@@ -406,7 +407,7 @@
                                 </div>
                             </div>
                             <div class="input-group">
-                                <label id="lvlAlchemy-title">Alchemy Skill</label>
+                                <label id="lvlAlchemy-title" for="lvlAlchemy">Alchemy Skill</label>
                                 <div class="spinner-wrapper">
                                     <button class="spinner-btn left first" onclick="adjustInput('lvlAlchemy', -1); calculate();">-</button>
                                     <input type="number" id="lvlAlchemy" value="0" min="0" oninput="calculate()" onchange="saveSettings()">
@@ -414,7 +415,7 @@
                                 </div>
                             </div>
                             <div class="input-group">
-                                <label id="lvlFuel-title">Fuel Efficiency</label>
+                                <label id="lvlFuel-title" for="lvlFuel">Fuel Efficiency</label>
                                 <div class="spinner-wrapper">
                                     <button class="spinner-btn left first" onclick="adjustInput('lvlFuel', -1); calculate();">-</button>
                                     <input type="number" id="lvlFuel" value="0" min="0" oninput="calculate()" onchange="saveSettings()">
@@ -422,7 +423,7 @@
                                 </div>
                             </div>
                             <div class="input-group">
-                                <label id="lvlFert-title">Fert Efficiency</label>
+                                <label id="lvlFert-title" for="lvlFert">Fert Efficiency</label>
                                 <div class="spinner-wrapper">
                                     <button class="spinner-btn left first" onclick="adjustInput('lvlFert', -1); calculate();">-</button>
                                     <input type="number" id="lvlFert" value="0" min="0" oninput="calculate()" onchange="saveSettings()">
@@ -430,7 +431,7 @@
                                 </div>
                             </div>
                             <div class="input-group">
-                                <label id="lvlSell-title">Sales Ability</label>
+                                <label id="lvlSell-title" for="lvlSell">Sales Ability</label>
                                 <div class="spinner-wrapper">
                                     <button class="spinner-btn left first" onclick="adjustInput('lvlSell', -1); calculate();">-</button>
                                     <input type="number" id="lvlSell" value="0" min="0" oninput="calculate()" onchange="saveSettings()">
@@ -472,7 +473,7 @@
                         <button id="cauldron-tab-2" class="tab-btn mini-tab" onclick="switchCauldronProfile(2)">Profile 3</button>
                     </div>
                     <div class="input-group" style="margin-bottom:2px;">
-                        <label>Filter Category</label>
+                        <label for="cauldron-cat-select">Filter Category</label>
                         <select id="cauldron-cat-select" onchange="renderCandidatePool()"></select>
                     </div>
                     <div class="split-btn-container">
@@ -533,10 +534,10 @@
                                 </div>
                             </div>
                             <div class="filter-group" id="ratio-filter-group">
-                                <div class="checkbox-row"><input type="checkbox" id="filter-2-diff" checked onchange="runCauldronSimulation()"><label style="display:flex; font-size: 1.0em;">2 Diff</label></div>
-                                <div class="checkbox-row"><input type="checkbox" id="filter-3-diff" checked onchange="runCauldronSimulation()"><label style="display:flex; font-size: 1.0em;">3 Diff</label></div>
-                                <div class="checkbox-row"><input type="checkbox" id="filter-2-same" checked onchange="runCauldronSimulation()"><label style="display:flex; font-size: 1.0em;">2 Same</label></div>
-                                <div class="checkbox-row"><input type="checkbox" id="filter-3-same" checked onchange="runCauldronSimulation()"><label style="display:flex; font-size: 1.0em;">3 Same</label></div>
+                                <div class="checkbox-row"><input type="checkbox" id="filter-2-diff" checked onchange="runCauldronSimulation()"><label style="display:flex; font-size: 1.0em;" for="filter-2-diff">2 Diff</label></div>
+                                <div class="checkbox-row"><input type="checkbox" id="filter-3-diff" checked onchange="runCauldronSimulation()"><label style="display:flex; font-size: 1.0em;" for="filter-3-diff">3 Diff</label></div>
+                                <div class="checkbox-row"><input type="checkbox" id="filter-2-same" checked onchange="runCauldronSimulation()"><label style="display:flex; font-size: 1.0em;" for="filter-2-same">2 Same</label></div>
+                                <div class="checkbox-row"><input type="checkbox" id="filter-3-same" checked onchange="runCauldronSimulation()"><label style="display:flex; font-size: 1.0em;" for="filter-3-same">3 Same</label></div>
                             </div>
                         </div>
                         
@@ -599,18 +600,18 @@
                     <!-- Row 3: Parameters -->
                     <div class="rcp-row rcp-row-3">
                         <div class="rcp-param-item">
-                            <label class="rcp-param-label">Fuel</label>
+                            <label class="rcp-param-label" for="rcp-fuel-select">Fuel</label>
                             <select id="rcp-fuel-select" class="rcp-select" onchange="onRecipeParamChange()"></select>
                         </div>
                         <div class="rcp-param-item">
-                            <label class="rcp-param-label">Fertilizer</label>
+                            <label class="rcp-param-label" for="rcp-fert-select">Fertilizer</label>
                             <select id="rcp-fert-select" class="rcp-select" onchange="onRecipeParamChange()"></select>
                         </div>
 
                         <div class="rcp-param-divider"></div>
 
                         <div class="rcp-param-item">
-                            <label class="rcp-param-label" title="Heat value per 1 cauldron-cost unit of fuel">HPC <span class="rcp-param-hint">(P/cc)</span></label>
+                            <label class="rcp-param-label" for="rcp-hpc" title="Heat value per 1 cauldron-cost unit of fuel">HPC <span class="rcp-param-hint">(P/cc)</span></label>
                             <div class="spinner-wrapper">
                                 <button class="spinner-btn" onclick="adjustRecipeParam('rcp-hpc', -1)">-</button>
                                 <input type="number" id="rcp-hpc" class="rcp-param-input" value="20" min="0.01" step="1" oninput="onRecipeParamChange()">
@@ -618,7 +619,7 @@
                             </div>
                         </div>
                         <div class="rcp-param-item">
-                            <label class="rcp-param-label" title="Nutrient value per 1 cauldron-cost unit of fertilizer">NPC <span class="rcp-param-hint">(V/cc)</span></label>
+                            <label class="rcp-param-label" for="rcp-npc" title="Nutrient value per 1 cauldron-cost unit of fertilizer">NPC <span class="rcp-param-hint">(V/cc)</span></label>
                             <div class="spinner-wrapper">
                                 <button class="spinner-btn" onclick="adjustRecipeParam('rcp-npc', -1)">-</button>
                                 <input type="number" id="rcp-npc" class="rcp-param-input" value="20" min="0.01" step="1" oninput="onRecipeParamChange()">
@@ -626,7 +627,7 @@
                             </div>
                         </div>
                         <div class="rcp-param-item">
-                            <label class="rcp-param-label" title="Gold (coins) per 1 cauldron-cost unit of bought items">GPC <span class="rcp-param-hint">(G/cc)</span></label>
+                            <label class="rcp-param-label" for="rcp-gpc" title="Gold (coins) per 1 cauldron-cost unit of bought items">GPC <span class="rcp-param-hint">(G/cc)</span></label>
                             <div class="spinner-wrapper">
                                 <button class="spinner-btn" onclick="adjustRecipeParam('rcp-gpc', -1)">-</button>
                                 <input type="number" id="rcp-gpc" class="rcp-param-input" value="1" min="0.01" step="0.1" oninput="onRecipeParamChange()">
@@ -661,26 +662,26 @@
                         </div>
 
                         <div class="input-group" style="width:160px;">
-                            <label>Category</label>
+                            <label for="iv-categoryFilter">Category</label>
                             <select id="iv-categoryFilter" onchange="ItemValue.onCategoryChange(this.value)"></select>
                         </div>
 
                         <div class="input-group" style="width:160px;">
-                            <label>Heating Device</label>
+                            <label for="iv-heatingDeviceSelect">Heating Device</label>
                             <select id="iv-heatingDeviceSelect" onchange="ItemValue.render()"></select>
                         </div>
                         <div class="input-group" style="width:160px;">
-                            <label>Fuel Source</label>
+                            <label for="iv-fuelSelect">Fuel Source</label>
                             <select id="iv-fuelSelect" onchange="ItemValue.render()"></select>
                         </div>
                         <div class="input-group" style="width:160px;">
-                            <label>Fertilizer Source</label>
+                            <label for="iv-fertSelect">Fertilizer Source</label>
                             <select id="iv-fertSelect" onchange="ItemValue.render()"></select>
                         </div>
 
                         <div class="recipe-upgrades-row">
                             <div class="recipe-upgrade-item">
-                                <label>Factory Efficiency</label>
+                                <label for="iv-lvlSpeed">Factory Efficiency</label>
                                 <div class="spinner-wrapper">
                                     <button class="spinner-btn" onclick="ItemValue.adjustLvl('iv-lvlSpeed', -1)">-</button>
                                     <input type="number" id="iv-lvlSpeed" value="0" min="0" oninput="ItemValue.render()">
@@ -688,7 +689,7 @@
                                 </div>
                             </div>
                             <div class="recipe-upgrade-item">
-                                <label>Alchemy Skill</label>
+                                <label for="iv-lvlAlchemy">Alchemy Skill</label>
                                 <div class="spinner-wrapper">
                                     <button class="spinner-btn" onclick="ItemValue.adjustLvl('iv-lvlAlchemy', -1)">-</button>
                                     <input type="number" id="iv-lvlAlchemy" value="0" min="0" oninput="ItemValue.render()">
@@ -696,7 +697,7 @@
                                 </div>
                             </div>
                             <div class="recipe-upgrade-item">
-                                <label>Fuel Efficiency</label>
+                                <label for="iv-lvlFuel">Fuel Efficiency</label>
                                 <div class="spinner-wrapper">
                                     <button class="spinner-btn" onclick="ItemValue.adjustLvl('iv-lvlFuel', -1)">-</button>
                                     <input type="number" id="iv-lvlFuel" value="0" min="0" oninput="ItemValue.render()">
@@ -704,7 +705,7 @@
                                 </div>
                             </div>
                             <div class="recipe-upgrade-item">
-                                <label>Fert Efficiency</label>
+                                <label for="iv-lvlFert">Fert Efficiency</label>
                                 <div class="spinner-wrapper">
                                     <button class="spinner-btn" onclick="ItemValue.adjustLvl('iv-lvlFert', -1)">-</button>
                                     <input type="number" id="iv-lvlFert" value="0" min="0" oninput="ItemValue.render()">
@@ -712,7 +713,7 @@
                                 </div>
                             </div>
                             <div class="recipe-upgrade-item">
-                                <label title="多輸出配方的成本折扣比例 (副產品視為銷毀)">Cost Ratio %</label>
+                                <label for="iv-costRatio" title="多輸出配方的成本折扣比例 (副產品視為銷毀)">Cost Ratio %</label>
                                 <div class="spinner-wrapper">
                                     <button class="spinner-btn" onclick="ItemValue.adjustLvl('iv-costRatio', -5)">-</button>
                                     <input type="number" id="iv-costRatio" value="100" min="0" max="100" oninput="ItemValue.render()">
