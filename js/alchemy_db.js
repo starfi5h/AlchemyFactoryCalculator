@@ -1,6 +1,6 @@
 window.ALCHEMY_DB = {
-    "version": 49,
-    "date": "2026.07.29",
+    "version": 50,
+    "date": "2026.08.12",
     "gameVersion": "0.5.4539",
     "items": {
         // --- RAW RESOURCES ---
@@ -220,7 +220,7 @@ window.ALCHEMY_DB = {
         "Advanced Blender": { "buildCost": { "Steel Ingot": 8, "Glass": 16, "Copper Bearing": 4 }, "tier": 6 },
         "Advanced Alembic": { "heatCost": 270.0, "slotsRequired": 6, "buildCost": { "Steel Ingot": 8, "Glass": 16, "Copper Bearing": 4  }, "tier": 8 },
         "Advanced Assembler": { "buildCost": { "Steel Ingot": 12, "Steel Gear": 16, "Copper Bearing": 8 }, "tier": 6 },
-        "Advanced Athanor": { "heatCost": 360.0, "slotsRequired": 9, "buildCost": { "Steel Ingot": 12, "Copper Ingot": 12 }, "tier": 8 },
+        "Advanced Athanor": { "heatCost": -1, "slotsRequired": 9, "buildCost": { "Steel Ingot": 12, "Copper Ingot": 12 }, "tier": 8 },
 
         "Shaper": { "buildCost": { "Iron Ingot": 8, "Iron Nails": 16 }, "tier": 5 },
         "Advanced Shaper": { "buildCost": { "Steel Ingot": 8, "Steel Gear": 16 }, "tier": 7 },

@@ -182,31 +182,34 @@
 
         if (recipe.machine === 'Advanced Athanor') {
             const cats = modifiers?.catalysts;
-            if (!cats || cats.length === 0) return recipe;
-
             let recipeInputs = { ...recipe.inputs };
             let recipeOutputs = { ...recipe.outputs };
-            if (cats.includes('eternal')) {
-                recipeInputs = {};
-                const [itemKey] = Object.entries(DB.items).find(([, item]) => item.charges === 99999);
-                recipeInputs[itemKey] = recipe.ChargeCost / 99999;
+
+            if (Array.isArray(cats)) {
+                if (cats.includes('eternal')) {
+                    recipeInputs = {};
+                    const [itemKey] = Object.entries(DB.items).find(([, item]) => item.charges === 99999);
+                    recipeInputs[itemKey] = recipe.ChargeCost / 99999;
+                }
+                if (cats.includes('unstable')) {
+                    recipeOutputs = { ...recipe.unstableOutputs };
+                    const [itemKey] = Object.entries(DB.items).find(([, item]) => item.charges === 180);
+                    recipeInputs[itemKey] = recipe.ChargeCost / 180;
+                }
+                if (cats.includes('resonant')) {
+                    recipeOutputs = { ...recipe.resonantOutputs };
+                    const [itemKey] = Object.entries(DB.items).find(([, item]) => item.charges === 1500);
+                    recipeInputs[itemKey] = recipe.ChargeCost / 1500;
+                }
+                if (cats.includes('fertile')) {
+                    for (const k in recipeOutputs) recipeOutputs[k] *= 2;
+                    const [itemKey] = Object.entries(DB.items).find(([, item]) => item.charges === 240);
+                    recipeInputs[itemKey] = recipe.ChargeCost / 240;
+                }
             }
-            if (cats.includes('unstable')) {
-                recipeOutputs = { ...recipe.unstableOutputs };
-                const [itemKey] = Object.entries(DB.items).find(([, item]) => item.charges === 180);
-                recipeInputs[itemKey] = recipe.ChargeCost / 180;
-            }
-            if (cats.includes('resonant')) {
-                recipeOutputs = { ...recipe.resonantOutputs };
-                const [itemKey] = Object.entries(DB.items).find(([, item]) => item.charges === 1500);
-                recipeInputs[itemKey] = recipe.ChargeCost / 1500;
-            }
-            if (cats.includes('fertile')) {
-                for (const k in recipeOutputs) recipeOutputs[k] *= 2;
-                const [itemKey] = Object.entries(DB.items).find(([, item]) => item.charges === 240);
-                recipeInputs[itemKey] = recipe.ChargeCost / 240;
-            }
-            return { ...recipe, outputs: recipeOutputs, inputs: recipeInputs };
+            const hasCatalyst = Array.isArray(cats) && cats.length > 0;
+            const effectiveHeat = hasCatalyst ? 360 : 32;
+            return { ...recipe, outputs: recipeOutputs, inputs: recipeInputs, heatCost: effectiveHeat };
         }
         else if (recipe.machine === 'Paradox Crucible') {
             if (recipe.customInputSlot) {
