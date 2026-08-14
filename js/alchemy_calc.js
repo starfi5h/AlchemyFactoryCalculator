@@ -978,58 +978,217 @@ function solveFuelFertValue(params, result) {
     return { fuelValue, fertValue };
 }
 
-function updateSummaryBox(p, heatPerSec, nutrPerSec, goldPerMin, actualFuelNeed, actualFertNeed, fuelFertValues) {
-    let { targetItem, targetRate, selfFuel, selfFert, selectedFuel, selectedFert, fuelCost, fertCost } = p;
+function updateSummaryBox(
+    p,
+    heatPerSec,
+    nutrPerSec,
+    goldPerMin,
+    actualFuelNeed,
+    actualFertNeed,
+    fuelFertValues
+) {
+    // =========================================================
+    // Data / Calculation
+    // =========================================================
+
+    let {
+        targetItem,
+        targetRate,
+        selfFuel,
+        selfFert,
+        selectedFuel,
+        selectedFert,
+        fuelCost,
+        fertCost,
+        fuelMult,
+        fertMult
+    } = p;
+
     if (p.isMulti) {
-        targetItem = p.targets[0].item;
-        targetRate = p.targets[0].rate;
+        ({ item: targetItem, rate: targetRate } = p.targets[0]);
     }
+
     const targetItemDef = DB.items[targetItem] || {};
-    
-    let usedRate = 0.0;
+
+    let usedRate = 0;
     if (targetItem === selectedFuel) usedRate += actualFuelNeed;
     if (targetItem === selectedFert) usedRate += actualFertNeed;
+
     if (selfFuel) heatPerSec = 0;
     if (selfFert) nutrPerSec = 0;
+
     let netRate = targetRate;
     if (selfFuel && targetItem === selectedFuel) netRate -= actualFuelNeed;
     if (selfFert && targetItem === selectedFert) netRate -= actualFertNeed;
-    let refRate = targetRate;
-    if (netRate > 0) refRate = targetRate * (targetRate / netRate);
 
-    // --- Output Blocks ---
-    let outputHtml = `<div class="stat-block"><span class="stat-label">${t('Gross Output')}</span>`;
-    if (p.targets.length <= 1) {
-        outputHtml += `<span class="stat-value net-positive">${targetRate.toFixed(1)} / min <img src="img/item${DB.items[targetItem]?.id ?? 0}.png" width="24" height="24" style="vertical-align: middle; margin-bottom: 4px;" title="${targetItem}"></span>
-            ${usedRate > Number.EPSILON ? `<span class="stat-sub net-positive" onclick="recalculate('${targetItem}' , ${refRate})">Net: ${(targetRate - usedRate).toFixed(1)} / min <br>Used: ${usedRate.toFixed(1)} / min</span>` : ''}
-            `;
-        if (targetItemDef.exp) {
-            outputHtml += `<span class="stat-value net-positive">${formatVal(targetRate * targetItemDef.exp)} ${t('Exp')} / min</spn>`;
-        }
-        outputHtml += `</div>`;
-    } else {
-        p.targets.forEach((target) => {
-            if (!DB.items[target.item]) return;
-            outputHtml += `<span class="stat-value net-positive">
-            ${target.rate.toFixed(1)} / min 
-            <img src="img/item${DB.items[target.item]?.id ?? 0}.png" width="24" height="24" style="vertical-align: middle; margin-bottom: 4px;" title="${target.item}">
-            </span>`
+    const netText =
+        netRate === targetRate
+            ? ''
+            : `(${t('Net Output')}: ${Number(netRate.toFixed(2))}/min)`;
+
+    const steamPerMin = heatPerSec * 60 / 20; // Steam = 20 P
+    const steamPerItem = steamPerMin / netRate;
+    const heatPerMin = heatPerSec * 60;
+    const heatPerItem = heatPerMin / netRate;
+    const nutrPerMin = nutrPerSec * 60;
+    const nutrPerItem = nutrPerMin / netRate;
+
+    const convertedCost =
+        (
+            goldPerMin +
+            (selfFuel ? 0 : fuelCost * actualFuelNeed) +
+            (selfFert ? 0 : fertCost * actualFertNeed)
+        ) / netRate;
+
+    const effectiveSell = targetItemDef.sellPrice
+        ? targetItemDef.category !== 'Currency'
+            ? Math.round(targetItemDef.sellPrice * p.sellMult)
+            : targetItemDef.sellPrice
+        : null;
+
+    const retailMargin =
+        effectiveSell != null && convertedCost > 0
+            ? effectiveSell / convertedCost - 1
+            : 0;
+
+    const wholesaleMargin =
+        targetItemDef.wholesalePrice && convertedCost > 0
+            ? targetItemDef.wholesalePrice / convertedCost - 1
+            : 0;
+
+    // =========================================================
+    // Helpers
+    // =========================================================
+
+    const getItemIcon = (item, size = 24, attrs = '') => {
+        const id = DB.items[item]?.id ?? 0;
+
+        return `<img src="img/item${id}.png" width="${size}" height="${size}" style="vertical-align: middle; margin-bottom: 4px;"${attrs}>`;
+    };
+
+    const getSteamIcon = () => {
+        return `<img src="img/item9002.png" width="24" height="24" style="vertical-align: middle; margin-bottom: 4px;">`;
+    };
+
+    const coinIcon = `
+        <img
+            src="img/copper.png"
+            width="16"
+            height="16"
+            style="vertical-align:middle; margin-bottom:2px;"
+        >
+    `;
+
+    const formatRate = (value) =>
+        value.toLocaleString(undefined, {
+            minimumFractionDigits: 1,
+            maximumFractionDigits: 1
         });
-        outputHtml += `</div>`;
+
+    const formatValue = (value) =>
+        value == null || !isFinite(value)
+            ? '—'
+            : value.toLocaleString(undefined, {
+                  maximumFractionDigits: 2
+              });
+
+    const getMarginHtml = (margin) => {
+        if (margin <= -1) return '';
+
+        return margin > 0
+            ? `<span class="stat-pos">(+${(margin * 100).toFixed(0)}%)</span>`
+            : `<span class="stat-sub">(${(margin * 100).toFixed(0)}%)</span>`;
+    };
+
+
+
+    // =========================================================
+    // Output Block
+    // =========================================================
+
+    let outputHtml = `
+        <div class="stat-block">
+            <span class="stat-label">${t('Gross Output')}</span>
+    `;
+
+    if (p.targets.length <= 1) {
+        outputHtml += `
+            <span class="stat-value net-positive">
+                ${targetRate.toFixed(1)} / min
+                ${getItemIcon(targetItem, 24, ` title="${targetItem}"`)}
+            </span>
+        `;
+
+        if (usedRate > Number.EPSILON) {            
+            let refRate = targetRate;
+            if ((targetRate - usedRate)> 0) refRate = targetRate * (targetRate / (targetRate - usedRate));
+            outputHtml += `
+                <span
+                    class="stat-sub net-positive"
+                    title="Click to set net output to ${targetRate}/min (new target rate: ${refRate.toFixed(2)}/min)"
+                    onclick="recalculate('${targetItem}', ${refRate})"
+                    style="cursor:pointer"
+                >
+                    Net: ${(targetRate - usedRate).toFixed(1)} / min
+                    <br>
+                    Used: ${usedRate.toFixed(1)} / min
+                </span>
+            `;
+        }
+
+        if (targetItemDef.exp) {
+            outputHtml += `
+                <span class="stat-value net-positive">
+                    ${formatVal(targetRate * targetItemDef.exp)} ${t('Exp')} / min
+                </span>
+            `;
+        }
+    } else {
+        p.targets.forEach(({ item, rate }) => {
+            if (!DB.items[item]) return;
+
+            outputHtml += `
+                <span class="stat-value net-positive">
+                    ${rate.toFixed(1)} / min
+                    ${getItemIcon(item, 24, ` title="${item}"`)}
+                </span>
+            `;
+        });
     }
 
-    // --- Load Blocks ---
-    const netText = netRate === targetRate ? '' : `(${t('Net Output')}: ${Number(netRate.toFixed(2))}/min)`;
-    let loadHtml = `<div class="stat-block"><span class="stat-label">${t('Total Load')} ${netText}</span>`;
-    if (goldPerMin > 0) loadHtml += `<span class="stat-value" style="color:var(--gold);" title="${Math.ceil(goldPerMin).toLocaleString()}/min">${t('Coin')}: ${formatCoinIcons(goldPerMin)}/ min</span>`;
+    outputHtml += `</div>`;
+
+    // =========================================================
+    // Load Block
+    // =========================================================
+
+    let loadHtml = `
+        <div class="stat-block">
+            <span class="stat-label">
+                ${t('Total Load')} ${netText}
+            </span>
+    `;
+
+    if (goldPerMin > 0) {
+        loadHtml += `
+            <span
+                class="stat-value"
+                style="color:var(--gold);"
+                title="${Math.ceil(goldPerMin).toLocaleString()}/min"
+            >
+                ${t('Coin')}: ${formatCoinIcons(goldPerMin)}/ min
+            </span>
+        `;
+    }
+
     if (heatPerSec > 0) {
         if (p.selectedHeatingDevice === 'Steam Heating Pad') {
-            const steamIcon = `<img src="img/item9002.png" width="24" height="24" style="vertical-align: middle; margin-bottom: 4px;">`;
-            const steamPerMin = heatPerSec * 60 / 20;
+            const steamIcon = getSteamIcon();
+
             loadHtml += `
                 <span class="stat-value stat-flex-row" style="color:var(--fuel);">
                     <span style="color:var(--fuel);">
-                        ${t('Steam')}: ${(steamPerMin).toLocaleString()} ${steamIcon} / min
+                        ${t('Steam')}: ${steamPerMin.toLocaleString()} ${steamIcon} / min
                     </span>
                     <span class="stat-extra" style="color:var(--warn);">
                         (${(steamPerMin / 9000).toFixed(2)} ${t('Steam Boiler', 'machines')})
@@ -1037,80 +1196,121 @@ function updateSummaryBox(p, heatPerSec, nutrPerSec, goldPerMin, actualFuelNeed,
                 </span>
             `;
         }
-        loadHtml += `<span class="stat-value stat-flex-row" style="color:var(--fuel);">`;
-        loadHtml += `<span>${t('Heat')}: ${(actualFuelNeed).toLocaleString()}<img src="img/item${DB.items[selectedFuel]?.id ?? 0}.png" alt="${selectedFuel}" width="24" height="24" style="vertical-align: middle; margin-bottom: 4px;">/ min</span>`;
-        loadHtml += `<span class="stat-extra" style="color:var(--warn);">(${(heatPerSec * 60).toLocaleString(undefined, {minimumFractionDigits: 1, maximumFractionDigits: 1})} P/min)</span>`;
-        loadHtml += `</span>`;
+
+        loadHtml += `
+            <span class="stat-value stat-flex-row" style="color:var(--fuel);">
+                <span>
+                    ${t('Heat')}: ${actualFuelNeed.toLocaleString()}
+                    ${getItemIcon(selectedFuel, 24, ` alt="${selectedFuel}"`)}
+                    / min
+                </span>
+                <span class="stat-extra" style="color:var(--warn);">
+                    (${formatRate(heatPerMin)} P/min)
+                </span>
+            </span>
+        `;
     }
+
     if (nutrPerSec > 0) {
-        loadHtml += `<span class="stat-value stat-flex-row" style="color:var(--bio);">`;
-        loadHtml += `<span>${t('Nutr')}:  ${(actualFertNeed).toLocaleString()}<img src="img/item${DB.items[selectedFert]?.id ?? 0}.png" alt="${selectedFert}" width="24" height="24" style="vertical-align: middle; margin-bottom: 4px;">/ min</span>`;
-        loadHtml += `<span class="stat-extra">(${(nutrPerSec * 60).toLocaleString(undefined, {minimumFractionDigits: 1, maximumFractionDigits: 1})} V/min)</span>`;
-        loadHtml += `</span>`;
+        loadHtml += `
+            <span class="stat-value stat-flex-row" style="color:var(--bio);">
+                <span>
+                    ${t('Nutr')}: ${actualFertNeed.toLocaleString()}
+                    ${getItemIcon(selectedFert, 24, ` alt="${selectedFert}"`)}
+                    / min
+                </span>
+                <span class="stat-extra">
+                    (${formatRate(nutrPerMin)} V/min)
+                </span>
+            </span>
+        `;
     }
+
     loadHtml += `</div>`;
-    
-    // --- Cost Block ---
-    let costHtml = `<div class="stat-block"><span class="stat-label">${t('Unit Cost')} (${targetItem})</span>`;
+
+    // =========================================================
+    // Cost Block
+    // =========================================================
+
+    let costHtml = `
+        <div class="stat-block">
+            <span class="stat-label">
+                ${t('Unit Cost')} (${targetItem})
+            </span>
+    `;
+
     if (p.targets.length === 2 && fuelFertValues) {
-        const fmtVal = (v) => (v === null || v === undefined || !isFinite(v))
-            ? '—'
-            : v.toLocaleString(undefined, { maximumFractionDigits: 2 });
+        const fuelItemDef = DB.items[selectedFuel] || {};
+        const fertItemDef = DB.items[selectedFert] || {};
+        const fuelIcon = getItemIcon(selectedFuel, 18);
+        const fertIcon = getItemIcon(selectedFert, 18);
 
-        const fuelItemDef = DB.items[p.selectedFuel] || {};
-        const fertItemDef = DB.items[p.selectedFert] || {};
+        costHtml += `
+            <span class="stat-value" style="color:var(--fuel);">
+                ${fuelIcon} ${t('Fuel Value')}: ${formatValue(fuelFertValues.fuelValue)} ${coinIcon}
+            </span>
 
-        if (fuelItemDef && fertItemDef) {
-            const coinIcon = `<img src="img/copper.png" width="16" height="16" style="vertical-align:middle; margin-bottom:2px;">`;
-            const fuelIcon = `<img src="img/item${fuelItemDef.id}.png" width="18" height="18" style="vertical-align:middle; margin-bottom:2px;">`;
-            const fertIcon = `<img src="img/item${fertItemDef.id}.png" width="18" height="18" style="vertical-align:middle; margin-bottom:2px;">`;
+            <span class="stat-value" style="color:var(--bio);">
+                ${fertIcon} ${t('Fert Value')}: ${formatValue(fuelFertValues.fertValue)} ${coinIcon}
+            </span>
+        `;
 
-            costHtml += `<span class="stat-value" style="color:var(--fuel);">
-                ${fuelIcon} ${t('Fuel Value')}: ${fmtVal(fuelFertValues.fuelValue)} ${coinIcon}
-            </span>`;
+        if (fuelFertValues.fuelValue) {
+            const costPerHeat =
+                fuelFertValues.fuelValue /
+                (fuelItemDef.heat * p.fuelMult);
 
-            costHtml += `<span class="stat-value" style="color:var(--bio);">
-                ${fertIcon} ${t('Fert Value')}: ${fmtVal(fuelFertValues.fertValue)} ${coinIcon}
-            </span>`;
-
-            
-            if (fuelFertValues.fuelValue) {
-                const costPerHeat = fuelFertValues.fuelValue / (fuelItemDef.heat * p.fuelMult);
-                costHtml += `
-                    <span class="stat-value stat-flex-row">
-                        <span class="stat-value" style="color:var(--fuel);">
-                            ${fuelIcon} ${t('Cost per Heat')}: ${costPerHeat.toFixed(4)} ${coinIcon}
-                        </span>
-                        <span class="stat-extra" style="color:var(--warn);">
-                            (${(1/costPerHeat).toFixed(2)} P/${t('Coin')})
-                        </span>
-                    </span>`;
-            }        
-            
-            if (fuelFertValues.fertValue) {
-                const costPerNutr = fuelFertValues.fertValue / (fertItemDef.nutrientValue * p.fertMult);            
-                costHtml += `
-                    <span class="stat-value stat-flex-row">
-                        <span class="stat-value" style="color:var(--bio);">
-                            ${fertIcon} ${t('Cost per Nutr')}: ${costPerNutr.toFixed(4)} ${coinIcon}
-                        </span>
-                        <span class="stat-extra" style="color:var(--bio);">
-                            (${(1/costPerNutr).toFixed(2)} V/${t('Coin')})
-                        </span>
-                    </span>`;
-            }
+            costHtml += `
+                <span class="stat-value stat-flex-row">
+                    <span class="stat-value" style="color:var(--fuel);">
+                        ${fuelIcon}
+                        ${t('Cost per Heat')}: ${costPerHeat.toFixed(4)} ${coinIcon}
+                    </span>
+                    <span class="stat-extra" style="color:var(--warn);">
+                        (${(1 / costPerHeat).toFixed(2)} P/${t('Coin')})
+                    </span>
+                </span>
+            `;
         }
-    }
-    else {
-        if (goldPerMin > 0) costHtml += `<span class="stat-value" style="color:var(--gold); title="${(goldPerMin / netRate).toLocaleString()}">${t('Coin')}: ${formatCoinIcons(goldPerMin/netRate)}</span>`;
+
+        if (fuelFertValues.fertValue) {
+            const costPerNutr =
+                fuelFertValues.fertValue /
+                (fertItemDef.nutrientValue * p.fertMult);
+
+            costHtml += `
+                <span class="stat-value stat-flex-row">
+                    <span class="stat-value" style="color:var(--bio);">
+                        ${fertIcon}
+                        ${t('Cost per Nutr')}: ${costPerNutr.toFixed(4)} ${coinIcon}
+                    </span>
+                    <span class="stat-extra" style="color:var(--bio);">
+                        (${(1 / costPerNutr).toFixed(2)} V/${t('Coin')})
+                    </span>
+                </span>
+            `;
+        }
+    } else {
+        if (goldPerMin > 0) {
+            costHtml += `
+                <span
+                    class="stat-value"
+                    style="color:var(--gold);"
+                    title="${(goldPerMin / netRate).toLocaleString()}"
+                >
+                    ${t('Coin')}: ${formatCoinIcons(goldPerMin / netRate)}
+                </span>
+            `;
+        }
+
         if (heatPerSec > 0) {
             if (p.selectedHeatingDevice === 'Steam Heating Pad') {
-                const steamIcon = `<img src="img/item9002.png" width="24" height="24" style="vertical-align: middle; margin-bottom: 4px;">`;
-                const steamPerItem = heatPerSec * 60 / netRate / 20;
+                const steamIcon = getSteamIcon();
+
                 costHtml += `
                     <span class="stat-value stat-flex-row" style="color:var(--fuel);">
                         <span style="color:var(--fuel);">
-                            ${t('Steam')}: ${(steamPerItem).toLocaleString()} ${steamIcon}
+                            ${t('Steam')}: ${steamPerItem.toLocaleString()} ${steamIcon}
                         </span>
                         <span class="stat-extra" style="color:var(--warn);">
                             (${(steamPerItem / 9000).toFixed(2)} ${t('Steam Boiler', 'machines')})
@@ -1118,58 +1318,139 @@ function updateSummaryBox(p, heatPerSec, nutrPerSec, goldPerMin, actualFuelNeed,
                     </span>
                 `;
             }
-            costHtml += `<span class="stat-value stat-flex-row" style="color:var(--fuel);">`;
-            costHtml += `<span>${t('Heat')}: ${(actualFuelNeed/netRate).toLocaleString()}<img src="img/item${DB.items[selectedFuel]?.id ?? 0}.png" alt="${selectedFuel}" width="24" height="24" style="vertical-align: middle; margin-bottom: 4px;"> </span>`;
-            costHtml += `<span class="stat-extra" style="color:var(--warn);">(${(heatPerSec * 60 / netRate).toLocaleString(undefined, {minimumFractionDigits: 1, maximumFractionDigits: 1})} P)</span>`;
-            costHtml += `</span>`;
+
+            costHtml += `
+                <span class="stat-value stat-flex-row" style="color:var(--fuel);">
+                    <span>
+                        ${t('Heat')}: ${heatPerItem.toLocaleString()}
+                        ${getItemIcon(selectedFuel, 24, ` alt="${selectedFuel}"`)}
+                    </span>
+                    <span class="stat-extra" style="color:var(--warn);">
+                        (${formatRate(heatPerItem)} P)
+                    </span>
+                </span>
+            `;
         }
-        if (nutrPerSec > 0) { 
-            costHtml += `<span class="stat-value stat-flex-row" style="color:var(--bio);">`;
-            costHtml += `<span>${t('Nutr')}: ${(actualFertNeed/netRate).toLocaleString()}<img src="img/item${DB.items[selectedFert]?.id ?? 0}.png" alt="${selectedFert}" width="24" height="24" style="vertical-align: middle; margin-bottom: 4px;"> </span>`;
-            costHtml += `<span class="stat-extra">(${(nutrPerSec * 60 / netRate).toLocaleString(undefined, {minimumFractionDigits: 1, maximumFractionDigits: 1})} V)</span>`;
-            costHtml += `</span>`;
+
+        if (nutrPerSec > 0) {
+            costHtml += `
+                <span class="stat-value stat-flex-row" style="color:var(--bio);">
+                    <span>
+                        ${t('Nutr')}: ${nutrPerItem.toLocaleString()}
+                        ${getItemIcon(selectedFert, 24, ` alt="${selectedFert}"`)}
+                    </span>
+                    <span class="stat-extra">
+                        (${formatRate(nutrPerItem)} V)
+                    </span>
+                </span>
+            `;
+        }
+
+        if (targetItemDef.heat && convertedCost > 0) {
+            if ((heatPerSec === 0 || fuelCost > 0) && (nutrPerSec === 0 || fertCost > 0)) {
+                const fuelVal = convertedCost;
+                const heatVal = (targetItemDef.heat) * (fuelMult ?? 1);
+                const costPerHeat = fuelVal / heatVal;
+
+                costHtml += `
+                    <span class="stat-value stat-flex-row">
+                        <span class="stat-value" style="color:var(--fuel);">
+                            ${getItemIcon(targetItem, 24, ` title="${targetItem}"`)}
+                            ${t('Cost per Heat')}: ${costPerHeat.toFixed(4)} ${coinIcon}
+                        </span>
+                        <span class="stat-extra" style="color:var(--warn);">
+                            (${(1 / costPerHeat).toFixed(2)} P/${t('Coin')})
+                        </span>
+                    </span>
+                `;
+            }
+        }
+
+        if (targetItemDef.nutrientValue && convertedCost > 0) {
+            if ((heatPerSec === 0 || fuelCost > 0) && (nutrPerSec === 0 || fertCost > 0)) {
+                const fertVal = convertedCost;
+                const nutrVal = (targetItemDef.nutrientValue ?? 0) * (fertMult ?? 1);
+                const costPerNutr = fertVal / nutrVal;
+
+                costHtml += `
+                    <span class="stat-value stat-flex-row">
+                        <span class="stat-value" style="color:var(--bio);">
+                            ${getItemIcon(targetItem, 24, ` title="${targetItem}"`)}
+                            ${t('Cost per Nutr')}: ${costPerNutr.toFixed(4)} ${coinIcon}
+                        </span>
+                        <span class="stat-extra" style="color:var(--bio);">
+                            (${(1 / costPerNutr).toFixed(2)} V/${t('Coin')})
+                        </span>
+                    </span>
+                `;
+            }
         }
     }
+
     costHtml += `</div>`;
 
-    // --- Value Block ---
-    let valueHtml = `<div class="stat-block"><span class="stat-label">${t('Unit Value')} (${targetItem})</span>`;
-    if (true) {
-        const convertedCost = (goldPerMin + (selfFuel ? 0 : fuelCost * actualFuelNeed) +  (selfFert ? 0 : fertCost * actualFertNeed)) / netRate;
-        valueHtml += `<span class="stat-value gold-profit">${t('Conversion Cost')}: ${Math.ceil(convertedCost).toLocaleString()}</span>`;
-        
-        if (targetItemDef.sellPrice) {
-            const effectiveSell = targetItemDef.category !== 'Currency' ? Math.round(targetItemDef.sellPrice * p.sellMult) : targetItemDef.sellPrice;
-            const ratio = convertedCost > 0 ? effectiveSell / convertedCost : 0;
-            const margin = ratio - 1;
-            valueHtml += `<span>`
-            valueHtml += `<span class="stat-value gold-profit">${t('Retail Price   ')}: ${effectiveSell.toLocaleString()} </span>`;
-            if (margin > -1) valueHtml += margin > 0 ? `<span class="stat-pos">(+${(margin*100).toFixed(0)}%)</span>` : `<span class="stat-sub">(${(margin*100).toFixed(0)}%)</span>`;
-            valueHtml += `</span>`
-        }
-        if (targetItemDef.wholesalePrice) {
-            const ratio = convertedCost > 0 ? targetItemDef.wholesalePrice  / convertedCost : 0;
-            const margin = ratio - 1;
-            valueHtml += `<span>`
-            valueHtml += `<span class="stat-value gold-profit">${t('Wholesale Price')}: ${targetItemDef.wholesalePrice.toLocaleString()} </span>`;
-            if (margin > -1) valueHtml += margin > 0 ? `<span class="stat-pos">(+${(margin*100).toFixed(0)}%)</span>` : `<span class="stat-sub">(${(margin*100).toFixed(0)}%)</span>`;
-            valueHtml += `</span>`
-        }
-        if (targetItemDef.exp) {
-            valueHtml += `<span class="stat-value gold-profit">${t('Cost Per Exp   ')}: ${Math.ceil(convertedCost/targetItemDef.exp).toLocaleString()}</span>`;
-        }
+    // =========================================================
+    // Value Block
+    // =========================================================
+
+    let valueHtml = `
+        <div class="stat-block">
+            <span class="stat-label">
+                ${t('Unit Value')} (${targetItem})
+            </span>
+
+            <span class="stat-value gold-profit">
+                ${t('Conversion Cost')}: ${Math.ceil(convertedCost).toLocaleString()}
+            </span>
+    `;
+
+    if (effectiveSell != null) {
+        valueHtml += `
+            <span>
+                <span class="stat-value gold-profit">
+                    ${t('Retail Price   ')}: ${effectiveSell.toLocaleString()}
+                </span>
+                ${getMarginHtml(retailMargin)}
+            </span>
+        `;
     }
+
+    if (targetItemDef.wholesalePrice) {
+        valueHtml += `
+            <span>
+                <span class="stat-value gold-profit">
+                    ${t('Wholesale Price')}: ${targetItemDef.wholesalePrice.toLocaleString()}
+                </span>
+                ${getMarginHtml(wholesaleMargin)}
+            </span>
+        `;
+    }
+
+    if (targetItemDef.exp) {
+        valueHtml += `
+            <span class="stat-value gold-profit">
+                ${t('Cost Per Exp   ')}:
+                ${Math.ceil(convertedCost / targetItemDef.exp).toLocaleString()}
+            </span>
+        `;
+    }
+
     valueHtml += `</div>`;
 
-    // --- Combine ---
+    // =========================================================
+    // Render
+    // =========================================================
+
     document.getElementById('summary-container').innerHTML = `
         <div class="summary-box">
-            ${outputHtml}            
+            ${outputHtml}
             ${loadHtml}
             ${costHtml}
             ${valueHtml}
-        </div>`;
+        </div>
+    `;
 }
+
 
 /* ==========================================================================
    SECTION: SCALE MODAL

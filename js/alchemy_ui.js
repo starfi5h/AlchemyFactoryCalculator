@@ -567,6 +567,10 @@ function selectRate(rate) {
 function recalculate(item, rate) {
     selectItem(item);
     selectRate(rate);
+    const machineToggle = document.getElementById('machineModeToggle');
+    if (machineToggle?.checked) {
+        machineToggle.checked = false;
+    }
     calculate();
 }
 
