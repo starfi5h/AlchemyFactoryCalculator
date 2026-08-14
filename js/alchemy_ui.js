@@ -62,8 +62,21 @@ const DEFAULT_SETTINGS = {
     showRawMachineCount: false,
     showMaxCap: false,
     showHeatFert: false,
+    targetItem: "",
+    targetRate: 60,
+    targetMachineCount: 1,
+    machineModeToggle: true,
+    selfFuel: false,
+    selfFert: false,
     preferredRecipes: {},
-    nodeRecipeOverrides: {},
+    nodeRecipeOverrides: {
+        ">Copper Coin": "Copper Coin",
+        ">Silver Coin": "Silver Coin",
+        ">Gold Coin": "Gold Coin",                
+        ">铜币": "Copper Coin",
+        ">银币": "Silver Coin",
+        ">金币": "Gold Coin",
+    },
     recipeModifiers: {},
     activeRecyclers: {},
     customCosts: {},
@@ -183,8 +196,8 @@ function init() {
     if (urlRate) {
         document.getElementById('targetRate').disabled = false;
         document.getElementById('targetRate').value = urlRate;
-    } else {
-        // 沒有指定 rate 時，默認啟用 "Set by Machine Count" 模式，machine count = 1
+    } else if (!DB.settings.targetItem) {
+        // 沒有指定 rate、也沒有已儲存設定時，默認啟用 "Set by Machine Count" 模式，machine count = 1
         const machineModeToggle = document.getElementById('machineModeToggle');
         machineModeToggle.checked = true;
         toggleControlMode(false); // 切換 UI 狀態（禁用 rate 輸入、啟用 machine 輸入）
@@ -232,7 +245,7 @@ function init() {
 
     calculate();
     
-    if (urlTab) switchTab(urlTab);
+    if (urlTab) switchTab(urlTab, false);
 
     document.getElementById('db-gameversion-text').innerText = t("Game version : ") + DB.gameVersion ?? 0;
 }
@@ -323,7 +336,7 @@ function loadEditorContent() {
     }
 }
 
-function switchTab(tabName) {
+function switchTab(tabName, updateUrl = true) {
     let btnIndex = 0;
     switch (tabName) {
         case 'calc': btnIndex = 0; break;
@@ -337,7 +350,9 @@ function switchTab(tabName) {
     document.querySelectorAll('.tab-btn').forEach(el => el.classList.remove('active'));
     document.getElementById('view-' + tabName).classList.add('active');
     document.querySelectorAll('.tab-btn')[btnIndex].classList.add('active');
-    updateURL(tabName);
+    if (updateUrl) {
+        updateURL(tabName);
+    }
     if (tabName === 'cauldron' && typeof initCauldron === 'function') {
         initCauldron();
     }
@@ -781,6 +796,32 @@ function loadSettingsToUI() {
         if(DB.settings.showRawMachineCount) document.getElementById('showRawMachineCount').checked = DB.settings.showRawMachineCount;
         if(DB.settings.showHeatFert) document.getElementById('showHeatFert').checked = DB.settings.showHeatFert;
         if(DB.settings.showBeltCount) document.getElementById('showBeltCount').checked = DB.settings.showBeltCount;
+
+        // --- Restore Calculator target/mode state ---
+        if (DB.settings.targetItem) {
+            document.getElementById('targetItemInput').value = DB.settings.targetItem;
+            updateComboIcon();
+        }
+        if (DB.settings.targetRate !== undefined) {
+            document.getElementById('targetRate').value = DB.settings.targetRate;
+        }
+        if (DB.settings.targetMachineCount !== undefined) {
+            document.getElementById('targetMachine').value = DB.settings.targetMachineCount;
+        }
+        if (DB.settings.machineModeToggle) {
+            document.getElementById('machineModeToggle').checked = true;
+            toggleControlMode(false); // 套用禁用/啟用對應輸入框的 UI 效果
+        }
+        if (DB.settings.selfFuel) {
+            const btn = document.getElementById('btnSelfFuel');
+            btn.classList.remove('btn-inactive-red');
+            btn.classList.add('btn-active-green');
+        }
+        if (DB.settings.selfFert) {
+            const btn = document.getElementById('btnSelfFert');
+            btn.classList.remove('btn-inactive-red');
+            btn.classList.add('btn-active-green');
+        }
     }
 }
 
@@ -855,7 +896,27 @@ function onLogisticsChange() {
     calculate();
 }
 
+function saveCalcUISettings() {
+    DB.settings.targetItem = document.getElementById('targetItemInput').value;
+    DB.settings.targetRate = parseFloat(document.getElementById('targetRate').value) || 0;
+    DB.settings.targetMachineCount = parseFloat(document.getElementById('targetMachine').value) || 0;
+    DB.settings.machineModeToggle = document.getElementById('machineModeToggle').checked;
+    DB.settings.selfFuel = document.getElementById('btnSelfFuel')?.classList.contains('btn-active-green') ?? false;
+    DB.settings.selfFert = document.getElementById('btnSelfFert')?.classList.contains('btn-active-green') ?? false;
+    persist();
+}
+
 function saveSettings(e) { ['lvlBelt','lvlSpeed','lvlAlchemy','lvlFuel','lvlFert'].forEach(k => { DB.settings[k] = parseInt(document.getElementById(k).value) || 0; }); persist(); }
+
+function resetSettings() {
+    if(confirm(t('Reset Settings', 'ui') + "?")) {
+        console.log("Reset Settings");
+        const localSettingsData = localStorage.getItem(SETTINGS_KEY);
+        localStorage.removeItem(SETTINGS_KEY);
+        if (localSettingsData) localStorage.setItem(SETTINGS_BACKUP_KEY, localSettingsData);
+        location.reload();
+    } 
+}
 
 function resetRecips() {
     if(confirm(t('Reset Recipes', 'ui') + "?")) {
@@ -1405,37 +1466,34 @@ function toggleLanguage() {
 }
 
 function updateURL(tabName = '') {
-    const isEn = window.ALCHEMY_I18N.enabled === false;
-    const item = document.getElementById('targetItemInput').value;
-    const rate = document.getElementById('targetRate').value;
-    //const fuel = document.getElementById('fuelSelect').value;
-    //const fert = document.getElementById('fertSelect').value;
-    
+    const isEn = window.ALCHEMY_I18N.enabled === false;    
     const params = new URLSearchParams();
     if (isEn) params.set('lang', 'en');
+
     if (tabName !== '' && tabName !== 'calc') {
         params.set('tab', tabName);        
     }
-    else if (item && rate) {
-        params.set('item', item);
-        params.set('rate', Number(rate));
-        //if (fuel) params.set('fuel', fuel);
-        //if (fert) params.set('fert', fert);
-    }
 
     const newUrl = window.location.pathname + '?' + params.toString();
-    if (isHandlingPopstate || item == lastUrlItem) {        
+    if (isHandlingPopstate) {        
         window.history.replaceState(null, '', newUrl);
     }
     else {
         window.history.pushState(null, '', newUrl);
-        lastUrlItem = item;
     }
 }
 
 window.addEventListener('popstate', function(event) {
     isHandlingPopstate = true;
     const urlParams = new URLSearchParams(window.location.search);
+
+    // 處理 tab（若無 tab 參數則切回預設 calc）
+    if (urlParams.has('tab')) {
+        switchTab(urlParams.get('tab'), false);
+    } else {
+        switchTab('calc', false);   // 預設頁籤
+    }
+
     if (urlParams.has('item')) {
         document.getElementById('targetItemInput').value = urlParams.get('item');
         if (urlParams.has('rate')) document.getElementById('targetRate').value = urlParams.get('rate');

@@ -262,6 +262,7 @@ window.ALCHEMY_I18N = {
         "Send to Planner": "传至规划器",
         "Save/Reset": "保存/重置",
         "Save Upgrades": "保存设置",
+        "Reset Settings": "重置偏好设定",
         "Reset Recipes": "重置配方数据",
         "Reset Translations": "重置翻译",
         "All Data Reset": "全部重置",

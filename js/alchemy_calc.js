@@ -204,7 +204,7 @@ function calculate() {
 
         // --- PASS 3: TRANSLATION --- (extra)
         translateText();
-        updateURL();
+        saveCalcUISettings();
         console.timeEnd('calculate');
 
     } catch(e) { console.error(e); }
