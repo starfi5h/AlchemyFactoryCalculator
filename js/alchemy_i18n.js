@@ -168,6 +168,7 @@ window.ALCHEMY_I18N = {
         "Custom Rate": "自定义速率",
         "Rate (Items/Min)": "速率 (个/分钟)",
         "Select Item": "选择物品",
+        "No Item Selected": "未选择物品",
         "Expand All": "全部展开",
         "Collapse All": "全部收起",
         "All Items": "所有物品",
@@ -381,11 +382,14 @@ window.ALCHEMY_I18N = {
 
         // --- Planner ---
         "Planner": "规划器",
-        "+ Add Node": "+ 新增节点",
         "▭ Select Mode": "▭ 框选模式",
+        "📦 Encapsulate": "📦 封裝模块",        
+        "+ Add Node": "+ 新增节点",        
+        "+ 📝 Note": "+ 📝 笔记",        
+        "+ 🌀 Portal": "+ 🌀 传送门",
         "↺ Undo": "↺ 撤销",
         "↻ Redo": "↻ 重做",
-        "📦 Encapsulate": "📦 封裝模块",
+        
 
         // --- Planner: Node ---        
         "Node Settings": "节点设置",
@@ -402,6 +406,7 @@ window.ALCHEMY_I18N = {
         "Clear All Upstream": "清空所有上游节点",
         "Error": "错误",
         "Module": "模块",
+        "NOTE": "笔记",
         "Invaild Module": "无效模块",
         "Missing Recipe": "配方缺失",
         "Missing Reference": "引用缺失",

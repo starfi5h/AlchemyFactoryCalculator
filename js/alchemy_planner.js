@@ -34,6 +34,7 @@ let plannerState = null;
        nodes: {
            [nodeId]: {
                id: string,              // "pnode_<seq>"
+               kind: 'recipe' | 'module' | 'note' | 'portal', // 節點種類
                recipeId: string | null,      // 一般節點: 對應 DB.recipes[recipeId].id
                moduleId: string | null,      // 模塊節點: 指向 plannerLibrary.plans[moduleId]
                recipeModifiers: object, // 選用，例如高級煉金爐催化劑設定 (從 DB.settings.recipeModifiers 複製快照)
@@ -60,6 +61,7 @@ let plannerState = null;
    computeNodePorts(node) 依 node.recipeId + node.machineCount 即時算出：
    { recipe, inputs: [{item, rate}], outputs: [{item, rate}], heatItemsPerMin, fertItemsPerMin }
 
+   note 節點另有 text/color/w/h；portal 節點另有 portalItem/machineCount。
    node 沒有 width/height 欄位；卡片實際尺寸由 CSS 決定 (.planner-node 寬度固定
    200px，高度依 port 數量、是否有 heat/fert row 等內容而變動)，需要時得從
    document.getElementById('planner-node-' + id) 讀取 offsetWidth/offsetHeight。
@@ -96,6 +98,7 @@ const PLANNER_GRID_STEPS = [40, 20, 0];
 /** 每個 plan 各自的 viewport 暫存 (僅存在於本次 session 記憶體中，不寫入 localStorage)。
  *  key: planId -> { x, y, zoom }。用來在切換 plan 時記得「上次離開這個 plan 時的視角」。 */
 let _plannerViewportCache = {};
+const _noteSaveTimers = new Map();
 
 /**
  * plannerHistory: 每個 plan 各自獨立的 undo/redo 堆疊，只存在記憶體中 (不寫入 localStorage)。
@@ -206,6 +209,9 @@ function loadPlannerLibrary() {
 
     // 遷移每個 plan 中，邊(edge)所記錄的物品名稱(中/英轉換)
     Object.values(plannerLibrary.plans).forEach(plan => {
+        Object.values(plan.data.nodes || {}).forEach(node => {
+            if (!node.kind) node.kind = node.moduleId ? 'module' : 'recipe';
+        });
         Object.values(plan.data.edges || {}).forEach(edge => {
             const itemName = edge.item;
             if (!DB.items[itemName]) {
@@ -660,43 +666,66 @@ function plannerFitToView(nodeIds = []) {
 /* ---------------- ADD / REMOVE NODES ---------------- */
 
 function onPlannerAddNodeClick() {
+    const { graphX, graphY } = _plannerGetCenterGraphPos();
+    openPlannerItemPicker(graphX, graphY, 'recipe');
+}
+
+function _plannerGetCenterGraphPos() {
     const canvas = document.getElementById('planner-canvas');
-    if (!canvas) return;
-    const rect = canvas.getBoundingClientRect();
-    const zoom = _plannerSettings.viewport.zoom || 1;
-    const graphX = plannerSnapVal((rect.width / 2 - _plannerSettings.viewport.x) / zoom - 110);
-    const graphY = plannerSnapVal((rect.height / 2 - _plannerSettings.viewport.y) / zoom - 60);
-    openPlannerItemPicker(graphX, graphY);
+    if (!canvas) return { graphX: 0, graphY: 0 };
+    const rect = canvas.getBoundingClientRect(), zoom = _plannerSettings.viewport.zoom || 1;
+    return { graphX: plannerSnapVal((rect.width / 2 - _plannerSettings.viewport.x) / zoom - 110), graphY: plannerSnapVal((rect.height / 2 - _plannerSettings.viewport.y) / zoom - 60) };
+}
+
+function onPlannerAddNoteClick() {
+    const { graphX, graphY } = _plannerGetCenterGraphPos();
+    plannerState._nodeSeq = (plannerState._nodeSeq || 0) + 1;
+    const id = 'pnode_' + plannerState._nodeSeq;
+    plannerState.nodes[id] = { id, kind: 'note', text: '', color: '#1a2c32', w: 200, h: 160, x: Math.round(graphX), y: Math.round(graphY) };
+    renderPlanner(); savePlannerState();
+}
+
+function onPlannerAddPortalClick() {
+    const { graphX, graphY } = _plannerGetCenterGraphPos();
+    openPlannerItemPicker(graphX, graphY, 'portal');
 }
 
 function onPlannerCanvasContextMenu(e) {
     if (e.target.closest('.planner-node')) return;
     e.preventDefault();
     const g = plannerScreenToGraph(e.clientX, e.clientY);
-    openPlannerItemPicker(g.x - 110, g.y - 20);
+    openPlannerItemPicker(g.x - 110, g.y - 20, 'recipe');
 }
 
-function openPlannerItemPicker(graphX, graphY) {
+function openPlannerItemPicker(graphX, graphY, kind) {
     const originalSelectItem = window.selectItem;
     window.selectItem = (name) => {
         window.selectItem = originalSelectItem;
-        if (getRecipesFor(name).length === 0) {
+        if (kind === 'recipe' && getRecipesFor(name).length === 0) {
             alert(t('This item has no recipe and cannot be added as a Planner node.', 'ui'));
             return;
         }
-        addPlannerNode(name, graphX, graphY);
+        addPlannerNode(name, graphX, graphY, kind);
     };
     openItemPicker();
 }
 
-function addPlannerNode(itemName, graphX, graphY) {
+function addPlannerNode(itemName, graphX, graphY, kind = 'recipe') {
+    if (kind === 'portal') {
+        plannerState._nodeSeq = (plannerState._nodeSeq || 0) + 1;
+        const id = 'pnode_' + plannerState._nodeSeq;
+        plannerState.nodes[id] = { id, kind: 'portal', portalItem: itemName, machineCount: 1, x: Math.round(graphX), y: Math.round(graphY) };
+        renderPlanner(); savePlannerState();
+        return;
+    }
+
     const recipe = getActiveRecipe(itemName); // 只在建立當下取一次，之後不再受 preferred 影響
     if (!recipe) return;
 
     plannerState._nodeSeq = (plannerState._nodeSeq || 0) + 1;
     const id = 'pnode_' + plannerState._nodeSeq;
     plannerState.nodes[id] = {
-        id,
+        id, kind: 'recipe',
         recipeId: recipe.id,
         recipeModifiers: DB.settings?.recipeModifiers?.[recipe.id],
         machineCount: 1,
@@ -751,6 +780,9 @@ function createPlannerNodeEl(node, flows) {
     wrap.id = 'planner-node-' + node.id;
     wrap.style.left = node.x + 'px';
     wrap.style.top = node.y + 'px';
+
+    if (node.kind === 'note') return renderPlannerNoteNode(wrap, node);
+    if (node.kind === 'portal') return renderPlannerPortalNode(wrap, node, flows);
 
     const ports = flows.nodePortsCache[node.id] || computeNodePorts(node);
     wrap.innerHTML = ``;
@@ -823,6 +855,35 @@ function createPlannerNodeEl(node, flows) {
     attachPlannerNodeDrag(wrap, node);
     return wrap;
 }
+
+function _plannerEscapeHtml(value) {
+    return String(value ?? '').replace(/[&<>\"']/g, c => ({ '&':'&amp;', '<':'&lt;', '>':'&gt;', '\"':'&quot;', "'":'&#39;' }[c]));
+}
+
+function renderPlannerNoteNode(wrap, node) {
+    wrap.className += ' planner-note-node';
+    wrap.style.width = (node.w || 220) + 'px'; wrap.style.height = (node.h || 160) + 'px'; wrap.style.background = node.color || '#4a3f2a';
+    wrap.innerHTML = `<div class="planner-note-header planner-node-header"><input class="planner-note-color-swatch" type="color" value="${_plannerEscapeHtml(node.color || '#4a3f2a')}" onclick="event.stopPropagation()" onchange="updatePlannerNoteColor('${node.id}', this.value)"><span>${t('NOTE')}</span><span style="margin-left:auto"></span><button class="planner-close-btn" onclick="removePlannerNode('${node.id}')">✕</button></div><textarea class="planner-note-textarea" oninput="updatePlannerNoteText('${node.id}', this.value)">${_plannerEscapeHtml(node.text)}</textarea><div class="planner-note-resize-handle"></div>`;
+    attachPlannerNodeDrag(wrap, node); attachPlannerNoteResize(wrap, node); return wrap;
+}
+
+function renderPlannerPortalNode(wrap, node, flows) {
+    const ports = flows.nodePortsCache[node.id] || computeNodePorts(node);
+    const title = node.portalItem || t('Select Item', 'ui');
+    wrap.innerHTML = `<div class="planner-node-header portal"><span class="planner-node-icon">🌀</span><span class="planner-node-title" onclick="event.stopPropagation(); plannerPickPortalItem('${node.id}')">${_plannerEscapeHtml(title)}</span><button class="planner-close-btn" onclick="removePlannerNode('${node.id}')">✕</button></div><div class="planner-node-body" id="planner-node-body-${node.id}">${ports.errorCode ? `<div>${t('Error')}: ${t(ports.errorCode, 'ui')}</div>` : ''}${renderPlannerPortsHtml(node, ports, flows)}<div class="planner-machine-count-row"><input type="number" min="0" step="1" value="${Number((node.machineCount ?? 1).toFixed(6))}" data-mc-for="${node.id}" oninput="updatePlannerMachineCount('${node.id}', this.value)"></div></div>`;
+    attachPlannerNodeDrag(wrap, node); return wrap;
+}
+
+function attachPlannerNoteResize(wrap, node) {
+    const handle = wrap.querySelector('.planner-note-resize-handle'); if (!handle) return;
+    handle.addEventListener('pointerdown', e => { e.stopPropagation(); e.preventDefault(); handle.setPointerCapture(e.pointerId); const sx=e.clientX, sy=e.clientY, sw=node.w||220, sh=node.h||160;
+        const move = ev => { const z=_plannerSettings.viewport.zoom||1; node.w=Math.max(80, sw+(ev.clientX-sx)/z); node.h=Math.max(50, sh+(ev.clientY-sy)/z); wrap.style.width=node.w+'px'; wrap.style.height=node.h+'px'; };
+        const up = () => { handle.removeEventListener('pointermove', move); handle.removeEventListener('pointerup', up); savePlannerState(); }; handle.addEventListener('pointermove', move); handle.addEventListener('pointerup', up); });
+}
+
+function updatePlannerNoteText(nodeId, text) { const node=plannerState.nodes[nodeId]; if (!node) return; node.text=text; clearTimeout(_noteSaveTimers.get(nodeId)); _noteSaveTimers.set(nodeId, setTimeout(() => savePlannerState(), 600)); }
+function updatePlannerNoteColor(nodeId, color) { const node=plannerState.nodes[nodeId]; if (!node) return; node.color=color; const el=document.getElementById('planner-node-'+nodeId); if (el) el.style.background=color; savePlannerState(); }
+function plannerPickPortalItem(nodeId) { const node=plannerState.nodes[nodeId]; if (!node) return; const old=window.selectItem; window.selectItem=name => { node.portalItem=name; window.selectItem=old; closeModal('picker-modal'); recomputeAndRefreshPlanner(); savePlannerState(); }; openItemPicker(); }
 
 function onPlannerHeaderHover(headerEl, nodeId) {
     const node = plannerState.nodes[nodeId];
@@ -1033,6 +1094,7 @@ function updatePlannerMachineCount(nodeId, value) {
 
 /** 只 patch 單一節點卡片的顯示內容 (ports/機器數/heat-fert)，不重建 DOM，保留輸入焦點 */
 function patchPlannerNodeDisplay(node, flows) {
+    if (node.kind === 'note') return;
     const ports = flows.nodePortsCache[node.id];
     if (!ports) return;
     const body = document.getElementById('planner-node-body-' + node.id);
@@ -1120,7 +1182,7 @@ function flashPlannerLinkFeedback(sourceNodeId, affectedNodeIds) {
 function attachPlannerNodeDrag(wrap, node) {
     const header = wrap.querySelector('.planner-node-header');
     header.addEventListener('pointerdown', (e) => {
-        if (e.target.closest('button')) return;
+        if (e.target.closest('button, input, textarea')) return;
         e.preventDefault();
         header.setPointerCapture(e.pointerId);
         header.classList.add('dragging');

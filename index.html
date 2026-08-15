@@ -740,13 +740,16 @@
                 <select id="planner-plan-select" class="planner-plan-select" onchange="switchPlannerPlan(this.value)"></select>
                 <button class="split-btn" onclick="openPlannerManageModal()">📁 Manage Plans</button>
                 <span class="planner-toolbar-divider"></span>
-                <button class="split-btn" onclick="onPlannerAddNodeClick()">+ Add Node</button>
                 <button id="planner-select-btn" class="split-btn" onclick="togglePlannerSelectMode()" title="Box Select (Delete key to remove selected)">▭ Select Mode</button>
+                <button id="planner-encapsulate-btn" class="split-btn" onclick="encapsulatePlannerSelectedNodes()" title="Encapsulate selected nodes into a new module">📦 Encapsulate</button>
+                <span class="planner-toolbar-divider"></span>
+                <button class="split-btn" onclick="onPlannerAddNodeClick()">+ Add Node</button>
+                <button class="split-btn" onclick="onPlannerAddNoteClick()">+ 📝 Note</button>
+                <button class="split-btn" onclick="onPlannerAddPortalClick()">+ 🌀 Portal</button>
                 <span class="planner-toolbar-divider"></span>
                 <button id="planner-undo-btn" class="split-btn" onclick="plannerUndo()" title="Undo (Ctrl+Z)">↺ Undo</button>
                 <button id="planner-redo-btn" class="split-btn" onclick="plannerRedo()" title="Redo (Ctrl+Y)">↻ Redo</button>
                 <span class="planner-toolbar-divider"></span>
-                <button id="planner-encapsulate-btn" class="split-btn" onclick="encapsulatePlannerSelectedNodes()" title="Encapsulate selected nodes into a new module">📦 Encapsulate</button>
             </div>
             <div id="planner-canvas" class="planner-canvas" oncontextmenu="onPlannerCanvasContextMenu(event)">
                 <div id="planner-viewport" class="planner-viewport">

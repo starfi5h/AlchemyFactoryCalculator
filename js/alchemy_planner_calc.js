@@ -240,6 +240,7 @@ function plannerGetRecipeRates(recipeId, recipeModifiers) {
  * 回傳: { recipe, inputs, outputs, heatItemsPerMachine, fertItemsPerMachine, errorCode }
  */
 function computeNodePorts(node) {
+    if (node.kind === 'note') return { recipe: null, inputs: [], outputs: [], heatItemsPerMin: 0, fertItemsPerMin: 0, errorCode: '' };
     const rates = plannerGetNodeRates(node);
     const result = { recipe : null, inputs: [], outputs: [], heatItemsPerMin: 0, fertItemsPerMin: 0, errorCode: '' };
     
@@ -264,6 +265,8 @@ function computeNodePorts(node) {
  * { recipe, inputsPerMachine, outputsPerMachine, heatItemsPerMachine, fertItemsPerMachine, errorCode }
  */
 function plannerGetNodeRates(node) {
+    if (node.kind === 'note') return null;
+    if (node.kind === 'portal') return plannerGetPortalRates(node);
     if (node.moduleId) return plannerGetModuleRates(node.moduleId);
     return plannerGetRecipeRates(node.recipeId, node.recipeModifiers);
 }
@@ -564,7 +567,7 @@ function _autoGenerateUpstreamNodesCore(nodeId) {
         plannerState._nodeSeq = (plannerState._nodeSeq || 0) + 1;
         const newNodeId = 'pnode_' + plannerState._nodeSeq;
         plannerState.nodes[newNodeId] = {
-            id: newNodeId,
+            id: newNodeId, kind: 'recipe',
             recipeId: plan.recipe.id,
             recipeModifiers: plan.recipeModifiers,
             machineCount: plan.machineCount,
@@ -603,6 +606,7 @@ function autoGenerateAllUpstreamNodes(rootNodeId) {
     function dfs(nodeId) {
         const node = plannerState.nodes[nodeId];
         if (!node) return;
+        if (node.kind !== 'recipe') return;
 
         if (nodeId != rootNodeId) {
             const cats = node.recipeModifiers?.catalysts;
@@ -901,7 +905,7 @@ function plannerImportFromCalcResult(calcResult, params) {
         const nodeId = 'pnode_' + plannerState._nodeSeq;
         keyToNodeId[key] = nodeId;
         plannerState.nodes[nodeId] = {
-            id: nodeId,
+            id: nodeId, kind: 'recipe',
             recipeId: agg.recipeId,
             recipeModifiers: agg.recipeModifiers,
             machineCount: agg.machineCount,
@@ -957,7 +961,7 @@ function _plannerLayoutImportedGraph(newNodeIds, rootNodeIds, offsetX, offsetY) 
     if (newNodeIds.length === 0) return;
 
     const virtualId = '__virtual_root__';
-    plannerState.nodes[virtualId] = { id: virtualId, x: 0, y: 0, machineCount: 0, recipeId: null };
+    plannerState.nodes[virtualId] = { id: virtualId, kind: 'recipe', x: 0, y: 0, machineCount: 0, recipeId: null };
 
     // 先 render 一次，讓新節點的 DOM 卡片存在，才能量測高度供 _plannerComputeExtent 使用
     renderPlanner();
@@ -1081,7 +1085,7 @@ function encapsulatePlannerSelectedNodes() {
     plannerState._nodeSeq = (plannerState._nodeSeq || 0) + 1;
     const moduleNodeId = 'pnode_' + plannerState._nodeSeq;
     plannerState.nodes[moduleNodeId] = {
-        id: moduleNodeId,
+        id: moduleNodeId, kind: 'module',
         recipeId: null,
         moduleId: newPlan.id,
         machineCount: 1,
@@ -1107,4 +1111,11 @@ function encapsulatePlannerSelectedNodes() {
     savePlannerState();       // 記錄目前 (原) plan 的這次編輯到 undo 歷史
     savePlannerLibraryMeta(); // 確保新 plan 被寫入 localStorage
     renderPlannerToolbarSelect(); // 讓下拉選單能選到新 plan
+}
+
+function plannerGetPortalRates(node) {
+    const result = { recipe: null, inputsPerMachine: [], outputsPerMachine: [], heatItemsPerMachine: 0, fertItemsPerMachine: 0, errorCode: '' };
+    const item = node.portalItem;
+    if (!item || !DB.items[item]) return { ...result, errorCode: 'No Item Selected' };
+    return { ...result, inputsPerMachine: [{ item, rate: 1 }], outputsPerMachine: [{ item, rate: 1 }] };
 }
