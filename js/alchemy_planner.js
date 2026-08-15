@@ -833,8 +833,10 @@ function onPlannerHeaderHover(headerEl, nodeId) {
 }
 
 function renderPlannerPortsHtml(node, ports, flows) {
-    const inRows = ports.inputs.map(p => renderPlannerPortRow(node.id, p, 'in', flows)).join('');
-    const outRows = ports.outputs.map(p => renderPlannerPortRow(node.id, p, 'out', flows)).join('');
+    const orderedInputs = applyPortOrder(ports.inputs, node.portOrder?.in);
+    const orderedOutputs = applyPortOrder(ports.outputs, node.portOrder?.out);
+    const inRows = orderedInputs.map(p => renderPlannerPortRow(node.id, p, 'in', flows)).join('');
+    const outRows = orderedOutputs.map(p => renderPlannerPortRow(node.id, p, 'out', flows)).join('');
     return `<div class="planner-ports-row">
         <div class="planner-ports-col planner-ports-in">${inRows || `<div class="planner-port-empty">—</div>`}</div>
         <div class="planner-ports-col planner-ports-out">${outRows || `<div class="planner-port-empty">—</div>`}</div>
@@ -881,8 +883,8 @@ function renderPlannerPortRow(nodeId, port, dir, flows) {
     const icon = `<img src="img/item${itemDef.id ?? 0}.png" width="16" height="16">`;
     const name = `<span class="planner-port-name">${port.item}</span>`;
     const rate = `<span class="planner-port-rate">${formatVal(port.rate)}</span>`;
-    if (dir === 'in') return `<div class="planner-port planner-port-in ${rateClass}">${badgeHtml}${dot}${rate}${icon}${name}</div>`;
-    return `<div class="planner-port planner-port-out ${rateClass}">${name}${icon}${rate}${dot}${badgeHtml}</div>`;
+    if (dir === 'in') return `<div class="planner-port planner-port-in ${rateClass}" title="${port.item}">${badgeHtml}${dot}${rate}${icon}${name}</div>`;
+    return `<div class="planner-port planner-port-out ${rateClass}" title="${port.item}">${name}${icon}${rate}${dot}${badgeHtml}</div>`;
 }
 
 function renderPlannerHeatFertHtml(ports) {
@@ -896,6 +898,127 @@ function renderPlannerHeatFertHtml(ports) {
         html += `<span class="bio-tag">-${formatVal(ports.fertItemsPerMin)}/m <img src="img/item${fertDef.id ?? 0}.png" class="item-icon-small" title="${DB.settings.defaultFert}"></span>`;
     }
     return html;
+}
+
+/* ==========================================================================
+   SECTION: PORT ORDER OPTIMIZATION (single-node barycenter/median)
+   ========================================================================== */
+
+/**
+ * 依 node.portOrder（若存在）重新排序一組 port 清單。
+ * portOrder 內找不到的 item 一律視為 Infinity，排到最後，
+ * 並維持它們彼此原始的相對順序（stable sort）。
+ * @param {{item:string, rate:number}[]} portList
+ * @param {string[]|undefined} orderArr
+ */
+function applyPortOrder(portList, orderArr) {
+    if (!orderArr || orderArr.length === 0) return portList;
+    const indexMap = new Map(orderArr.map((item, i) => [item, i]));
+    return [...portList].sort((a, b) => {
+        const ia = indexMap.has(a.item) ? indexMap.get(a.item) : Infinity;
+        const ib = indexMap.has(b.item) ? indexMap.get(b.item) : Infinity;
+        return ia - ib; // Array.sort 是 stable 的 (現代瀏覽器/V8 保證)，同分不動原順序
+    });
+}
+
+/**
+ * 取陣列中位數 (輸入不需先排序)
+ */
+function _plannerMedian(values) {
+    if (values.length === 0) return null;
+    const sorted = [...values].sort((a, b) => a - b);
+    const mid = Math.floor(sorted.length / 2);
+    return sorted.length % 2 === 0 ? (sorted[mid - 1] + sorted[mid]) / 2 : sorted[mid];
+}
+
+/**
+ * 對單一 port（item + dir）計算排序用的分數：
+ * 取該 port 所有連線對方節點的「卡片中心 y」的中位數。
+ * 未連線的 port 回傳 null（呼叫端會把這類 port 排到最後）。
+ * @param {string} nodeId
+ * @param {string} item
+ * @param {'in'|'out'} dir
+ * @param {object} flows  plannerResolveFlows() 的回傳值
+ */
+function _plannerPortSortScore(nodeId, item, dir, flows) {
+    const key = plannerPortKey(nodeId, item, dir);
+    const edgeIds = flows.portConnections[key] || [];
+    if (edgeIds.length === 0) return null;
+
+    const yValues = [];
+    edgeIds.forEach(edgeId => {
+        const edge = plannerState.edges[edgeId];
+        if (!edge) return;
+        const otherNodeId = (dir === 'in') ? edge.fromNode : edge.toNode;
+        const otherEl = document.getElementById('planner-node-' + otherNodeId);
+        if (!otherEl) return;
+        yValues.push(otherEl.offsetTop + otherEl.offsetHeight / 2);
+    });
+    if (yValues.length === 0) return null;
+    return _plannerMedian(yValues);
+}
+
+/**
+ * 依 _plannerPortSortScore 排序一組 port 清單，回傳排好的 item 名稱陣列。
+ * 已連線的 port 依分數 (對方節點中心 y 的中位數) 由小到大排列；
+ * 未連線的 port 一律排在最後，並維持原始相對順序。
+ * @param {{item:string, rate:number}[]} portList
+ * @param {string} nodeId
+ * @param {'in'|'out'} dir
+ * @param {object} flows
+ * @returns {string[]}
+ */
+function _plannerComputePortOrder(portList, nodeId, dir, flows) {
+    const scored = portList.map(p => ({
+        item: p.item,
+        score: _plannerPortSortScore(nodeId, p.item, dir, flows)
+    }));
+    const connected = scored.filter(s => s.score !== null).sort((a, b) => a.score - b.score);
+    const unconnected = scored.filter(s => s.score === null);
+    return [...connected, ...unconnected].map(s => s.item);
+}
+
+/**
+ * 只調整單一節點的 port 順序 (input/output 各自重排)，
+ * 依據目前連到它的邊，讓對方節點 y 座標盡量單調排列以減少視覺交叉。
+ * 不影響其他節點的順序或位置。
+ * @param {string} nodeId
+ */
+function plannerOptimizePortOrderForNode(nodeId) {
+    const node = plannerState.nodes[nodeId];
+    if (!node) return;
+
+    const flows = _plannerLastFlows || plannerResolveFlows();
+    const ports = flows.nodePortsCache[nodeId];
+    if (!ports) return;
+
+    node.portOrder = {
+        in: _plannerComputePortOrder(ports.inputs, nodeId, 'in', flows),
+        out: _plannerComputePortOrder(ports.outputs, nodeId, 'out', flows)
+    };
+
+    recomputeAndRefreshPlanner();
+    savePlannerState();
+}
+
+/**
+ * 對目前 plan 中所有節點各自獨立跑一次單節點 port 排序 (單輪，不疊代收斂)。
+ * 共用同一份 flows 快照，避免每個節點各自重新 resolve。
+ */
+function plannerOptimizeAllPortOrders() {
+    const flows = plannerResolveFlows();
+
+    Object.values(plannerState.nodes).forEach(node => {
+        const ports = flows.nodePortsCache[node.id];
+        if (!ports) return;
+        node.portOrder = {
+            in: _plannerComputePortOrder(ports.inputs, node.id, 'in', flows),
+            out: _plannerComputePortOrder(ports.outputs, node.id, 'out', flows)
+        };
+    });
+
+    recomputeAndRefreshPlanner();
+    savePlannerState();
 }
 
 /* ---------------- MACHINE COUNT UPDATE ---------------- */
@@ -1032,6 +1155,7 @@ function attachPlannerNodeDrag(wrap, node) {
             header.removeEventListener('pointerup', onUp);
             header.classList.remove('dragging');
             savePlannerState();
+            plannerOptimizePortOrderForNode(node.id);
         };
         header.addEventListener('pointermove', onMove);
         header.addEventListener('pointerup', onUp);
