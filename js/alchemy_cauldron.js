@@ -19,6 +19,9 @@ let cauldronCandidates = new Set(); // 存储被勾选的物品名
 let cauldronCatFilter = "[All]";
 let cauldronFilterItems = [null, null, null];
 
+let cauldronShowEstCost = true;      // 是否顯示成本(不寫入 localStorage，每次進頁重置)
+let _cauldronCostCache = new Map();   // item name -> number | null
+
 function isVaildCandidate(itemName) {
     const item = DB.items[itemName];
     return item && item.cauldronCost !== undefined && !(item.liquid) && !(item.virtual);
@@ -110,6 +113,52 @@ function getPresetCandidates(poolType) {
 }
 
 /* ==========================================================================
+   SECTION: Estimate Cost
+   ========================================================================== */
+
+function getItemBaseCost(itemName) {
+    if (_cauldronCostCache.has(itemName)) return _cauldronCostCache.get(itemName);
+
+    const custom = DB.settings.customCosts?.[itemName];
+    const itemDef = DB.items[itemName];
+    let cost = null;
+    if (typeof custom === 'number' && custom > 0) cost = custom;
+    else if (itemDef) {
+        if (itemDef.buyPrice > 0) {
+            cost = itemDef.buyPrice;
+            if (itemDef.maxStack && itemDef.maxStack < 0) cost /= (-itemDef.maxStack);            
+        }
+        if (itemDef.category === 'Currency') {
+            cost = itemDef.sellPrice;
+        }
+    }
+    _cauldronCostCache.set(itemName, cost);
+    return cost;
+}
+
+// inputs: string[]，例如 r.inputs (cauldron結果) 陣列
+function getRecipeEstCost(inputs) {
+    let totalCost = 0;
+    let string = "";
+    for (const name of inputs) {
+        const cost = getItemBaseCost(name);
+        if (cost === null) { totalCost = null; string = null; break; }; // 任一無法計算 → 整筆視為無法計算
+        totalCost += cost;
+        string += `${name}(${cost}) `;
+    }
+    return { totalCost, string };
+}
+
+function onToggleCauldronCostDisplay() {
+    cauldronShowEstCost = document.getElementById('cauldron-show-est-cost').checked;
+    // 重新渲染目前已展開的配方列表（若有）
+    document.querySelectorAll('.cauldron-card:not(.collapsed) .node-content[data-out]').forEach(el => {
+        const childrenContainer = el.parentElement.querySelector('.node-children');
+        renderRecipeRows(el.dataset.out, childrenContainer);
+    });
+}
+
+/* ==========================================================================
    SECTION: UI
    ========================================================================== */
 
@@ -178,7 +227,7 @@ function renderCandidatePool() {
             <input type="checkbox" ${isChecked} onchange="toggleCandidate('${item.name}')">
             <img src="img/item${item.id ?? 0}.png" style="margin-left: 4px;" width="18" height="18" loading="lazy">
             <span class="cand-name" ${item.target > 0 ? 'style="color:#66ddff"' : ''}>${item.name}</span>
-            <span class="cand-cost" >${item.cost.toFixed(2)}</span>
+            <span class="cand-cost" title="${t('Cauldron Cost')}">${item.cost.toFixed(2)}</span>
         `;
         container.appendChild(div);
     });
@@ -198,7 +247,7 @@ function switchCauldronType(index) {
     document.getElementById('filter-3-diff').parentElement.style.display = isAdvancedCauldron ? 'none' : '';
     document.getElementById('filter-3-same').parentElement.style.display = isAdvancedCauldron ? 'none' : '';
 
-    if (document.getElementById('cauldron-real-time-calculation')?.checked) runCauldronSimulation();
+    runCauldronSimulation();
 }
 
 function switchCauldronProfile(index) {    
@@ -210,7 +259,7 @@ function switchCauldronProfile(index) {
     populateCauldronCategories();
     renderCandidatePool();
     saveCauldronSettings();
-    if (document.getElementById('cauldron-real-time-calculation')?.checked) runCauldronSimulation();
+    runCauldronSimulation();
 }
 
 /**
@@ -222,7 +271,7 @@ function applyPreset(poolType) {
     populateCauldronCategories();
     document.getElementById('cauldron-cat-select').value = cauldronCatFilter;
     renderCandidatePool();
-    if (document.getElementById('cauldron-real-time-calculation')?.checked) runCauldronSimulation();
+    runCauldronSimulation();
 }
 
 function toggleCauldronSortOrder() {
@@ -236,7 +285,7 @@ function toggleCandidate(name) {
     populateCauldronCategories();
     document.getElementById('cauldron-cat-select').value = cauldronCatFilter;
     saveCauldronSettings();
-    if (document.getElementById('cauldron-real-time-calculation')?.checked) runCauldronSimulation();
+    runCauldronSimulation();
 }
 
 function bulkToggleCandidates(check) {
@@ -259,7 +308,7 @@ function bulkToggleCandidates(check) {
     populateCauldronCategories();
     document.getElementById('cauldron-cat-select').value = cauldronCatFilter;
     saveCauldronSettings();
-    if (document.getElementById('cauldron-real-time-calculation')?.checked) runCauldronSimulation();
+    runCauldronSimulation();
 }
 
 /**
@@ -437,9 +486,7 @@ async function runCauldronSimulation() {
     const list = [...cauldronCandidates].filter(isVaildCandidate);
     list.sort((a, b) => (DB.items[b].cauldronCost - DB.items[a].cauldronCost)); // 由大至小
 
-    const btn = document.getElementById('btn-run-cauldron');
     const progText = document.getElementById('cauldron-progress');
-    btn.disabled = true;
 
     const resultsByOutput = {};
     const totalCombos = (list.length * (list.length + 1) * (list.length + 2)) / 6;
@@ -500,7 +547,6 @@ async function runCauldronSimulation() {
     renderCauldronResults(resultsByOutput);
     checkUnattainableItems(resultsByOutput);
     progText.innerText = `${t('Number of matching recipes')}: (${recipeCount}) `;
-    btn.disabled = false;
 }
 
 /**
@@ -566,9 +612,7 @@ async function runCauldronSimulationType1() {
     const list = [...cauldronCandidates].filter(isVaildCandidate);
     list.sort((a, b) => (DB.items[b].cauldronCost - DB.items[a].cauldronCost)); // 由大至小
 
-    const btn = document.getElementById('btn-run-cauldron');
     const progText = document.getElementById('cauldron-progress');
-    btn.disabled = true;
 
     const resultsByOutput = {};
     const totalCombos = (list.length * (list.length + 1)) / 2;
@@ -618,7 +662,6 @@ async function runCauldronSimulationType1() {
     renderCauldronResults(resultsByOutput);
     checkUnattainableItems(resultsByOutput);
     progText.innerText = `${t('Number of matching recipes')}: (${recipeCount}) `;
-    btn.disabled = false;
 }
 
 function renderCauldronResults(data) {
@@ -640,12 +683,12 @@ function renderCauldronResults(data) {
         card.innerHTML = `
             <div class="node-content compact-card" data-out="${outName}" onclick="toggleCauldronCard(this, this.parentElement)">
                 <span class="tree-arrow">▼</span>
-                <img src="img/item${outputItem.id ?? 0}.png" class="item-icon">
+                <img src="img/item${outputItem.id ?? 0}.png" class="item-icon" title="${t('Target Item')}">
                 <span class="item-link"><strong>${outName}</strong></span>                
-                <span class="qty" style="font-size:0.9em;">(${recipes.length})</span>
-                <span class="info-tag">${stats.time.toFixed(1)}s</span>
-                <span class="heat-tag">${stats.heat.toFixed(1)}P/s</span>
-                <div class="push-right details">T: ${outputItem.cauldronTarget}</div>
+                <span class="qty help-tag" style="font-size:0.9em;" title="${t('Number of matching recipes')}">(${recipes.length})</span>
+                <span class="info-tag help-tag" title="${t('Base Time')}">${stats.time.toFixed(1)}s</span>
+                <span class="heat-tag help-tag" title="${t('Heat Cost')}">${stats.heat.toFixed(1)}P/s</span>
+                <div class="push-right details help-tag" title="${t('Cauldron Target')}">T: ${outputItem.cauldronTarget}</div>
             </div>
             <div class="node-children" style="max-height: 300px; overflow-y: auto;">
                 <div class="loading-placeholder" style="padding:10px; color:#666; font-size:0.8em;">Loading recipes...</div>
@@ -734,19 +777,20 @@ function renderRecipeRows(outName, container) {
 function createRecipeRowHtml(r, outName, favSet) {
     const { inputs, totalValue } = r;
     const displayValue = r.displayValue !== undefined ? r.displayValue : totalValue;
-    console.log(r.displayValue);
     
     // 使用預先計算好的 Set 進行查找，性能極大提升
     const sortedKey = [...inputs].sort().join(',');
     const isFav = favSet.has(sortedKey);
-        
+    
+    let resultTag = `<span style="cursor:help;" title="${t('Calculation result')}">${Number(displayValue.toFixed(1))}</span>`;
+
     let ratioTag = '';
     if (cauldronState.activeType === 0) {
         const [i0, i1, i2] = inputs;
         if (i0 === i1 && i1 === i2) {
-            ratioTag = '<span style="color:var(--danger);"> * 0.5</span>';
+            ratioTag = `<span style="color:var(--danger); cursor:help;" title="${t('Discount for 3 identical inputs (0.5×)')}"> * 0.5</span>`;
         } else if (i0 === i1 || i1 === i2 || i2 === i0) {
-            ratioTag = '<span style="color:var(--warn);"> * 0.65</span>';
+            ratioTag = `<span style="color:var(--warn); cursor:help;" title="${t('Discount for 2 identical inputs (0.65×)')}"> * 0.65</span>`;
         }
     }
 
@@ -754,18 +798,27 @@ function createRecipeRowHtml(r, outName, favSet) {
     const inputsHtml = inputs.map(n => {
         const item = DB.items[n] || { id: 0, cauldronCost: 0 };
         return `<img src="img/item${item.id}.png" class="item-icon-small">
-                ${n} <small>(${Number(item.cauldronCost.toFixed(1))})</small>`;
+                ${n} <span title="${t('Cauldron Cost')}" style="cursor:help;"><small>(${Number(item.cauldronCost.toFixed(1))})</small></span>`;
     }).join(' + ');
 
     const dataAttrs = inputs.map((n, idx) => `data-i${idx + 1}="${n}"`).join(' ');
+
+    let costHtml = '';
+    if (cauldronShowEstCost) {
+        const {totalCost, string} = getRecipeEstCost(inputs);
+        costHtml = totalCost !== null
+            ? `<span class="cost-tag" style="margin-left:auto; margin-right:5px" title="${t('Estimated Cost')}: ${string}">${Math.ceil(totalCost).toLocaleString()} <img src="img/copper.png" class="item-icon-small"></span>`
+            : '';  // 無法計算 → 留空，不顯示任何東西
+    }
 
     return `
     <div class="cauldron-recipe-row">
         <span class="recipe-text">
             ${inputsHtml} 
-            <span style="color:var(--info);">➔</span> ${Number(displayValue.toFixed(1))} ${ratioTag}
+            <span style="color:var(--info);">➔</span> ${resultTag} ${ratioTag}
         </span>
-        <button class="btn-fav ${isFav ? 'active' : ''}" 
+        ${costHtml}
+        <button title="${t('Toggle Favorite')}" class="btn-fav ${isFav ? 'active' : ''}" 
             ${dataAttrs} data-out="${outName}">
             ${isFav ? '★' : '☆'}
         </button>
@@ -816,9 +869,9 @@ function checkUnattainableItems(producedData) {
     if (unattainableList.length > 0) {
         section.style.display = 'block';
         container.innerHTML = unattainableList.map(name => `
-            <div class="picker-item" style="border-color:#444; padding:5px;">
+            <div class="picker-item" style="border-color:#444; padding:5px; cursor:default;">
                 <div style="font-size:1.0em; display: flex; align-items: center;"><img src="img/item${DB.items[name]?.id ?? 0}.png" alt="icon" width="24" height="24">${name}</div>
-                <div style="font-size:0.9em; color:var(--warn);">T: ${DB.items[name].cauldronTarget}</div>
+                <div style="font-size:0.9em; color:var(--warn);" title="${t('Cauldron Target')}">T: ${DB.items[name].cauldronTarget}</div>
             </div>
         `).join('');
     } else {
@@ -883,8 +936,8 @@ function renderCauldronFavorites() {
                 <img src="img/item${DB.items[outName]?.id ?? 0}.png" class="item-icon">
                 <span class="item-link"><strong>${outName}</strong></span>
                 <span class="qty">(${items.length})</span>
-                <span class="info-tag">${itemPerMin > 0 ? itemPerMin.toFixed(2) + '/min' : ''}</span>
-                <span class="heat-tag">${heatPerItem > 0 ? heatPerItem.toFixed(1) + 'P' : ''}</span>
+                <span class="info-tag help-tag" title="${t('Throughput')}">${itemPerMin > 0 ? itemPerMin.toFixed(2) + '/min' : ''}</span>
+                <span class="heat-tag help-tag" title="${t('Heat')}">${heatPerItem > 0 ? heatPerItem.toFixed(1) + 'P' : ''}</span>
             </div>
             <div class="node-children compact-children">
                 ${items.map(f => `
@@ -1337,6 +1390,7 @@ function _renderCauldronRecipeModal() {
             <span style="font-size:0.8em; color:#888;"><img src="img/item${DB.items[currentOutput]?.id ?? 0}.png" width="18" height="18"> ${t('Current Product')} ${t('Saved Recipes')} : ${favCount}</span>
             <div style="display:flex; gap:6px;">
                 <button class="swap-btn"
+                    title="${t('Toggle favorite')}"
                     style="width:auto; padding:3px 10px; border-radius:4px; font-size:1.1em; ${allFilled ? '' : 'opacity:0.4; cursor:not-allowed;'}"
                     onclick="_toggleCauldronModalFav()" ${allFilled ? '' : 'disabled'}>
                     ${isCurrentFav ? '★' : '☆'}

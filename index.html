@@ -462,7 +462,7 @@
         <div id="view-cauldron" class="view">
             <div class="cauldron-grid">
                 <div class="panel scroll-panel">
-                    <h3>Settings & Candidates</h3>
+                    <h3 class="help-tag" title="Select and filter items to use as cauldron ingredients. Toggle checkboxes to include/exclude them from calculations.">Settings & Candidates</h3>
                     <div class="cauldron-tabs-row">
                         <button id="cauldron-type-0" class="tab-btn mini-tab active" onclick="switchCauldronType(0)">Cauldron</button>
                         <button id="cauldron-type-1" class="tab-btn mini-tab" onclick="switchCauldronType(1)">Advanced Cauldron</button>
@@ -497,15 +497,14 @@
                     <div class="panel">
                         <div style="display:flex; justify-content:space-between; align-items:center; border-bottom:1px solid #444; padding-bottom:10px; margin-bottom:10px;">
                             <div style="display:flex; align-items:baseline; gap:10px;">
-                                <h3 style="border:none; margin:0;">Filtered Results</h3>
+                                <h3 style="border:none; margin:0; cursor:help;" title="Shows all available recipes based on your candidates and filters.">Result Area</h3>
                                 <span id="cauldron-progress" style="color:var(--accent); font-size:0.9em; font-weight:bold;"></span>
                             </div>
                             <div style="display:flex; align-items:center; gap:12px;">
                                 <div class="checkbox-row" style="margin:0;">
-                                    <input type="checkbox" checked id="cauldron-real-time-calculation">
-                                    <label for="cauldron-real-time-calculation" style="display:inline; margin:0; cursor:pointer; font-size: 1.0em;">Real-time</label>
+                                    <input type="checkbox" id="cauldron-show-est-cost" checked onchange="onToggleCauldronCostDisplay()">
+                                    <label for="cauldron-show-est-cost" style="display:inline; margin:0; cursor:pointer; font-size: 1.0em;">Show Estimated Cost</label>
                                 </div>
-                                <button id="btn-run-cauldron" class="save-btn" style="width:auto; padding:5px 15px; margin:0;" onclick="runCauldronSimulation()">Calculate All</button>
                             </div>
                         </div>
 
@@ -534,10 +533,10 @@
                                 </div>
                             </div>
                             <div class="filter-group" id="ratio-filter-group">
-                                <div class="checkbox-row"><input type="checkbox" id="filter-2-diff" checked onchange="runCauldronSimulation()"><label style="display:flex; font-size: 1.0em;" for="filter-2-diff">2 Diff</label></div>
-                                <div class="checkbox-row"><input type="checkbox" id="filter-3-diff" checked onchange="runCauldronSimulation()"><label style="display:flex; font-size: 1.0em;" for="filter-3-diff">3 Diff</label></div>
-                                <div class="checkbox-row"><input type="checkbox" id="filter-2-same" checked onchange="runCauldronSimulation()"><label style="display:flex; font-size: 1.0em;" for="filter-2-same">2 Same</label></div>
-                                <div class="checkbox-row"><input type="checkbox" id="filter-3-same" checked onchange="runCauldronSimulation()"><label style="display:flex; font-size: 1.0em;" for="filter-3-same">3 Same</label></div>
+                                <div class="checkbox-row" title="Include recipes with exactly 2 different inputs"><input type="checkbox" id="filter-2-diff" checked onchange="runCauldronSimulation()"><label style="display:flex; font-size: 1.0em; cursor: pointer;" for="filter-2-diff">2 Diff</label></div>
+                                <div class="checkbox-row" title="Include recipes with 3 different inputs"><input type="checkbox" id="filter-3-diff" checked onchange="runCauldronSimulation()"><label style="display:flex; font-size: 1.0em; cursor: pointer;" for="filter-3-diff">3 Diff</label></div>
+                                <div class="checkbox-row" title="Include recipes with exactly 2 identical inputs"><input type="checkbox" id="filter-2-same" checked onchange="runCauldronSimulation()"><label style="display:flex; font-size: 1.0em; cursor: pointer;" for="filter-2-same">2 Same</label></div>
+                                <div class="checkbox-row" title="Include recipes with all 3 inputs identical"><input type="checkbox" id="filter-3-same" checked onchange="runCauldronSimulation()"><label style="display:flex; font-size: 1.0em; cursor: pointer;" for="filter-3-same">3 Same</label></div>
                             </div>
                         </div>
                         
@@ -551,7 +550,7 @@
                 </div>
 
                 <div class="panel scroll-panel">
-                    <h3>Saved Recipes</h3>
+                    <h3 class="help-tag" title="All the stored recipes are listed here.">Saved Recipes</h3>
                         <div class="split-btn-container" style="margin-bottom: 10px;">
                             <button class="split-btn" onclick="importCauldronFavorites()" style="font-size:0.9em;">Import</button>
                             <button class="split-btn" onclick="exportCauldronFavorites()" style="font-size:0.9em;">Export</button>

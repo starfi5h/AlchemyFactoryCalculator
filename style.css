@@ -434,6 +434,7 @@ input:checked + .slider-switch:before { transform: translateX(16px); }
 .details { font-size: 0.9em; color: #ccc; }
 .output-tag { color: var(--info); font-size: 0.85em; margin-left: 3px; font-weight: bold; }
 .recycle-tag { color: var(--byproduct); font-size: 0.85em; margin-left: 3px; font-weight: bold; }
+.help-tag { cursor: help; }
 
 .swap-btn { background: transparent; border: 1px solid #555; color: #888; width: calc(22px * var(--node-scale)); height: calc(22px * var(--node-scale)); border-radius: 50%; font-size: 11px; cursor: pointer; display: inline-flex; align-items: center; justify-content: center; padding: 0; line-height: 1; }
 .swap-btn:hover { background: #444; color: white; border-color: #fff; }
