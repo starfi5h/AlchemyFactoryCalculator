@@ -8,6 +8,8 @@ let cauldronState = {
     activeType: 0, // 0:煉金鍋 1:高級煉金鍋
     activeProfile: 0,
     favorites: [],
+    heatPerCopper: 20,   // 新增：熱值/銅幣 換算率
+    nutrPerCopper: 12,   // 新增：肥力/銅幣 換算率
     profiles: [
         { candidates: [] }, // Profile 1
         { candidates: [] }, // Profile 2
@@ -38,6 +40,7 @@ function initCauldron() {
     pickFilterItem(2,true);
     switchCauldronType(cauldronState.activeType);
     switchCauldronProfile(cauldronState.activeProfile);
+    buildItemBaseCost();
 }
 
 function loadCauldronSettings() {
@@ -56,11 +59,13 @@ function loadCauldronSettings() {
         // 默认Profile 3為金幣+晶石基底
         cauldronState.profiles[2].candidates = Array.from(getPresetCandidates('Gold'));
     }
+    if (!(cauldronState.heatPerCopper > 0)) cauldronState.heatPerCopper = 20;
+    if (!(cauldronState.nutrPerCopper > 0)) cauldronState.nutrPerCopper = 12;
 }
 
 function saveCauldronSettings() {
     // 将 Set 同步回当前 Profile
-    cauldronState.profiles[cauldronState.activeProfile].candidates = Array.from(cauldronCandidates);
+    cauldronState.profiles[cauldronState.activeProfile].candidates = Array.from(cauldronCandidates);    
     localStorage.setItem(CAULDRON_STORAGE_KEY, JSON.stringify(cauldronState));
 }
 
@@ -116,24 +121,92 @@ function getPresetCandidates(poolType) {
    SECTION: Estimate Cost
    ========================================================================== */
 
-function getItemBaseCost(itemName) {
-    if (_cauldronCostCache.has(itemName)) return _cauldronCostCache.get(itemName);
+/**
+ * 依 customCost / buyPrice / nutrientCost 等基礎屬性，
+ * 逐輪擴散推導出所有可由單一輸出配方生產的物品的估算銅幣價值。
+ * 只有輸入全數已知價值、且輸出僅有一種物品的配方才會被納入推導。
+ * 建置完成後直接覆蓋 _cauldronCostCache。
+ */
+function buildItemBaseCost() {
+    const cache = new Map();
+    const heatPerCopper = cauldronState.heatPerCopper || 20;
+    const nutrPerCopper = cauldronState.nutrPerCopper || 12;
 
-    const custom = DB.settings.customCosts?.[itemName];
-    const itemDef = DB.items[itemName];
-    let cost = null;
-    if (typeof custom === 'number' && custom > 0) cost = custom;
-    else if (itemDef) {
-        if (itemDef.buyPrice > 0) {
-            cost = itemDef.buyPrice;
-            if (itemDef.maxStack && itemDef.maxStack < 0) cost /= (-itemDef.maxStack);            
+    // ---- Round 0: 基礎物品 (customCost / buyPrice / Currency / heat / nutrientValue) ----
+    Object.entries(DB.items).forEach(([name, item]) => {
+        let cost = null;
+        const custom = DB.settings.customCosts?.[name];
+
+        if (typeof custom === 'number' && custom > 0) {
+            cost = custom;
+        } else if (item.buyPrice > 0) {
+            cost = item.buyPrice;
+            if (item.maxStack && item.maxStack < 0) cost /= (-item.maxStack);
+        } else if (item.category === 'Currency') {
+            cost = item.sellPrice;
+        } else if (item.nutrientCost > 0) {
+            cost = item.nutrientCost / nutrPerCopper;
         }
-        if (itemDef.category === 'Currency') {
-            cost = itemDef.sellPrice;
+
+        if (cost !== null) cache.set(name, cost);
+    });
+
+    // 特殊處理金锭
+    if (DB.items['Gold Ingot'] && !cache.has('Gold Ingot')) cache.set('Gold Ingot', 100000);
+    if (DB.items['金锭'] && !cache.has('金锭')) cache.set('金锭', 100000);
+
+    // ---- 反覆擴散：找出「輸入皆已知、輸出唯一」的配方 ----
+    for (;;) {
+        const newlyResolved = new Map(); // 本輪新算出的值，跑完整輪才 merge (先到先得)
+
+        for (const recipe of DB.recipes) {
+            if (recipe.id.startsWith('AUTO_GENERATED_CAULDRON')) continue;
+
+            const outKeys = Object.keys(recipe.outputs || {});
+            if (outKeys.length !== 1) continue; // 排除多輸出配方
+            const outName = outKeys[0];
+            if (cache.has(outName) || newlyResolved.has(outName)) continue;
+
+            const inKeys = Object.keys(recipe.inputs || {});
+            if (inKeys.length === 0) continue; // 無輸入配方 (Bank Portal 等) 不參與推導
+            if (!inKeys.every(k => cache.has(k))) continue;
+
+            // 對於maxStack為負的物品, 需要將cache先回調成一個物品的值
+            let inputCostSum = 0;
+            inKeys.forEach(k => { 
+                const maxStack = DB.items[k]?.maxStack;
+                inputCostSum += cache.get(k) * ((maxStack < 0) ? -maxStack : 1) * recipe.inputs[k]; 
+            });
+
+            // 機台熱耗 -> 轉換成銅幣成本 (概算：以配方本身 baseTime 計算單批熱耗)
+            let heatCostPerBatch = 0;
+            const machine = DB.machines[recipe.machine];
+            if (machine && machine.heatCost) {
+                heatCostPerBatch = machine.heatCost > 0
+                    ? machine.heatCost * (recipe.baseTime || 1)
+                    : (recipe.heatCost || 0); // heatCost < 0 (如 Cauldron) 改用配方自帶的 heatCost
+            }
+            const heatCostConverted = heatCostPerBatch / heatPerCopper;
+
+
+            const outQty = recipe.outputs[outName];
+            const maxStack = DB.items[outName]?.maxStack;
+            const unitCost = (inputCostSum + heatCostConverted) / outQty;
+            const finalValue = maxStack < 0 ? (unitCost / -maxStack) : unitCost; // 需要再轉變成單一份的成本
+            newlyResolved.set(outName, finalValue); 
         }
+
+        if (newlyResolved.size === 0) break; // 沒有新物品可推導，結束
+        newlyResolved.forEach((cost, name) => cache.set(name, cost));
     }
-    _cauldronCostCache.set(itemName, cost);
-    return cost;
+
+    _cauldronCostCache = cache;
+    return cache;
+}
+
+/** 查詢單一物品的估算價值，查不到回傳 null */
+function getItemBaseCost(itemName) {
+    return _cauldronCostCache.has(itemName) ? _cauldronCostCache.get(itemName) : null;
 }
 
 // inputs: string[]，例如 r.inputs (cauldron結果) 陣列
@@ -144,7 +217,7 @@ function getRecipeEstCost(inputs) {
         const cost = getItemBaseCost(name);
         if (cost === null) { totalCost = null; string = null; break; }; // 任一無法計算 → 整筆視為無法計算
         totalCost += cost;
-        string += `${name}(${cost}) `;
+        string += `${name}(${Number(cost.toFixed(2))}) `;
     }
     return { totalCost, string };
 }
@@ -156,6 +229,124 @@ function onToggleCauldronCostDisplay() {
         const childrenContainer = el.parentElement.querySelector('.node-children');
         renderRecipeRows(el.dataset.out, childrenContainer);
     });
+    renderCauldronResults(lastCauldronResults);
+}
+
+/* ==========================================================================
+   SECTION: ITEM BASE COST MODAL
+   ========================================================================== */
+
+function openItemBaseCostModal() {
+    document.getElementById('item-base-cost-modal-title').innerText = '⚙ ' + t('Base Item Cost List', 'ui');
+    document.getElementById('base-cost-heat-label').innerText = '🔥 ' + t('Heat', 'ui') + ' ' + t('Cost', 'ui');
+    document.getElementById('base-cost-fert-label').innerText = '🌱 ' + t('Nutr', 'ui') + ' ' + t('Cost', 'ui');
+    //document.getElementById('custom-cost-btn-label-2').innerText = t('Manage Custom Costs', 'ui');
+    _renderItemBaseCostRates();
+    _populateItemBaseCostCategories();
+    _renderItemBaseCostList();
+    document.getElementById('item-base-cost-modal').style.display = 'flex';
+}
+
+function _renderItemBaseCostRates() {
+    document.getElementById('base-cost-heat-per-copper').value = Number(cauldronState.heatPerCopper.toFixed(4));
+    document.getElementById('base-cost-copper-per-heat').value = Number((1 / cauldronState.heatPerCopper).toFixed(6));
+    document.getElementById('base-cost-fert-per-copper').value = Number(cauldronState.nutrPerCopper.toFixed(4));
+    document.getElementById('base-cost-copper-per-fert').value = Number((1 / cauldronState.nutrPerCopper).toFixed(6));
+}
+
+/**
+ * 處理熱值/肥力換算率四個輸入框中任一個變動。
+ * which: 'heatPerCopper' | 'copperPerHeat' | 'nutrPerCopper' | 'copperPerFert'
+ */
+function onBaseCostRateChange(which, value) {
+    const val = parseFloat(value);
+    if (!(val > 0)) return; // 忽略無效值或 0，避免除以 0
+
+    switch (which) {
+        case 'heatPerCopper': cauldronState.heatPerCopper = val; break;
+        case 'copperPerHeat': cauldronState.heatPerCopper = 1 / val; break;
+        case 'nutrPerCopper': cauldronState.nutrPerCopper = val; break;
+        case 'copperPerNutr': cauldronState.nutrPerCopper = 1 / val; break;
+    }
+
+    saveCauldronSettings();
+    _renderItemBaseCostRates();
+    buildItemBaseCost();
+    _renderItemBaseCostList();
+
+    // 同步刷新目前已展開的配方成本顯示
+    document.querySelectorAll('.cauldron-card:not(.collapsed) .node-content[data-out]').forEach(el => {
+        const childrenContainer = el.parentElement.querySelector('.node-children');
+        renderRecipeRows(el.dataset.out, childrenContainer);
+    });
+    if (document.getElementById('cauldron-real-time-calculation')?.checked) runCauldronSimulation();
+}
+
+let _baseCostCatFilter = "[All]";
+
+function _populateItemBaseCostCategories() {
+    const sel = document.getElementById('base-cost-cat-select');
+    const prevVal = _baseCostCatFilter;
+    sel.innerHTML = '';
+
+    // 统计每个类别的物品数量
+    const catCounts = new Map();
+    let totalCount = 0;
+    _cauldronCostCache.forEach((cost, name) => {
+        const cat = DB.items[name]?.category;
+        if (cat) {
+            catCounts.set(cat, (catCounts.get(cat) || 0) + 1);
+            totalCount++;
+        }
+    });
+
+    // 获取所有非 [All] 类别，并按数量降序排序（数量相同则按名称升序）
+    const cats = Array.from(catCounts.keys());
+    cats.sort((a, b) => {
+        const countA = catCounts.get(a) || 0;
+        const countB = catCounts.get(b) || 0;
+        if (countA !== countB) return countB - countA; // 数量多的排前面
+        return a.localeCompare(b);                     // 数量相同按字母顺序
+    });
+    const sortedCats = ["[All]"].concat(cats);
+
+    sortedCats.forEach(cat => {
+        const baseLabel = t(cat, 'categories');
+        const count = cat === "[All]" ? totalCount : (catCounts.get(cat) || 0);
+        const label = `${baseLabel} (${count})`;
+        sel.appendChild(new Option(label, cat));
+    });
+
+    sel.value = sortedCats.includes(prevVal) ? prevVal : "[All]";
+    _baseCostCatFilter = sel.value;
+}
+
+function _renderItemBaseCostList() {
+    _baseCostCatFilter = document.getElementById('base-cost-cat-select')?.value || "[All]";
+    const container = document.getElementById('item-base-cost-list');
+
+    let entries = [..._cauldronCostCache.entries()];
+    if (_baseCostCatFilter !== "[All]") {
+        entries = entries.filter(([name]) => DB.items[name]?.category === _baseCostCatFilter);
+    }
+    entries.sort((a, b) => a[1] - b[1]); // 依估算價值低到高
+
+    if (entries.length === 0) {
+        container.innerHTML = `<div style="color:#666; padding:10px; font-size:0.85em; text-align:center;">${t('No items found.', 'ui')}</div>`;
+        return;
+    }
+
+    container.innerHTML = entries.map(([name, cost]) => {
+        const itemDef = DB.items[name] || {};
+        if (!itemDef) return ``;
+        const stackTag = itemDef.maxStack < 0 ? '*' : '';
+        return `
+        <div class="multi-target-row">
+            <img src="img/item${itemDef.id ?? 0}.png" width="20" height="20">
+            <span class="item-name-label" style="flex:1;" title="${t('Cauldron Cost')}: ${Number(itemDef.cauldronCost)}">${name}${stackTag}</span>
+            <span class="details" style="text-align:right; min-width:90px;">${formatCoinIcons(cost)}</span>
+        </div>`;
+    }).join('');
 }
 
 /* ==========================================================================
@@ -680,6 +871,21 @@ function renderCauldronResults(data) {
         card.className = 'node cauldron-card collapsed';
         card.id = `cauldron-out-${outName.replace(/\s+/g, '-')}`; // 方便定位
         
+        // 掃描該產物所有配方，找出最低預估成本 (O(N)，N = 該產物配方數)
+        let minEstCost = null; let resultString = "";
+        if (cauldronShowEstCost) {
+            recipes.forEach(r => {
+                const { totalCost, string } = getRecipeEstCost(r.inputs);
+                if (totalCost !== null && (minEstCost === null || totalCost < minEstCost)) {
+                    minEstCost = totalCost;
+                    resultString = string;
+                }
+            });
+        }
+        const minCostTag = minEstCost !== null
+            ? `<span class="cost-tag help-tag" title="${t('Minimum')+t('Estimated Cost')}: ${resultString}">${Math.ceil(minEstCost).toLocaleString()} <img src="img/copper.png" class="item-icon-small"></span>`
+            : '';
+
         card.innerHTML = `
             <div class="node-content compact-card" data-out="${outName}" onclick="toggleCauldronCard(this, this.parentElement)">
                 <span class="tree-arrow">▼</span>
@@ -688,6 +894,7 @@ function renderCauldronResults(data) {
                 <span class="qty help-tag" style="font-size:0.9em;" title="${t('Number of matching recipes')}">(${recipes.length})</span>
                 <span class="info-tag help-tag" title="${t('Base Time')}">${stats.time.toFixed(1)}s</span>
                 <span class="heat-tag help-tag" title="${t('Heat Cost')}">${stats.heat.toFixed(1)}P/s</span>
+                ${minCostTag}
                 <div class="push-right details help-tag" title="${t('Cauldron Target')}">T: ${outputItem.cauldronTarget}</div>
             </div>
             <div class="node-children" style="max-height: 300px; overflow-y: auto;">

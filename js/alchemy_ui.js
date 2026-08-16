@@ -1432,7 +1432,7 @@ function translateText() {
     const selectors = [
         'h1', '.panel h3', '.section-header',
         '.input-group label', '.checkbox-row label', '.checkbox-row span', '.stat-label', '.scale-row-label',
-        '.tab-btn', '.split-btn', '.save-btn', '.reset-btn', '.info'
+        '.tab-btn', '.split-btn', '.save-btn', '.reset-btn', '.soild-btn', '.info'
     ].join(',');
 
     document.querySelectorAll(selectors).forEach(el => {

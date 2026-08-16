@@ -29,7 +29,7 @@
             <span style="margin-left: 10px;">
                 <span id="ui-lang-toggle" style="cursor:pointer; margin-right: 10px;" onclick="toggleLanguage()" title="EN/中文">🌐EN/中文</span>
                 <a href="https://github.com/starfi5h/AlchemyFactoryCalculator" target="_blank" class="repo-link">GitHub Repo</a>
-                <span id="last-updated-time-text">2026.08.15</span>
+                <span id="last-updated-time-text">2026.08.16</span>
             </span>
         </div>
         <div class="tabs">
@@ -178,6 +178,42 @@
                 <div id="custom-cost-list"></div>
                 <button class="save-btn" style="margin-top:10px; background:var(--panel); border-style:dashed;"
                         onclick="addCustomCostRow()">+ <span id="custom-cost-add-label">Add Item</span></button>
+            </div>
+        </div>
+
+        <!-- Item Base Cost Modal -->
+        <div id="item-base-cost-modal" class="modal-overlay" onclick="closeModal('item-base-cost-modal')">
+            <div class="modal-content" onclick="event.stopPropagation()" style="min-width:360px; max-width:520px;">
+                <div class="modal-header">
+                    <h2 style="margin:0; font-size:1em;" id="item-base-cost-modal-title">⚙ Base Item Cost</h2>
+                    <button class="close-modal" onclick="closeModal('item-base-cost-modal')">&times;</button>
+                </div>
+                <div style="display: flex; align-items: center; gap: 6px; padding: 6px; margin-bottom: 6px;">
+                    <span class="item-name-label" style="flex:1;" id="base-cost-heat-label">🔥 Heat Cost</span>
+                    <input type="number" class="small-num-input" style="width:100px; height:25px;" id="base-cost-heat-per-copper"
+                        step="any" min="0" onchange="onBaseCostRateChange('heatPerCopper', this.value)">
+                    <span style="font-size:0.75em; color:#888; white-space:nowrap;">P/¢</span>
+                    <input type="number" class="small-num-input" style="width:100px; height:25px;" id="base-cost-copper-per-heat"
+                        step="any" min="0" onchange="onBaseCostRateChange('copperPerHeat', this.value)">
+                    <span style="font-size:0.75em; color:#888; white-space:nowrap;">¢/P</span>
+                </div>
+                <div style="display: flex; align-items: center; gap: 6px; padding: 6px; margin-bottom: 6px;">
+                    <span class="item-name-label" style="flex:1;" id="base-cost-fert-label">🌱 Nutrient Cost</span>
+                    <input type="number" class="small-num-input" style="width:100px; height:25px;" id="base-cost-fert-per-copper"
+                        step="any" min="0" onchange="onBaseCostRateChange('nutrPerCopper', this.value)">
+                    <span style="font-size:0.75em; color:#888; white-space:nowrap;">V/¢</span>
+                    <input type="number" class="small-num-input" style="width:100px; height:25px;" id="base-cost-copper-per-fert"
+                        step="any" min="0" onchange="onBaseCostRateChange('copperPerNutr', this.value)">
+                    <span style="font-size:0.75em; color:#888; white-space:nowrap;">¢/V</span>
+                </div>
+                <div style="display:flex; gap:10px; margin-top:10px; align-items:center;">
+                    <select id="base-cost-cat-select" style="width:60%;" onchange="_renderItemBaseCostList()"></select>
+                    <button class="split-btn" style="width:40%; margin:0;" onclick="closeModal('item-base-cost-modal'); openCustomCostModal();">
+                        ⚙ <span id="custom-cost-btn-label-2">Manage Custom Costs</span>
+                    </button>
+                </div>
+                <div id="item-base-cost-list" style="margin-top:10px; height:450px; overflow-y:auto;">
+                </div>
             </div>
         </div>
 
@@ -500,12 +536,13 @@
                                 <h3 style="border:none; margin:0; cursor:help;" title="Shows all available recipes based on your candidates and filters.">Result Area</h3>
                                 <span id="cauldron-progress" style="color:var(--accent); font-size:0.9em; font-weight:bold;"></span>
                             </div>
-                            <div style="display:flex; align-items:center; gap:12px;">
+                            <div style="display:flex; align-items:center; gap:12px; margin-left:auto; margin-right:5px;">
                                 <div class="checkbox-row" style="margin:0;">
                                     <input type="checkbox" id="cauldron-show-est-cost" checked onchange="onToggleCauldronCostDisplay()">
                                     <label for="cauldron-show-est-cost" style="display:inline; margin:0; cursor:pointer; font-size: 1.0em;">Show Estimated Cost</label>
                                 </div>
                             </div>
+                            <button class="soild-btn" onclick="openItemBaseCostModal()">⚙ Cost Settings</button>
                         </div>
 
                         <div class="cauldron-filter-bar">
