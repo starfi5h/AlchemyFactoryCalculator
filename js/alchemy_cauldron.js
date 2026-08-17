@@ -10,6 +10,8 @@ let cauldronState = {
     favorites: [],
     heatPerCopper: 20,   // 新增：熱值/銅幣 換算率
     nutrPerCopper: 12,   // 新增：肥力/銅幣 換算率
+    showEstCost: true,
+    orderByEstCost: true,
     profiles: [
         { candidates: [] }, // Profile 1
         { candidates: [] }, // Profile 2
@@ -20,8 +22,6 @@ let cauldronState = {
 let cauldronCandidates = new Set(); // 存储被勾选的物品名
 let cauldronCatFilter = "[All]";
 let cauldronFilterItems = [null, null, null];
-
-let cauldronShowEstCost = true;      // 是否顯示成本(不寫入 localStorage，每次進頁重置)
 let _cauldronCostCache = new Map();   // item name -> number | null
 
 function isVaildCandidate(itemName) {
@@ -41,6 +41,8 @@ function initCauldron() {
     pickFilterItem(2,true);
     switchCauldronType(cauldronState.activeType);
     switchCauldronProfile(cauldronState.activeProfile);
+    document.getElementById('cauldron-order-by-est-cost').checked = cauldronState.orderByEstCost;
+    document.getElementById('cauldron-show-est-cost').checked = cauldronState.showEstCost;
 }
 
 function loadCauldronSettings() {
@@ -58,6 +60,8 @@ function loadCauldronSettings() {
         cauldronState.profiles[1].candidates = Array.from(getPresetCandidates('Herbs'));
         // 默认Profile 3為金幣+晶石基底
         cauldronState.profiles[2].candidates = Array.from(getPresetCandidates('Gold'));
+        cauldronState.showEstCost = true;
+        cauldronState.orderByEstCost = true;
     }
     if (!(cauldronState.heatPerCopper > 0)) cauldronState.heatPerCopper = 20;
     if (!(cauldronState.nutrPerCopper > 0)) cauldronState.nutrPerCopper = 12;
@@ -223,13 +227,63 @@ function getRecipeEstCost(inputs) {
 }
 
 function onToggleCauldronCostDisplay() {
-    cauldronShowEstCost = document.getElementById('cauldron-show-est-cost').checked;
+    cauldronState.showEstCost = document.getElementById('cauldron-show-est-cost').checked;
     // 重新渲染目前已展開的配方列表（若有）
     document.querySelectorAll('.cauldron-card:not(.collapsed) .node-content[data-out]').forEach(el => {
         const childrenContainer = el.parentElement.querySelector('.node-children');
         renderRecipeRows(el.dataset.out, childrenContainer);
     });
     renderCauldronResults(lastCauldronResults);
+    saveCauldronSettings();
+}
+
+function onToggleOrderByEstCost() {
+    cauldronState.orderByEstCost = document.getElementById('cauldron-order-by-est-cost').checked;
+    
+    saveCauldronSettings();
+
+
+    // 记录当前展开的卡片 ID（这些卡片在重新渲染后将变为折叠状态）
+    const expandedCardIds = [];
+    document.querySelectorAll('.cauldron-card:not(.collapsed)').forEach(card => {
+        if (card.id) expandedCardIds.push(card.id);
+    });
+
+    // 重新渲染整个结果区（基于已有的 lastCauldronResults）
+    renderCauldronResults(lastCauldronResults);
+
+    // 恢复展开状态：找到对应卡片，移除 collapsed 类，并填充子节点内容
+    expandedCardIds.forEach(id => {
+        const card = document.getElementById(id);
+        if (!card) return;
+
+        // 展开卡片（移除折叠类）
+        card.classList.remove('collapsed');
+
+        // 填充子节点内容（如果尚未填充）
+        const content = card.querySelector('.node-content');
+        const childrenContainer = card.querySelector('.node-children');
+        if (content && childrenContainer) {
+            const outName = content.dataset.out;
+            if (outName && lastCauldronResults[outName]) {
+                // 直接调用渲染函数，与 toggleCauldronCard 内部逻辑一致
+                renderRecipeRows(outName, childrenContainer);
+            }
+        }
+    });
+}
+
+/**
+ * 刷新所有已展开的卡片内的配方列表（重新排序并渲染）
+ */
+function refreshExpandedCauldronCards() {
+    document.querySelectorAll('.cauldron-card:not(.collapsed) .node-content[data-out]').forEach(el => {
+        const childrenContainer = el.parentElement.querySelector('.node-children');
+        const outName = el.dataset.out;
+        if (childrenContainer && outName) {
+            renderRecipeRows(outName, childrenContainer);
+        }
+    });
 }
 
 /* ==========================================================================
@@ -875,7 +929,7 @@ function renderCauldronResults(data) {
         let minEstCost = null;
         let minEstCostRecipe = null;
         let resultString = ""; 
-        if (cauldronShowEstCost) {
+        if (cauldronState.showEstCost) {
             let minValue = Infinity;
             recipes.forEach(r => {
                 const { totalCost, string } = getRecipeEstCost(r.inputs);
@@ -949,11 +1003,11 @@ function renderRecipeRows(outName, container) {
         return;
     }
 
-    // --- 预计算 EstCost (仅一次) ---
+    // 预计算 estCost（仅当 showEstCost 为 true 时才有值）
     const recipesWithEst = recipes.map(r => {
         let estCost = null;
         let estString = '';
-        if (cauldronShowEstCost) {
+        if (cauldronState.showEstCost) {
             const { totalCost, string } = getRecipeEstCost(r.inputs);
             estCost = totalCost;    // 可能为 null
             estString = string || '';
@@ -961,16 +1015,22 @@ function renderRecipeRows(outName, container) {
         return { ...r, estCost, estString };
     });
 
-    // --- 排序：先按 estCost（null 排最后），再按 totalValue ---
-    recipesWithEst.sort((a, b) => {
-        if (a.estCost === null && b.estCost === null) {
+    // 排序
+    if (cauldronState.orderByEstCost) {
+        // 按 estCost 升序，null 排最后，再按 totalValue 升序
+        recipesWithEst.sort((a, b) => {
+            if (a.estCost === null && b.estCost === null) {
+                return a.totalValue - b.totalValue;
+            }
+            if (a.estCost === null) return 1;
+            if (b.estCost === null) return -1;
+            if (a.estCost !== b.estCost) return a.estCost - b.estCost;
             return a.totalValue - b.totalValue;
-        }
-        if (a.estCost === null) return 1;
-        if (b.estCost === null) return -1;
-        if (a.estCost !== b.estCost) return a.estCost - b.estCost;
-        return a.totalValue - b.totalValue;
-    });
+        });
+    } else {
+        // 仅按 totalValue 升序（原有逻辑）
+        recipesWithEst.sort((a, b) => a.totalValue - b.totalValue);
+    }
 
     // 預先處理「收藏夾」索引，將複雜度從 O(N*M) 降到 O(N)
     const favSet = new Set(
@@ -1040,7 +1100,7 @@ function createRecipeRowHtml(r, outName, favSet) {
 
     // 使用 estCost 和 estString 生成成本标签
     let costHtml = '';
-    if (cauldronShowEstCost && estCost !== null) {
+    if (cauldronState.showEstCost && estCost !== null) {
         costHtml = `<span class="cost-tag" style="margin-left:auto; margin-right:5px" 
                      title="${t('Estimated Cost')}: ${estString}">
                      ${Math.ceil(estCost).toLocaleString()} <img src="img/copper.png" class="item-icon-small">

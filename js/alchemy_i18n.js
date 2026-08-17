@@ -284,6 +284,7 @@ window.ALCHEMY_I18N = {
         "Result Area": "结果区域",        
         "Number of matching recipes" : "符合条件的配方数量",        
         "Show Estimated Cost": "显示预估成本",
+        "Order by Est. Cost": "按预估成本排序",
         "Estimated Cost": "预估成本",
         "⚙ Cost Settings": "⚙ 成本设定",
         "Calculate All": "计算全部",

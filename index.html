@@ -29,7 +29,7 @@
             <span style="margin-left: 10px;">
                 <span id="ui-lang-toggle" style="cursor:pointer; margin-right: 10px;" onclick="toggleLanguage()" title="EN/中文">🌐EN/中文</span>
                 <a href="https://github.com/starfi5h/AlchemyFactoryCalculator" target="_blank" class="repo-link">GitHub Repo</a>
-                <span id="last-updated-time-text">2026.08.16</span>
+                <span id="last-updated-time-text">2026.08.17</span>
             </span>
         </div>
         <div class="tabs">
@@ -536,11 +536,16 @@
                                 <h3 style="border:none; margin:0; cursor:help;" title="Shows all available recipes based on your candidates and filters.">Result Area</h3>
                                 <span id="cauldron-progress" style="color:var(--accent); font-size:0.9em; font-weight:bold;"></span>
                             </div>
+
                             <div style="display:flex; align-items:center; gap:12px; margin-left:auto; margin-right:5px;">
                                 <div class="checkbox-row" style="margin:0;">
                                     <input type="checkbox" id="cauldron-show-est-cost" checked onchange="onToggleCauldronCostDisplay()">
                                     <label for="cauldron-show-est-cost" style="display:inline; margin:0; cursor:pointer; font-size: 1.0em;">Show Estimated Cost</label>
                                 </div>
+                            </div>
+                            <div class="checkbox-row" style="margin-right:5px;">
+                                <input type="checkbox" id="cauldron-order-by-est-cost" checked onchange="onToggleOrderByEstCost()">
+                                <label for="cauldron-order-by-est-cost" style="display:inline; margin:0; cursor:pointer; font-size: 1.0em;">Order by Est. Cost</label>
                             </div>
                             <button class="soild-btn" onclick="openItemBaseCostModal()">⚙ Cost Settings</button>
                         </div>
