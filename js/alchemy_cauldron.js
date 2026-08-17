@@ -31,7 +31,8 @@ function isVaildCandidate(itemName) {
 
 // 初始化：在 alchemy_ui.js 的 init() 之后调用
 function initCauldron() {
-    loadCauldronSettings();
+    loadCauldronSettings();    
+    buildItemBaseCost();
     populateCauldronCategories();
     renderCandidatePool();
     renderCauldronFavorites();
@@ -40,7 +41,6 @@ function initCauldron() {
     pickFilterItem(2,true);
     switchCauldronType(cauldronState.activeType);
     switchCauldronProfile(cauldronState.activeProfile);
-    buildItemBaseCost();
 }
 
 function loadCauldronSettings() {
@@ -872,18 +872,27 @@ function renderCauldronResults(data) {
         card.id = `cauldron-out-${outName.replace(/\s+/g, '-')}`; // 方便定位
         
         // 掃描該產物所有配方，找出最低預估成本 (O(N)，N = 該產物配方數)
-        let minEstCost = null; let resultString = "";
+        let minEstCost = null;
+        let minEstCostRecipe = null;
+        let resultString = ""; 
         if (cauldronShowEstCost) {
+            let minValue = Infinity;
             recipes.forEach(r => {
                 const { totalCost, string } = getRecipeEstCost(r.inputs);
-                if (totalCost !== null && (minEstCost === null || totalCost < minEstCost)) {
+                if (totalCost !== null && (minEstCost === null || totalCost < minEstCost || (totalCost == minEstCost && r.totalValue < minValue))) {
                     minEstCost = totalCost;
+                    minEstCostRecipe = r.inputs;
                     resultString = string;
+                    minValue = r.totalValue;
                 }
             });
         }
-        const minCostTag = minEstCost !== null
-            ? `<span class="cost-tag help-tag" title="${t('Minimum')+t('Estimated Cost')}: ${resultString}">${Math.ceil(minEstCost).toLocaleString()} <img src="img/copper.png" class="item-icon-small"></span>`
+        // 构建 minCostTag
+        const minCostTag = (minEstCost !== null && minEstCostRecipe)
+            ? `<span class="cost-tag help-tag" title="${t('Minimum')+t('Estimated Cost')}: ${resultString}">
+                ${Math.ceil(minEstCost).toLocaleString()} 
+                <img src="img/copper.png" class="item-icon-small">
+               </span>`
             : '';
 
         card.innerHTML = `
@@ -895,7 +904,8 @@ function renderCauldronResults(data) {
                 <span class="info-tag help-tag" title="${t('Base Time')}">${stats.time.toFixed(1)}s</span>
                 <span class="heat-tag help-tag" title="${t('Heat Cost')}">${stats.heat.toFixed(1)}P/s</span>
                 ${minCostTag}
-                <div class="push-right details help-tag" title="${t('Cauldron Target')}">T: ${outputItem.cauldronTarget}</div>
+                <span class="push-right">
+                <div class="details help-tag" title="${t('Cauldron Target')}">T: ${outputItem.cauldronTarget}</div>
             </div>
             <div class="node-children" style="max-height: 300px; overflow-y: auto;">
                 <div class="loading-placeholder" style="padding:10px; color:#666; font-size:0.8em;">Loading recipes...</div>
@@ -939,8 +949,28 @@ function renderRecipeRows(outName, container) {
         return;
     }
 
-    // 排序一次
-    recipes.sort((a, b) => a.totalValue - b.totalValue);
+    // --- 预计算 EstCost (仅一次) ---
+    const recipesWithEst = recipes.map(r => {
+        let estCost = null;
+        let estString = '';
+        if (cauldronShowEstCost) {
+            const { totalCost, string } = getRecipeEstCost(r.inputs);
+            estCost = totalCost;    // 可能为 null
+            estString = string || '';
+        }
+        return { ...r, estCost, estString };
+    });
+
+    // --- 排序：先按 estCost（null 排最后），再按 totalValue ---
+    recipesWithEst.sort((a, b) => {
+        if (a.estCost === null && b.estCost === null) {
+            return a.totalValue - b.totalValue;
+        }
+        if (a.estCost === null) return 1;
+        if (b.estCost === null) return -1;
+        if (a.estCost !== b.estCost) return a.estCost - b.estCost;
+        return a.totalValue - b.totalValue;
+    });
 
     // 預先處理「收藏夾」索引，將複雜度從 O(N*M) 降到 O(N)
     const favSet = new Set(
@@ -963,17 +993,15 @@ function renderRecipeRows(outName, container) {
     }
 
     function renderChunk() {
-        const end = Math.min(currentIndex + CHUNK_SIZE, recipes.length);
+        const end = Math.min(currentIndex + CHUNK_SIZE, recipesWithEst.length);
         const rows = [];
-
         for (let i = currentIndex; i < end; i++) {
-            rows.push(createRecipeRowHtml(recipes[i], outName, favSet));
+            const r = recipesWithEst[i];
+            rows.push(createRecipeRowHtml(r, outName, favSet));
         }
-
         container.insertAdjacentHTML('beforeend', rows.join(''));
         currentIndex = end;
-
-        if (currentIndex < recipes.length) {
+        if (currentIndex < recipesWithEst.length) {
             requestAnimationFrame(renderChunk);
         }
     }
@@ -982,7 +1010,7 @@ function renderRecipeRows(outName, container) {
 }
 
 function createRecipeRowHtml(r, outName, favSet) {
-    const { inputs, totalValue } = r;
+    const { inputs, totalValue, estCost, estString } = r;
     const displayValue = r.displayValue !== undefined ? r.displayValue : totalValue;
     
     // 使用預先計算好的 Set 進行查找，性能極大提升
@@ -1010,12 +1038,13 @@ function createRecipeRowHtml(r, outName, favSet) {
 
     const dataAttrs = inputs.map((n, idx) => `data-i${idx + 1}="${n}"`).join(' ');
 
+    // 使用 estCost 和 estString 生成成本标签
     let costHtml = '';
-    if (cauldronShowEstCost) {
-        const {totalCost, string} = getRecipeEstCost(inputs);
-        costHtml = totalCost !== null
-            ? `<span class="cost-tag" style="margin-left:auto; margin-right:5px" title="${t('Estimated Cost')}: ${string}">${Math.ceil(totalCost).toLocaleString()} <img src="img/copper.png" class="item-icon-small"></span>`
-            : '';  // 無法計算 → 留空，不顯示任何東西
+    if (cauldronShowEstCost && estCost !== null) {
+        costHtml = `<span class="cost-tag" style="margin-left:auto; margin-right:5px" 
+                     title="${t('Estimated Cost')}: ${estString}">
+                     ${Math.ceil(estCost).toLocaleString()} <img src="img/copper.png" class="item-icon-small">
+                   </span>`;
     }
 
     return `
@@ -1147,8 +1176,12 @@ function renderCauldronFavorites() {
                 <span class="heat-tag help-tag" title="${t('Heat')}">${heatPerItem > 0 ? heatPerItem.toFixed(1) + 'P' : ''}</span>
             </div>
             <div class="node-children compact-children">
-                ${items.map(f => `
-                    <div class="cauldron-recipe-row">
+                ${items.map(f => {
+                    const { totalCost, string } = getRecipeEstCost(f.inputs);
+                    const costTitle = totalCost ? `${t('Estimated Cost')} ${totalCost} : ${string}` : `${t('Estimated Cost')}: None`;
+
+                    return `
+                    <div class="cauldron-recipe-row" title="${costTitle}">
                         <span class="recipe-text">
                             ${f.inputs.map(name => 
                                 DB.items[name] 
@@ -1160,8 +1193,8 @@ function renderCauldronFavorites() {
                                 onclick="toggleFavorite(${f.inputs.map(n => `'${n}'`).join(',')}, '${outName}')">
                             ×
                         </button>
-                    </div>
-                `).join('')}
+                    </div>`;
+                }).join('')}
             </div>
         `;
         container.appendChild(card);
