@@ -589,8 +589,32 @@ button.reset-btn:hover { background: var(--danger); color: white; }
 .ms-target { font-size: 0.75em; color: #888; margin-top: 2px; text-align: left; }
 .ms-cell { min-width: 90px; }
 .ms-cost-row { color: var(--gold); font-weight: bold; display: flex; align-items: center; justify-content: center; gap: 3px; }
-.ms-recipe-row { display: flex; align-items: center; justify-content: center; gap: 2px; margin-top: 3px; min-height: 18px; }
 .ms-empty { color: #555; font-style: italic; }
+.ms-recipe-row { display: flex; align-items: center; justify-content: center; gap: 2px; margin-top: 3px; min-height: 18px; }
+
+.ms-upstream-btn, .ms-fav-btn {
+    background: transparent; border: none; cursor: pointer;
+    font-size: 0.9em; line-height: 1; padding: 1px 4px; border-radius: 3px;
+    flex-shrink: 0; opacity: 0; transition: opacity 0.15s, background 0.15s, color 0.15s;
+}
+.ms-upstream-btn { color: var(--accent); }
+.ms-fav-btn { color: var(--info); border: none !important; }
+.ms-recipe-row:hover .ms-upstream-btn,
+.ms-recipe-row:hover .ms-fav-btn,
+.ms-upstream-btn.active,
+.ms-fav-btn.active {
+    opacity: 1;
+}
+.ms-upstream-btn.active {
+    background: var(--accent); color: #fff; font-weight: bold;
+}
+.ms-recipe-icons { display: inline-flex; gap: 2px; }
+
+.ms-cell.ms-cell-active {
+    background: rgba(33, 150, 243, 0.12);
+    box-shadow: inset 0 0 0 1px var(--accent);
+    border-radius: 4px;
+}
 
 /* ==========================================================================
     SECTION: RECIPES VIEW STYLES

@@ -26,6 +26,9 @@ let multiStepState = {
     steps: [null, null, null, null]  // Map<item, {cost, cauldronCostSum, recipeInputs}>
 };
 
+// 目前作用中的「上游過濾」狀態：{ item, stepIdx } 或 null (未過濾)
+let _multiStepUpstreamFilter = null;
+
 let cauldronCandidates = new Set(); // 存储被勾选的物品名
 let cauldronCatFilter = "[All]";
 let cauldronFilterItems = [null, null, null];
@@ -173,7 +176,9 @@ function buildItemBaseCost() {
         const newlyResolved = new Map(); // 本輪新算出的值，跑完整輪才 merge (先到先得)
 
         for (const recipe of DB.recipes) {
-            if (recipe.id.startsWith('AUTO_GENERATED_CAULDRON')) continue;
+            // 略過任何煉金鍋的配方, 包含收錄的以及官方的配方
+            //if (recipe.id.startsWith('AUTO_GENERATED_CAULDRON')) continue;
+            if (recipe.machine === 'Cauldron' || recipe.machine === 'Advanced Cauldron') continue;
 
             const outKeys = Object.keys(recipe.outputs || {});
             if (outKeys.length !== 1) continue; // 排除多輸出配方
@@ -342,7 +347,7 @@ function onBaseCostRateChange(which, value) {
         const childrenContainer = el.parentElement.querySelector('.node-children');
         renderRecipeRows(el.dataset.out, childrenContainer);
     });
-    if (document.getElementById('cauldron-real-time-calculation')?.checked) runCauldronSimulation();
+    if (cauldronState.stepMode === 1) runCauldronSimulation();
 }
 
 let _baseCostCatFilter = "[All]";
@@ -927,6 +932,7 @@ async function runCauldronSimulationType1() {
  */
 async function runMultiStepCauldronSimulation() {
     console.time('runMultiStepCauldronSimulation');
+    _multiStepUpstreamFilter = null;
     const progText = document.getElementById('cauldron-multistep-progress');
     if (progText) progText.innerText = '';
 
@@ -969,10 +975,12 @@ async function runMultiStepCauldronSimulation() {
                 cost += rec.cost;
                 cauldronCostSum += DB.items[inp].cauldronCost;
             }
+            const ingredientsCost = cost;
             const stats = getCauldronStats(DB.items[output].cauldronTarget);
-            cost += (stats.heat * stats.time) / heatPerCopper;
+            const heatCost = (stats.heat * stats.time) / heatPerCopper;
+            cost += heatCost;
 
-            const cand = { cost, cauldronCostSum, recipeInputs: inputs.slice() };
+            const cand = { cost, cauldronCostSum, recipeInputs: inputs.slice(), ingredientsCost, heatCost };
             if (isBetter(cand, bestThisRound.get(output))) {
                 bestThisRound.set(output, cand);
             }
@@ -1036,6 +1044,54 @@ async function runMultiStepCauldronSimulation() {
    SECTION: RESULT RENDERING
    ========================================================================== */
 
+/**
+ * 從 item（於 stepIdx 這一輪的結果）開始，沿 recipeInputs 往回追溯。
+ * 回傳：
+ *   rowItems: 所有上游祖先的物品名稱集合（用於過濾表格列，不含自己）
+ *   cellKeys: "item::stepIdx" 格式的集合，標記整條追溯鏈實際經過的每一格
+ *             (含 item 自己在 stepIdx 的那一格)，供 ▲ 按鈕標記 active 用
+ */
+function _computeMultiStepUpstreamAncestors(item, stepIdx) {
+    const rowItems = new Set();
+    const cellKeys = new Set([`${item}::${stepIdx}`]);
+    function walk(curItem, curStepIdx) {
+        if (curStepIdx < 0) return;
+        const stepMap = multiStepState.steps[curStepIdx];
+        const rec = stepMap ? stepMap.get(curItem) : null;
+        if (!rec || !rec.recipeInputs) return;
+        rec.recipeInputs.forEach(inputName => {
+            rowItems.add(inputName);
+            cellKeys.add(`${inputName}::${curStepIdx - 1}`);
+            walk(inputName, curStepIdx - 1);
+        });
+    }
+    walk(item, stepIdx);
+    return { rowItems, cellKeys };
+}
+
+/** 切換某格 (item @ stepIdx) 的上游過濾狀態；同一格再按一次即取消過濾 */
+function toggleMultiStepUpstreamFilter(item, stepIdx) {
+    if (_multiStepUpstreamFilter && _multiStepUpstreamFilter.item === item && _multiStepUpstreamFilter.stepIdx === stepIdx) {
+        _multiStepUpstreamFilter = null;
+    } else {
+        _multiStepUpstreamFilter = { item, stepIdx };
+    }
+    renderMultiStepTable();
+}
+
+/** 檢查給定 output+inputs 組合是否已存在於收藏中 */
+function _isMultiStepFavRecipe(output, inputs) {
+    if (!inputs) return false;
+    const key = [...inputs].sort().join(',');
+    return cauldronState.favorites.some(f => f.output === output && [...f.inputs].sort().join(',') === key);
+}
+
+/** fav-btn 點擊：切換收藏並重繪表格（保留目前過濾狀態） */
+function toggleMultiStepFav(item, inputsJson) {
+    const inputs = JSON.parse(inputsJson);
+    toggleFavorite(...inputs, item);
+    renderMultiStepTable();
+}
 
 function renderMultiStepTable() {
     const thead = document.getElementById('cauldron-multistep-thead');
@@ -1043,18 +1099,27 @@ function renderMultiStepTable() {
     if (!thead || !tbody) return;
 
     thead.innerHTML = `<th>${t('Item')}</th>` +
-        multiStepState.steps.map((_, idx) => `<th>Step ${idx}</th>`).join('');
+        multiStepState.steps.map((_, idx) => `<th>${t('Round')} ${idx}</th>`).join('');
 
     const itemSet = new Set();
     multiStepState.steps.forEach(stepMap => {
         if (stepMap) stepMap.forEach((_, item) => itemSet.add(item));
     });
 
-    const rows = [...itemSet].sort((a, b) => {
+    let rows = [...itemSet].sort((a, b) => {
         const ta = DB.items[a]?.cauldronCost ?? Infinity;
         const tb = DB.items[b]?.cauldronCost ?? Infinity;
         return ta - tb;
     });
+
+    // 若有作用中的上游過濾，只保留目標物品自己 + 其所有上游祖先
+    let _msChainCellKeys = null;
+    if (_multiStepUpstreamFilter) {
+        const { item: activeItem, stepIdx: activeStepIdx } = _multiStepUpstreamFilter;
+        const { rowItems, cellKeys } = _computeMultiStepUpstreamAncestors(activeItem, activeStepIdx);
+        _msChainCellKeys = cellKeys;
+        rows = rows.filter(r => r === activeItem || rowItems.has(r));
+    }
 
     if (rows.length === 0) {
         tbody.innerHTML = `<tr><td style="color:#666; padding:20px; text-align:center;">${t('No items found.', 'ui')}</td></tr>`;
@@ -1084,19 +1149,51 @@ function renderMultiStepTable() {
 
             const cost = Math.ceil(rec.cost);
             const extraStyle = (prevCost == null || cost < prevCost) ? '' : 'style="color: gray; opacity:25%;"';
-            const costHtml = `<div class="ms-cost-row">${cost.toLocaleString()}<img src="img/copper.png" class="item-icon-small"></div>`;
+            let costTitleAttr = '';
+            if (rec.recipeInputs) {
+                const ingCost = Math.ceil(rec.ingredientsCost ?? 0);
+                const heatCostVal = Math.ceil(rec.heatCost ?? 0);
+                costTitleAttr = ` title="${t('Ingredients')}${t('Cost')}: ${ingCost.toLocaleString()}\n${t('Heat')}${t('Cost')}: ${heatCostVal.toLocaleString()}"`;
+            }
+            const costHtml = `<div class="ms-cost-row"${costTitleAttr}>${cost.toLocaleString()}<img src="img/copper.png" class="item-icon-small"></div>`;
 
             // 更新 prevCost 为当前有效 cost
             prevCost = cost;
 
-            const recipeHtml = rec.recipeInputs
-                ? `<div class="ms-recipe-row">${rec.recipeInputs.map(n => {
-                    const d = DB.items[n] || {};
-                    return `<img src="img/item${d.id ?? 0}.png" width="18" height="18" title="${n}">`;
-                }).join('')}</div>`
-                : `<div class="ms-recipe-row">—</div>`;
+            let recipeHtml;
+            let cellActiveClass = '';
+            if (rec.recipeInputs) {
+                const cellKey = `${item}::${idx}`;
+                const isChainMember = !!(_msChainCellKeys && _msChainCellKeys.has(cellKey));
+                const isClickedCell = !!(_multiStepUpstreamFilter && _multiStepUpstreamFilter.item === item && _multiStepUpstreamFilter.stepIdx === idx);
+                if (isClickedCell) cellActiveClass = ' ms-cell-active';
 
-            return `<td class="ms-cell" ${extraStyle}>${costHtml}${recipeHtml}</td>`;
+                const isFav = _isMultiStepFavRecipe(item, rec.recipeInputs);
+                const inputsJson = JSON.stringify(rec.recipeInputs).replace(/"/g, '&quot;');
+                const prevStepMap = multiStepState.steps[idx - 1];
+                const icons = rec.recipeInputs.map(n => {
+                    const d = DB.items[n] || {};
+                    const inputRec = prevStepMap ? prevStepMap.get(n) : null;
+                    const inputCost = inputRec ? Math.ceil(inputRec.cost) : null;
+                    const titleText = inputCost !== null ? `${n} (${inputCost.toLocaleString()})` : n;
+                    return `<img src="img/item${d.id ?? 0}.png" width="18" height="18" title="${titleText}">`;
+                }).join('');
+
+                recipeHtml = `
+                    <div class="ms-recipe-row">
+                        <button class="ms-upstream-btn ${isChainMember ? 'active' : ''}"
+                            title="${t('Show Upstream Ingredients')}"
+                            onclick="toggleMultiStepUpstreamFilter('${item}', ${idx})">▲</button>
+                        <span class="ms-recipe-icons">${icons}</span>
+                        <button class="btn-fav ms-fav-btn ${isFav ? 'active' : ''}"
+                            title="${t('Toggle Favorite')}"
+                            onclick="toggleMultiStepFav('${item}', '${inputsJson}')">${isFav ? '★' : '☆'}</button>
+                    </div>`;
+            } else {
+                recipeHtml = `<div class="ms-recipe-row">—</div>`;
+            }
+
+            return `<td class="ms-cell${cellActiveClass}" ${extraStyle}>${costHtml}${recipeHtml}</td>`;
         }).join('');
 
         return `<tr>${nameCell}${cellsHtml}</tr>`;
