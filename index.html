@@ -530,7 +530,13 @@
                 </div>
 
                 <div class="cauldron-main">
-                    <div class="panel">
+                    <div class="cauldron-tabs-row" id="cauldron-step-mode-tabs">
+                        <button id="cauldron-step-mode-0" class="tab-btn mini-tab active" onclick="switchCauldronStepMode(0)">Single Step</button>
+                        <button id="cauldron-step-mode-1" class="tab-btn mini-tab" onclick="switchCauldronStepMode(1)">Multiple Steps</button>
+                        <button class="soild-btn" onclick="openItemBaseCostModal()">⚙ Cost Settings</button>
+                    </div>
+
+                    <div class="panel" id="cauldron-single-step-panel">
                         <div style="display:flex; justify-content:space-between; align-items:center; border-bottom:1px solid #444; padding-bottom:10px; margin-bottom:10px;">
                             <div style="display:flex; align-items:baseline; gap:10px;">
                                 <h3 style="border:none; margin:0; cursor:help;" title="Shows all available recipes based on your candidates and filters.">Result Area</h3>
@@ -547,7 +553,7 @@
                                 <input type="checkbox" id="cauldron-order-by-est-cost" checked onchange="onToggleOrderByEstCost()">
                                 <label for="cauldron-order-by-est-cost" style="display:inline; margin:0; cursor:pointer; font-size: 1.0em;">Order by Est. Cost</label>
                             </div>
-                            <button class="soild-btn" onclick="openItemBaseCostModal()">⚙ Cost Settings</button>
+                            
                         </div>
 
                         <div class="cauldron-filter-bar">
@@ -587,6 +593,20 @@
                         <div id="unattainable-section" style="margin-top:20px; display:none;">
                             <h3 style="color:var(--danger); border-bottom:1px solid var(--danger); font-size:0.9em; margin-bottom:10px;">Unattainable Targets</h3>
                             <div id="unattainable-list" class="picker-grid compact-grid"></div>
+                        </div>
+
+                    </div>
+
+                    <div class="panel" id="cauldron-multistep-panel" style="display:none;">
+                        <div style="display:flex; align-items:baseline; gap:10px; border-bottom:1px solid #444; padding-bottom:10px; margin-bottom:10px;">
+                            <h3 style="border:none; margin:0;">Result Area</h3>
+                            <span id="cauldron-multistep-progress" style="color:var(--accent); font-size:0.9em; font-weight:bold;"></span>
+                        </div>
+                        <div class="cauldron-multistep-scroll">
+                            <table class="recipe-table" id="cauldron-multistep-table">
+                                <thead><tr id="cauldron-multistep-thead"></tr></thead>
+                                <tbody id="cauldron-multistep-tbody"></tbody>
+                            </table>
                         </div>
                     </div>
                 </div>

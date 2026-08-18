@@ -579,6 +579,18 @@ button.reset-btn:hover { background: var(--danger); color: white; }
 
 .compact-grid { grid-template-columns: repeat(auto-fill, minmax(110px, 1fr)) !important; gap: 5px !important; }
 
+/* ==========================================================================
+    SECTION: CAULDRON MULTI-STEP TABLE
+    ========================================================================== */
+.cauldron-multistep-scroll { overflow: auto; max-height: calc(100vh - 220px); }
+#cauldron-multistep-table th,
+#cauldron-multistep-table td { text-align: center; vertical-align: middle; }
+.ms-item-name { display: flex; align-items: center; gap: 6px; justify-content: flex-start; }
+.ms-target { font-size: 0.75em; color: #888; margin-top: 2px; text-align: left; }
+.ms-cell { min-width: 90px; }
+.ms-cost-row { color: var(--gold); font-weight: bold; display: flex; align-items: center; justify-content: center; gap: 3px; }
+.ms-recipe-row { display: flex; align-items: center; justify-content: center; gap: 2px; margin-top: 3px; min-height: 18px; }
+.ms-empty { color: #555; font-style: italic; }
 
 /* ==========================================================================
     SECTION: RECIPES VIEW STYLES

@@ -12,11 +12,18 @@ let cauldronState = {
     nutrPerCopper: 12,   // 新增：肥力/銅幣 換算率
     showEstCost: true,
     orderByEstCost: true,
+    stepMode: 0,   // 0: 单次步骤, 1: 多次步骤
     profiles: [
         { candidates: [] }, // Profile 1
         { candidates: [] }, // Profile 2
         { candidates: [] }  // Profile 3
     ]
+};
+
+// 多次步骤計算結果快取
+let multiStepState = {
+    dirty: true,
+    steps: [null, null, null, null]  // Map<item, {cost, cauldronCostSum, recipeInputs}>
 };
 
 let cauldronCandidates = new Set(); // 存储被勾选的物品名
@@ -41,6 +48,7 @@ function initCauldron() {
     pickFilterItem(2,true);
     switchCauldronType(cauldronState.activeType);
     switchCauldronProfile(cauldronState.activeProfile);
+    switchCauldronStepMode(cauldronState.stepMode);
     document.getElementById('cauldron-order-by-est-cost').checked = cauldronState.orderByEstCost;
     document.getElementById('cauldron-show-est-cost').checked = cauldronState.showEstCost;
 }
@@ -65,6 +73,7 @@ function loadCauldronSettings() {
     }
     if (!(cauldronState.heatPerCopper > 0)) cauldronState.heatPerCopper = 20;
     if (!(cauldronState.nutrPerCopper > 0)) cauldronState.nutrPerCopper = 12;
+    if (cauldronState.stepMode === undefined) cauldronState.stepMode = 0;
 }
 
 function saveCauldronSettings() {
@@ -507,6 +516,18 @@ function switchCauldronProfile(index) {
     runCauldronSimulation();
 }
 
+function switchCauldronStepMode(mode) {
+    cauldronState.stepMode = mode;
+    document.getElementById('cauldron-step-mode-0').classList.toggle('active', mode === 0);
+    document.getElementById('cauldron-step-mode-1').classList.toggle('active', mode === 1);
+    document.getElementById('cauldron-single-step-panel').style.display = mode === 0 ? '' : 'none';
+    document.getElementById('cauldron-multistep-panel').style.display = mode === 1 ? '' : 'none';
+    saveCauldronSettings();
+    if (mode === 1 && multiStepState.dirty) {
+        runMultiStepCauldronSimulation();
+    }
+}
+
 /**
  * 將目前 Profile 的候選清單重置為「草藥/植物」預設組
  */
@@ -641,6 +662,19 @@ function shiftFilterItem(slotIdx, delta) {
 
 let lastCauldronResults = {}; // 全局存储计算结果数据
 
+async function runCauldronSimulation() {
+    if (cauldronState.activeType === 1) {
+        await runCauldronSimulationType1();
+    } else {
+        await runCauldronSimulationType0();
+    }
+
+    multiStepState.dirty = true;
+    if (cauldronState.stepMode === 1) {
+        await runMultiStepCauldronSimulation();
+    }
+}
+
 /**
  * 线性插值函数：根据 cauldronTarget 计算时间与热值
  */
@@ -665,15 +699,80 @@ function getCauldronStats(target) {
     }
 }
 
-/**
- * 检查配方是否符合当前的过滤器
- */
-async function runCauldronSimulation() {
-    if (cauldronState.activeType === 1) {
-        return runCauldronSimulationType1();
-    }
+function _getCauldronValidTargets() {
+    return Object.keys(DB.items)
+        .filter(name => DB.items[name].cauldronTarget !== undefined)
+        .map(name => ({
+            name: name,
+            id: DB.items[name].id || 3000,
+            target: DB.items[name].cauldronTarget,
+            mult: DB.items[name].cauldronMulti || 1,
+        }));
+}
 
-    // 檢查條件
+/** 普通煉金鍋 (3格) 純函式：僅解析輸出物品，不涉及 UI/過濾 */
+function resolveCauldronOutput3(n0, n1, n2, validTargets) {
+    const c0 = DB.items[n0].cauldronCost, c1 = DB.items[n1].cauldronCost, c2 = DB.items[n2].cauldronCost;
+
+    let ratio = 1.0;
+    if (n0 === n1 && n1 === n2) ratio = 0.5;
+    else if (n0 === n1 || n1 === n2 || n0 === n2) ratio = 0.65;
+
+    const T = (c0 + c1 + c2) * ratio;
+
+    let bestItem = null;
+    let bestValue = 0;
+    let minDistance = Infinity;
+    for (const target of validTargets) {
+        const dist = Math.abs((T - target.target) * target.mult);
+        if (dist < minDistance) {
+            minDistance = dist;
+            bestItem = target.name;
+            bestValue = target.id;
+        } else if (Math.abs(dist - minDistance) < 1e-7) {
+            if (target.id < bestValue) {
+                bestItem = target.name;
+                bestValue = target.id;
+            }
+        }
+    }
+    return { output: bestItem, ratio, T };
+}
+
+/** 高級煉金鍋 (2格) 純函式：僅解析輸出物品，不涉及 UI/過濾 */
+function resolveCauldronOutput2(nA, nB, validTargets, maxTargetItem, minTargetItem) {
+    const cA = DB.items[nA].cauldronCost;
+    const cB = DB.items[nB].cauldronCost;
+    const T = (nA === nB) ? cA : Math.abs(cA - cB);
+
+    let bestItem = null;
+    let minDistance = Infinity;
+
+    if (nA === nB) {
+        bestItem = maxTargetItem ? maxTargetItem.name : null;
+        for (const target of validTargets) {
+            const dist = target.target - T;
+            if (1e-7 < dist && dist < minDistance && target.name !== nA) {
+                minDistance = dist;
+                bestItem = target.name;
+            }
+        }
+    } else {
+        const higherName = cA > cB ? nA : nB;
+        const higherCost = cA > cB ? cA : cB;
+        bestItem = minTargetItem ? minTargetItem.name : null;
+        for (const target of validTargets) {
+            const dist = Math.abs(T - target.target);
+            if (dist < minDistance && target.target < higherCost && target.name !== higherName) {
+                minDistance = dist;
+                bestItem = target.name;
+            }
+        }
+    }
+    return { output: bestItem, T };
+}
+
+async function runCauldronSimulationType0() {
     const f100 = document.getElementById('filter-3-diff').checked;
     const f065 = document.getElementById('filter-2-same').checked;
     const f050 = document.getElementById('filter-3-same').checked;
@@ -684,50 +783,8 @@ async function runCauldronSimulation() {
         return true;
     }
 
-    const validTargets = Object.keys(DB.items)
-    .filter(name => DB.items[name].cauldronTarget !== undefined)
-    .map(name => ({
-        name: name,
-        id: DB.items[name].id || 3000,
-        target: DB.items[name].cauldronTarget,
-        mult: DB.items[name].cauldronMulti || 1,
-        cost: DB.items[name].cauldronCost || 0
-    }));
+    const validTargets = _getCauldronValidTargets();
 
-    // 核心计算公式
-    function getCauldronResult(n1, n2, n3) {
-        const i1 = DB.items[n1], i2 = DB.items[n2], i3 = DB.items[n3];
-        const c1 = i1.cauldronCost, c2 = i2.cauldronCost, c3 = i3.cauldronCost;
-
-        let ratio = 1.0;
-        if (n1 === n2 && n2 === n3) ratio = 0.5;
-        else if (n1 === n2 || n2 === n3 || n1 === n3) ratio = 0.65;
-
-        const T = (c1 + c2 + c3) * ratio;
-
-        let bestItem = null;
-        let bestValue = 0;
-        let minDistance = Infinity;
-        //let lastTieDistance = 0;
-        for (let target of validTargets) {
-            const dist = Math.abs((T - target.target) * (target.mult));
-            if (dist < minDistance) {
-                minDistance = dist;
-                bestItem = target.name;
-                bestValue = target.id;
-            } else if (Math.abs(dist - minDistance) < 1e-7) {
-                // Tie-breaker: choose one with less item id
-                if (target.id < bestValue) {
-                    bestItem = target.name;
-                    bestValue = target.id;
-                }
-                //lastTieDistance = dist;
-            }
-        }
-        //if (minDistance == lastTieDistance) console.log(`${n1} + ${n2} + ${n3} = ${bestItem}`);
-        return { output: bestItem, totalValue: (c1 + c2 + c3) };
-    }       
-    
     const list = [...cauldronCandidates].filter(isVaildCandidate);
     list.sort((a, b) => (DB.items[b].cauldronCost - DB.items[a].cauldronCost)); // 由大至小
 
@@ -740,7 +797,6 @@ async function runCauldronSimulation() {
     let n0, n1, n2;
 
     if (list.length === 0) {
-        // 特例: 在完全沒有候選物品時, 若有指定物品, 則將指定物品設為候選物品
         for (let i = 0; i < 3; i++) {
             if (cauldronFilterItems[i]) {
                 list.push(cauldronFilterItems[i]);
@@ -748,27 +804,25 @@ async function runCauldronSimulation() {
         }
     }
 
-    for (let i = 0; i < list.length; i++) {        
+    for (let i = 0; i < list.length; i++) {
         n0 = cauldronFilterItems[0] ?? list[i];
         for (let j = i; j < list.length; j++) {
             n1 = cauldronFilterItems[1] ?? list[j];
             for (let k = j; k < list.length; k++) {
                 n2 = cauldronFilterItems[2] ?? list[k];
 
-                // 计算 Ratio
                 let ratio = 1.0;
                 if (n0 === n1 && n1 === n2) ratio = 0.5;
                 else if (n0 === n1 || n1 === n2 || n0 === n2) ratio = 0.65;
 
-                // 提前过滤，减少后续计算压力
                 if (isRecipeMatch([n0, n1, n2], ratio)) {
-                    const res = getCauldronResult(n0, n1, n2);
-                    // 輸入原料若包含輸出產物(且不是指定的原料), 則跳過這個組合
-                    if (!([n0, n1, n2].includes(res.output) && !cauldronFilterItems.includes(res.output))) { 
+                    const res = resolveCauldronOutput3(n0, n1, n2, validTargets);
+                    const c0 = DB.items[n0].cauldronCost, c1 = DB.items[n1].cauldronCost, c2 = DB.items[n2].cauldronCost;
+                    if (!([n0, n1, n2].includes(res.output) && !cauldronFilterItems.includes(res.output))) {
                         if (!resultsByOutput[res.output]) resultsByOutput[res.output] = [];
                         resultsByOutput[res.output].push({
                             inputs: [n0, n1, n2],
-                            totalValue: res.totalValue
+                            totalValue: (c0 + c1 + c2)
                         });
                         recipeCount++;
                     }
@@ -777,27 +831,25 @@ async function runCauldronSimulation() {
                 if (cauldronFilterItems[2] != null) break;
             }
 
+            /*
             if (Date.now() - lastUpdate > 150) {
                 progText.innerText = `${Math.round((comboCount / totalCombos) * 100)}%`;
                 await new Promise(r => setTimeout(r, 0));
                 lastUpdate = Date.now();
             }
+            */
             if (cauldronFilterItems[1] != null) break;
         }
         if (cauldronFilterItems[0] != null) break;
     }
 
-    lastCauldronResults = resultsByOutput; 
+    lastCauldronResults = resultsByOutput;
 
     renderCauldronResults(resultsByOutput);
     checkUnattainableItems(resultsByOutput);
     progText.innerText = `${t('Number of matching recipes')}: (${recipeCount}) `;
 }
 
-/**
- * 高級煉金鍋 模式的計算函數
- * 輸入兩個原料 A 和 B，獲得產物 C。
- */
 async function runCauldronSimulationType1() {
 
     const include2diff = document.getElementById('filter-2-diff').checked;
@@ -808,54 +860,12 @@ async function runCauldronSimulationType1() {
         else return include2diff;
     }
 
-    const validTargets = Object.keys(DB.items)
-        .filter(name => DB.items[name].cauldronTarget !== undefined)
-        .map(name => ({
-            name: name,
-            id: DB.items[name].id || 3000,
-            target: DB.items[name].cauldronTarget,
-            mult: DB.items[name].cauldronMulti || 1,
-        }));
+    const validTargets = _getCauldronValidTargets();
     const maxTargetItem = validTargets.reduce((prev, current) => (prev.target > current.target) ? prev : current);
     const minTargetItem = validTargets.reduce((prev, current) => (prev.target < current.target) ? prev : current);
 
-    function getType1Result(nA, nB) {
-        const cA = DB.items[nA].cauldronCost;
-        const cB = DB.items[nB].cauldronCost;
-        // 計算基準分(T)，相同素材=該物品價值，不同素材=兩者價值的差值絕對值
-        const T = (nA === nB) ? cA : Math.abs(cA - cB);
-
-        let bestItem = null;
-        let minDistance = Infinity;
-        // 同類合成： 向上尋找最接近的更高階物品。
-        if (nA === nB) {
-            bestItem = maxTargetItem;
-            for (let target of validTargets) {
-                const dist = target.target - T;
-                if (1e-7 < dist && dist < minDistance && target.name !== nA) {
-                    minDistance = dist;
-                    bestItem = target;
-                }
-            }
-        }
-        // 异類合成：寻找目標值不超过较大原料的價值、非较大原料、且最接近T的候选目标
-        else {
-            const higherName = cA > cB ? nA : nB;
-            const higherCost = cA > cB ? cA : cB;
-            bestItem = minTargetItem;
-            for (let target of validTargets) {
-                const dist = Math.abs(T - target.target);
-                if (dist < minDistance && target.target < higherCost && target.name !== higherName) {
-                    minDistance = dist;
-                    bestItem = target;
-                }
-            }
-        }
-        return { output: bestItem.name, totalValue: cA + cB, displayValue: T };
-    }
-
     const list = [...cauldronCandidates].filter(isVaildCandidate);
-    list.sort((a, b) => (DB.items[b].cauldronCost - DB.items[a].cauldronCost)); // 由大至小
+    list.sort((a, b) => (DB.items[b].cauldronCost - DB.items[a].cauldronCost));
 
     const progText = document.getElementById('cauldron-progress');
 
@@ -865,7 +875,6 @@ async function runCauldronSimulationType1() {
     let lastUpdate = Date.now();
 
     if (list.length === 0) {
-        // 特例: 在完全沒有候選物品時, 若有指定物品, 則將指定物品設為候選物品
         for (let i = 0; i < 2; i++) {
             if (cauldronFilterItems[i]) {
                 list.push(cauldronFilterItems[i]);
@@ -878,14 +887,14 @@ async function runCauldronSimulationType1() {
         for (let j = i; j < list.length; j++) {
             const nB = cauldronFilterItems[1] ?? list[j];
 
-            const res = getType1Result(nA, nB);
-            if (isRecipeMatch(nA, nB))
-            {
+            const res = resolveCauldronOutput2(nA, nB, validTargets, maxTargetItem, minTargetItem);
+            if (isRecipeMatch(nA, nB)) {
+                const cA = DB.items[nA].cauldronCost, cB = DB.items[nB].cauldronCost;
                 if (!resultsByOutput[res.output]) resultsByOutput[res.output] = [];
                 resultsByOutput[res.output].push({
                     inputs: [nA, nB],
-                    totalValue: res.totalValue,
-                    displayValue: res.displayValue
+                    totalValue: cA + cB,
+                    displayValue: res.T
                 });
                 recipeCount++;
             }
@@ -894,11 +903,13 @@ async function runCauldronSimulationType1() {
             if (cauldronFilterItems[1] != null) break;
         }
 
+        /*
         if (Date.now() - lastUpdate > 150) {
             progText.innerText = `${Math.round((comboCount / totalCombos) * 100)}%`;
             await new Promise(r => setTimeout(r, 0));
             lastUpdate = Date.now();
         }
+        */
         if (cauldronFilterItems[0] != null) break;
     }
 
@@ -907,6 +918,189 @@ async function runCauldronSimulationType1() {
     renderCauldronResults(resultsByOutput);
     checkUnattainableItems(resultsByOutput);
     progText.innerText = `${t('Number of matching recipes')}: (${recipeCount}) `;
+}
+
+/**
+ * 多次步驟計算：從候選池 (Step 0) 開始，逐輪用煉金鍋組合尋找更低成本的產物，
+ * 最多跑 4 輪 (Step 0~3)。每輪僅在「新成本 < 舊成本」時覆蓋，
+ * 成本相同則比較真實 cauldronCost 加總，取較小者。
+ */
+async function runMultiStepCauldronSimulation() {
+    console.time('runMultiStepCauldronSimulation');
+    const progText = document.getElementById('cauldron-multistep-progress');
+    if (progText) progText.innerText = '';
+
+    const validTargets = _getCauldronValidTargets();
+    const maxTargetItem = validTargets.length ? validTargets.reduce((p, c) => (p.target > c.target ? p : c)) : null;
+    const minTargetItem = validTargets.length ? validTargets.reduce((p, c) => (p.target < c.target ? p : c)) : null;
+
+    const heatPerCopper = cauldronState.heatPerCopper || 20;
+    const isType1 = cauldronState.activeType === 1;
+
+    // ---- Step 0：來自候選池的基礎成本 ----
+    const step0 = new Map();
+    cauldronCandidates.forEach(item => {
+        if (!isVaildCandidate(item)) return;
+        const cost = getItemBaseCost(item);
+        if (cost === null) return;
+        step0.set(item, { cost, cauldronCostSum: DB.items[item].cauldronCost, recipeInputs: null });
+    });
+
+    const steps = [step0];
+
+    function isBetter(cand, existing) {
+        if (!existing) return true;
+        if (cand.cost < existing.cost - 1e-9) return true;
+        if (Math.abs(cand.cost - existing.cost) < 1e-9 && cand.cauldronCostSum < existing.cauldronCostSum) return true;
+        return false;
+    }
+
+    for (let stepIdx = 1; stepIdx <= 4; stepIdx++) {
+        const prev = steps[stepIdx - 1];
+        const next = new Map(prev); // 繼承上一輪所有物品
+        const pool = [...prev.keys()];
+        const bestThisRound = new Map(); // output -> {cost, cauldronCostSum, recipeInputs}
+
+        function considerCombo(inputs, output) {
+            if (!output || inputs.includes(output)) return;
+            let cost = 0, cauldronCostSum = 0;
+            for (const inp of inputs) {
+                const rec = prev.get(inp);
+                cost += rec.cost;
+                cauldronCostSum += DB.items[inp].cauldronCost;
+            }
+            const stats = getCauldronStats(DB.items[output].cauldronTarget);
+            cost += (stats.heat * stats.time) / heatPerCopper;
+
+            const cand = { cost, cauldronCostSum, recipeInputs: inputs.slice() };
+            if (isBetter(cand, bestThisRound.get(output))) {
+                bestThisRound.set(output, cand);
+            }
+        }
+
+        let comboCount = 0;
+        let lastUpdate = Date.now();
+
+        if (isType1) {
+            const totalCombos = (pool.length * (pool.length + 1)) / 2;
+            for (let i = 0; i < pool.length; i++) {
+                for (let j = i; j < pool.length; j++) {
+                    const nA = pool[i], nB = pool[j];
+                    const res = resolveCauldronOutput2(nA, nB, validTargets, maxTargetItem, minTargetItem);
+                    considerCombo([nA, nB], res.output);
+                    comboCount++;
+                    if (Date.now() - lastUpdate > 150) {
+                        if (progText) progText.innerText = `Step ${stepIdx}: ${Math.round((comboCount / totalCombos) * 100)}%`;
+                        await new Promise(r => setTimeout(r, 0));
+                        lastUpdate = Date.now();
+                    }
+                }
+            }
+        } else {
+            const totalCombos = (pool.length * (pool.length + 1) * (pool.length + 2)) / 6;
+            for (let i = 0; i < pool.length; i++) {
+                for (let j = i; j < pool.length; j++) {
+                    for (let k = j; k < pool.length; k++) {
+                        const n0 = pool[i], n1 = pool[j], n2 = pool[k];
+                        const res = resolveCauldronOutput3(n0, n1, n2, validTargets);
+                        considerCombo([n0, n1, n2], res.output);
+                        comboCount++;
+                        
+                        /*
+                        if (Date.now() - lastUpdate > 150) {
+                            if (progText) progText.innerText = `Step ${stepIdx}: ${Math.round((comboCount / totalCombos) * 100)}%`;
+                            await new Promise(r => setTimeout(r, 0));
+                            lastUpdate = Date.now();
+                        }
+                        */
+                    }
+                }
+            }
+        }
+
+        bestThisRound.forEach((cand, output) => {
+            if (isBetter(cand, next.get(output))) next.set(output, cand);
+        });
+
+        steps.push(next);
+    }
+
+    multiStepState.steps = steps;
+    multiStepState.dirty = false;
+    if (progText) progText.innerText = '';
+    renderMultiStepTable();
+    console.timeEnd('runMultiStepCauldronSimulation');
+}
+
+/* ==========================================================================
+   SECTION: RESULT RENDERING
+   ========================================================================== */
+
+
+function renderMultiStepTable() {
+    const thead = document.getElementById('cauldron-multistep-thead');
+    const tbody = document.getElementById('cauldron-multistep-tbody');
+    if (!thead || !tbody) return;
+
+    thead.innerHTML = `<th>${t('Item')}</th>` +
+        multiStepState.steps.map((_, idx) => `<th>Step ${idx}</th>`).join('');
+
+    const itemSet = new Set();
+    multiStepState.steps.forEach(stepMap => {
+        if (stepMap) stepMap.forEach((_, item) => itemSet.add(item));
+    });
+
+    const rows = [...itemSet].sort((a, b) => {
+        const ta = DB.items[a]?.cauldronCost ?? Infinity;
+        const tb = DB.items[b]?.cauldronCost ?? Infinity;
+        return ta - tb;
+    });
+
+    if (rows.length === 0) {
+        tbody.innerHTML = `<tr><td style="color:#666; padding:20px; text-align:center;">${t('No items found.', 'ui')}</td></tr>`;
+        return;
+    }
+
+    tbody.innerHTML = rows.map(item => {
+        const def = DB.items[item] || {};
+        const targetText = def.cauldronTarget !== undefined
+            ? `<div class="ms-target">${t('Cauldron Target')}: ${def.cauldronTarget}</div>`
+            : '';
+        const nameCell = `
+            <td>
+                <div class="ms-item-name">
+                    <img src="img/item${def.id ?? 0}.png" width="20" height="20" class="item-icon-small">
+                    <span>${item}</span>
+                </div>
+                ${targetText}
+            </td>`;
+
+        let prevCost = null;
+        const cellsHtml = multiStepState.steps.map((stepMap, idx) => {
+            const rec = stepMap ? stepMap.get(item) : null;
+            if (!rec) {
+                return `<td class="ms-cell ms-empty">—</td>`;
+            }
+
+            const cost = Math.ceil(rec.cost);
+            const extraStyle = (prevCost == null || cost < prevCost) ? '' : 'style="color: gray; opacity:25%;"';
+            const costHtml = `<div class="ms-cost-row">${cost.toLocaleString()}<img src="img/copper.png" class="item-icon-small"></div>`;
+
+            // 更新 prevCost 为当前有效 cost
+            prevCost = cost;
+
+            const recipeHtml = rec.recipeInputs
+                ? `<div class="ms-recipe-row">${rec.recipeInputs.map(n => {
+                    const d = DB.items[n] || {};
+                    return `<img src="img/item${d.id ?? 0}.png" width="18" height="18" title="${n}">`;
+                }).join('')}</div>`
+                : `<div class="ms-recipe-row">—</div>`;
+
+            return `<td class="ms-cell" ${extraStyle}>${costHtml}${recipeHtml}</td>`;
+        }).join('');
+
+        return `<tr>${nameCell}${cellsHtml}</tr>`;
+    }).join('');
 }
 
 function renderCauldronResults(data) {
