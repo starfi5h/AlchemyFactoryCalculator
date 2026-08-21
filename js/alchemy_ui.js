@@ -1,90 +1,4 @@
-/* ==========================================================================
-   SECTION: JS - GLOBAL STATE & INIT
-   ========================================================================== */
-let DB = null;
-const STORAGE_KEY = "alchemy_factory_save_v1";
-const SOURCE_KEY = "alchemy_source_v1";
-const BACKUP_KEY = "alchemy_source_backup_v1";
-const I18N_DATA_KEY = "alchemy_i18n_source_v1";
-const I18N_BACKUP_KEY = "alchemy_i18n_source_backup_v1";
-const SETTINGS_KEY = "alchemy_settings_v1";
-const SETTINGS_BACKUP_KEY = "alchemy_settings_backup_v1";
-
-/* ==========================================================================
-   SECTION: DB.settings FIELD REFERENCE — three similar-but-different
-   recipe-selection mechanisms, easy to confuse:
-   ==========================================================================
-
-   preferredRecipes[item] = recipeId
-       GLOBAL default: "when producing `item` anywhere with no more specific
-       override, use this recipe." Set via Wiki ★ or Recipe Modal "Global" tab.
-
-   nodeRecipeOverrides[pathKey] = recipeId
-       CALCULATOR-TAB-ONLY, per tree-node override keyed by pathKey (see
-       alchemy_calc_engine.js's pathKey docs). Set via Recipe Modal "This Node
-       Only" tab. Falls back to preferredRecipes if absent. Has NO effect on
-       the Planner tab (which has its own per-node node.recipeId, an entirely
-       separate field on Planner node objects, not this map).
-
-   recipeModifiers[recipeId] = { catalysts: [...] } | { customInput: item }
-       GLOBAL, keyed by recipeId (not item name) — stores Advanced Athanor
-       catalyst selection or Paradox Crucible custom input, applied via
-       applyRecipeModifiers() in alchemy_calc_engine.js. NOTE: Planner nodes
-       copy this into their own node.recipeModifiers at creation time and can
-       diverge from this global copy afterward — see the recipeModifiers
-       cross-reference note in alchemy_planner_calc.js.
-
-   customCosts[item] = number
-       User-defined price override. Affects BOTH gold cost calculation
-       (in place of buyPrice) AND, when `item` is the selected fuel/fert
-       source, the displayed fuel/fert cost-per-min.
-
-   expandCatalystInputs[catalystType] = boolean
-       GLOBAL per catalyst-TYPE (unstable/fertile/resonant/eternal), not per
-       recipe or per node. Controls whether Advanced Athanor catalyst inputs
-       are expanded into their own subtree in the Calculator tab tree, or
-       collapsed into an external-input leaf. Toggled via the 🧪 button on
-       tree nodes (toggleCatalystExpand).
-   ========================================================================== */
-
-const DEFAULT_SETTINGS = {
-    lvlBelt: 0,
-    lvlSpeed: 0,
-    lvlAlchemy: 0,
-    lvlFuel: 0,
-    lvlFert: 0,
-    defaultFuel: "Blast Potion",
-    defaultFert: "Fertile Catalyst",
-    selectedHeatingDevice: "Stone Furnace",
-    nodeSize: 1,
-    showBeltCount: true,
-    showFuelFert: true,
-    showRawMachineCount: false,
-    showMaxCap: false,
-    showHeatFert: false,
-    targetItem: "",
-    targetRate: 60,
-    targetMachineCount: 1,
-    machineModeToggle: true,
-    selfFuel: false,
-    selfFert: false,
-    preferredRecipes: {},
-    nodeRecipeOverrides: {
-        ">Copper Coin": "Copper Coin",
-        ">Silver Coin": "Silver Coin",
-        ">Gold Coin": "Gold Coin",                
-        ">铜币": "Copper Coin",
-        ">银币": "Silver Coin",
-        ">金币": "Gold Coin",
-    },
-    recipeModifiers: {},
-    activeRecyclers: {},
-    customCosts: {},
-    expandCatalystInputs: { unstable: false, fertile: false, resonant: false, eternal: false }
-};
-
-let isSelfFuel = false;
-let isSelfFert = false;
+// alchemy_ui.js: Shared UI logic: settings, combobox, item picker, slider, and modals
 
 // COMBOBOX GLOBALS
 let allItemsList = [];
@@ -100,159 +14,72 @@ const PICKER_PROP_DEFS = [
     { key: 'cauldronTarget', label: 'Cauldron Target' }
 ];
 
-
-// URL STATES
-let lastUrlItem = ""; 
-let isHandlingPopstate = false;
-
-function init() {
-    const localData = localStorage.getItem(STORAGE_KEY);
-    const urlParams = new URLSearchParams(window.location.search);
-    const urlLang = urlParams.get('lang');
-    const urlTab = urlParams.get('tab');    
-    const urlItem = urlParams.get('item');
-    const urlRate = urlParams.get('rate');
-    const urlFuel = urlParams.get('fuel');
-    const urlFert = urlParams.get('fert');
-    const urlSetupgrades = urlParams.get('setupgrades');
-    
-    lastUrlItem = urlItem || "";
-
-    if (!window.ALCHEMY_DB) { alert("Error: alchemy_db.js not found!"); }
-    if (!window.ALCHEMY_I18N) { alert("Error: alchemy_i18n.js not found!"); }
-
-    const localTranslation = localStorage.getItem(I18N_DATA_KEY);
-    if (localTranslation) {
-        try {
-            console.log("Loading local translation data...");
-            window.ALCHEMY_I18N = JSON.parse(localTranslation);
-        } catch (e) {
-            console.error("Local translation data corrupt, resetting...");
-            window.ALCHEMY_I18N = JSON.parse(JSON.stringify(window.ALCHEMY_I18N));
-        }
-    } else {
-        console.log("Loading remote translation data...");
-        window.ALCHEMY_I18N = JSON.parse(JSON.stringify(window.ALCHEMY_I18N));
-    }
-    if (urlLang === 'en') window.ALCHEMY_I18N.enabled = false;
-    else ALCHEMY_I18N.enabled = true;
-
-    const fileDB = window.ALCHEMY_DB;
-    if (localData) {
-        try {
-            console.log("Loading local database...");
-            DB = JSON.parse(localData);
-            const localVersion = DB.version || 0;
-            const fileVersion = fileDB.version || 0;
-
-            if (fileVersion != localVersion) {
-                console.log(fileVersion);
-                showUpdateBanner(localVersion, fileVersion);
-            }
-        } catch (e) {
-            console.error("Local data corrupt, resetting...");
-            DB = JSON.parse(JSON.stringify(fileDB));
-        }
-    } else {
-        console.log("Loading remote database...");
-        DB = JSON.parse(JSON.stringify(fileDB));
-    }
-
-    const baseSettings = JSON.parse(JSON.stringify(DEFAULT_SETTINGS));
-    const savedSettings = localStorage.getItem(SETTINGS_KEY);
-    if (savedSettings) {
-        try {
-            console.log("Loading user settings...");
-            const parsed = JSON.parse(savedSettings);
-            DB.settings = Object.assign(baseSettings, parsed);
-        } catch (e) {
-            console.error("Settings corrupt, using defaults");
-            DB.settings = baseSettings;
-        }
-    } else {
-        console.log("Loading default settings...");
-        DB.settings = baseSettings;
-    }
-    
-    if(!DB.items) DB.items = {};
-    if(!DB.settings.preferredRecipes) DB.settings.preferredRecipes = {};
-    if(!DB.settings.nodeRecipeOverrides) DB.settings.nodeRecipeOverrides = {};
-    if(!DB.settings.recipeModifiers)  DB.settings.recipeModifiers = {};
-    if(!DB.settings.activeRecyclers) DB.settings.activeRecyclers = {};
-    if(!DB.settings.customCosts) DB.settings.customCosts = {};
-    if(!DB.settings.expandCatalystInputs) DB.settings.expandCatalystInputs = { unstable: false, fertile: false, resonant: false, eternal: false };
-
-    translateDatabase(DB, true); // Translate DB item key
-
-    prepareComboboxData();
-    populateSelects(); 
-    loadSettingsToUI();
-    renderSlider(); // Initialize the slider logic
-    
-    if (urlItem) {
-        document.getElementById('targetItemInput').value = decodeURIComponent(urlItem);
-        updateComboIcon();
-    }    
-    if (urlRate) {
-        document.getElementById('targetRate').disabled = false;
-        document.getElementById('targetRate').value = urlRate;
-    } else if (!DB.settings.targetItem) {
-        // 沒有指定 rate、也沒有已儲存設定時，默認啟用 "Set by Machine Count" 模式，machine count = 1
-        const machineModeToggle = document.getElementById('machineModeToggle');
-        machineModeToggle.checked = true;
-        toggleControlMode(false); // 切換 UI 狀態（禁用 rate 輸入、啟用 machine 輸入）
-    }
-    
-    if (urlFuel && document.querySelector(`#fuelSelect option[value="${urlFuel}"]`)) {
-        document.getElementById('fuelSelect').value = urlFuel;
-    }
-    if (urlFert && document.querySelector(`#fertSelect option[value="${urlFert}"]`)) {
-        document.getElementById('fertSelect').value = urlFert;
-    }
-    if (urlSetupgrades) {
-        /*
-        [0]Logistics Efficiency
-        [1]Throwing Efficiency
-        [2]Factory Efficiency
-        [3]Alchemy Skill
-        [4]Fuel Efficiency
-        [5]Fertilizer Efficiency
-        [6]Sales Ability
-        [7]Negotiation Skill
-        [8]Customer Management
-        [9]Relic Knowledge
-        */
-        const upgrades = urlSetupgrades.split(',').map(Number) || [];
-        if (upgrades.length > 5) {
-            console.log(urlSetupgrades);
-            DB.settings.lvlBelt = upgrades[0];
-            DB.settings.lvlSpeed = upgrades[2];
-            DB.settings.lvlAlchemy = upgrades[3];
-            DB.settings.lvlFuel = upgrades[4];
-            DB.settings.lvlFert = upgrades[5];
-            loadSettingsToUI();
-            persist();
-        }
-    }
-
-    // Import caldron recipes (if exist)
-    try {
-        loadCauldronSettings();
-        syncCauldronToMainDB();
-    } catch (e) {
-        log.error(e);
-    }
-
-    calculate();
-    
-    if (urlTab) switchTab(urlTab, false);
-
-    document.getElementById('db-gameversion-text').innerText = t("Game version : ") + DB.gameVersion ?? 0;
-}
+const ATHANOR_CATALYSTS = [
+    { id: 'unstable', label: '🧪 Unstable', charges: 180 },
+    { id: 'fertile',  label: '🌿 Fertile', charges: 240  },
+    { id: 'resonant', label: '✨ Resonant', charges: 1500 },
+    { id: 'eternal',  label: '♾️ Eternal', charges: 99999  },
+];
 
 /* ==========================================================================
    SECTION: SLIDER LOGIC
    ========================================================================== */
+
+const BELT_FRACTIONS = [
+    // Low end precision
+    { n: 1, d: 12, label: "1/12" },      // ~0.083
+    { n: 1, d: 10, label: "1/10" },      // 0.1
+    
+    // Mid range (Standard factory ratios)
+    { n: 1, d: 8,  label: "1/8" },     // 0.125
+    { n: 1, d: 6,  label: "1/6" },     // ~0.166
+    { n: 1, d: 5,  label: "1/5" },     // 0.2
+    { n: 1, d: 4,  label: "1/4" },     // 0.25
+    { n: 1, d: 3,  label: "1/3" },     // ~0.333
+    { n: 2, d: 5,  label: null },      // 0.4
+    
+    // High range (Major splits)
+    { n: 1, d: 2,  label: "1/2" },     // 0.5
+    { n: 3, d: 5,  label: null },      // 0.6
+    { n: 2, d: 3,  label: "2/3" },     // ~0.666
+    { n: 3, d: 4,  label: "3/4" },     // 0.75
+    { n: 4, d: 5,  label: "4/5" },     // 0.8
+    { n: 5, d: 6,  label: "5/6" },     // ~0.833 (Unhidden per request)
+    { n: 1, d: 1,  label: "Full" }     // 1.0
+];
+
+// Helper: Get decimal value
+function getFractionValue(fractionObj) {
+    return fractionObj.n / fractionObj.d;
+}
+
+// Helper: Calculate items/min based on belt speed
+function calculateRateFromFraction(fractionObj, currentBeltSpeed) {
+    const value = getFractionValue(fractionObj);
+    return value * currentBeltSpeed;
+}
+
+// Helper: Get Smart Text for Label
+function getSmartLabel(currentRate, maxSpeed) {
+    if (maxSpeed <= 0) return "0%";
+    const ratio = currentRate / maxSpeed;
+    
+    // 1. Check for exact/near match in our constants
+    const epsilon = 0.002; 
+    const match = BELT_FRACTIONS.find(f => Math.abs((f.n/f.d) - ratio) < epsilon);
+    
+    const percent = (ratio * 100).toFixed(1) + "%";
+    
+    if (match) {
+        const fracStr = (match.n === 1 && match.d === 1) ? "Full Belt" : `${match.n}/${match.d} Belt`;
+        const isApprox = Math.abs((match.n/match.d) - ratio) > 0.000001;
+        const prefix = isApprox ? "~" : "";
+        return `${prefix}${fracStr}, ${percent}`;
+    }
+    
+    return `${percent} Load`;
+}
+
 function renderSlider() {
     if (typeof BELT_FRACTIONS === 'undefined') {
         console.error("alchemy_constants.js not loaded.");
@@ -317,136 +144,6 @@ function updateFromSlider() {
     rateInput.value = parseFloat(rate.toFixed(2));
     
     calculate();
-}
-
-/* ==========================================================================
-   SECTION: EDITOR & DATA MANAGEMENT
-   ========================================================================== */
-function loadEditorContent() {
-    const target = document.getElementById('editor-target').value;
-    const editor = document.getElementById('json-editor');
-
-    switch (target) {
-        case 'db': editor.value = localStorage.getItem(SOURCE_KEY) ?? JSON.stringify(DB, null, 2); break;
-        case 'db_backup': editor.value = localStorage.getItem(BACKUP_KEY) ?? ""; break;
-        case 'i18n': editor.value = JSON.stringify(window.ALCHEMY_I18N, null, 2); break;
-        case 'i18n_backup': editor.value = localStorage.getItem(I18N_BACKUP_KEY) ?? ""; break;
-        case 'settings': editor.value = JSON.stringify(DB.settings, null, 2); break;
-        case 'settings_backup': editor.value = localStorage.getItem(SETTINGS_BACKUP_KEY) ?? ""; break;
-    }
-}
-
-function switchTab(tabName, updateUrl = true) {
-    let btnIndex = 0;
-    switch (tabName) {
-        case 'calc': btnIndex = 0; break;
-        case 'cauldron': btnIndex = 1; break;
-        case 'planner': btnIndex = 2; break;
-        case 'help': btnIndex = 3; break;
-        case 'db': btnIndex = 4; break;
-        default: return;
-    }
-    document.querySelectorAll('.view').forEach(el => el.classList.remove('active'));
-    document.querySelectorAll('.tab-btn').forEach(el => el.classList.remove('active'));
-    document.getElementById('view-' + tabName).classList.add('active');
-    document.querySelectorAll('.tab-btn')[btnIndex].classList.add('active');
-    if (updateUrl) {
-        updateURL(tabName);
-    }
-    if (tabName === 'cauldron' && typeof initCauldron === 'function') {
-        initCauldron();
-    }
-    if (tabName === 'help' && typeof initHelpPage === 'function') {
-        initHelpPage();
-    }
-    if (tabName === 'planner' && typeof initPlannerPage === 'function') {
-        initPlannerPage();
-    }
-    if (tabName === 'calc') {
-        syncCauldronToMainDB(); // 回到計算器頁面時, 嘗試同步煉金鍋配方
-    }
-}
-
-function applyChanges() {
-    const txt = document.getElementById('json-editor').value;
-    const target = document.getElementById('editor-target').value;
-    try {
-        const jsonMatch = txt.match(/\{[\s\S]*\}/);
-        if (!jsonMatch) throw new Error("Format error: No valid JSON found (missing { ... })");
-        
-        let jsonString = jsonMatch[0];
-        jsonString = jsonString.replace(/\/\/.*$/gm, '');
-        const parsedData = JSON.parse(jsonString); // Avoid using eval()
-
-        switch (target) {
-            case 'db': 
-            case 'db_backup': 
-                window.ALCHEMY_DB = parsedData;
-                DB = window.ALCHEMY_DB;
-                if (localStorage.getItem(SOURCE_KEY)) localStorage.setItem(BACKUP_KEY, localStorage.getItem(SOURCE_KEY));
-                localStorage.setItem(SOURCE_KEY, txt);
-                localStorage.setItem(STORAGE_KEY, JSON.stringify(DB));
-                init();
-            case 'i18n':
-            case 'i18n_backup':                
-                translateDatabase(DB, false); // Revert DB item key back the the original key
-                window.ALCHEMY_I18N = parsedData;
-                if (localStorage.getItem(I18N_DATA_KEY)) localStorage.setItem(I18N_BACKUP_KEY, localStorage.getItem(I18N_DATA_KEY));
-                localStorage.setItem(I18N_DATA_KEY, JSON.stringify(window.ALCHEMY_I18N));
-                location.reload();
-            case 'settings':
-            case 'settings_backup':
-                DB.settings = parsedData;
-                if (localStorage.getItem(SETTINGS_KEY)) localStorage.setItem(SETTINGS_BACKUP_KEY, localStorage.getItem(SETTINGS_KEY));
-                localStorage.setItem(SETTINGS_KEY, JSON.stringify(DB.settings));
-                init();
-        } 
-        alert("Applied " + target + " safely!");
-    } catch(e) {
-        alert("JSON Parsing Error: " + e.message + "\n\nNote: Please ensure the data uses double quotes and no trailing commas.");
-    }
-}
-
-function showUpdateBanner(oldV, newV) {
-    const banner = document.getElementById('update-banner');
-    banner.style.display = 'flex';
-    document.getElementById('old-version-id').innerText = 'v' + oldV;
-    document.getElementById('new-version-id').innerText = 'v' + newV;
-    document.getElementById('ui-update-msg').innerText = t('New database version available', 'ui');
-    document.getElementById('ui-update-local-msg').innerText = t('Current local version:', 'ui');
-    document.getElementById('ui-btn-update').innerText = t('Update Now', 'ui');
-    document.getElementById('ui-btn-later').innerText = t('Skip Update', 'ui');   
-}
-
-function closeUpdateBanner() {
-    document.getElementById('update-banner').style.display = 'none';
-    console.log("Bump local data version to " + window.ALCHEMY_DB.version);
-    DB.version = window.ALCHEMY_DB.version;
-    persist();
-}
-
-function performUpdate() {
-    console.log("Updating database v" + window.ALCHEMY_DB.version);    
-    const newData = JSON.parse(JSON.stringify(window.ALCHEMY_DB));
-    if (DB && DB.settings) {
-        newData.settings = DB.settings;
-    }
-    localStorage.setItem(STORAGE_KEY, JSON.stringify(newData));
-    const localSourceData = localStorage.getItem(SOURCE_KEY);
-    if (localSourceData) {
-        localStorage.setItem(BACKUP_KEY, localSourceData);
-    }
-    localStorage.removeItem(SOURCE_KEY);
-    location.reload();
-}
-
-function exportData() {
-    const txt = document.getElementById('json-editor').value; const blob = new Blob([txt], { type: "text/javascript" });
-    const url = URL.createObjectURL(blob); const a = document.createElement('a'); a.href = url; a.download = "alchemy_db.js"; document.body.appendChild(a); a.click(); document.body.removeChild(a);
-}
-
-function persist() { 
-    localStorage.setItem(SETTINGS_KEY, JSON.stringify(DB.settings));
 }
 
 /* ==========================================================================
@@ -770,79 +467,6 @@ function flashButton(el) {
 /* ==========================================================================
    SECTION: JS - UI HANDLERS (INPUTS/SETTINGS)
    ========================================================================== */
-function loadSettingsToUI() {
-    if (DB.settings) {
-        ['lvlBelt','lvlSpeed','lvlAlchemy','lvlFuel','lvlFert'].forEach(k => { if(DB.settings[k] !== undefined) document.getElementById(k).value = DB.settings[k]; });
-        if(DB.settings.defaultFuel) document.getElementById('fuelSelect').value = DB.settings.defaultFuel; 
-        if(DB.settings.defaultFert) document.getElementById('fertSelect').value = DB.settings.defaultFert;
-        const heatingSel = document.getElementById('heatingDeviceSelect');
-        if(DB.settings.selectedHeatingDevice) heatingSel.value = DB.settings.selectedHeatingDevice;
-        if(!heatingSel.value) {
-            heatingSel.value = heatingSel.querySelector('option[value="Stone Furnace"]') ? "Stone Furnace" : (heatingSel.options[0]?.value || "");
-            DB.settings.selectedHeatingDevice = heatingSel.value;
-        }
-        if(DB.settings.nodeSize) {
-            document.getElementById('nodeScaleSlider').value = DB.settings.nodeSize;
-            setNodeScale(DB.settings.nodeSize);
-        }
-        if(DB.settings.showMaxCap) document.getElementById('showMaxCap').checked = DB.settings.showMaxCap;
-        if(DB.settings.showFuelFert) document.getElementById('showFuelFert').checked = DB.settings.showFuelFert;
-        if(DB.settings.showRawMachineCount) document.getElementById('showRawMachineCount').checked = DB.settings.showRawMachineCount;
-        if(DB.settings.showHeatFert) document.getElementById('showHeatFert').checked = DB.settings.showHeatFert;
-        if(DB.settings.showBeltCount) document.getElementById('showBeltCount').checked = DB.settings.showBeltCount;
-
-        // --- Restore Calculator target/mode state ---
-        if (DB.settings.targetItem) {
-            document.getElementById('targetItemInput').value = DB.settings.targetItem;
-            updateComboIcon();
-        }
-        if (DB.settings.targetRate !== undefined) {
-            document.getElementById('targetRate').value = DB.settings.targetRate;
-        }
-        if (DB.settings.targetMachineCount !== undefined) {
-            document.getElementById('targetMachine').value = DB.settings.targetMachineCount;
-        }
-        if (DB.settings.machineModeToggle) {
-            document.getElementById('machineModeToggle').checked = true;
-            toggleControlMode(false); // 套用禁用/啟用對應輸入框的 UI 效果
-        }
-        if (DB.settings.selfFuel) {
-            const btn = document.getElementById('btnSelfFuel');
-            btn.classList.remove('btn-inactive-red');
-            btn.classList.add('btn-active-green');
-        }
-        if (DB.settings.selfFert) {
-            const btn = document.getElementById('btnSelfFert');
-            btn.classList.remove('btn-inactive-red');
-            btn.classList.add('btn-active-green');
-        }
-    }
-}
-
-function populateSelects() {
-    const fuelSel = document.getElementById('fuelSelect'); const fertSel = document.getElementById('fertSelect'); const heatingSel = document.getElementById('heatingDeviceSelect');
-    fuelSel.innerHTML = ''; fertSel.innerHTML = ''; heatingSel.innerHTML = '';
-    const fuels = []; const ferts = [];
-    const allItems = new Set(Object.keys(DB.items || {}));
-    if(DB.recipes) DB.recipes.forEach(r => Object.keys(r.outputs).forEach(k => allItems.add(k)));
-
-    allItems.forEach(itemName => {
-        const itemDef = DB.items[itemName] || {};
-        if(itemDef.heat) fuels.push({ name: itemName, heat: itemDef.heat });
-        if(itemDef.nutrientValue) ferts.push({ name: itemName, val: itemDef.nutrientValue });
-    });
-
-    fuels.sort((a,b) => b.heat - a.heat).forEach(f => { fuelSel.appendChild(new Option(`${f.name} (${f.heat} P)`, f.name)); });
-    ferts.sort((a,b) => b.val - a.val).forEach(f => { fertSel.appendChild(new Option(`${f.name} (${f.val} V)`, f.name)); });
-    Object.entries(DB.machines || {})
-        .filter(([, machine]) => machine.isGenerator)
-        .sort(([nameA], [nameB]) => nameA.localeCompare(nameB))
-        .forEach(([machineName, machine]) => {
-            heatingSel.appendChild(new Option(`${t(machineName, 'machines')} (${machine.slots || 0} ${t('slots')})`, machineName));
-        });
-    heatingSel.value = DB.settings.selectedHeatingDevice || "Stone Furnace";
-    if(!heatingSel.value) heatingSel.value = heatingSel.options[0]?.value || "";
-}
 
 function togglePanelCollapse(btn) {
     const body = btn.closest('.panel')?.querySelector('.panel-body');
@@ -900,51 +524,7 @@ function saveCalcUISettings() {
     persist();
 }
 
-function saveSettings(e) { ['lvlBelt','lvlSpeed','lvlAlchemy','lvlFuel','lvlFert'].forEach(k => { DB.settings[k] = parseInt(document.getElementById(k).value) || 0; }); persist(); }
-
-function resetSettings() {
-    if(confirm(t('Reset Settings', 'ui') + "?")) {
-        console.log("Reset Settings");
-        const localSettingsData = localStorage.getItem(SETTINGS_KEY);
-        localStorage.removeItem(SETTINGS_KEY);
-        if (localSettingsData) localStorage.setItem(SETTINGS_BACKUP_KEY, localSettingsData);
-        location.reload();
-    } 
-}
-
-function resetRecips() {
-    if(confirm(t('Reset Recipes', 'ui') + "?")) {
-        console.log("Reset Recipes");
-        const localSourceData = localStorage.getItem(SOURCE_KEY);
-        localStorage.removeItem(SOURCE_KEY);
-        if (localSourceData) localStorage.setItem(BACKUP_KEY, localSourceData);
-        location.reload();
-    } 
-}
-
-function resetTranslations() {
-    if(confirm(t('Reset Translations', 'ui') + "?")) {
-        console.log("Reset Translations");
-        const localSourceI18NData = localStorage.getItem(I18N_DATA_KEY);
-        localStorage.removeItem(I18N_DATA_KEY);
-        if (localSourceI18NData) localStorage.setItem(I18N_BACKUP_KEY, localSourceI18NData);
-        location.reload();
-    } 
-}
-
-function resetAllData() {
-    if(confirm(t('Reset All Database?', 'ui'))) {
-        console.log("Reset All Database");
-        const localSourceData = localStorage.getItem(SOURCE_KEY);
-        const localSourceI18NData = localStorage.getItem(I18N_DATA_KEY);
-        const localSettingsData = localStorage.getItem(SETTINGS_KEY);
-        localStorage.clear();
-        if (localSourceData) localStorage.setItem(BACKUP_KEY, localSourceData);
-        if (localSourceI18NData) localStorage.setItem(I18N_BACKUP_KEY, localSourceI18NData);
-        if (localSettingsData) localStorage.setItem(SETTINGS_BACKUP_KEY, localSettingsData);
-        location.reload();
-    } 
-}
+function saveSettings(e) { ['lvlBelt','lvlSpeed','lvlAlchemy','lvlFuel','lvlFert', 'lvlSell'].forEach(k => { DB.settings[k] = parseInt(document.getElementById(k).value) || 0; }); persist(); }
 
 function toggleControlMode(shouldCalculate = false) {
     const isMachineMode = document.getElementById('machineModeToggle').checked;    
@@ -1102,13 +682,6 @@ function renderItemPicker() {
     });
 }
 
-const ATHANOR_CATALYSTS = [
-    { id: 'unstable', label: '🧪 Unstable', charges: 180 },
-    { id: 'fertile',  label: '🌿 Fertile', charges: 240  },
-    { id: 'resonant', label: '✨ Resonant', charges: 1500 },
-    { id: 'eternal',  label: '♾️ Eternal', charges: 99999  },
-];
-
 function toggleCatalyst(recipeId, catalystId, item, btn) {
     if (!DB.settings.recipeModifiers[recipeId]) DB.settings.recipeModifiers[recipeId] = { catalysts: [] };
     const cats = DB.settings.recipeModifiers[recipeId].catalysts;
@@ -1120,6 +693,10 @@ function toggleCatalyst(recipeId, catalystId, item, btn) {
     calculate();
     openRecipeModal(item, _recipeModalPathKey);
 }
+
+/* ==========================================================================
+   SECTION: RECIPE MODAL
+   ========================================================================== */
 
 let _recipeModalScope = 'global'; // 'global' | 'node'
 let _recipeModalPathKey = '';
@@ -1338,6 +915,10 @@ function openDrillDown(item, rate) {
     window.open(url, '_blank');
 }
 
+/* ==========================================================================
+   SECTION: CUSTOM COST MODAL
+   ========================================================================== */
+
 function openCustomCostModal(focusItem = null) {
     if (!DB.settings.customCosts) DB.settings.customCosts = {};
     document.getElementById('custom-cost-modal-title').innerText = '⚙ ' + t('Manage Custom Costs', 'ui');
@@ -1418,84 +999,140 @@ function addCustomCostRow() {
     openItemPicker();
 }
 
-
 /* ==========================================================================
-   SECTION: Translation & URL
+   SECTION: SCALE MODAL
    ========================================================================== */
-function translateText() {
-    const selectors = [
-        'h1', '.panel h3', '.section-header',
-        '.input-group label', '.checkbox-row label', '.checkbox-row span', '.stat-label', '.scale-row-label',
-        '.tab-btn', '.split-btn', '.save-btn', '.reset-btn', '.soild-btn', '.info'
-    ].join(',');
 
-    document.querySelectorAll(selectors).forEach(el => {
-        const key = el.textContent.trim();
-        el.textContent = t(key, 'ui');
-    });
+// 暫存目前 modal 的基準數值（套用後更新）
+let _scaleModalBase = null;
 
-    const input = document.getElementById('targetItemInput');
-    if (input) input.placeholder = t("Select or Type...", "ui");
-    document.title = t("Alchemy Factory Calculator", "ui");
-    document.getElementById('ui-mode-label').innerText = t("MULTI", "ui");
-}
+function openScaleModal(itemName, requestedRate, machineCount, ratePerMachine) {
+    const itemDef = DB.items[itemName] || {};
+    const beltSpeed = getBeltSpeed(parseInt(document.getElementById('lvlBelt').value) || 0);
 
-function toggleLanguage() {
-    if (window.ALCHEMY_I18N.enabled === undefined) window.ALCHEMY_I18N.enabled = true;
-    window.ALCHEMY_I18N.enabled = !window.ALCHEMY_I18N.enabled;
-    const url = new URL(window.location.href);
-    if (!window.ALCHEMY_I18N.enabled) url.searchParams.set('lang', 'en');
-    else url.searchParams.delete('lang');
+    // 基準數值
+    _scaleModalBase = {
+        itemName,
+        rate: requestedRate,
+        machineCount,
+        ratePerMachine,
+        beltSpeed
+    };
 
-    // --- translate the 'item' param to match the new language ---
-    const itemParam = url.searchParams.get('item');
-    if (itemParam) {
-        url.searchParams.set('item', queryDualItemName(itemParam));
-    }    
-    DB.settings.defaultFuel = queryDualItemName(DB.settings.defaultFuel);
-    DB.settings.defaultFert = queryDualItemName(DB.settings.defaultFert);
-    saveSettings();
+    // 標題 icon + 名稱
+    const iconId = itemDef.id ?? 0;
+    document.getElementById('scale-modal-title').innerHTML = `${t('Adjust Ratio')} <img src="img/item${iconId}.png" width="24" height="24" style="vertical-align:middle;"> ${itemName}`;
 
-    window.location.href = url.toString();
-}
+    // 填入左側舊值
+    document.getElementById('scale-old-rate').innerText = Number(requestedRate.toFixed(4));
+    document.getElementById('scale-old-belt').innerText = Number((requestedRate / beltSpeed).toFixed(4));
 
-function updateURL(tabName = '') {
-    const isEn = window.ALCHEMY_I18N.enabled === false;    
-    const params = new URLSearchParams();
-    if (isEn) params.set('lang', 'en');
-
-    if (tabName !== '' && tabName !== 'calc') {
-        params.set('tab', tabName);        
-    }
-
-    const newUrl = window.location.pathname + '?' + params.toString();
-    if (isHandlingPopstate) {        
-        window.history.replaceState(null, '', newUrl);
-    }
-    else {
-        window.history.pushState(null, '', newUrl);
-    }
-}
-
-window.addEventListener('popstate', function(event) {
-    isHandlingPopstate = true;
-    const urlParams = new URLSearchParams(window.location.search);
-
-    // 處理 tab（若無 tab 參數則切回預設 calc）
-    if (urlParams.has('tab')) {
-        switchTab(urlParams.get('tab'), false);
+    // 機器區域顯示/隱藏
+    const machineRow = document.getElementById('scale-machine-row');
+    if (machineCount !== null && machineCount !== undefined && ratePerMachine !== null && ratePerMachine !== undefined && machineCount > 0) {
+        machineRow.style.display = '';
+        document.getElementById('scale-old-machine').innerText = Number(machineCount.toFixed(4));
     } else {
-        switchTab('calc', false);   // 預設頁籤
+        machineRow.style.display = 'none';
     }
 
-    if (urlParams.has('item')) {
-        document.getElementById('targetItemInput').value = urlParams.get('item');
-        if (urlParams.has('rate')) document.getElementById('targetRate').value = urlParams.get('rate');
-        if (urlParams.has('fuel')) document.getElementById('fuelSelect').value = urlParams.get('fuel');
-        if (urlParams.has('fert')) document.getElementById('fertSelect').value = urlParams.get('fert');
-        calculate(); 
+    // 右側新值初始填入（等於舊值）
+    document.getElementById('scale-new-rate').value = Number(requestedRate.toFixed(4));
+    document.getElementById('scale-new-belt').value = Number((requestedRate / beltSpeed).toFixed(4));
+    if (machineCount !== null && machineCount !== undefined && machineCount > 0) {
+        document.getElementById('scale-new-machine').value = Number(machineCount.toFixed(4));
     }
-    isHandlingPopstate = false;
-});
 
-window.onload = init;
+    // 縮放比初始為 1
+    document.getElementById('scale-ratio-display').innerText = '1.000';
+    document.getElementById('scale-modal').style.display = 'flex';
+}
+
+function onScaleInputChange(source) {
+    if (!_scaleModalBase) return;
+    const { rate: baseRate, beltSpeed, machineCount, ratePerMachine } = _scaleModalBase;
+
+    let ratio = 1;
+
+    if (source === 'rate') {
+        const newRate = parseFloat(document.getElementById('scale-new-rate').value) || 0;
+        ratio = baseRate > 0 ? newRate / baseRate : 0;
+    } else if (source === 'belt') {
+        const newBelt = parseFloat(document.getElementById('scale-new-belt').value) || 0;
+        ratio = baseRate > 0 ? (newBelt * beltSpeed) / baseRate : 0;
+    } else if (source === 'machine') {
+        const newMachine = parseFloat(document.getElementById('scale-new-machine').value) || 0;
+        ratio = baseRate > 0 ? (newMachine * ratePerMachine) / baseRate : 0;
+    }
+
+    // 更新其他欄位
+    if (source !== 'rate') {
+        document.getElementById('scale-new-rate').value = Number((baseRate * ratio).toFixed(4));
+    }
+    if (source !== 'belt') {
+        document.getElementById('scale-new-belt').value = Number(((baseRate * ratio) / beltSpeed).toFixed(4));
+    }
+    if (source !== 'machine' && machineCount !== null && machineCount !== undefined && machineCount > 0) {
+        const rpm = ratePerMachine > 0 ? ratePerMachine : 1;
+        document.getElementById('scale-new-machine').value = Number(((baseRate * ratio) / rpm).toFixed(4));
+    }
+
+    document.getElementById('scale-ratio-display').innerText = ratio.toFixed(3);
+}
+
+function applyScaleModal() {
+    if (!_scaleModalBase) return;
+
+    const { rate: baseRate, beltSpeed, machineCount, ratePerMachine } = _scaleModalBase;
+    const newRate = parseFloat(document.getElementById('scale-new-rate').value) || 0;
+    const ratio = baseRate > 0 ? newRate / baseRate : 1;
+    const isMulti = document.getElementById('modeToggle').checked;
+
+    if (!isMulti) {
+        // 單目標模式
+        const rateEl = document.getElementById('targetRate');
+        const currentRate = parseFloat(rateEl.value) || 0;
+        const newRate = currentRate * ratio;
+        rateEl.value = newRate;
+
+        // 若目前是機器模式，要切換回 rate 模式才能寫入
+        const machineToggle = document.getElementById('machineModeToggle');
+        if (machineToggle.checked) {
+            machineToggle.checked = false;
+            toggleControlMode(false);
+        }
+    } else {
+        // 多目標模式：對所有列等比縮放
+        document.querySelectorAll('.multi-target-row').forEach(row => {
+            const input = row.querySelector('.multi-rate-input');
+            if (input) {
+                const cur = parseFloat(input.value) || 0;
+                input.value = cur * ratio;
+            }
+        });
+    }
+
+    calculate();
+
+    // 套用後更新基準值（讓使用者可繼續疊加）
+    const newBaseRate = _scaleModalBase.rate * ratio;
+    _scaleModalBase.rate = newBaseRate;
+    if (_scaleModalBase.machineCount !== null && _scaleModalBase.machineCount !== undefined) {
+        _scaleModalBase.machineCount = _scaleModalBase.machineCount * ratio;
+    }
+
+    // 更新左側舊值顯示
+    document.getElementById('scale-old-rate').innerText = Number(newBaseRate.toFixed(4));
+    document.getElementById('scale-old-belt').innerText = Number((newBaseRate / _scaleModalBase.beltSpeed).toFixed(4));
+    if (_scaleModalBase.machineCount !== null && _scaleModalBase.machineCount !== undefined && _scaleModalBase.machineCount > 0) {
+        document.getElementById('scale-old-machine').innerText = Number(_scaleModalBase.machineCount.toFixed(4));
+    }
+
+    // 右側新值同步（縮放比歸 1）
+    document.getElementById('scale-new-rate').value = Number(newBaseRate.toFixed(4));
+    document.getElementById('scale-new-belt').value = Number((newBaseRate / _scaleModalBase.beltSpeed).toFixed(4));
+    if (_scaleModalBase.machineCount !== null && _scaleModalBase.machineCount !== undefined && _scaleModalBase.machineCount > 0) {
+        document.getElementById('scale-new-machine').value = Number(_scaleModalBase.machineCount.toFixed(4));
+    }
+    document.getElementById('scale-ratio-display').innerText = '1.000';
+}

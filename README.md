@@ -257,6 +257,17 @@ From the Calculator's recipe selector, items with a `cauldronTarget` show a shor
 - Green = combination hits the target; Red = it does not.
 - Click **★** to save to favorites, or **Apply** (only enabled on a hit) to instantly register the recipe in the Calculator and set it as preferred.
 
+### Multi-Step Optimization
+
+Switch to **Multiple Steps** (next to **Single Step** at the top of the Cauldron tab) to search for cheaper *multi-stage* cauldron chains — recipes that themselves consume the output of an earlier cauldron combination — instead of a single combination search.
+
+- The table shows one row per item and one column per optimization round (**Step 0** through **Step 4**). **Step 0** is the base cost of each candidate item; each subsequent step re-runs the cauldron search using the previous step's items as ingredients, keeping only combinations that are *cheaper* than what's already known for that item.
+- Costs that didn't improve over the previous step are grayed out, so you can see at a glance which items actually benefited from another round of optimization.
+- Click the **▲** button on any cell to highlight and filter the table down to just that item and its full upstream ingredient chain — every cell that was actually used to reach that result lights up. Click the same **▲** again to clear the filter.
+- Click **★** on any cell to save that step's recipe to **Saved Recipes**, same as the Single Step results.
+- Hover the cost number for a per-item **Ingredients Cost** / **Heat Cost** breakdown (in coins), and hover an ingredient icon to see its name and the cost value used in that calculation.
+- **⚙ Cost Settings** lets you set the Heat-to-coin and Nutrient-to-coin conversion rates used to estimate costs throughout the Cauldron tab (also shown as an editable, searchable list of every item's estimated base cost).
+
 ---
 
 ## 📖 Wiki Tab
@@ -331,21 +342,21 @@ When the bundled database (`alchemy_db.js`) has a newer version than your local 
 
 ```
 AlchemyFactoryCalculator/
-├── index.html                    # Main HTML shell, tab layout, modals
-├── style.css                     # All styles (CSS custom properties, dark theme)
-├── alchemy_db.js                 # Game data — items, machines, recipes
-├── alchemy_i18n.js               # Translation table (EN/ZH) + t() helper
-├── alchemy_constants.js          # Belt fraction definitions and helpers
-├── alchemy_calc_engine.js        # Pure calculation engine (tree building, aggregation)
-├── alchemy_calc.js               # Calculator UI renderer (DOM, modals, tree nodes)
-├── alchemy_ui.js                 # Global init, settings, combobox, item picker, URL state
-├── alchemy_cauldron.js           # Cauldron simulation, favorites, sync
-├── alchemy_help.js               # Wiki (guides, item browser, machine browser)
-├── alchemy_planner.js            # Planner core: canvas, nodes, edges, plan library, view controls
-├── alchemy_planner_calc.js       # Planner flow-resolution engine, auto-layout, module/import logic
-├── alchemy_planner_overlays.js   # Planner overlays: plan manager, node settings, edge modal, summary panel
-├── alchemy_recipe.js             # Recipe Explorer (currently hidden; available in code)
-└── alchemy_itemvalue.js          # Item Value table (currently hidden; available in code)
+├── index.html                      # Main HTML shell, tab layout, modals
+├── style.css                       # All styles (CSS custom properties, dark theme)
+├── js/
+│   ├── alchemy_db.js              # Game data — items, machines, recipes
+│   ├── alchemy_i18n.js            # Translation table (EN/ZH) + t() helper
+│   ├── alchemy_state.js           # Global application state, default settings, persistence and localStorage
+│   ├── alchemy_main.js            # Application entry point, initialization, URL state, module coordination
+│   ├── alchemy_ui.js              # Shared UI logic: settings, combobox, item picker, slider, and modals
+│   ├── alchemy_calc_engine.js     # Pure calculation engine (tree building, aggregation)
+│   ├── alchemy_calc.js            # Calculator UI renderer (DOM, modals, tree nodes)
+│   ├── alchemy_cauldron.js        # Cauldron simulation, favorites, sync
+│   ├── alchemy_help.js            # Wiki (guides, item browser, machine browser)
+│   ├── alchemy_planner.js         # Planner core: canvas, nodes, edges, plan library, view controls
+│   ├── alchemy_planner_calc.js    # Planner flow-resolution engine, auto-layout, module/import logic
+│   └── alchemy_planner_overlays.js # Planner overlays: plan manager, node settings, edge modal, summary panel
 ```
 
 No build tools, bundlers, or external dependencies. Pure HTML + CSS + vanilla JavaScript.
