@@ -620,243 +620,47 @@ button.reset-btn:hover { background: var(--danger); color: white; }
     SECTION: RECIPES VIEW STYLES
     ========================================================================== */
 
-.recipe-table {
-    width: 100%;
-    border-collapse: collapse;
-    background: #1e1e1e;
-    color: #ddd;
-}
+.recipe-table { width: 100%; border-collapse: collapse; background: #1e1e1e; color: #ddd; }
 
-.recipe-table th {
-    position: sticky;
-    top: 0;
-    background: #252525;
-    padding: 12px 8px;
-    text-align: left;
-    border-bottom: 2px solid var(--border);
-    z-index: 10;
-}
+.recipe-table th { position: sticky; top: 0; background: #252525; padding: 12px 8px; text-align: left; border-bottom: 2px solid var(--border); z-index: 10; }
 
-.recipe-table td {
-    padding: 10px 8px;
-    border-bottom: 1px solid #333;
-    white-space: nowrap;
-}
+.recipe-table td { padding: 10px 8px; border-bottom: 1px solid #333; white-space: nowrap; }
 
-.recipe-table tr:hover {
-    background: #2a2a2a;
-}
+.recipe-table tr:hover { background: #2a2a2a; }
 
-.sticky-filter-bar {
-    position: sticky;
-    top: 0;
-    z-index: 20;
-    background: var(--panel);
-    border-bottom: 1px solid var(--border);
-}
+.sticky-filter-bar { position: sticky; top: 0; z-index: 20; background: var(--panel); border-bottom: 1px solid var(--border); }
 
-.column-toggle-dropdown {
-    position: relative;
-    display: inline-block;
-}
+.column-toggle-dropdown { position: relative; display: inline-block; }
 
-.dropdown-content {
-    display: none;
-    position: absolute;
-    right: 0;
-    background-color: #2d2d2d;
-    min-width: 180px;
-    box-shadow: 0px 8px 16px 0px rgba(0,0,0,0.5);
-    z-index: 100;
-    border: 1px solid #444;
-    border-radius: 4px;
-}
+.dropdown-content { display: none; position: absolute; right: 0; background-color: #2d2d2d; min-width: 180px; box-shadow: 0px 8px 16px 0px rgba(0,0,0,0.5); z-index: 100; border: 1px solid #444; border-radius: 4px; }
 
 .dropdown-content.show { display: block; }
 
-.recipe-flow-cell {
-    display: flex;
-    align-items: center;
-    gap: 3px;
-    background: #111;
-    padding: 4px;
-    border-radius: 4px;
-}
+.recipe-flow-cell { display: flex; align-items: center; gap: 3px; background: #111; padding: 4px; border-radius: 4px; }
 
-.arrow-divider {
-    color: var(--accent);
-    font-weight: bold;
-    margin: 0 4px;
-}
+.arrow-divider { color: var(--accent); font-weight: bold; margin: 0 4px; }
 
 /* 讓表格單元格內容垂直居中，並支援 Flex 佈局 */
-.recipe-table td {
-    vertical-align: middle;
-}
+.recipe-table td { vertical-align: middle; }
 
 /* 確保 Recipe Flow 的容器不會因為內部組件換行 */
-.recipe-flow-cell {
-    white-space: nowrap;
-}
+.recipe-flow-cell { white-space: nowrap; }
 
 /* 讓排序標題有視覺反饋 */
-.recipe-table th:hover {
-    background: #333;
-    color: var(--accent);
-}
+.recipe-table th:hover { background: #333; color: var(--accent); }
 
-.recipe-container {
-    display: flex;
-    flex-direction: column;
-    height: 100%;
-}
+.recipe-container { display: flex; flex-direction: column; height: 100%; }
 
-.recipe-top-bar {
-    display: flex;
-    align-items: center;
-    gap: 20px;
-    padding: 10px;
-    flex-wrap: wrap;
-}
+.recipe-top-bar { display: flex; align-items: center; gap: 20px; padding: 10px; flex-wrap: wrap; }
 
-.recipe-upgrades-row {
-    display: flex;
-    gap: 15px;
-}
+.recipe-upgrades-row { display: flex; gap: 15px; }
 
-.recipe-upgrade-item {
-    width: 140px;
-}
+.recipe-upgrade-item { width: 140px; }
 
-.recipe-table-wrapper {
-    flex: 1;
-    overflow-y: auto; /* 必須要有這個，thead 的 sticky 才會生效 */
-    border: 1px solid var(--border);
-}
-
-.recipe-table thead th {
-    position: sticky;
-    top: 0;
-    background: #252525;
-    z-index: 10;
-    box-shadow: 0 2px 2px -1px rgba(0,0,0,0.4);
-}
-
-/* ==========================================================================
-   SECTION: RECIPE EXPLORER v2 – NEW STYLES
-   ========================================================================== */
-
-/* Filter bar */
-.rcp-filter-bar {
-    position: sticky; top: 0; z-index: 20;
-    background: var(--panel); border-bottom: 1px solid var(--border);
-    padding: 8px 12px; display: flex; flex-direction: column; gap: 8px;
-}
-
-.rcp-row { display: flex; align-items: center; flex-wrap: wrap; gap: 8px; }
-
-.rcp-search-wrap { flex: 1; min-width: 180px; }
-.rcp-search-input {
-    width: 100%; padding: 6px 10px;
-    background: #1e1e1e; border: 1px solid var(--border);
-    border-radius: 4px; color: var(--text); font-size: 0.9em;
-}
-.rcp-search-input:focus { outline: none; border-color: var(--accent); }
-
-.rcp-row-1-right { display: flex; align-items: center; gap: 10px; flex-wrap: wrap; }
-.rcp-mode-group  { display: flex; gap: 3px; }
-
-.rcp-toggle-label {
-    display: flex; align-items: center; gap: 5px;
-    cursor: pointer; font-size: 0.85em; color: #bbb; white-space: nowrap;
-}
-.rcp-toggle-label input[type="checkbox"] { cursor: pointer; }
-.rcp-toggle-text { user-select: none; }
-
-.rcp-col-wrap { position: relative; }
-.rcp-col-panel {
-    display: none; position: absolute; right: 0; top: calc(100% + 4px);
-    background: #2d2d2d; border: 1px solid #444; border-radius: 4px;
-    min-width: 160px; padding: 4px 0; z-index: 200;
-    box-shadow: 0 6px 16px rgba(0,0,0,0.5);
-}
-.rcp-col-panel.show { display: block; }
-.rcp-col-row {
-    display: flex; align-items: center; gap: 6px;
-    padding: 5px 12px; cursor: pointer; font-size: 0.9em; white-space: nowrap;
-}
-.rcp-col-row:hover { background: #3a3a3a; }
-
-/* Machine chips (Row 2) */
-.rcp-chip {
-    padding: 3px 10px; border: 1px solid #555; border-radius: 12px;
-    background: transparent; color: #aaa; font-size: 0.8em;
-    cursor: pointer; transition: 0.15s; white-space: nowrap;
-}
-.rcp-chip:hover  { border-color: #888; color: #fff; }
-.rcp-chip.active { background: var(--accent); border-color: var(--accent); color: #000; font-weight: bold; }
-
-/* Params (Row 3) */
-.rcp-param-item  { display: flex; align-items: center; gap: 6px; flex-shrink: 0; }
-.rcp-param-label { font-size: 0.8em; color: #aaa; white-space: nowrap; }
-.rcp-param-hint  { color: #666; font-size: 0.85em; }
-.rcp-param-input {
-    width: 64px; padding: 4px 6px; text-align: right;
-    background: #1e1e1e; border: 1px solid var(--border);
-    border-radius: 4px; color: var(--text); font-size: 0.85em;
-}
-.rcp-select {
-    padding: 4px 6px; background: #1e1e1e;
-    border: 1px solid var(--border); border-radius: 4px;
-    color: var(--text); font-size: 0.85em; max-width: 180px;
-}
-.rcp-param-divider { width: 1px; height: 20px; background: #444; margin: 0 4px; }
-
-.rcp-sync-notice { font-size: 0.78em; color: #666; white-space: nowrap; margin-left: auto; }
-.rcp-sync-dot    { color: var(--accent); margin-right: 3px; }
-
-/* Table wrapper (overrides the one from old CSS to ensure flex stretching) */
 .recipe-table-wrapper { flex: 1; overflow-y: auto; border: 1px solid var(--border); }
 
-/* Cell contents */
-.rcp-icon-cell {
-    display: inline-flex; flex-direction: column; align-items: center;
-    font-size: 9px; gap: 1px; max-width: 60px;
-    overflow: hidden; text-overflow: ellipsis; white-space: nowrap;
-}
-.rcp-flow-cell {
-    display: flex; align-items: center; gap: 4px;
-    background: #111; padding: 3px 5px; border-radius: 4px;
-}
-.rcp-flow-item  { display: flex; flex-direction: column; align-items: center; gap: 1px; }
-.rcp-flow-arrow { color: var(--accent); font-size: 0.9em; padding: 0 2px; }
+.recipe-table thead th { position: sticky; top: 0; background: #252525; z-index: 10; box-shadow: 0 2px 2px -1px rgba(0,0,0,0.4); }
 
-/* Type badges */
-.rcp-badge         { display: inline-block; padding: 2px 6px; border-radius: 3px; font-size: 0.75em; font-weight: bold; white-space: nowrap; }
-.rcp-badge-craft   { background: #1a2a1a; color: var(--accent); border: 1px solid #3a6a3a; }
-.rcp-badge-nursery { background: #1a2a0a; color: var(--bio);    border: 1px solid #4a7a0a; }
-.rcp-badge-portal  { background: #1a1a3a; color: var(--info);   border: 1px solid #2a3a8a; }
-
-/* ==========================================================================
-    SECTION: ITEM VALUE PAGE STYLES
-    ========================================================================== */
-.iv-na {
-    color: #777;
-    font-style: italic;
-}
-.iv-gold { color: var(--gold); }
-.iv-fuel { color: var(--fuel); }
-.iv-fert { color: var(--bio); }
-.iv-machine-badge {
-    display: inline-block;
-    background: #2a2a2a;
-    border: 1px solid #444;
-    border-radius: 4px;
-    padding: 1px 6px;
-    font-size: 0.8em;
-    color: #aaa;
-    white-space: nowrap;
-}
 /* ==========================================================================
    SECTION: SCALE MODAL
    ========================================================================== */
@@ -876,9 +680,6 @@ button.reset-btn:hover { background: var(--danger); color: white; }
 .scale-apply-btn { background: var(--accent); color: #fff; border: none; border-radius: 4px; padding: 7px 22px; font-size: 0.95em; font-weight: bold; cursor: pointer; transition: 0.15s; }
 .scale-apply-btn:hover { background: #66bb6a; }
 
-/* ==========================================================================
-    SECTION: PLANNER VIEW STYLES
-    ========================================================================== */
 /* ==========================================================================
     SECTION: PLANNER VIEW STYLES
     ========================================================================== */

@@ -356,12 +356,6 @@ function switchTab(tabName, updateUrl = true) {
     if (tabName === 'cauldron' && typeof initCauldron === 'function') {
         initCauldron();
     }
-    if (tabName === 'recipes') {
-        initRecipePage();
-    }
-    if (tabName === 'itemvalue' && typeof initItemValuePage === 'function') {
-        initItemValuePage();
-    }
     if (tabName === 'help' && typeof initHelpPage === 'function') {
         initHelpPage();
     }

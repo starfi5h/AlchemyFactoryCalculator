@@ -36,8 +36,6 @@
             <div class="tab-btn active" onclick="switchTab('calc')">Calculator</div>
             <div class="tab-btn" onclick="switchTab('cauldron')">Cauldron</div>
             <div class="tab-btn" onclick="switchTab('planner')">Planner</div>
-            <!-- <div class="tab-btn" onclick="switchTab('recipes')">Recipes</div> -->
-            <!-- <div class="tab-btn" onclick="switchTab('itemvalue')">Item Value</div> -->
             <div class="tab-btn" onclick="switchTab('help')">Wiki</div>
             <div class="tab-btn" onclick="switchTab('db')">Database Editor</div>
         </div>
@@ -624,178 +622,6 @@
             </div>
         </div>
 
-		<div id="view-recipes" class="view">
-            <div class="recipe-container">
-
-                <!-- ===== FILTER BAR ===== -->
-                <div class="panel rcp-filter-bar">
-
-                    <!-- Row 1: Search + Batch/Min + Raw toggle + Cols -->
-                    <div class="rcp-row rcp-row-1">
-                        <div class="rcp-search-wrap">
-                            <input type="text" id="rcp-search" class="rcp-search-input"
-                                    placeholder="Search item or machine…" oninput="onRecipeSearch()">
-                        </div>
-
-                        <div class="rcp-row-1-right">
-                            <div class="rcp-mode-group">
-                                <button id="rcp-mode-batch" class="tab-btn mini-tab active" onclick="setRecipeMode2('batch')">Batch</button>
-                                <button id="rcp-mode-min"   class="tab-btn mini-tab"        onclick="setRecipeMode2('min')">/ min</button>
-                            </div>
-
-                            <label class="rcp-toggle-label" title="Show Gold/Heat/Nutr as item counts instead of cauldron-cost units">
-                                <input type="checkbox" id="rcp-raw-toggle" onchange="onRecipeRawToggle()">
-                                <span class="rcp-toggle-text">Raw Units</span>
-                            </label>
-
-                            <div class="rcp-col-wrap">
-                                <button class="split-btn" onclick="toggleRecipeColPanel(event)">Cols ⚙️</button>
-                                <div id="rcp-col-panel" class="rcp-col-panel"></div>
-                            </div>
-                        </div>
-                    </div>
-
-                    <!-- Row 2: Machine filter chips -->
-                    <div class="rcp-row rcp-row-2" id="rcp-machine-chips"></div>
-
-                    <!-- Row 3: Parameters -->
-                    <div class="rcp-row rcp-row-3">
-                        <div class="rcp-param-item">
-                            <label class="rcp-param-label" for="rcp-fuel-select">Fuel</label>
-                            <select id="rcp-fuel-select" class="rcp-select" onchange="onRecipeParamChange()"></select>
-                        </div>
-                        <div class="rcp-param-item">
-                            <label class="rcp-param-label" for="rcp-fert-select">Fertilizer</label>
-                            <select id="rcp-fert-select" class="rcp-select" onchange="onRecipeParamChange()"></select>
-                        </div>
-
-                        <div class="rcp-param-divider"></div>
-
-                        <div class="rcp-param-item">
-                            <label class="rcp-param-label" for="rcp-hpc" title="Heat value per 1 cauldron-cost unit of fuel">HPC <span class="rcp-param-hint">(P/cc)</span></label>
-                            <div class="spinner-wrapper">
-                                <button class="spinner-btn" onclick="adjustRecipeParam('rcp-hpc', -1)">-</button>
-                                <input type="number" id="rcp-hpc" class="rcp-param-input" value="20" min="0.01" step="1" oninput="onRecipeParamChange()">
-                                <button class="spinner-btn" onclick="adjustRecipeParam('rcp-hpc', 1)">+</button>
-                            </div>
-                        </div>
-                        <div class="rcp-param-item">
-                            <label class="rcp-param-label" for="rcp-npc" title="Nutrient value per 1 cauldron-cost unit of fertilizer">NPC <span class="rcp-param-hint">(V/cc)</span></label>
-                            <div class="spinner-wrapper">
-                                <button class="spinner-btn" onclick="adjustRecipeParam('rcp-npc', -1)">-</button>
-                                <input type="number" id="rcp-npc" class="rcp-param-input" value="20" min="0.01" step="1" oninput="onRecipeParamChange()">
-                                <button class="spinner-btn" onclick="adjustRecipeParam('rcp-npc', 1)">+</button>
-                            </div>
-                        </div>
-                        <div class="rcp-param-item">
-                            <label class="rcp-param-label" for="rcp-gpc" title="Gold (coins) per 1 cauldron-cost unit of bought items">GPC <span class="rcp-param-hint">(G/cc)</span></label>
-                            <div class="spinner-wrapper">
-                                <button class="spinner-btn" onclick="adjustRecipeParam('rcp-gpc', -1)">-</button>
-                                <input type="number" id="rcp-gpc" class="rcp-param-input" value="1" min="0.01" step="0.1" oninput="onRecipeParamChange()">
-                                <button class="spinner-btn" onclick="adjustRecipeParam('rcp-gpc', 0.1)">+</button>
-                            </div>
-                        </div>
-
-                        <div class="rcp-param-item rcp-sync-notice" id="rcp-sync-notice">
-                            <span class="rcp-sync-dot">●</span>
-                            Levels from Settings
-                        </div>
-                    </div>
-                </div>
-
-                <!-- ===== TABLE ===== -->
-                <div class="recipe-table-wrapper">
-                    <table class="recipe-table" id="rcp-table">
-                        <thead><tr id="rcp-thead"></tr></thead>
-                        <tbody id="rcp-tbody"></tbody>
-                    </table>
-                </div>
-
-            </div>
-        </div>
-
-        <div id="view-itemvalue" class="view">
-            <div class="recipe-container">
-                <div class="panel sticky-filter-bar">
-                    <div class="recipe-top-bar">
-                        <div class="recipe-search-box">
-                            <input type="text" id="iv-search-input" placeholder="Search Item..." oninput="ItemValue.onSearchInput(this.value)">
-                        </div>
-
-                        <div class="input-group" style="width:160px;">
-                            <label for="iv-categoryFilter">Category</label>
-                            <select id="iv-categoryFilter" onchange="ItemValue.onCategoryChange(this.value)"></select>
-                        </div>
-
-                        <div class="input-group" style="width:160px;">
-                            <label for="iv-heatingDeviceSelect">Heating Device</label>
-                            <select id="iv-heatingDeviceSelect" onchange="ItemValue.render()"></select>
-                        </div>
-                        <div class="input-group" style="width:160px;">
-                            <label for="iv-fuelSelect">Fuel Source</label>
-                            <select id="iv-fuelSelect" onchange="ItemValue.render()"></select>
-                        </div>
-                        <div class="input-group" style="width:160px;">
-                            <label for="iv-fertSelect">Fertilizer Source</label>
-                            <select id="iv-fertSelect" onchange="ItemValue.render()"></select>
-                        </div>
-
-                        <div class="recipe-upgrades-row">
-                            <div class="recipe-upgrade-item">
-                                <label for="iv-lvlSpeed">Factory Efficiency</label>
-                                <div class="spinner-wrapper">
-                                    <button class="spinner-btn" onclick="ItemValue.adjustLvl('iv-lvlSpeed', -1)">-</button>
-                                    <input type="number" id="iv-lvlSpeed" value="0" min="0" oninput="ItemValue.render()">
-                                    <button class="spinner-btn" onclick="ItemValue.adjustLvl('iv-lvlSpeed', 1)">+</button>
-                                </div>
-                            </div>
-                            <div class="recipe-upgrade-item">
-                                <label for="iv-lvlAlchemy">Alchemy Skill</label>
-                                <div class="spinner-wrapper">
-                                    <button class="spinner-btn" onclick="ItemValue.adjustLvl('iv-lvlAlchemy', -1)">-</button>
-                                    <input type="number" id="iv-lvlAlchemy" value="0" min="0" oninput="ItemValue.render()">
-                                    <button class="spinner-btn" onclick="ItemValue.adjustLvl('iv-lvlAlchemy', 1)">+</button>
-                                </div>
-                            </div>
-                            <div class="recipe-upgrade-item">
-                                <label for="iv-lvlFuel">Fuel Efficiency</label>
-                                <div class="spinner-wrapper">
-                                    <button class="spinner-btn" onclick="ItemValue.adjustLvl('iv-lvlFuel', -1)">-</button>
-                                    <input type="number" id="iv-lvlFuel" value="0" min="0" oninput="ItemValue.render()">
-                                    <button class="spinner-btn" onclick="ItemValue.adjustLvl('iv-lvlFuel', 1)">+</button>
-                                </div>
-                            </div>
-                            <div class="recipe-upgrade-item">
-                                <label for="iv-lvlFert">Fert Efficiency</label>
-                                <div class="spinner-wrapper">
-                                    <button class="spinner-btn" onclick="ItemValue.adjustLvl('iv-lvlFert', -1)">-</button>
-                                    <input type="number" id="iv-lvlFert" value="0" min="0" oninput="ItemValue.render()">
-                                    <button class="spinner-btn" onclick="ItemValue.adjustLvl('iv-lvlFert', 1)">+</button>
-                                </div>
-                            </div>
-                            <div class="recipe-upgrade-item">
-                                <label for="iv-costRatio" title="多輸出配方的成本折扣比例 (副產品視為銷毀)">Cost Ratio %</label>
-                                <div class="spinner-wrapper">
-                                    <button class="spinner-btn" onclick="ItemValue.adjustLvl('iv-costRatio', -5)">-</button>
-                                    <input type="number" id="iv-costRatio" value="100" min="0" max="100" oninput="ItemValue.render()">
-                                    <button class="spinner-btn" onclick="ItemValue.adjustLvl('iv-costRatio', 5)">+</button>
-                                </div>
-                            </div>
-                        </div>
-                    </div>
-                </div>
-
-                <div class="recipe-table-wrapper">
-                    <table class="recipe-table" id="iv-table">
-                        <thead>
-                            <tr id="iv-table-header"></tr>
-                        </thead>
-                        <tbody id="iv-table-body"></tbody>
-                    </table>
-                </div>
-            </div>
-        </div>
-
         <div id="view-planner" class="view">
             <div class="planner-toolbar">
                 <select id="planner-plan-select" class="planner-plan-select" onchange="switchPlannerPlan(this.value)"></select>
@@ -853,8 +679,6 @@
     <script src="js/alchemy_ui.js"></script>
     <script src="js/alchemy_calc.js"></script>
     <script src="js/alchemy_cauldron.js"></script>
-    <script src="js/alchemy_recipe.js"></script>
-    <script src="js/alchemy_itemvalue.js"></script>
     <script src="js/alchemy_help.js"></script>
     <script src="js/alchemy_planner.js"></script>
     <script src="js/alchemy_planner_calc.js"></script>
