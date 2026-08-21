@@ -13,6 +13,7 @@ let cauldronState = {
     showEstCost: true,
     orderByEstCost: true,
     stepMode: 0,   // 0: 单次步骤, 1: 多次步骤
+    intermediateLimit: 3,   // 多次步驟的中間產物數量上限
     profiles: [
         { candidates: [] }, // Profile 1
         { candidates: [] }, // Profile 2
@@ -49,11 +50,13 @@ function initCauldron() {
     translateText();
     pickFilterItem(1,true);
     pickFilterItem(2,true);
-    switchCauldronType(cauldronState.activeType);
-    switchCauldronProfile(cauldronState.activeProfile);
-    switchCauldronStepMode(cauldronState.stepMode);
+    switchCauldronType(cauldronState.activeType, false);
+    switchCauldronProfile(cauldronState.activeProfile, false);
+    switchCauldronStepMode(cauldronState.stepMode, false);
     document.getElementById('cauldron-order-by-est-cost').checked = cauldronState.orderByEstCost;
     document.getElementById('cauldron-show-est-cost').checked = cauldronState.showEstCost;
+    document.getElementById('cauldron-intermediate-limit').value = cauldronState.intermediateLimit;    
+    runCauldronSimulation();
 }
 
 function loadCauldronSettings() {
@@ -77,6 +80,7 @@ function loadCauldronSettings() {
     if (!(cauldronState.heatPerCopper > 0)) cauldronState.heatPerCopper = 20;
     if (!(cauldronState.nutrPerCopper > 0)) cauldronState.nutrPerCopper = 12;
     if (cauldronState.stepMode === undefined) cauldronState.stepMode = 0;
+    if (cauldronState.intermediateLimit === undefined) cauldronState.intermediateLimit = 3;
 }
 
 function saveCauldronSettings() {
@@ -107,10 +111,10 @@ function getPresetCandidates(poolType) {
             for (let round = 0; round < 3; round++) {
                 let outputSet = new Set();
                 for (const { inputs, outputs, machine } of DB.recipes) {
-                    const inKeys = Object.keys(inputs);
-                    const outKeys = Object.keys(outputs);
-                    if (machine === 'Seed Plot' || DB.machines[machine].heatCost > 0) continue;
-                    if (inKeys.length === 1 && outKeys.length === 1 && inputSet.has(inKeys[0]) && isVaildCandidate(outKeys[0])) {
+                    const inKeys = Object.keys(inputs || {});
+                    const outKeys = Object.keys(outputs || {});
+                    if (machine === 'Seed Plot' || machine === 'Cauldron' || machine === 'Advanced Cauldron') continue;
+                    if (inKeys.length >= 1 && outKeys.length === 1 && inKeys.every(key => inputSet.has(key)) && isVaildCandidate(outKeys[0])) {
                         outputSet.add(outKeys[0]);
                         //console.log(outKeys[0] + "," + round);
                     }
@@ -493,7 +497,7 @@ function renderCandidatePool() {
 }
 
 // [修改] switchCauldronType：加入 UI 顯示/隱藏切換，並在切換至 Type1 時清除 slot3 狀態
-function switchCauldronType(index) {
+function switchCauldronType(index, triggerCalc = true) {
     cauldronState.activeType = index;
     for (let i = 0; i < 2; i++) {
         document.getElementById(`cauldron-type-${i}`).classList.toggle('active', i === index);
@@ -504,12 +508,15 @@ function switchCauldronType(index) {
     document.getElementById('filter-2-diff').parentElement.style.display = isAdvancedCauldron ? '' : 'none';
     document.getElementById('filter-2-same').parentElement.style.display = isAdvancedCauldron ? '' : '';
     document.getElementById('filter-3-diff').parentElement.style.display = isAdvancedCauldron ? 'none' : '';
-    document.getElementById('filter-3-same').parentElement.style.display = isAdvancedCauldron ? 'none' : '';
+    document.getElementById('filter-3-same').parentElement.style.display = isAdvancedCauldron ? 'none' : '';    
 
-    runCauldronSimulation();
+    if(triggerCalc) {
+        saveCauldronSettings();
+        runCauldronSimulation();
+    }
 }
 
-function switchCauldronProfile(index) {    
+function switchCauldronProfile(index, triggerCalc = true) {    
     cauldronState.activeProfile = index;
     syncCandidatesFromProfile();
     for (let i = 0; i < 3; i++) {
@@ -517,20 +524,25 @@ function switchCauldronProfile(index) {
     }
     populateCauldronCategories();
     renderCandidatePool();
-    saveCauldronSettings();
-    runCauldronSimulation();
+    if(triggerCalc) {
+        saveCauldronSettings();
+        runCauldronSimulation();
+    }
 }
 
-function switchCauldronStepMode(mode) {
+function switchCauldronStepMode(mode, triggerCalc = true) {
     cauldronState.stepMode = mode;
     document.getElementById('cauldron-step-mode-0').classList.toggle('active', mode === 0);
     document.getElementById('cauldron-step-mode-1').classList.toggle('active', mode === 1);
     document.getElementById('cauldron-single-step-panel').style.display = mode === 0 ? '' : 'none';
-    document.getElementById('cauldron-multistep-panel').style.display = mode === 1 ? '' : 'none';
-    saveCauldronSettings();
-    if (mode === 1 && multiStepState.dirty) {
-        runMultiStepCauldronSimulation();
-    }
+    document.getElementById('cauldron-multistep-panel').style.display = mode === 1 ? '' : 'none';    
+
+    if(triggerCalc) {
+        saveCauldronSettings();
+        if (mode === 1 && multiStepState.dirty) {
+                runMultiStepCauldronSimulation();
+        }
+    }            
 }
 
 /**
@@ -542,6 +554,7 @@ function applyPreset(poolType) {
     populateCauldronCategories();
     document.getElementById('cauldron-cat-select').value = cauldronCatFilter;
     renderCandidatePool();
+    saveCauldronSettings();
     runCauldronSimulation();
 }
 
@@ -658,6 +671,19 @@ function shiftFilterItem(slotIdx, delta) {
 
     cauldronFilterItems[slotIdx - 1] = list[nextIdx];
     updateFilterUI();
+    runCauldronSimulation();
+}
+
+function onMultiStepIntermediateLimitChange(value) {
+    // 強制轉成 1~3 的整數
+    let limit = parseInt(value, 10);
+    if (!Number.isFinite(limit)) limit = 3;
+    limit = Math.max(1, Math.min(3, limit));
+
+    const input = document.getElementById('cauldron-intermediate-limit');
+    if(input) input.value = limit;
+    cauldronState.intermediateLimit = limit;
+    saveCauldronSettings();
     runCauldronSimulation();
 }
 
@@ -969,6 +995,11 @@ async function runMultiStepCauldronSimulation() {
 
         function considerCombo(inputs, output) {
             if (!output || inputs.includes(output)) return;
+
+            // 檢查中間產物的數量是否超出上限
+            const intermediateCount = inputs.filter(item => !cauldronCandidates.has(item)).length;
+            if (intermediateCount > cauldronState.intermediateLimit) return;
+
             let cost = 0, cauldronCostSum = 0;
             for (const inp of inputs) {
                 const rec = prev.get(inp);
@@ -1099,7 +1130,7 @@ function renderMultiStepTable() {
     if (!thead || !tbody) return;
 
     thead.innerHTML = `<th>${t('Item')}</th>` +
-        multiStepState.steps.map((_, idx) => `<th>${t('Round')} ${idx}</th>`).join('');
+        multiStepState.steps.map((_, idx) => `<th>${t('Step')} ${idx}</th>`).join('');
 
     const itemSet = new Set();
     multiStepState.steps.forEach(stepMap => {

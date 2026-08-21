@@ -29,7 +29,7 @@
             <span style="margin-left: 10px;">
                 <span id="ui-lang-toggle" style="cursor:pointer; margin-right: 10px;" onclick="toggleLanguage()" title="EN/中文">🌐EN/中文</span>
                 <a href="https://github.com/starfi5h/AlchemyFactoryCalculator" target="_blank" class="repo-link">GitHub Repo</a>
-                <span id="last-updated-time-text">2026.08.19</span>
+                <span id="last-updated-time-text">2026.08.21</span>
             </span>
         </div>
         <div class="tabs">
@@ -599,7 +599,25 @@
                         <div style="display:flex; align-items:baseline; gap:10px; border-bottom:1px solid #444; padding-bottom:10px; margin-bottom:10px;">
                             <h3 style="border:none; margin:0;">Result Area</h3>
                             <span id="cauldron-multistep-progress" style="color:var(--accent); font-size:0.9em; font-weight:bold;"></span>
+
+                            <div style="margin-left:auto; display:flex; align-items:center; gap:6px;">
+                                <label for="cauldron-intermediate-limit" style="margin:0; white-space:nowrap;">
+                                    Max Intermediate Items
+                                </label>
+                                <input
+                                    type="number"
+                                    id="cauldron-intermediate-limit"
+                                    class="small-num-input"
+                                    value="1"
+                                    min="1"
+                                    max="3"
+                                    step="1"
+                                    style="width:60px; height:25px;"
+                                    onchange="onMultiStepIntermediateLimitChange(this.value)"
+                                >
+                            </div>
                         </div>
+                        
                         <div class="cauldron-multistep-scroll">
                             <table class="recipe-table" id="cauldron-multistep-table">
                                 <thead><tr id="cauldron-multistep-thead"></tr></thead>
