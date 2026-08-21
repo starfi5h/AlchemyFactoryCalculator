@@ -265,8 +265,8 @@ function performUpdate() {
 
 function translateText() {
     const selectors = [
-        'h1', '.panel h3', '.section-header',
-        '.input-group label', '.checkbox-row label', '.checkbox-row span', '.stat-label', '.scale-row-label',
+        'h1', '.panel h3', '.section-header', 
+        'label', '.checkbox-row span', '.stat-label', '.scale-row-label',
         '.tab-btn', '.split-btn', '.save-btn', '.reset-btn', '.soild-btn', '.info'
     ].join(',');
 
@@ -278,7 +278,6 @@ function translateText() {
     const input = document.getElementById('targetItemInput');
     if (input) input.placeholder = t("Select or Type...", "ui");
     document.title = t("Alchemy Factory Calculator", "ui");
-    document.getElementById('ui-mode-label').innerText = t("MULTI", "ui");
 }
 
 function toggleLanguage() {
@@ -315,9 +314,13 @@ function switchTab(tabName, updateUrl = true) {
         default: return;
     }
     document.querySelectorAll('.view').forEach(el => el.classList.remove('active'));
-    document.querySelectorAll('.tab-btn').forEach(el => el.classList.remove('active'));
     document.getElementById('view-' + tabName).classList.add('active');
-    document.querySelectorAll('.tab-btn')[btnIndex].classList.add('active');
+
+    const container = document.getElementById('page-tab-container');
+    const tabBtns = container.querySelectorAll('.tab-btn');
+    tabBtns.forEach(el => el.classList.remove('active'));
+    if (tabBtns[btnIndex]) tabBtns[btnIndex].classList.add('active');
+
     if (updateUrl) {
         updateURL(tabName);
     }

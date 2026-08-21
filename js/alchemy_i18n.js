@@ -154,7 +154,8 @@ window.ALCHEMY_I18N = {
 
         // --- 1. Production Goal ---
         "Production Goal": "生产目标",
-        "MULTI": "多产物",
+        "Single Target": "单产物",
+        "Multi Target": "多产物",
         "+ Add Item": "+ 添加需求物品",
         "💾 Save List": "💾 保存列表",
         "📂 Load List": "📂 加载列表",

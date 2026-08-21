@@ -284,6 +284,13 @@ function recalculate(item, rate) {
    SECTION: JS - Multiple Inputs
    ========================================================================== */
 
+function switchCalcModeTab(isMulti) {
+    document.getElementById('modeToggle').checked = isMulti;
+    document.getElementById('calc-mode-btn-single').classList.toggle('active', !isMulti);
+    document.getElementById('calc-mode-btn-multi').classList.toggle('active', isMulti);
+    toggleCalcMode();
+}
+
 function toggleCalcMode() {
     const isMulti = document.getElementById('modeToggle').checked;
     document.getElementById('single-target-ui').style.display = isMulti ? 'none' : 'block';
