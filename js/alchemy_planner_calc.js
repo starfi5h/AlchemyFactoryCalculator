@@ -17,6 +17,7 @@
      outputsPerMachine: [{item, rate}],
      heatItemsPerMachine: number,      // fuel-item units/min for ONE machine
      fertItemsPerMachine: number,
+     goldCostPerMachine: number,
      errorCode: ''|'Missing Recipe'|'Missing Reference'|'Circular Reference'|'Unkown Error'
    }
    Use these when you need "what would ONE machine produce" (e.g. to compute
@@ -30,6 +31,7 @@
      outputs: [{item, rate}],
      heatItemsPerMin: number,
      fertItemsPerMin: number,
+     goldCostPerMin: number,
      errorCode: string
    }
    Do not confuse "ports" (node totals) with "rates" (per-machine) — they share
@@ -153,11 +155,11 @@ function plannerGetRecipeTime(recipe) {
 /**
  * 依配方 id (與可選的 recipeModifiers，例如高級煉金爐催化劑) 算出「單台機器」的
  * input/output/heat/fert per-min 速率，不受任何節點的 machineCount 影響。
- * 回傳: { recipe, inputsPerMachine, outputsPerMachine, heatItemsPerMachine, fertItemsPerMachine }
+ * 回傳: { recipe, inputsPerMachine, outputsPerMachine, heatItemsPerMachine, fertItemsPerMachine, goldCostPerMachine, errorCode }
  */
 function plannerGetRecipeRates(recipeId, recipeModifiers) {
     const recipe = getRecipeById(recipeId, recipeModifiers);
-    if (!recipe) return { recipe: null, inputsPerMachine: [], outputsPerMachine: [], heatItemsPerMachine: 0, fertItemsPerMachine: 0, errorCode: 'Missing Recipe' };
+    if (!recipe) return { recipe: null, inputsPerMachine: [], outputsPerMachine: [], heatItemsPerMachine: 0, fertItemsPerMachine: 0, goldCostPerMachine: 0, errorCode: 'Missing Recipe' };
 
     const lvlBelt = DB.settings.lvlBelt || 0;
     const lvlSpeed = DB.settings.lvlSpeed || 0;
@@ -231,18 +233,32 @@ function plannerGetRecipeRates(recipeId, recipeModifiers) {
         fertItemsPerMachine = totalNutrientsPerMinPerMachine / grossFertVal;
     }
 
-    return { recipe, inputsPerMachine, outputsPerMachine, heatItemsPerMachine, fertItemsPerMachine, errorCode: '' };
+    // 計算 gold cost：僅無輸入配方 (Purchasing Portal / Bank Portal 等) 才需要計算
+    let goldCostPerMachine = 0;
+    if (Object.keys(recipe.inputs || {}).length === 0) {
+        const itemDef = DB.items[mainOut] || {};
+        const customCost = DB.settings.customCosts?.[mainOut];
+        let unitPrice = 0;
+        if (typeof customCost === 'number' && customCost > 0) unitPrice = customCost;
+        else if (itemDef.category === 'Currency') unitPrice = itemDef.sellPrice || 0;
+        else unitPrice = itemDef.buyPrice || 0;
+
+        const mainOutRate = (outputsPerMachine.find(p => p.item === mainOut) || {}).rate || 0;
+        goldCostPerMachine = mainOutRate * unitPrice;
+    }
+
+    return { recipe, inputsPerMachine, outputsPerMachine, heatItemsPerMachine, fertItemsPerMachine, goldCostPerMachine, errorCode: '' };
 }
 
 /**
  * 依節點目前的機器數與全域共用設定(preferredRecipes/recipeModifiers/升級等級)，
  * 算出這個節點所有 input/output port 的速率，以及機台本身的燃料/肥料消耗。
- * 回傳: { recipe, inputs, outputs, heatItemsPerMachine, fertItemsPerMachine, errorCode }
+ * 回傳: { recipe, inputs, outputs, heatItemsPerMin, fertItemsPerMin, goldCostPerMin, errorCode }
  */
 function computeNodePorts(node) {
-    if (node.kind === 'note') return { recipe: null, inputs: [], outputs: [], heatItemsPerMin: 0, fertItemsPerMin: 0, errorCode: '' };
+    if (node.kind === 'note') return { recipe: null, inputs: [], outputs: [], heatItemsPerMin: 0, fertItemsPerMin: 0, goldCostPerMin: 0, errorCode: '' };
     const rates = plannerGetNodeRates(node);
-    const result = { recipe : null, inputs: [], outputs: [], heatItemsPerMin: 0, fertItemsPerMin: 0, errorCode: '' };
+    const result = { recipe : null, inputs: [], outputs: [], heatItemsPerMin: 0, fertItemsPerMin: 0, goldCostPerMin: 0, errorCode: '' };
     
     if (rates.errorCode) return { ...result, errorCode: rates.errorCode };
 
@@ -252,6 +268,7 @@ function computeNodePorts(node) {
     result.outputs = rates.outputsPerMachine.map(p => ({ item: p.item, rate: p.rate * mc }));
     result.heatItemsPerMin = rates.heatItemsPerMachine * mc;
     result.fertItemsPerMin = rates.fertItemsPerMachine * mc;
+    result.goldCostPerMin = rates.goldCostPerMachine * mc;
     return result;
 }
 
@@ -278,7 +295,7 @@ function plannerGetNodeRates(node) {
  * { recipe, inputsPerMachine, outputsPerMachine, heatItemsPerMachine, fertItemsPerMachine, errorCode }
  */
 function plannerGetModuleRates(moduleId) {
-    const result = { recipe: null, inputsPerMachine: [], outputsPerMachine: [], heatItemsPerMachine: 0, fertItemsPerMachine: 0, errorCode: '' };
+    const result = { recipe: null, inputsPerMachine: [], outputsPerMachine: [], heatItemsPerMachine: 0, fertItemsPerMachine: 0, goldCostPerMachine: 0, errorCode: '' };
     try {
         const plan = plannerLibrary.plans[moduleId];
         if (!plan) return {...result, errorCode: 'Missing Reference'};
@@ -293,6 +310,7 @@ function plannerGetModuleRates(moduleId) {
             outputsPerMachine: Object.entries(base.outputSurplus).map(([item, qty]) => ({ item, rate: qty })),
             heatItemsPerMachine: base.heatTotal,
             fertItemsPerMachine: base.fertTotal,
+            goldCostPerMachine: base.goldCostTotal,
             errorCode: ''
         };
     }
@@ -314,11 +332,12 @@ function _computeFlowsForPlanData(plan) {
 
     const inputShortage = {};
     const outputSurplus = {};
-    let heatTotal = 0, fertTotal = 0, goldTotal = 0;
+    let heatTotal = 0, fertTotal = 0, goldCostTotal = 0;
 
     Object.values(flow.nodePortsCache).forEach(ports => {
         heatTotal += ports.heatItemsPerMin || 0;
         fertTotal += ports.fertItemsPerMin || 0;
+        goldCostTotal += ports.goldCostPerMin || 0;
     });
 
     Object.keys(flow.portRemaining).forEach(key => {
@@ -331,12 +350,7 @@ function _computeFlowsForPlanData(plan) {
         else inputShortage[item] = (inputShortage[item] || 0) + val;
     });
 
-    Object.entries(inputShortage).forEach(([item, qty]) => {
-        const def = DB.items[item];
-        if (def && def.buyPrice) goldTotal += def.buyPrice * qty;
-    });
-
-    return { inputShortage: inputShortage, outputSurplus: outputSurplus, heatTotal: heatTotal, fertTotal: fertTotal };
+    return { inputShortage: inputShortage, outputSurplus: outputSurplus, heatTotal: heatTotal, fertTotal: fertTotal, goldCostTotal: goldCostTotal };
 }
 
 

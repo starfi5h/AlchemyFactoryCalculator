@@ -477,7 +477,7 @@ function renderTreeNode(params, node) {
 
     let detailsTag = '';
     if (node.tags.detailsType === 'external') detailsTag = `<span class="details">(${t('External Input')})</span>`;
-    if (node.tags.detailsType === 'raw') detailsTag = `<span class="details">(${t('Raw Input')})</span>`;
+    if (node.tags.detailsType === 'raw') detailsTag = `<span class="details">(${t('Raw')})</span>`;
 
     let machineTag = '';
     let swapBtn = '';

@@ -137,7 +137,7 @@ function init() {
         loadCauldronSettings();
         syncCauldronToMainDB();
     } catch (e) {
-        log.error(e);
+        console.error(e);
     }
 
     calculate();

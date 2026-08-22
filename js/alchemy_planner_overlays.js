@@ -1073,6 +1073,14 @@ function buildPlannerRateTooltipHtml(rates) {
     if (rates.fertItemsPerMachine > 0.0001) {
         html += rowHtml(DB.settings.defaultFert, -rates.fertItemsPerMachine, '#76ff03');
     }
+    if (rates.goldCostPerMachine > 0.0001) {
+        html += `<div class="planner-rate-tooltip-row">
+            <span class="planner-rate-tooltip-qty" style="color:var(--gold)">-${formatVal(rates.goldCostPerMachine)}</span>
+            <img src="img/copper.png">
+            <span class="planner-rate-tooltip-name">${t('Coin', 'ui')}</span>
+        </div>`;
+        html += `<div class="planner-rate-tooltip-divider"></div>`;
+    }
 
     html += `<div class="planner-rate-tooltip-footer">${t('per machine (/min)', 'ui')}</div>`;
     return html;
@@ -1198,14 +1206,7 @@ function computePlannerSummaryStats(flows) {
         }
         heatTotal += ports.heatItemsPerMin || 0;
         fertTotal += ports.fertItemsPerMin || 0;
-
-        // Bank Portal: 依輸出的貨幣 rate * sellPrice 計入金錢消耗 (對齊 calc_engine 的 buildNode 邏輯)
-        if (ports.recipe && ports.recipe.machine === "Bank Portal") {
-            ports.outputs.forEach(p => {
-                const itemDef = DB.items[p.item] || {};
-                if (itemDef.sellPrice) goldTotal += p.rate * itemDef.sellPrice;
-            });
-        }
+        goldTotal += ports.goldCostPerMin || 0;
     });
 
     const outputSurplus = {};

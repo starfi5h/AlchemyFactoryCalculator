@@ -223,6 +223,7 @@ window.ALCHEMY_I18N = {
         "Used": "已用",
         "Expand": "展开",
         "Fold": "收起",
+        "Raw": "原料",
         "Raw Input": "原料输入",
         "External Input": "外部输入",
 

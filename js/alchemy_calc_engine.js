@@ -536,11 +536,26 @@
             node.machine = recipe.machine;
 
             if (recipe.machine === "Bank Portal") {
-                const costPerMin = netRate * (itemDef.sellPrice || 0);
-                aggregates.goldPerMin += costPerMin;
-                if (!effectiveGhost) {
+                if (Object.keys(recipe.inputs || {}).length === 0) {
+                    const costPerMin = netRate * (itemDef.sellPrice || 0);
+                    aggregates.goldPerMin += costPerMin;
+                    if (!effectiveGhost) {
+                        aggregates.rawMaterialSourceMap.push({ item, gold: costPerMin, pathKey });
+                        node.tags.costEntries.push({ type: "gold", amount: costPerMin });
+                    }
+                }
+            }
+            else if (recipe.machine === "Purchasing Portal") {
+                const customCost = getCustomCost(state, item);
+                const effectivePrice = customCost !== null ? customCost : itemDef.buyPrice;
+                if (effectivePrice) {
+                    const costPerMin = netRate * effectivePrice;
+                    aggregates.rawItems[item] = (aggregates.rawItems[item] || 0) + netRate;
+                    aggregates.goldPerMin += costPerMin;
                     aggregates.rawMaterialSourceMap.push({ item, gold: costPerMin, pathKey });
-                    node.tags.costEntries.push({ type: "gold", amount: costPerMin });
+                    node.tags.detailsType = "raw";
+                    node.tags.costEntries.push({ type: "gold", amount: costPerMin, custom: customCost !== null });
+                    node.isRaw = true;
                 }
             }
 

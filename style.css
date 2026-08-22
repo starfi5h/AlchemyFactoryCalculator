@@ -429,6 +429,7 @@ input:checked + .slider-switch:before { transform: translateX(16px); }
 
 .heat-tag { color: var(--warn); font-size: 0.85em; margin-left: 3px; align-items: center; }
 .bio-tag { color: var(--bio); font-size: 0.85em; margin-left: 3px; align-items: center; }
+.gold-tag { color: var(--gold); font-size: 0.85em; margin-left: 3px; align-items: center; }
 .cost-tag { color: var(--gold); font-size: 0.85em; margin-left: 3px; font-weight: bold; }
 .byproduct-tag { color: var(--byproduct); font-size: 0.85em; margin-left: 3px; font-weight: bold; }
 .info-tag { color: var(--info); font-size: 0.85em; margin-left: 3px; }

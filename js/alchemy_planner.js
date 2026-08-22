@@ -958,6 +958,9 @@ function renderPlannerHeatFertHtml(ports) {
         const fertDef = DB.items[DB.settings.defaultFert] || {};
         html += `<span class="bio-tag">-${formatVal(ports.fertItemsPerMin)}/m <img src="img/item${fertDef.id ?? 0}.png" class="item-icon-small" title="${DB.settings.defaultFert}"></span>`;
     }
+    if (ports.goldCostPerMin > 0.001) {
+        html += `<span class="gold-tag">-${formatVal(ports.goldCostPerMin)}/m <img src="img/copper.png" class="item-icon-small"></span>`;
+    }
     return html;
 }
 

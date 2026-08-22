@@ -1,6 +1,6 @@
 window.ALCHEMY_DB = {
-    "version": 50,
-    "date": "2026.08.12",
+    "version": 51,
+    "date": "2026.08.22",
     "gameVersion": "0.5.4539",
     "items": {
         // --- RAW RESOURCES ---
@@ -260,6 +260,30 @@ window.ALCHEMY_DB = {
         { "id": "Bank_Copper", "machine": "Bank Portal", "inputs": {}, "outputs": { "Copper Coin": 50 }, "baseTime": 1.0 },
         { "id": "Bank_Silver", "machine": "Bank Portal", "inputs": {}, "outputs": { "Silver Coin": 50 }, "baseTime": 1.0 },
         { "id": "Bank_Gold", "machine": "Bank Portal", "inputs": {}, "outputs": { "Gold Coin": 50 }, "baseTime": 1.0 },
+        { "id": "Bank_Copper_To_Silver", "machine": "Bank Portal", "inputs": { "Copper Coin": 50 }, "outputs": { "Silver Coin": 0.05 }, "baseTime": 1.0 },
+        { "id": "Bank_Silver_To_Copper", "machine": "Bank Portal", "inputs": { "Silver Coin": 0.05 }, "outputs": { "Copper Coin": 50 }, "baseTime": 1.0 },
+        { "id": "Bank_Silver_To_Gold", "machine": "Bank Portal", "inputs": { "Silver Coin": 50 }, "outputs": { "Gold Coin": 0.5 }, "baseTime": 1.0 },
+        { "id": "Bank_Gold_To_Silver", "machine": "Bank Portal", "inputs": { "Gold Coin": 0.5 }, "outputs": { "Silver Coin": 50 }, "baseTime": 1.0 },
+
+        // --- RAW INPUT ---
+        { "id": "Logs", "machine": "Purchasing Portal", "inputs": {}, "outputs": { "Logs": 1 }, "baseTime": 1 },
+        { "id": "Limestone", "machine": "Purchasing Portal", "inputs": {}, "outputs": { "Limestone": 1 }, "baseTime": 1 },
+        { "id": "Iron Ore", "machine": "Purchasing Portal", "inputs": {}, "outputs": { "Iron Ore": 1 }, "baseTime": 1 },
+        { "id": "Pyrite Ore", "machine": "Purchasing Portal", "inputs": {}, "outputs": { "Pyrite Ore": 1 }, "baseTime": 1 },
+        { "id": "Rock Salt", "machine": "Purchasing Portal", "inputs": {}, "outputs": { "Rock Salt": 1 }, "baseTime": 1 },
+        { "id": "Coal Ore", "machine": "Purchasing Portal", "inputs": {}, "outputs": { "Coal Ore": 1 }, "baseTime": 1 },
+        { "id": "Rotten Log", "machine": "Purchasing Portal", "inputs": {}, "outputs": { "Rotten Log": 1 }, "baseTime": 1 },
+        { "id": "Quartz Ore", "machine": "Purchasing Portal", "inputs": {}, "outputs": { "Quartz Ore": 1 }, "baseTime": 1 },
+        { "id": "Meteorite", "machine": "Purchasing Portal", "inputs": {}, "outputs": { "Meteorite": 1 }, "baseTime": 1 },
+        { "id": "Flax Seeds", "machine": "Purchasing Portal", "inputs": {}, "outputs": { "Flax Seeds": 1 }, "baseTime": 1 },
+        { "id": "Sage Seeds", "machine": "Purchasing Portal", "inputs": {}, "outputs": { "Sage Seeds": 1 }, "baseTime": 1 },
+        { "id": "Redcurrant Seeds", "machine": "Purchasing Portal", "inputs": {}, "outputs": { "Redcurrant Seeds": 1 }, "baseTime": 1 },
+        { "id": "Chamomile Seeds", "machine": "Purchasing Portal", "inputs": {}, "outputs": { "Chamomile Seeds": 1 }, "baseTime": 1 },
+        { "id": "Lavender Seeds", "machine": "Purchasing Portal", "inputs": {}, "outputs": { "Lavender Seeds": 1 }, "baseTime": 1 },
+        { "id": "Gentian Seeds", "machine": "Purchasing Portal", "inputs": {}, "outputs": { "Gentian Seeds": 1 }, "baseTime": 1 },
+        { "id": "World Tree Seed", "machine": "Purchasing Portal", "inputs": {}, "outputs": { "World Tree Seed": 1 }, "baseTime": 1 },
+        { "id": "Portal Sigil", "machine": "Purchasing Portal", "inputs": {}, "outputs": { "Portal Sigil": 1 }, "baseTime": 1 },
+        { "id": "Gelatinous Gridlock", "machine": "Purchasing Portal", "inputs": {}, "outputs": { "Gelatinous Gridlock": 1 }, "baseTime": 1 },
 
         // --- BASICS ---
         { "id": "Plank", "machine": "Table Saw", "inputs": { "Logs": 1 }, "outputs": { "Plank": 200 }, "baseTime": 400.0 },
