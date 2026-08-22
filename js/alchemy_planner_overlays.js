@@ -912,10 +912,10 @@ function openPlannerRecipePickerMenu(ctx) {
 
     _plannerPickerCandidates = candidates.map(r => {
         const mainOut = Object.keys(r.outputs)[0];
-        const mainOutName = t(mainOut, 'items');
+        const mainOutName = mainOut;
         const machineName = t(r.machine, 'machines');
         return {
-            recipe: r,
+            recipe: getRecipeById(r.id, DB.settings.recipeModifiers[r?.id]) || r,
             mainOut,
             mainOutName,
             machineName,
@@ -930,7 +930,7 @@ function openPlannerRecipePickerMenu(ctx) {
     panel.className = 'planner-recipe-picker';
     document.body.appendChild(panel);
 
-    const headerText = `${t(consuming ? 'CONSUME' : 'PRODUCE', 'ui')} ${t(ctx.item, 'items')}`;
+    const headerText = `${t(consuming ? 'CONSUME' : 'PRODUCE', 'ui')} ${ctx.item}`;
 
     panel.innerHTML = `
         <div class="planner-picker-header">${headerText}</div>
@@ -981,6 +981,7 @@ function renderPlannerRecipePickerList(filterText) {
     }
 
     list.innerHTML = _plannerPickerFiltered.map((c, idx) => {
+        if (!c.recipe) return;
         const inputIcons = Object.keys(c.recipe.inputs || {}).map(name => {
             const d = DB.items[name] || {};
             return `<img src="img/item${d.id ?? 0}.png" width="18" height="18" title="${name}">`;
@@ -1016,7 +1017,8 @@ function createPlannerNodeFromPicker(candidate, ctx) {
     const consuming = ctx.originDir === 'out';
     const targetRate = plannerGetAvailableRateAtPort(ctx.sourceNodeId, ctx.item, ctx.originDir);
 
-    const rates = plannerGetRecipeRates(recipe.id);
+    const recipeModifiers = DB.settings.recipeModifiers[recipe.id];
+    const rates = plannerGetRecipeRates(recipe.id, recipeModifiers);
     const portList = consuming ? rates.inputsPerMachine : rates.outputsPerMachine;
     const perMachineRate = (portList.find(p => p.item === ctx.item) || {}).rate || 0;
 
@@ -1026,7 +1028,7 @@ function createPlannerNodeFromPicker(candidate, ctx) {
     plannerState._nodeSeq = (plannerState._nodeSeq || 0) + 1;
     const nodeId = 'pnode_' + plannerState._nodeSeq;
     plannerState.nodes[nodeId] = {
-        id: nodeId, recipeId: recipe.id, machineCount,
+        id: nodeId, recipeId: recipe.id, recipeModifiers: recipeModifiers, machineCount,
         x: plannerSnapVal(Math.round(ctx.graphX - 115)), y: plannerSnapVal(Math.round(ctx.graphY - 40))
     };
 

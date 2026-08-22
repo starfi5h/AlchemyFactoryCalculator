@@ -157,9 +157,21 @@ function plannerGetRecipeTime(recipe) {
  * input/output/heat/fert per-min 速率，不受任何節點的 machineCount 影響。
  * 回傳: { recipe, inputsPerMachine, outputsPerMachine, heatItemsPerMachine, fertItemsPerMachine, goldCostPerMachine, errorCode }
  */
-function plannerGetRecipeRates(recipeId, recipeModifiers) {
+function plannerGetRecipeRates(recipeId, recipeModifiers) {    
     const recipe = getRecipeById(recipeId, recipeModifiers);
-    if (!recipe) return { recipe: null, inputsPerMachine: [], outputsPerMachine: [], heatItemsPerMachine: 0, fertItemsPerMachine: 0, goldCostPerMachine: 0, errorCode: 'Missing Recipe' };
+    if (!recipe) {
+        const rawRecipe = plannerGetRawRecipe(recipeId);
+        if (rawRecipe && rawRecipe.customInputSlot && !recipeModifiers?.customInput) {
+            return {
+                recipe: null, inputsPerMachine: [], outputsPerMachine: [],
+                heatItemsPerMachine: 0, fertItemsPerMachine: 0, goldCostPerMachine: 0,
+                errorCode: 'Missing Custom Input' };
+        }
+    
+        return { recipe: null, inputsPerMachine: [], outputsPerMachine: [],
+             heatItemsPerMachine: 0, fertItemsPerMachine: 0, goldCostPerMachine: 0,
+             errorCode: 'Missing Recipe' };
+    }
 
     const lvlBelt = DB.settings.lvlBelt || 0;
     const lvlSpeed = DB.settings.lvlSpeed || 0;

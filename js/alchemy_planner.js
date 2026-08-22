@@ -791,7 +791,7 @@ function createPlannerNodeEl(node, flows) {
         const heatTag = ports.heatItemsPerMin > 0 ? 'heat' : '';
         const machineKey = ports.recipe ? ports.recipe.machine : '';
         const mainOut = ports.recipe ? Object.keys(ports.recipe.outputs)[0] : plannerMainOutput(node.recipeId) || '';
-        const machineName = ports.recipe ? t(ports.recipe.machine, 'machines').replace('Advanced', 'Adv.') : t('Missing Recipe', 'ui');
+        const machineName = ports.recipe ? t(ports.recipe.machine, 'machines').replace('Advanced', 'Adv.') : t('Invaild Recipe', 'ui');
         const machineIconHtml = machineKey
         ? `<img src="img/machines/${machineKey.toLowerCase().replaceAll(' ', '-')}.png" class="planner-node-icon" onerror="this.style.opacity='0'">`
         : `<span class="planner-node-icon"></span>`;
@@ -807,7 +807,7 @@ function createPlannerNodeEl(node, flows) {
     }
     else {
         const plan = plannerLibrary.plans[node.moduleId];
-        const titleName = plan ? plan.name : t('Invaild Module', 'ui');
+        const titleName = plan ? plan.name : t('Invalid Module', 'ui');
         wrap.innerHTML += `
         <div class="planner-node-header module" 
             onmouseenter="onPlannerHeaderHover(this, '${node.id}')"
@@ -818,7 +818,9 @@ function createPlannerNodeEl(node, flows) {
         </div>`;
     }
 
-    const errorMessage = ports.errorCode ? `<div>${t('Error')}: ${t(ports.errorCode)}</div>` : ``;
+    const errorMessage = ports.errorCode ? 
+        `<div id="planner-node-error-${node.id}">${t('Error')}: ${t(ports.errorCode)}</div>` : 
+        `<div id="planner-node-error-${node.id}"></div>`;
     wrap.innerHTML += `
         <div class="planner-node-body" id="planner-node-body-${node.id}">
             ${errorMessage}
@@ -1102,6 +1104,8 @@ function patchPlannerNodeDisplay(node, flows) {
     if (!ports) return;
     const body = document.getElementById('planner-node-body-' + node.id);
     if (body) {
+        const errEl = document.getElementById('planner-node-error-' + node.id);
+        if (errEl) errEl.innerHTML = ports.errorCode ? `${t('Error')}: ${t(ports.errorCode)}` : '';
         const portsRowEl = body.querySelector('.planner-ports-row');
         if (portsRowEl) portsRowEl.outerHTML = renderPlannerPortsHtml(node, ports, flows);
         const heatFertEl = document.getElementById('planner-heatfert-' + node.id);

@@ -427,10 +427,12 @@ window.ALCHEMY_I18N = {
         "Module": "模块",
         "NOTE": "笔记",
         "Invaild Module": "无效模块",
+        "Invaild Recipe": "无效配方",
         "Missing Recipe": "配方缺失",
         "Missing Reference": "引用缺失",
         "Circular Reference": "循环引用",
         "No recipe selected": "尚未选择配方",
+        "Missing Custom Input": "尚未指定自订输入物品",
         "CONSUME": "消耗",
         "PRODUCE": "生产",
 
