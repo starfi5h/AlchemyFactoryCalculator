@@ -249,8 +249,16 @@ window.ALCHEMY_I18N = {
 
         // --- 4. Construction List ---
         "Construction List": "建造清单",
+        "Machine Size": "机器尺寸",
+        "Machine Area": "机器占地面积",
+        "Sum Area": "总面积",
+        "Sum Volume": "总体积",
+        "On Heat Device": "发热设备上",
         "Total Materials Required": "总计材料需求",
         "Total Slots": "总计格子数",
+        "Total Machines": "总计机器数",
+        "Flat Footprint Tile": "平铺占地地板数",
+        "Compact Footprint Tile": "紧凑占地地板数",
 
         // --- 5. Upgrades ---
         "Upgrades (Levels)": "升级",

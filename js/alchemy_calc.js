@@ -819,9 +819,40 @@ function updateConstructionList(maxCounts, minCounts, furnaces, extraBuildCosts,
     const buildList = document.getElementById('construction-list'); buildList.innerHTML = '';
     const totalMatsContainer = document.getElementById('total-mats-container'); totalMatsContainer.innerHTML = '';
     const isMaxMode = false;
-    
+
     const sortedMachines = Object.keys(maxCounts).sort();
     let totalConstructionMaterials = {};
+
+    // --- Running totals for the bottom summary rows ---
+    let totalMachineCount = 0;
+    let totalArea = 0;
+    let totalVolume = 0;
+
+    // area = W * L, excluded if the machine has a heatCost property
+    // (heatCost !== undefined, including negative "depends on recipe" placeholders
+    // like Cauldron/Advanced Cauldron/Steam Boiler), since it sits on a heating device
+    function getMachineFootprint(machineDef) {
+        if (!machineDef || machineDef.heatCost !== undefined) return 0;
+        return (machineDef.L || 0) * (machineDef.W || 0);
+    }
+
+    function getMachineVolume(machineDef) {
+        if (!machineDef) return 0;
+        return (machineDef.L || 0) * (machineDef.W || 0) * (machineDef.H || 0);
+    }
+
+    function getMachineTitle(machineDef, machineCount) {
+        if (!machineDef) return ``;
+        const footprintTag = machineDef.heatCost !== undefined ? `(${t('On Heat Device')})` : ``;
+        
+        return `
+${t('Machine Size')}: ${machineDef.L} × ${machineDef.W} × ${machineDef.H}
+${t('Machine Area')}: ${machineDef.L * machineDef.W}
+----
+${t('Sum Area')}: ${machineDef.L * machineDef.W * machineCount} ${footprintTag}
+${t('Sum Volume')}: ${getMachineVolume(machineDef) * machineCount}
+`;
+    }
 
     sortedMachines.forEach(m => {
         const countMax = maxCounts[m]; 
@@ -839,6 +870,12 @@ function updateConstructionList(maxCounts, minCounts, furnaces, extraBuildCosts,
         const machineDef = DB.machines[m] || {};
         const buildCost = machineDef.buildCost;
 
+        // Accumulate machine count + footprint + volume
+        totalMachineCount += activeCount;
+        totalArea += getMachineFootprint(machineDef) * activeCount;
+        totalVolume += getMachineVolume(machineDef) * activeCount;
+        const machineTitle = getMachineTitle(machineDef, activeCount);
+
         let subListHtml = '';
         if (buildCost) {
             subListHtml = `<ul class="build-sublist">`;
@@ -852,7 +889,7 @@ function updateConstructionList(maxCounts, minCounts, furnaces, extraBuildCosts,
             subListHtml += `</ul>`;
         }
         const machineIcon = `<img src="img/machines/${m.toLowerCase().replaceAll(' ', '-')}.png" width="16" height="16" loading="lazy" onerror="this.style.opacity='0'">`;
-        li.innerHTML = `<div class="build-header" onclick="toggleBuildGroup(this.parentNode)"><span><span class="build-arrow">▶</span>${machineIcon} ${t(m, 'machines')}</span> <span class="build-count">${label}</span></div>${subListHtml}`;
+        li.innerHTML = `<div class="build-header" title="${machineTitle}" onclick="toggleBuildGroup(this.parentNode)"><span><span class="build-arrow">▶</span>${machineIcon} ${t(m, 'machines')}</span> <span class="build-count">${label}</span></div>${subListHtml}`;
         buildList.appendChild(li);
     });
 
@@ -864,6 +901,13 @@ function updateConstructionList(maxCounts, minCounts, furnaces, extraBuildCosts,
         // For simplicity, we keep it as 'furnaces' but you could implement a max-furnace logic if needed
         const count = furnaces; 
         const machineDef = DB.machines[mName] || {}; const buildCost = machineDef.buildCost;
+
+        // Heating device counts toward totals; it IS its own footprint (no heatCost exclusion applies to it)
+        totalMachineCount += count;
+        totalArea += getMachineFootprint(machineDef) * count;
+        totalVolume += getMachineVolume(machineDef) * count;
+        const machineTitle = getMachineTitle(machineDef, count);
+
         let subListHtml = '';
         if (buildCost) {
             subListHtml = `<ul class="build-sublist">`;
@@ -876,7 +920,7 @@ function updateConstructionList(maxCounts, minCounts, furnaces, extraBuildCosts,
             subListHtml += `</ul>`;
         }
         const machineIcon = `<img src="img/machines/${mName.toLowerCase().replaceAll(' ', '-')}.png" width="16" height="16" loading="lazy" onerror="this.style.opacity='0'">`;
-        li.innerHTML = `<div class="build-header" style="border-top:1px dashed #555" onclick="toggleBuildGroup(this.parentNode)"><span><span class="build-arrow">▶</span>${machineIcon} ${t(mName, 'machines')}</span> <span class="build-count" style="color:var(--warn)">${count}</span></div>${subListHtml}`;
+        li.innerHTML = `<div class="build-header" style="border-top:1px dashed #555" title="${machineTitle}" onclick="toggleBuildGroup(this.parentNode)"><span><span class="build-arrow">▶</span>${machineIcon} ${t(mName, 'machines')}</span> <span class="build-count" style="color:var(--warn)">${count}</span></div>${subListHtml}`;
         buildList.appendChild(li);
     }
 
@@ -919,6 +963,22 @@ function updateConstructionList(maxCounts, minCounts, furnaces, extraBuildCosts,
         <div style="margin-top:10px; padding-top:8px; border-top:1px dashed #444; display:flex; justify-content:space-between; align-items:center;">
             <span style="font-size:0.85em; color:#aaa; text-transform:uppercase;">${t('Total Slots', 'ui')}</span>
             <strong style="color:#888; font-size:0.85em; margin-left:4px; font-weight:normal;">[${totalSlots}]</strong>
+        </div>
+        <div style="margin-top:6px; padding-top:8px; border-top:1px dashed #444; display:flex; justify-content:space-between; align-items:center;">
+            <span style="font-size:0.85em; color:#aaa; text-transform:uppercase;">${t('Total Machines', 'ui')}</span>
+            <strong style="color:#888; font-size:0.85em; margin-left:4px; font-weight:normal;">${totalMachineCount}</strong>
+        </div>
+        <div style="margin-top:6px; padding-top:8px; border-top:1px dashed #444; display:flex; justify-content:space-between; align-items:center;"
+        title="total area: ${totalArea}"
+        >
+            <span style="font-size:0.85em; color:#aaa; text-transform:uppercase;">${t('Flat Footprint Tile', 'ui')}</span>
+            <strong style="color:#888; font-size:0.85em; margin-left:4px; font-weight:normal;">[${(totalArea / 256).toFixed(2)}]</strong>
+        </div>
+        <div style="margin-top:6px; padding-top:8px; border-top:1px dashed #444; display:flex; justify-content:space-between; align-items:center;"
+        title="total volume: ${totalVolume}"
+        >
+            <span style="font-size:0.85em; color:#aaa; text-transform:uppercase;">${t('Compact Footprint Tile', 'ui')}</span>
+            <strong style="color:#888; font-size:0.85em; margin-left:4px; font-weight:normal;">[${(totalVolume / 15 / 256).toFixed(2)}]</strong>
         </div>`;
         totalMatsContainer.innerHTML = totalHtml;
     }
