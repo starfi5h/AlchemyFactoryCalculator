@@ -1,6 +1,6 @@
 window.ALCHEMY_DB = {
-    "version": 51,
-    "date": "2026.08.22",
+    "version": 52,
+    "date": "2026.08.23",
     "gameVersion": "0.5.4539",
     "items": {
         // --- RAW RESOURCES ---
@@ -357,7 +357,7 @@ window.ALCHEMY_DB = {
             "outputs": { "Coke": 4, "Charcoal": 8 }, 
             "unstableOutputs": { "Coke": 6, "Charcoal": 4 },
             "resonantOutputs": { "Coke": 8, "Charcoal": 16 },
-            "baseTime": 24.0 
+            "baseTime": 24.0, "heatCost": 32
         },
         { "id": "Coke Powder", "machine": "Grinder", "inputs": { "Coke": 1 }, "outputs": { "Coke Powder": 1 }, "baseTime": 12.0 },
         
@@ -378,7 +378,7 @@ window.ALCHEMY_DB = {
             "outputs": { "Steel Ingot": 1, "Iron Ingot": 3 },
             "unstableOutputs": { "Steel Ingot": 2, "Iron Ingot": 2 },
             "resonantOutputs": { "Steel Ingot": 4, "Iron Ingot": 4 },
-            "baseTime": 16.0
+            "baseTime": 16.0, "heatCost": 32
         },
         { "id": "Sulfur", "machine": "Iron Smelter", "inputs": { "Pyrite Ore": 1 }, "outputs": { "Sulfur": 40, "Iron Ingot": 120 }, "baseTime": 960.0 },
         { "id": "Sulfur Powder", "machine": "Grinder", "inputs": { "Sulfur": 1 }, "outputs": { "Sulfur Powder": 1 }, "baseTime": 6.0 },
@@ -398,7 +398,7 @@ window.ALCHEMY_DB = {
             "outputs": { "Copper Powder": 1, "Impure Copper Powder": 1 },
             "unstableOutputs": { "Impure Copper Powder": 2 },
             "resonantOutputs": { "Copper Powder": 2, "Impure Copper Powder": 2 },
-            "baseTime": 12.0
+            "baseTime": 12.0, "heatCost": 32
         },
         { "id": "Copper Powder 2", "machine": "Grinder", "inputs": { "Copper Ingot": 1 }, "outputs": { "Copper Powder": 1 }, "baseTime": 12.0 },
         { "id": "Copper Ingot", "machine": "Crucible", "inputs": { "Copper Powder": 1 }, "outputs": { "Copper Ingot": 1 }, "baseTime": 12.0 },
@@ -414,7 +414,7 @@ window.ALCHEMY_DB = {
             "outputs": { "Silver Powder": 2, "Crude Silver Powder": 8 }, 
             "unstableOutputs": { "Silver Powder": 5, "Crude Silver Powder": 5 },
             "resonantOutputs": { "Silver Powder": 10, "Crude Silver Powder": 10 },
-            "baseTime": 64.0,
+            "baseTime": 64.0, "heatCost": 360
         },
         { "id": "Silver Ingot", "machine": "Crucible", "inputs": { "Silver Powder": 1 }, "outputs": { "Silver Ingot": 1 }, "baseTime": 16.0 },
         { "id": "Silver Coin", "machine": "Processor", "inputs": { "Silver Ingot": 1 }, "outputs": { "Silver Coin": 5 }, "baseTime": 16.0 },
@@ -430,7 +430,7 @@ window.ALCHEMY_DB = {
             "outputs": { "Gold Dust": 1, "Impure Gold Dust": 3, "Crude Gold Dust": 6 },
             "unstableOutputs": { "Gold Dust": 2, "Impure Gold Dust": 8 },
             "resonantOutputs": { "Gold Dust": 10, "Impure Gold Dust": 10, "Crude Gold Dust": 10 },
-            "baseTime": 80.0 
+            "baseTime": 80.0, "heatCost": 360
         },
         { "id": "Pure Gold Dust", "machine": "Refiner", "inputs": { "Gold Dust": 2 }, "outputs": { "Pure Gold Dust": 1 }, "baseTime": 10.0 },
         { "id": "Pure Gold Dust 2", "machine": "Grinder", "inputs": { "Gold Ingot": 1 }, "outputs": { "Pure Gold Dust": 1 }, "baseTime": 40.0 },
@@ -451,7 +451,7 @@ window.ALCHEMY_DB = {
           "outputs": { "Salt": 1, "Sand": 12 },
           "unstableOutputs": { "Salt": 2, "Sand": 6 },
           "resonantOutputs": { "Salt": 3, "Sand": 18 },
-          "baseTime": 18.0
+          "baseTime": 18.0, "heatCost": 32
         },
 
         // --- LIQUIDS ---
@@ -517,7 +517,7 @@ window.ALCHEMY_DB = {
             "outputs": { "Malachite": 1, "Crude Shard": 1 },
             "unstableOutputs": { "Malachite": 2 },
             "resonantOutputs": { "Malachite": 2, "Crude Shard": 2 },
-            "baseTime": 24.0
+            "baseTime": 24.0, "heatCost": 32
         },
         { "id": "Topaz", "machine": "Blender", "inputs": { "Crude Shard": 1, "Sulfuric Acid": 30 }, "outputs": { "Topaz": 1 }, "baseTime": 12.0 },
         // --- LAPIS BATCH (33%) 6 RUNS ---
@@ -527,7 +527,7 @@ window.ALCHEMY_DB = {
             "outputs": { "Lapis Lazuli": 2, "Shattered Crystal": 2, "Crude Shard": 2 },
             "unstableOutputs": { "Lapis Lazuli": 3, "Shattered Crystal": 3 },
             "resonantOutputs": { "Lapis Lazuli": 6, "Shattered Crystal": 6, "Crude Shard": 6 },
-            "baseTime": 72.0
+            "baseTime": 72.0, "heatCost": 360
         },
         // --- OBSIDIAN BATCH (50%) 2 RUNS ---
         { 
@@ -536,7 +536,7 @@ window.ALCHEMY_DB = {
             "outputs": { "Obsidian": 1, "Volcanic Ash": 1 },
             "unstableOutputs": { "Volcanic Ash": 2 },
             "resonantOutputs": { "Obsidian": 2, "Volcanic Ash": 2 },
-            "baseTime": 12.0
+            "baseTime": 12.0, "heatCost": 360
         },
         { "id": "Ruby", "machine": "Cauldron", "inputs": { "Diamond": 1, "Gold Dust": 1, "Resonant Catalyst": 1 }, "outputs": { "Ruby": 1 }, "baseTime": 30.9, "heatCost": 3131.3 },
         { "id": "Sapphire", "machine": "Cauldron", "inputs": { "Perfect Diamond": 1, "World Tree Core": 1, "Unstable Catalyst": 1 }, "outputs": { "Sapphire": 1 }, "baseTime": 38.2, "heatCost": 4848.5  },

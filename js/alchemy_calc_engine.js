@@ -207,9 +207,7 @@
                     recipeInputs[itemKey] = recipe.ChargeCost / 240;
                 }
             }
-            const hasCatalyst = Array.isArray(cats) && cats.length > 0;
-            const effectiveHeat = hasCatalyst ? 360 : 32;
-            return { ...recipe, outputs: recipeOutputs, inputs: recipeInputs, heatCost: effectiveHeat };
+            return { ...recipe, outputs: recipeOutputs, inputs: recipeInputs };
         }
         else if (recipe.machine === 'Paradox Crucible') {
             if (recipe.customInputSlot) {
