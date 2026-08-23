@@ -841,7 +841,10 @@ button.reset-btn:hover { background: var(--danger); color: white; }
     border-radius: 6px 6px 0 0; cursor: move;
 }
 .planner-node-header.heat {background: #512;}
+.planner-node-header.fert {background: #202920;}
+.planner-node-header.gold {background: #221;}
 .planner-node-header.module {background: #125;}
+.planner-node-header.portal {background: #444;}
 .planner-node-header.dragging { cursor: move; }
 .planner-node-icon { width: 22px; height: 22px; flex-shrink: 0; }
 .planner-node-title {
@@ -855,7 +858,7 @@ button.reset-btn:hover { background: var(--danger); color: white; }
 .planner-gear-btn:hover { color: #fff; }
 .planner-close-btn:hover { color: var(--danger); }
 
-.planner-node-body { padding: 8px; display: flex; flex-direction: column; gap: 8px; position: relative; }
+.planner-node-body { padding: 0px 8px 8px 8px; display: flex; flex-direction: column; gap: 4px; position: relative; }
 .planner-ports-row { display: flex; gap: 4px; }
 .planner-ports-col { display: block; flex: 1; min-width: 0; width: 100%; }
 .planner-ports-in { border-right: 1px dashed #3a3a3a; }
@@ -890,6 +893,18 @@ button.reset-btn:hover { background: var(--danger); color: white; }
 .planner-port-out .planner-port-badge { right: -40px; }
 .planner-badge-surplus  { color: var(--warn); }
 .planner-badge-shortage { color: var(--danger); }
+
+/* Portal node reversed direction: swap visual side of in/out ports */
+.planner-node.reversed .planner-ports-in  { border-right: none; border-left: 1px dashed #3a3a3a; order: 2; }
+.planner-node.reversed .planner-ports-out { order: 1; align-items: flex-start; }
+.planner-node.reversed .planner-port-out > .planner-port-name { text-align: left; }
+
+.planner-node.reversed .planner-port-in .planner-port-dot  { left: auto; right: -14px; }
+.planner-node.reversed .planner-port-out .planner-port-dot { right: auto; left: -14px; }
+
+.planner-node.reversed .planner-port-in .planner-port-badge  { left: auto; right: -40px; }
+.planner-node.reversed .planner-port-out .planner-port-badge { right: auto; left: -40px; }
+
 
 .planner-machine-count-row {
     display: flex; align-items: center; justify-content: space-between; gap: 8px;

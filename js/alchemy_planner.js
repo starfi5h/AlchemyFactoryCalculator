@@ -787,8 +787,10 @@ function createPlannerNodeEl(node, flows) {
     const ports = flows.nodePortsCache[node.id] || computeNodePorts(node);
     wrap.innerHTML = ``;
 
-    if (node.recipeId) {        
+    if (node.recipeId) {
         const heatTag = ports.heatItemsPerMin > 0 ? 'heat' : '';
+        const fertTag = ports.fertItemsPerMin > 0 ? 'fert' : '';
+        const goldTag = ports.goldCostPerMin > 0 ? 'gold' : '';
         const machineKey = ports.recipe ? ports.recipe.machine : '';
         const mainOut = ports.recipe ? Object.keys(ports.recipe.outputs)[0] : plannerMainOutput(node.recipeId) || '';
         const machineName = ports.recipe ? t(ports.recipe.machine, 'machines').replace('Advanced', 'Adv.') : t('Invaild Recipe', 'ui');
@@ -796,7 +798,7 @@ function createPlannerNodeEl(node, flows) {
         ? `<img src="img/machines/${machineKey.toLowerCase().replaceAll(' ', '-')}.png" class="planner-node-icon" onerror="this.style.opacity='0'">`
         : `<span class="planner-node-icon"></span>`;
         wrap.innerHTML += `
-            <div class="planner-node-header ${heatTag}" 
+            <div class="planner-node-header ${heatTag} ${fertTag} ${goldTag}"
                 onmouseenter="onPlannerHeaderHover(this, '${node.id}')"
                 onmouseleave="hidePlannerRateTooltip()">
                 ${machineIconHtml}
@@ -820,7 +822,7 @@ function createPlannerNodeEl(node, flows) {
 
     const errorMessage = ports.errorCode ? 
         `<div id="planner-node-error-${node.id}">${t('Error')}: ${t(ports.errorCode)}</div>` : 
-        `<div id="planner-node-error-${node.id}"></div>`;
+        `<span id="planner-node-error-${node.id}"></span>`;
     wrap.innerHTML += `
         <div class="planner-node-body" id="planner-node-body-${node.id}">
             ${errorMessage}
@@ -831,7 +833,7 @@ function createPlannerNodeEl(node, flows) {
                     <path d="M12 2L6 12h5l-1 8 7-12h-5l1-6z"/>
                     </svg>                
                 </button>
-                <input type="number" min="0" step="1" value="${Number(node.machineCount.toFixed(6))}"
+                <input type="number" min="0" step="1" value="${Number(node.machineCount.toFixed(3))}"
                     title="${t('Machine Count', 'ui')}"
                     data-mc-for="${node.id}"
                     onfocus="onPlannerMachineCountFocus('${node.id}', this)"
@@ -872,8 +874,50 @@ function renderPlannerNoteNode(wrap, node) {
 function renderPlannerPortalNode(wrap, node, flows) {
     const ports = flows.nodePortsCache[node.id] || computeNodePorts(node);
     const title = node.portalItem || t('Select Item', 'ui');
-    wrap.innerHTML = `<div class="planner-node-header portal"><span class="planner-node-icon">🌀</span><span class="planner-node-title" onclick="event.stopPropagation(); plannerPickPortalItem('${node.id}')">${_plannerEscapeHtml(title)}</span><button class="planner-close-btn" onclick="removePlannerNode('${node.id}')">✕</button></div><div class="planner-node-body" id="planner-node-body-${node.id}">${ports.errorCode ? `<div>${t('Error')}: ${t(ports.errorCode, 'ui')}</div>` : ''}${renderPlannerPortsHtml(node, ports, flows)}<div class="planner-machine-count-row"><input type="number" min="0" step="1" value="${Number((node.machineCount ?? 1).toFixed(6))}" data-mc-for="${node.id}" oninput="updatePlannerMachineCount('${node.id}', this.value)"></div></div>`;
-    attachPlannerNodeDrag(wrap, node); return wrap;
+    const isReversed = node.direction === -1;
+
+    if (isReversed) {
+        wrap.classList.add('reversed');
+    }
+
+    const errorMessageHtml = ports.errorCode 
+        ? `<div>${t('Error')}: ${t(ports.errorCode, 'ui')}</div>` 
+        : '';
+
+    const machineCountValue = Number((node.machineCount ?? 1).toFixed(3));
+
+    wrap.innerHTML = `
+        <div class="planner-node-header portal">
+            <span class="planner-node-icon">🌀</span>
+            <span class="planner-node-title" onclick="event.stopPropagation(); plannerPickPortalItem('${node.id}')">
+                ${_plannerEscapeHtml(title)}
+            </span>
+            <button class="planner-gear-btn" title="switch direction" onclick="event.stopPropagation(); plannerToggleNodeDirection('${node.id}')">
+                ⇄
+            </button>
+            <button class="planner-close-btn" onclick="removePlannerNode('${node.id}')">
+                ✕
+            </button>
+        </div>
+        <div class="planner-node-body" id="planner-node-body-${node.id}">
+            ${errorMessageHtml}
+            ${renderPlannerPortsHtml(node, ports, flows)}
+            <div class="planner-machine-count-row">
+                <input type="number" min="0" step="1" value="${machineCountValue}" data-mc-for="${node.id}" oninput="updatePlannerMachineCount('${node.id}', this.value)">
+            </div>
+        </div>
+    `;
+
+    attachPlannerNodeDrag(wrap, node); 
+    return wrap;
+}
+
+function plannerToggleNodeDirection(nodeId) {
+    const node = plannerState.nodes[nodeId];
+    if (!node) return;
+    node.direction = (node.direction === -1) ? 1 : -1;
+    renderPlanner();
+    savePlannerState();
 }
 
 function attachPlannerNoteResize(wrap, node) {
@@ -1112,7 +1156,7 @@ function patchPlannerNodeDisplay(node, flows) {
         if (heatFertEl) heatFertEl.innerHTML = renderPlannerHeatFertHtml(ports);
     }
     document.querySelectorAll(`[data-mc-for="${node.id}"]`).forEach(el => {
-        if (document.activeElement !== el) el.value = node.machineCount;
+        if (document.activeElement !== el) el.value = Number(node.machineCount.toFixed(3));
     });
 
     const modalBody = document.getElementById('planner-node-modal-body');
@@ -1252,9 +1296,22 @@ function getPlannerPortGraphPos(nodeId, item, dir) {
     return plannerScreenToGraph(rect.left + rect.width / 2, rect.top + rect.height / 2);
 }
 
-function buildPlannerEdgePathD(p1, p2) {
+function buildPlannerEdgePath(p1, p2, sign1 = 1, sign2 = -1) {
     const dx = Math.max(40, Math.abs(p2.x - p1.x) * 0.5);
-    return `M ${p1.x} ${p1.y} C ${p1.x + dx} ${p1.y}, ${p2.x - dx} ${p2.y}, ${p2.x} ${p2.y}`;
+    const c1 = { x: p1.x + dx * sign1, y: p1.y };
+    const c2 = { x: p2.x + dx * sign2, y: p2.y };
+    const d = `M ${p1.x} ${p1.y} C ${c1.x} ${c1.y}, ${c2.x} ${c2.y}, ${p2.x} ${p2.y}`;
+    // 三次貝茲曲線 t=0.5 的真實中點，供 label 定位使用
+    const mid = {
+        x: p1.x * 0.125 + c1.x * 0.375 + c2.x * 0.375 + p2.x * 0.125,
+        y: p1.y * 0.125 + c1.y * 0.375 + c2.y * 0.375 + p2.y * 0.125
+    };
+    return { d, mid };
+}
+
+function buildPlannerEdgePathD(p1, p2, sign1 = 1, sign2 = -1) {
+    const dx = Math.max(40, Math.abs(p2.x - p1.x) * 0.5);
+    return `M ${p1.x} ${p1.y} C ${p1.x + dx * sign1} ${p1.y}, ${p2.x + dx * sign2} ${p2.y}, ${p2.x} ${p2.y}`;
 }
 
 function renderPlannerEdges(flows) {
@@ -1268,11 +1325,14 @@ function renderPlannerEdges(flows) {
         const p2 = getPlannerPortGraphPos(edge.toNode, edge.item, 'in');
         if (!p1 || !p2) return;
 
+        const fromNode = plannerState.nodes[edge.fromNode];
+        const toNode = plannerState.nodes[edge.toNode];
+        const sign1 = (fromNode && fromNode.direction === -1) ? -1 : 1;
+        const sign2 = (toNode && toNode.direction === -1) ? 1 : -1;
+
         const flow = flows.edgeFlow[edge.id] || 0;
         const itemDef = DB.items[edge.item] || {};
-        const d = buildPlannerEdgePathD(p1, p2);
-        const midX = (p1.x + p2.x) / 2;
-        const midY = (p1.y + p2.y) / 2;
+        const { d, mid } = buildPlannerEdgePath(p1, p2, sign1, sign2);
         const beltCount = !itemDef.liquid ? (flow / beltSpeed) : null;
         const lineStyle = edge.color ? ` style="stroke:${edge.color};"` : '';
         const labelStyle = edge.color ? ` style="border-left:3px solid ${edge.color};"` : '';
@@ -1281,7 +1341,7 @@ function renderPlannerEdges(flows) {
             <g class="planner-edge-group" data-edge-id="${edge.id}">
                 <path class="planner-edge-hit" d="${d}" onclick="openPlannerEdgeModal('${edge.id}')"></path>
                 <path class="planner-edge-line" d="${d}"${lineStyle}></path>
-                <foreignObject x="${midX - 60}" y="${midY - 15}" width="120" height="32" style="overflow:visible;">
+                <foreignObject x="${mid.x - 60}" y="${mid.y - 15}" width="120" height="32" style="overflow:visible;">
                     <div xmlns="http://www.w3.org/1999/xhtml" class="planner-edge-label" onclick="openPlannerEdgeModal('${edge.id}')"${labelStyle}>
                         <img src="img/item${itemDef.id ?? 0}.png" width="16" height="16">
                         <span>${formatVal(flow)}/m</span>
