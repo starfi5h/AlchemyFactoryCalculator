@@ -877,7 +877,7 @@ async function runCauldronSimulationType0() {
     lastCauldronResults = resultsByOutput;
 
     renderCauldronResults(resultsByOutput);
-    checkUnattainableItems(resultsByOutput);
+    checkUnattainableItems(new Set(Object.keys(resultsByOutput)));
     progText.innerText = `${t('Number of matching recipes')}: (${recipeCount}) `;
 }
 
@@ -947,7 +947,7 @@ async function runCauldronSimulationType1() {
     lastCauldronResults = resultsByOutput;
 
     renderCauldronResults(resultsByOutput);
-    checkUnattainableItems(resultsByOutput);
+    checkUnattainableItems(new Set(Object.keys(resultsByOutput)));
     progText.innerText = `${t('Number of matching recipes')}: (${recipeCount}) `;
 }
 
@@ -1068,6 +1068,11 @@ async function runMultiStepCauldronSimulation() {
     multiStepState.dirty = false;
     if (progText) progText.innerText = '';
     renderMultiStepTable();
+
+    const finalStep = multiStepState.steps[multiStepState.steps.length - 1];
+    const producedSet = finalStep ? new Set(finalStep.keys()) : new Set();
+    checkUnattainableItems(producedSet);
+
     console.timeEnd('runMultiStepCauldronSimulation');
 }
 
@@ -1468,8 +1473,8 @@ function toggleFavoriteStar(event, btn) {
     saveCauldronSettings();
 }
 
-function checkUnattainableItems(producedData) {
-    const producedSet = new Set(Object.keys(producedData));
+function checkUnattainableItems(producedSet) {
+    // producedSet是一個 Set，包含所有可產出的物品名稱
     const unattainableList = [];
 
     for (let name in DB.items) {
@@ -1534,7 +1539,11 @@ function renderCauldronFavorites() {
     });
 
     // 2. 渲染卡片
-    const sortedOutputs = Object.keys(grouped).sort();
+    const sortedOutputs = Object.keys(grouped).sort((a, b) => {
+        const targetA = DB.items[a]?.cauldronTarget ?? Infinity;
+        const targetB = DB.items[b]?.cauldronTarget ?? Infinity;
+        return targetA - targetB;
+    });
     
     sortedOutputs.forEach(outName => {
         let itemPerMin = 0; let heatPerItem = 0;
@@ -1800,79 +1809,22 @@ function _getCauldronTargetBounds(targetItem) {
     return { self, lower, upper };
 }
 
-/**
- * 計算當前 slots 的 T 值（普通鍋）
- */
-function _calcCauldronModalT(slots, cauldronType) {
+// 複用公用函式 resolveCauldronOutput3 / resolveCauldronOutput2
+function _calcCauldronModalResult(slots, cauldronType) {
     const slotCount = cauldronType === 1 ? 2 : 3;
     const filled = slots.slice(0, slotCount);
     if (filled.some(s => !s)) return null;
 
+    const validTargets = _getCauldronValidTargets();
+    const maxTargetItem = validTargets.length ? validTargets.reduce((p, c) => (p.target > c.target ? p : c)) : null;
+    const minTargetItem = validTargets.length ? validTargets.reduce((p, c) => (p.target < c.target ? p : c)) : null;
+
     if (cauldronType === 0) {
         const [n0, n1, n2] = filled;
-        const c0 = DB.items[n0]?.cauldronCost ?? 0;
-        const c1 = DB.items[n1]?.cauldronCost ?? 0;
-        const c2 = DB.items[n2]?.cauldronCost ?? 0;
-        let ratio = 1.0;
-        if (n0 === n1 && n1 === n2) ratio = 0.5;
-        else if (n0 === n1 || n1 === n2 || n0 === n2) ratio = 0.65;
-        return (c0 + c1 + c2) * ratio;
+        return resolveCauldronOutput3(n0, n1, n2, validTargets); // { output, ratio, T }
     } else {
         const [nA, nB] = filled;
-        const cA = DB.items[nA]?.cauldronCost ?? 0;
-        const cB = DB.items[nB]?.cauldronCost ?? 0;
-        return nA === nB ? cA : Math.abs(cA - cB);
-    }
-}
-
-/**
- * 計算當前 slots 的輸出物品（複用 cauldron.js 的判斷邏輯）
- */
-function _calcCauldronModalOutput(slots, cauldronType, T) {
-    if (T === null) return null;
-    const slotCount = cauldronType === 1 ? 2 : 3;
-    const filled = slots.slice(0, slotCount);
-
-    const validTargets = Object.keys(DB.items)
-        .filter(name => DB.items[name].cauldronTarget !== undefined)
-        .map(name => ({
-            name,
-            id: DB.items[name].id ?? 3000,
-            target: DB.items[name].cauldronTarget,
-            mult: DB.items[name].cauldronMulti ?? 1,
-        }));
-
-    if (cauldronType === 0) {
-        let best = null, bestDist = Infinity, bestId = 9999;
-        for (const vt of validTargets) {
-            const dist = Math.abs((T - vt.target) * vt.mult);
-            if (dist < bestDist || (Math.abs(dist - bestDist) < 1e-7 && vt.id < bestId)) {
-                bestDist = dist; best = vt.name; bestId = vt.id;
-            }
-        }
-        return best;
-    } else {
-        const [nA, nB] = filled;
-        const maxT = validTargets.reduce((p, c) => p.target > c.target ? p : c);
-        const minT = validTargets.reduce((p, c) => p.target < c.target ? p : c);
-        if (nA === nB) {
-            let minDist = Infinity, best = maxT.name;
-            for (const vt of validTargets) {
-                const dist = vt.target - T;
-                if (dist > 1e-7 && dist < minDist && vt.name !== nA) { minDist = dist; best = vt.name; }
-            }
-            return best;
-        } else {
-            const cA = DB.items[nA].cauldronCost; const cB = DB.items[nB].cauldronCost;
-            const higherName = cA > cB ? nA : nB;
-            const higherCost = cA > cB ? cA : cB;
-            let minDist = Infinity, best = minT.name;
-            for (const vt of validTargets) {
-                const dist = Math.abs(T - vt.target);
-                if (dist < minDist && vt.target < higherCost && vt.name !== higherName) { minDist = dist; best = vt.name; }
-            }
-            return best;
-        }
+        return resolveCauldronOutput2(nA, nB, validTargets, maxTargetItem, minTargetItem); // { output, T }
     }
 }
 
@@ -1882,8 +1834,9 @@ function _renderCauldronRecipeModal() {
     const body = document.getElementById('cauldron-recipe-modal-body');
 
     // ── T 值與輸出計算 ──
-    const T = _calcCauldronModalT(slots, cauldronType);
-    const currentOutput = _calcCauldronModalOutput(slots, cauldronType, T);
+    const result = _calcCauldronModalResult(slots, cauldronType);
+    const T = result ? result.T : null;
+    const currentOutput = result ? result.output : null;
     const allFilled = T !== null;
     const isMatch = allFilled && currentOutput === targetItem;
 

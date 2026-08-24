@@ -29,7 +29,7 @@
             <span style="margin-left: 10px;">
                 <span id="ui-lang-toggle" style="cursor:pointer; margin-right: 10px;" onclick="toggleLanguage()" title="EN/中文">🌐EN/中文</span>
                 <a href="https://github.com/starfi5h/AlchemyFactoryCalculator" target="_blank" class="repo-link">GitHub Repo</a>
-                <span id="last-updated-time-text">2026.08.23</span>
+                <span id="last-updated-time-text">2026.08.24</span>
             </span>
         </div>
         <div class="tabs" id="page-tab-container">
@@ -254,13 +254,10 @@
             <div class="app-grid">
                 <div>
                     <div class="panel">
-                        <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:10px;">
-                            <h3 style="margin:0; border:none;">Production Goal</h3>
-                            <input type="checkbox" id="modeToggle" style="display:none;">
-                        </div>
                         <div class="cauldron-tabs-row" style="margin-bottom:10px;">
                             <button id="calc-mode-btn-single" class="tab-btn mini-tab active" onclick="switchCalcModeTab(false)">Single Target</button>
                             <button id="calc-mode-btn-multi" class="tab-btn mini-tab" onclick="switchCalcModeTab(true)">Multi Target</button>
+                            <input type="checkbox" id="modeToggle" style="display:none;">
                         </div>
 
                         <!-- 單產物 UI (保持不變，但在切換時會被隱藏) -->
@@ -588,11 +585,6 @@
                         
                         <div id="cauldron-results"></div>
 
-                        <div id="unattainable-section" style="margin-top:20px; display:none;">
-                            <h3 style="color:var(--danger); border-bottom:1px solid var(--danger); font-size:0.9em; margin-bottom:10px;">Unattainable Targets</h3>
-                            <div id="unattainable-list" class="picker-grid compact-grid"></div>
-                        </div>
-
                     </div>
 
                     <div class="panel" id="cauldron-multistep-panel" style="display:none;">
@@ -624,6 +616,11 @@
                                 <tbody id="cauldron-multistep-tbody"></tbody>
                             </table>
                         </div>
+                    </div>
+
+                    <div class="panel" id="unattainable-section" style="margin-top:0px; display:none;">
+                        <h3 style="color:var(--danger); border-bottom:1px solid var(--danger); font-size:0.9em; margin-bottom:10px;">Unattainable Targets</h3>
+                        <div id="unattainable-list" class="picker-grid compact-grid"></div>
                     </div>
                 </div>
 

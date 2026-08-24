@@ -97,7 +97,7 @@ main { flex: 1; overflow: hidden; position: relative; }
 /* ==========================================================================
     SECTION: CSS - CONTROLS & INPUTS
     ========================================================================== */
-.input-group { margin-bottom: 12px; position: relative; }
+.input-group { margin-bottom: 8px; position: relative; }
 label { display: inline-block; font-size: 0.85em; color: #aaa; margin-bottom: 4px; }
 select { width: 100%; padding: 6px; background: #333; border: 1px solid #555; color: white; border-radius: 4px; font-size: 1em; }
 
