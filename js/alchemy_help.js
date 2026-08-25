@@ -539,6 +539,11 @@ var _itemChipFilters = {
     cauldronTarget:{ active: false, min: '', max: '' }
 };
 var _activeChip = null; // 'category' | 'sell' | 'wholesale' | 'cauldronTarget' | null
+var _machineChipFilters = {
+    tier:     { active: false, min: '', max: '' },
+    heatCost: { active: false, min: '', max: '' }
+};
+var _activeMachineChip = null; // 'tier' | 'heatCost' | null
 
 /* ─── 6. WIKI INDEX ───────────────────────────────────────────────────────── */
 function _getWikiIndex() {
@@ -645,7 +650,7 @@ function _buildItemSplitHTML() {
         + ' placeholder="' + _tn('Search items...') + '" value="' + _itemFilter.replace(/"/g, '&quot;') + '"'
         + ' oninput="_itemFilter=this.value;_refreshItemGrid()"></div>'
         + '<div class="wiki-chip-bar" id="wiki-chip-bar">' + _buildChipBarInner() + '</div>'
-        + '<div id="wiki-active-filters">' + _buildActiveFiltersHTML() + '</div>'
+        + '<div id="wiki-active-filters">' + _buildActiveFiltersHTML('item') + '</div>'
         + '<div class="wiki-item-grid" id="wiki-item-grid">' + _buildItemGridHTML() + '</div>'
         + '</div>'
         + '<div class="wiki-right-pane" id="wiki-right-pane"><div class="wiki-placeholder"></div></div>';
@@ -702,25 +707,42 @@ function _refreshItemGrid() {
 
 /* ─── CHIP FILTER FUNCTIONS ─────────────────────────────────────────────── */
 
-function _toggleChip(key) {
-    _activeChip = (_activeChip === key) ? null : key;
-    _refreshChipBar();
+function _chipFiltersFor(target) { return target === 'machine' ? _machineChipFilters : _itemChipFilters; }
+function _activeChipFor(target)  { return target === 'machine' ? _activeMachineChip : _activeChip; }
+function _setActiveChipFor(target, key) { if (target === 'machine') _activeMachineChip = key; else _activeChip = key; }
+
+function _toggleChip(target, key) {
+    var cur = _activeChipFor(target);
+    _setActiveChipFor(target, cur === key ? null : key);
+    _refreshChipBar(target);
     event.stopPropagation();
 }
 
 function _onChipOutsideClick(e) {
     if (_activeChip && !e.target.closest('#wiki-chip-bar')) {
         _activeChip = null;
-        _refreshChipBar();
+        _refreshChipBar('item');
+    }
+    if (_activeMachineChip && !e.target.closest('#wiki-machine-chip-bar')) {
+        _activeMachineChip = null;
+        _refreshChipBar('machine');
     }
 }
 
-function _refreshChipBar() {
-    var bar = document.getElementById('wiki-chip-bar');
-    if (bar) bar.innerHTML = _buildChipBarInner();
-    var af = document.getElementById('wiki-active-filters');
-    if (af) af.innerHTML = _buildActiveFiltersHTML();
-    _refreshItemGrid();
+function _refreshChipBar(target) {
+    if (target === 'machine') {
+        var bar = document.getElementById('wiki-machine-chip-bar');
+        if (bar) bar.innerHTML = _buildMachineChipBarInner();
+        var af = document.getElementById('wiki-machine-active-filters');
+        if (af) af.innerHTML = _buildActiveFiltersHTML('machine');
+        _refreshMachineList();
+    } else {
+        var bar = document.getElementById('wiki-chip-bar');
+        if (bar) bar.innerHTML = _buildChipBarInner();
+        var af = document.getElementById('wiki-active-filters');
+        if (af) af.innerHTML = _buildActiveFiltersHTML('item');
+        _refreshItemGrid();
+    }
 }
 
 function _buildChipBarInner() {
@@ -752,103 +774,124 @@ function _buildChipBarInner() {
 
         // suffix: active → clear ✕ button; else → chevron
         var suffix = isActive
-            ? ' <span class="chip-clear" onclick="event.stopPropagation();_clearChip(\'' + c.key + '\')">✕</span>'
+            ? ` <span class="chip-clear" onclick="event.stopPropagation();_clearChip('item', '${c.key}')">✕</span>`
             : ' <span class="chip-arrow">' + (isOpen ? '▲' : '▾') + '</span>';
 
         return '<div class="wiki-chip-wrap">'
             + '<button class="wiki-filter-chip'
             + (isActive ? ' active' : '') + (isOpen && !isActive ? ' open' : '')
-            + '" onclick="_toggleChip(\'' + c.key + '\')">'
+            + `" onclick="_toggleChip('item','` + c.key + `')">`
             + c.label() + suffix
             + '</button>'
-            + (isOpen ? _buildChipPanelHTML(c.key, cats) : '')
+            + (isOpen ? _buildChipPanelHTML('item', c.key, cats) : '')
             + '</div>';
     }).join('');
 }
 
-function _buildChipPanelHTML(key, cats) {
+function _buildMachineChipBarInner() {
+    var CHIPS = [
+        { key: 'tier',     label: function() { return _tn('Tier', 'ui'); } },
+        { key: 'heatCost', label: function() { return _tn('Heat Cost', 'ui'); } }
+    ];
+    return CHIPS.map(function(c) {
+        var f        = _machineChipFilters[c.key];
+        var isActive = f.active;
+        var isOpen   = _activeMachineChip === c.key;
+        var suffix = isActive
+            ? ' <span class="chip-clear" onclick="event.stopPropagation();_clearChip(\'machine\',\'' + c.key + '\')">✕</span>'
+            : ' <span class="chip-arrow">' + (isOpen ? '▲' : '▾') + '</span>';
+        return '<div class="wiki-chip-wrap">'
+            + '<button class="wiki-filter-chip' + (isActive ? ' active' : '') + (isOpen && !isActive ? ' open' : '')
+            + '" onclick="_toggleChip(\'machine\',\'' + c.key + '\')">' + c.label() + suffix + '</button>'
+            + (isOpen ? _buildChipPanelHTML('machine', c.key) : '')
+            + '</div>';
+    }).join('');
+}
+
+function _buildChipPanelHTML(target, key, cats) {
     if (key === 'category') {
         return '<div class="wiki-chip-panel">'
             + cats.map(function(cat) {
                 var sel = (_itemChipFilters.category || '[All]') === cat;
                 return '<button class="wiki-cat-btn' + (sel ? ' active' : '') + '" '
-                    + _oc('_selectCategory', cat) + '>'
-                    + _tn(cat, 'categories')
-                    + '</button>';
+                    + _oc('_selectCategory', cat) + '>' + _tn(cat, 'categories') + '</button>';
             }).join('')
             + '</div>';
     }
     if (key === 'tier') {
-        var f = _itemChipFilters[key];
+        var f = _chipFiltersFor(target)[key];
         var tierBtns = '';
         for (var t = 1; t <= 9; t++) {
-            var tStr = String(t);
-            // 高亮：min 或 max 有值時，該按鈕若在區間內就標示
             var inRange = f.active
                 && (f.min === '' || t >= parseInt(f.min))
                 && (f.max === '' || t <= parseInt(f.max));
-            tierBtns += '<button class="wiki-cat-btn' + (inRange ? ' active' : '') + '" '
-                + 'onclick="_setTierQuick(' + t + ')">' + t + '</button>';
+            tierBtns += '<button class="wiki-cat-btn' + (inRange ? ' active' : '') + '" style="width:30px; height:30px;"'
+                + 'onclick="_setTierQuick(\'' + target + '\',' + t + ')">' + t + '</button>';
         }
         return '<div class="wiki-chip-panel" style="min-width:190px;">'
             + '<div style="width:100%; font-size:0.72em; color:#777; margin-bottom:2px;">' + _tn('Quick select (exact)') + '</div>'
             + tierBtns
             + '<div style="width:100%; height:1px; background:#333; margin:4px 0;"></div>'
             + '<label class="chip-panel-row"><span>Min</span>'
-            + '<input type="number" class="chip-num-input" value="' + (f.min || '') + '" placeholder="1" min="1" max="9" '
-            + 'oninput="_onChipNum(\'tier\',\'min\',this.value)"></label>'
+            + '<input type="number" class="chip-num-input" value="' + (f.min || '') + '" placeholder="1" min="1" max="9" style="width:30px; height:30px;"'
+            + 'oninput="_onChipNum(\'' + target + '\',\'tier\',\'min\',this.value)"></label>'
             + '<label class="chip-panel-row"><span>Max</span>'
-            + '<input type="number" class="chip-num-input" value="' + (f.max || '') + '" placeholder="9" min="1" max="9" '
-            + 'oninput="_onChipNum(\'tier\',\'max\',this.value)"></label>'
+            + '<input type="number" class="chip-num-input" value="' + (f.max || '') + '" placeholder="9" min="1" max="9" style="width:30px; height:30px;"'
+            + 'oninput="_onChipNum(\'' + target + '\',\'tier\',\'max\',this.value)"></label>'
             + '</div>';
     }
 
-    // Numeric panel (sell / wholesale / cauldronTarget)
-    var f = _itemChipFilters[key];
+    // Numeric panel (sell / wholesale / cauldronTarget / heatCost)
+    var f = _chipFiltersFor(target)[key];
     var isExistOnly = f.active && f.min === '' && f.max === '';
     return '<div class="wiki-chip-panel wiki-chip-panel-num">'
         + '<button class="chip-exist-btn' + (isExistOnly ? ' active' : '')
-        + '" onclick="_toggleExistFilter(\'' + key + '\')" title="Match items that have this property">' + _tn('Has Value') + '</button>'
+        + '" onclick="_toggleExistFilter(\'' + target + '\',\'' + key + '\')" title="Match items that have this property">' + _tn('Has Value') + '</button>'
         + '<label class="chip-panel-row"><span>Min</span>'
         + '<input type="number" class="chip-num-input" value="' + (f.min || '') + '" placeholder="—" '
-        + 'oninput="_onChipNum(\'' + key + '\',\'min\',this.value)"></label>'
+        + 'oninput="_onChipNum(\'' + target + '\',\'' + key + '\',\'min\',this.value)"></label>'
         + '<label class="chip-panel-row"><span>Max</span>'
         + '<input type="number" class="chip-num-input" value="' + (f.max || '') + '" placeholder="—" '
-        + 'oninput="_onChipNum(\'' + key + '\',\'max\',this.value)"></label>'
+        + 'oninput="_onChipNum(\'' + target + '\',\'' + key + '\',\'max\',this.value)"></label>'
         + '</div>';
 }
 
-function _buildActiveFiltersHTML() {
+function _buildActiveFiltersHTML(target) {
+    if (target === 'machine') {
+        var LABELS = { tier: _tn('Tier', 'ui'), heatCost: _tn('Heat Cost', 'ui') };
+        var chips = [];
+        ['tier', 'heatCost'].forEach(function(key) {
+            var f = _machineChipFilters[key];
+            if (!f.active) return;
+            var range = (f.min !== '' || f.max !== '') ? (f.min || '*') + ' ~ ' + (f.max || '*') : '✓';
+            chips.push('<span class="wiki-active-chip">' + LABELS[key] + ': ' + range
+                + ' <button onclick="_clearChip(\'machine\',\'' + key + '\')">✕</button></span>');
+        });
+        if (!chips.length) return '';
+        return '<div class="wiki-active-filter-bar">' + chips.join('')
+            + '<button class="chip-clear-all" onclick="_clearAllChips(\'machine\')">Clear All</button></div>';
+    }
+
+    // target === 'item' (原本邏輯不變，僅按鈕改呼叫帶 'item')
     var LABELS = {
-        tier:          _tn('Tier', 'ui'),
-        sell:          _tn('Sell Price', 'ui'),
-        wholesale:     _tn('Wholesale Price', 'ui'),
-        cauldronTarget:_tn('Cauldron Target', 'ui')
+        tier: _tn('Tier', 'ui'), sell: _tn('Sell Price', 'ui'),
+        wholesale: _tn('Wholesale Price', 'ui'), cauldronTarget: _tn('Cauldron Target', 'ui')
     };
     var chips = [];
-
     if (_itemChipFilters.category) {
-        chips.push('<span class="wiki-active-chip">'
-            + _tn(_itemChipFilters.category, 'categories')
-            + ' <button onclick="_clearChip(\'category\')">✕</button></span>');
+        chips.push('<span class="wiki-active-chip">' + _tn(_itemChipFilters.category, 'categories')
+            + ' <button onclick="_clearChip(\'item\',\'category\')">✕</button></span>');
     }
     ['tier', 'sell', 'wholesale', 'cauldronTarget'].forEach(function(key) {
         var f = _itemChipFilters[key];
         if (!f.active) return;
-        var range = (f.min !== '' || f.max !== '')
-            ? (f.min || '*') + ' ~ ' + (f.max || '*')
-            : '✓';
-        chips.push('<span class="wiki-active-chip">'
-            + LABELS[key] + ': ' + range
-            + ' <button onclick="_clearChip(\'' + key + '\')">✕</button></span>');
+        var range = (f.min !== '' || f.max !== '') ? (f.min || '*') + ' ~ ' + (f.max || '*') : '✓';
+        chips.push('<span class="wiki-active-chip">' + LABELS[key] + ': ' + range
+            + ' <button onclick="_clearChip(\'item\',\'' + key + '\')">✕</button></span>');
     });
-
     if (!chips.length) return '';
-
-    return '<div class="wiki-active-filter-bar">'
-        + chips.join('')
-        + '<button class="chip-clear-all" onclick="_clearAllChips()">Clear All</button>'
-        + '</div>';
+    return '<div class="wiki-active-filter-bar">' + chips.join('')
+        + '<button class="chip-clear-all" onclick="_clearAllChips(\'item\')">Clear All</button></div>';
 }
 
 function _selectCategory(cat) {
@@ -858,58 +901,61 @@ function _selectCategory(cat) {
     event.stopPropagation();
 }
 
-/* Called from oninput — intentionally does NOT rebuild the chip panel
-   so the focused <input> keeps focus across the partial refresh.        */
-function _onChipNum(key, field, val) {
-    _itemChipFilters[key][field] = val;
-    _itemChipFilters[key].active = true;
-    var af = document.getElementById('wiki-active-filters');
-    if (af) af.innerHTML = _buildActiveFiltersHTML();
-    _refreshItemGrid();
+function _onChipNum(target, key, field, val) {
+    _chipFiltersFor(target)[key][field] = val;
+    _chipFiltersFor(target)[key].active = true;
+    var af = document.getElementById(target === 'machine' ? 'wiki-machine-active-filters' : 'wiki-active-filters');
+    if (af) af.innerHTML = _buildActiveFiltersHTML(target);
+    if (target === 'machine') _refreshMachineList(); else _refreshItemGrid();
     event.stopPropagation();
 }
 
-function _toggleExistFilter(key) {
-    var f = _itemChipFilters[key];
-    // If already "exist-only" (active, no range) → deactivate; else → activate with no range
+function _toggleExistFilter(target, key) {
+    var f = _chipFiltersFor(target)[key];
     if (f.active && f.min === '' && f.max === '') {
         f.active = false;
     } else {
-        f.active = true;
-        f.min = '';
-        f.max = '';
+        f.active = true; f.min = ''; f.max = '';
     }
-    _refreshChipBar();
+    _refreshChipBar(target);
     event.stopPropagation();
 }
 
-function _setTierQuick(t) {
+function _setTierQuick(target, t) {
     var tStr = String(t);
-    _itemChipFilters.tier = { active: true, min: tStr, max: tStr };
-    _refreshChipBar();
+    _chipFiltersFor(target).tier = { active: true, min: tStr, max: tStr };
+    _refreshChipBar(target);
 }
 
-function _clearChip(key) {
-    if (key === 'category') {
+function _clearChip(target, key) {
+    if (target === 'item' && key === 'category') {
         _itemChipFilters.category = null;
     } else {
-        _itemChipFilters[key] = { active: false, min: '', max: '' };
+        _chipFiltersFor(target)[key] = { active: false, min: '', max: '' };
     }
-    if (_activeChip === key) _activeChip = null;
-    _refreshChipBar();
+    if (_activeChipFor(target) === key) _setActiveChipFor(target, null);
+    _refreshChipBar(target);
     event.stopPropagation();
 }
 
-function _clearAllChips() {
-    _itemChipFilters = {
-        category:      null,
-        tier:          { active: false, min: '', max: '' },
-        sell:          { active: false, min: '', max: '' },
-        wholesale:     { active: false, min: '', max: '' },
-        cauldronTarget:{ active: false, min: '', max: '' }
-    };
-    _activeChip = null;
-    _refreshChipBar();
+function _clearAllChips(target) {
+    if (target === 'machine') {
+        _machineChipFilters = {
+            tier:     { active: false, min: '', max: '' },
+            heatCost: { active: false, min: '', max: '' }
+        };
+        _activeMachineChip = null;
+    } else {
+        _itemChipFilters = {
+            category: null,
+            tier:          { active: false, min: '', max: '' },
+            sell:          { active: false, min: '', max: '' },
+            wholesale:     { active: false, min: '', max: '' },
+            cauldronTarget:{ active: false, min: '', max: '' }
+        };
+        _activeChip = null;
+    }
+    _refreshChipBar(target);
     event.stopPropagation();
 }
 
@@ -1043,6 +1089,26 @@ function _buildMachineListHTML() {
             return e[0].toLowerCase().includes(f) || _tn(e[0], 'machines').toLowerCase().includes(f);
         });
     }
+    var tierF = _machineChipFilters.tier;
+    if (tierF.active) {
+        entries = entries.filter(function(e) {
+            var val = e[1].tier;
+            if (val == null) return false;
+            if (tierF.min !== '' && val < parseInt(tierF.min)) return false;
+            if (tierF.max !== '' && val > parseInt(tierF.max)) return false;
+            return true;
+        });
+    }
+    var heatF = _machineChipFilters.heatCost;
+    if (heatF.active) {
+        entries = entries.filter(function(e) {
+            var val = e[1].heatCost;
+            if (val == null) return false;
+            if (heatF.min !== '' && val < parseFloat(heatF.min)) return false;
+            if (heatF.max !== '' && val > parseFloat(heatF.max)) return false;
+            return true;
+        });
+    }
     return entries.map(function(e) {
         var name = e[0];
         var sel  = name === _selectedMachine ? ' selected' : '';
@@ -1063,6 +1129,8 @@ function _buildMachineSplitHTML() {
         + '<div class="wiki-search-bar"><input type="text" class="wiki-search-input" id="wiki-machine-search"'
         + ' placeholder="' + _tn('Search machines...') + '" value="' + _machineFilter.replace(/"/g, '&quot;') + '"'
         + ' oninput="_machineFilter=this.value;_refreshMachineList()"></div>'
+        + '<div class="wiki-chip-bar" id="wiki-machine-chip-bar">' + _buildMachineChipBarInner() + '</div>'
+        + '<div id="wiki-machine-active-filters">' + _buildActiveFiltersHTML('machine') + '</div>'
         + '<div class="wiki-machine-list" id="wiki-machine-grid">' + _buildMachineListHTML() + '</div>'
         + '</div>'
         + '<div class="wiki-right-pane" id="wiki-right-pane"><div class="wiki-placeholder"></div></div>';
@@ -1394,6 +1462,7 @@ function wikiSwitchView(view) {
     } else if (view === 'machines') {
         area.className = 'wiki-split-area';
         area.innerHTML = _buildMachineSplitHTML();
+        document.addEventListener('click', _onChipOutsideClick);
         if (_selectedMachine) _renderMachineDetail(_selectedMachine);
     } else if (view === 'readme') {
         area.className = 'wiki-readme-area-wrap';
