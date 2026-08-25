@@ -362,6 +362,8 @@ window.ALCHEMY_I18N = {
         "Guides": "指南",
         "Items": "物品",
         "Machines": "机器",
+        "Full Documentation": "完整说明",
+        "Loading...": "载入中...",
         "Category": "类别",
         "Tier": "等级",
                 

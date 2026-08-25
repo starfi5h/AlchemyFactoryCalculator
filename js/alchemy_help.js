@@ -491,12 +491,39 @@ function _injectHelpStyles() {
             padding: 32px 16px; text-align: center;
             color: var(--text-muted,#666); font-size: 0.82em; font-style: italic;
         }
+
+        /* ── README / 完整說明 ── */
+        .wiki-readme-area { flex: 1; min-height: 0; overflow-y: auto; }
+        .md-container { max-width: 900px; margin: 0 auto; padding: 20px 24px 60px; font-size: 0.86em; line-height: 1.7; color: var(--text, #ddd); }
+        .md-container h1, .md-container h2, .md-container h3, .md-container h4 {
+            color: var(--text, #eee); margin: 26px 0 12px; font-weight: 700;
+        }
+        .md-container h1 { font-size: 1.5em; border-bottom: 1px solid var(--border, #333); padding-bottom: 8px; }
+        .md-container h2 { font-size: 1.25em; border-bottom: 1px solid var(--border, #333); padding-bottom: 6px; margin-top: 34px; }
+        .md-container h3 { font-size: 1.08em; }
+        .md-container h4 { font-size: 0.98em; color: var(--text-muted, #bbb); }
+        .md-container p { margin: 10px 0; }
+        .md-container a { color: var(--accent, #4af); text-decoration: none; }
+        .md-container a:hover { text-decoration: underline; }
+        .md-container code { background: rgba(0,0,0,0.3); padding: 2px 5px; border-radius: 3px; font-family: monospace; font-size: 0.92em; color: var(--accent, #7af); }
+        .md-container pre { background: rgba(0,0,0,0.35); border: 1px solid var(--border, #2a3a4a); border-radius: 6px; padding: 10px 12px; overflow-x: auto; margin: 12px 0; }
+        .md-container pre code { background: none; padding: 0; color: var(--text, #ddd); }
+        .md-container ul, .md-container ol { margin: 8px 0; padding-left: 26px; }
+        .md-container li { margin-bottom: 4px; }
+        .md-container blockquote { border-left: 3px solid var(--accent, #4af); margin: 12px 0; padding: 4px 14px; color: var(--text-muted, #aaa); background: rgba(255,255,255,0.03); }
+        .md-container hr { border: none; border-top: 1px solid var(--border, #333); margin: 24px 0; }
+        .md-container table { border-collapse: collapse; width: 100%; margin: 14px 0; font-size: 0.95em; }
+        .md-container th, .md-container td { border: 1px solid var(--border, #2a3a4a); padding: 6px 10px; text-align: left; }
+        .md-container th { background: var(--panel-bg, #1a2535); color: var(--text, #eee); }
+        .md-container tr:nth-child(even) td { background: rgba(255,255,255,0.02); }
+        .md-loading, .md-error { padding: 40px 16px; text-align: center; color: var(--text-muted, #666); font-size: 0.9em; }
+        .md-error { color: #e77; }
     `;
     document.head.appendChild(s);
 }
 
 /* ─── 5. WIKI STATE ───────────────────────────────────────────────────────── */
-var _currentWikiView = 'guides';
+var _currentWikiView = 'items';
 var _selectedItem    = null;
 var _selectedMachine = null;
 var _itemFilter      = '';
@@ -1138,6 +1165,192 @@ function _renderMachineDetail(machineName) {
         + '<div class="wiki-section"><div class="wiki-section-title">' + _tn('Production Recipes') + ' (' + recipes.length + ')</div>' + recipesHTML + '</div>';
 }
 
+/* ─── 12b. README / 完整說明 ───────────────────────────────────────────────── */
+var _readmeCache = { en: null, zh: null };
+
+function _currentReadmeLang() {
+    return (window.ALCHEMY_I18N && window.ALCHEMY_I18N.enabled === false) ? 'en' : 'zh';
+}
+
+function _readmeUrlForLang(lang) {
+    return lang === 'zh' ? 'README.zh-CN.md' : 'README.md';
+}
+
+function _buildReadmeAreaHTML() {
+    return '<div class="wiki-readme-area" id="wiki-readme-area">'
+        + '<div class="md-loading">' + _tn('Loading...') + '</div>'
+        + '</div>';
+}
+
+function _loadReadmeView() {
+    var lang = _currentReadmeLang();
+    var area = document.getElementById('wiki-readme-area');
+    if (!area) return;
+
+    if (_readmeCache[lang] !== null) {
+        area.innerHTML = '<div class="md-container">' + _readmeCache[lang] + '</div>';
+        return;
+    }
+
+    // 優先使用內嵌的 README 內容 (js/alchemy_readme.js)，這樣本地 file:// 開啟也能正常顯示
+    var embedded = window.ALCHEMY_README && window.ALCHEMY_README[lang];
+    if (embedded) {
+        var html = _mdToHtml(embedded);
+        _readmeCache[lang] = html;
+        area.innerHTML = '<div class="md-container">' + html + '</div>';
+        return;
+    }
+
+    // Fallback：內嵌內容不存在時才嘗試 fetch (例如未載入 alchemy_readme.js)
+    area.innerHTML = '<div class="md-loading">' + _tn('Loading...') + '</div>';
+    fetch(_readmeUrlForLang(lang))
+        .then(function(res) {
+            if (!res.ok) throw new Error('HTTP ' + res.status);
+            return res.text();
+        })
+        .then(function(text) {
+            var html = _mdToHtml(text);
+            _readmeCache[lang] = html;
+            var liveArea = document.getElementById('wiki-readme-area');
+            if (liveArea) liveArea.innerHTML = '<div class="md-container">' + html + '</div>';
+        })
+        .catch(function(err) {
+            var liveArea = document.getElementById('wiki-readme-area');
+            if (liveArea) {
+                liveArea.innerHTML = '<div class="md-error">Failed to load ' + _readmeUrlForLang(lang)
+                    + ' (' + err.message + ').<br>If you opened this file directly (file://), '
+                    + 'your browser may block local fetches — try running it via a local server or the hosted version.</div>';
+            }
+        });
+}
+
+/* ─── Simple hand-written Markdown → HTML converter (subset, tuned for this repo's README) ─── */
+
+function _mdInline(text) {
+    // Escape HTML first
+    text = text.replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;');
+    // Inline code (before other inline rules so code content isn't touched further)
+    text = text.replace(/`([^`]+)`/g, '<code>$1</code>');
+    // Bold
+    text = text.replace(/\*\*([^*]+)\*\*/g, '<strong>$1</strong>');
+    // Italic (single * not part of **, keep simple)
+    text = text.replace(/(^|[^*])\*([^*\n]+)\*(?!\*)/g, '$1<em>$2</em>');
+    // Links [text](url)
+    text = text.replace(/\[([^\]]+)\]\(([^)]+)\)/g, '<a href="$2" target="_blank" rel="noopener">$1</a>');
+    return text;
+}
+
+function _mdToHtml(md) {
+    var lines = md.replace(/\r\n/g, '\n').split('\n');
+    var html = [];
+    var i = 0;
+    var inList = null; // 'ul' | 'ol' | null
+    var inCode = false;
+    var codeBuf = [];
+
+    function closeList() {
+        if (inList) { html.push('</' + inList + '>'); inList = null; }
+    }
+
+    while (i < lines.length) {
+        var line = lines[i];
+
+        // Fenced code block
+        if (/^```/.test(line)) {
+            if (!inCode) {
+                inCode = true; codeBuf = []; i++;
+                continue;
+            } else {
+                inCode = false;
+                html.push('<pre><code>' + codeBuf.join('\n')
+                    .replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;') + '</code></pre>');
+                i++;
+                continue;
+            }
+        }
+        if (inCode) { codeBuf.push(line); i++; continue; }
+
+        // Blank line
+        if (/^\s*$/.test(line)) { closeList(); i++; continue; }
+
+        // Horizontal rule
+        if (/^\s*---+\s*$/.test(line) && html.length > 0) { closeList(); html.push('<hr>'); i++; continue; }
+
+        // Headings
+        var hMatch = line.match(/^(#{1,4})\s+(.*)$/);
+        if (hMatch) {
+            closeList();
+            var level = hMatch[1].length;
+            html.push('<h' + level + '>' + _mdInline(hMatch[2].trim()) + '</h' + level + '>');
+            i++;
+            continue;
+        }
+
+        // Table (header line + separator line)
+        if (/^\|.*\|\s*$/.test(line) && lines[i + 1] && /^\|?\s*:?-{2,}:?\s*(\|\s*:?-{2,}:?\s*)*\|?\s*$/.test(lines[i + 1])) {
+            closeList();
+            var headerCells = line.trim().replace(/^\||\|$/g, '').split('|').map(function(c) { return c.trim(); });
+            var rows = [];
+            i += 2;
+            while (i < lines.length && /^\|.*\|\s*$/.test(lines[i])) {
+                var rowCells = lines[i].trim().replace(/^\||\|$/g, '').split('|').map(function(c) { return c.trim(); });
+                rows.push(rowCells);
+                i++;
+            }
+            var t = '<table><thead><tr>' + headerCells.map(function(c) { return '<th>' + _mdInline(c) + '</th>'; }).join('') + '</tr></thead>';
+            t += '<tbody>' + rows.map(function(r) {
+                return '<tr>' + r.map(function(c) { return '<td>' + _mdInline(c) + '</td>'; }).join('') + '</tr>';
+            }).join('') + '</tbody></table>';
+            html.push(t);
+            continue;
+        }
+
+        // Blockquote
+        if (/^>\s?/.test(line)) {
+            closeList();
+            var quoteLines = [];
+            while (i < lines.length && /^>\s?/.test(lines[i])) {
+                quoteLines.push(lines[i].replace(/^>\s?/, ''));
+                i++;
+            }
+            html.push('<blockquote>' + quoteLines.map(_mdInline).join('<br>') + '</blockquote>');
+            continue;
+        }
+
+        // Unordered list
+        var ulMatch = line.match(/^\s*[-*]\s+(.*)$/);
+        if (ulMatch) {
+            if (inList !== 'ul') { closeList(); html.push('<ul>'); inList = 'ul'; }
+            html.push('<li>' + _mdInline(ulMatch[1]) + '</li>');
+            i++;
+            continue;
+        }
+
+        // Ordered list
+        var olMatch = line.match(/^\s*\d+\.\s+(.*)$/);
+        if (olMatch) {
+            if (inList !== 'ol') { closeList(); html.push('<ol>'); inList = 'ol'; }
+            html.push('<li>' + _mdInline(olMatch[1]) + '</li>');
+            i++;
+            continue;
+        }
+
+        // Paragraph (merge consecutive plain lines)
+        closeList();
+        var paraLines = [line];
+        i++;
+        while (i < lines.length && !/^\s*$/.test(lines[i]) && !/^(#{1,4})\s+/.test(lines[i])
+               && !/^```/.test(lines[i]) && !/^\s*[-*]\s+/.test(lines[i]) && !/^\s*\d+\.\s+/.test(lines[i])
+               && !/^\|.*\|\s*$/.test(lines[i]) && !/^>\s?/.test(lines[i]) && !/^\s*---+\s*$/.test(lines[i])) {
+            paraLines.push(lines[i]);
+            i++;
+        }
+        html.push('<p>' + paraLines.map(_mdInline).join('<br>') + '</p>');
+    }
+    closeList();
+    return html.join('\n');
+}
+
 /* ─── 13. GUIDES INNER HTML ───────────────────────────────────────────────── */
 function _buildGuidesInnerHTML() {
     var html = '<div class="help-container">';
@@ -1182,6 +1395,10 @@ function wikiSwitchView(view) {
         area.className = 'wiki-split-area';
         area.innerHTML = _buildMachineSplitHTML();
         if (_selectedMachine) _renderMachineDetail(_selectedMachine);
+    } else if (view === 'readme') {
+        area.className = 'wiki-readme-area-wrap';
+        area.innerHTML = _buildReadmeAreaHTML();
+        _loadReadmeView();
     }
     _updateLayoutState();
 }
@@ -1197,10 +1414,11 @@ function renderHelpPage() {
     if (!container) return;
     container.innerHTML =
         '<div id="help-inner">'
-        + '<div class="wiki-subnav">'
-        + '<button class="wiki-tab-btn" data-view="guides"   ' + _oc('wikiSwitchView', 'guides')   + '>' + _tn('Guides')   + '</button>'
+        + '<div class="wiki-subnav">'        
         + '<button class="wiki-tab-btn" data-view="items"    ' + _oc('wikiSwitchView', 'items')    + '>' + _tn('Items')    + '</button>'
         + '<button class="wiki-tab-btn" data-view="machines" ' + _oc('wikiSwitchView', 'machines') + '>' + _tn('Machines') + '</button>'
+        + '<button class="wiki-tab-btn" data-view="guides"   ' + _oc('wikiSwitchView', 'guides')   + '>' + _tn('Guides')   + '</button>'
+        + '<button class="wiki-tab-btn" data-view="readme"   ' + _oc('wikiSwitchView', 'readme')   + '>' + _tn('Full Documentation') + '</button>'
         + '</div>'
         + '<div id="wiki-area"></div>'
         + '</div>';
