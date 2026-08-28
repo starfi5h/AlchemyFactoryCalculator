@@ -1063,7 +1063,8 @@ function updateSummaryBox(
         fuelCost,
         fertCost,
         fuelMult,
-        fertMult
+        fertMult,
+        speedMult
     } = p;
 
     if (p.isMulti) {
@@ -1253,7 +1254,7 @@ function updateSummaryBox(
                         ${t('Steam')}: ${steamPerMin.toLocaleString()} ${steamIcon} / min
                     </span>
                     <span class="stat-extra" style="color:var(--warn);">
-                        (${(steamPerMin / 9000).toFixed(2)} ${t('Steam Boiler', 'machines')})
+                        (${(steamPerMin / 9000 / speedMult).toFixed(2)} ${t('Steam Boiler', 'machines')})
                     </span>
                 </span>
             `;

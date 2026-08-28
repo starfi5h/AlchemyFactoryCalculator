@@ -161,13 +161,13 @@ function buildItemBaseCost() {
             cost = custom;
         } else if (item.buyPrice > 0) {
             cost = item.buyPrice;
-            if (item.maxStack && item.maxStack < 0) cost /= (-item.maxStack);
         } else if (item.category === 'Currency') {
             cost = item.sellPrice;
         } else if (item.nutrientCost > 0) {
             cost = item.nutrientCost / nutrPerCopper;
         }
 
+        if (cost !== null && item.maxStack && item.maxStack < 0) cost /= (-item.maxStack);
         if (cost !== null) cache.set(name, cost);
     });
 
@@ -958,7 +958,6 @@ async function runCauldronSimulationType1() {
  */
 async function runMultiStepCauldronSimulation() {
     console.time('runMultiStepCauldronSimulation');
-    _multiStepUpstreamFilter = null;
     const progText = document.getElementById('cauldron-multistep-progress');
     if (progText) progText.innerText = '';
 
@@ -996,16 +995,16 @@ async function runMultiStepCauldronSimulation() {
         function considerCombo(inputs, output) {
             if (!output || inputs.includes(output)) return;
 
-            // 檢查中間產物的數量是否超出上限
-            const intermediateCount = inputs.filter(item => !cauldronCandidates.has(item)).length;
-            if (intermediateCount > cauldronState.intermediateLimit) return;
-
             let cost = 0, cauldronCostSum = 0;
+            let intermediateCount = 0;
             for (const inp of inputs) {
                 const rec = prev.get(inp);
                 cost += rec.cost;
                 cauldronCostSum += DB.items[inp].cauldronCost;
+                if (rec.cost != getItemBaseCost(inp)) intermediateCount++;
             }
+            if (intermediateCount > cauldronState.intermediateLimit) return; // 檢查中間產物的數量是否超出上限
+            
             const ingredientsCost = cost;
             const stats = getCauldronStats(DB.items[output].cauldronTarget);
             const heatCost = (stats.heat * stats.time) / heatPerCopper;
@@ -1067,7 +1066,11 @@ async function runMultiStepCauldronSimulation() {
     multiStepState.steps = steps;
     multiStepState.dirty = false;
     if (progText) progText.innerText = '';
+
+    const _msScrollEl = document.querySelector('.cauldron-multistep-scroll');
+    const _msSavedScrollTop = _msScrollEl ? _msScrollEl.scrollTop : 0;
     renderMultiStepTable();
+    if (_msScrollEl) _msScrollEl.scrollTop = _msSavedScrollTop;
 
     const finalStep = multiStepState.steps[multiStepState.steps.length - 1];
     const producedSet = finalStep ? new Set(finalStep.keys()) : new Set();
@@ -1154,7 +1157,7 @@ function renderMultiStepTable() {
         const { item: activeItem, stepIdx: activeStepIdx } = _multiStepUpstreamFilter;
         const { rowItems, cellKeys } = _computeMultiStepUpstreamAncestors(activeItem, activeStepIdx);
         _msChainCellKeys = cellKeys;
-        rows = rows.filter(r => r === activeItem || rowItems.has(r));
+        if(rowItems.size > 0) rows = rows.filter(r => r === activeItem || rowItems.has(r));
     }
 
     if (rows.length === 0) {

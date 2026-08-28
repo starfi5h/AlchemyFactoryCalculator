@@ -490,7 +490,6 @@ window.ALCHEMY_DB = {
 
         // --- SHARDS & GEMS CHAIN ---
         // Sand refine 7 times to become Crude Shard. Assume 127 machines to skip the Refined Sand steps, time = 127 * 3
-        { "id": "Refined Sand", "machine": "Refiner", "inputs": { "Sand": 128 }, outputs: { "Crude Shard": 1 }, "baseTime": 381 },
         { "id": "Crude Shard", "machine": "Stone Crusher", "inputs": { "Quartz Ore": 1 }, "outputs": { "Crude Shard": 80 }, "baseTime": 480.0 },
         { "id": "Broken Shard", "machine": "Refiner", "inputs": { "Crude Shard": 2 }, "outputs": { "Broken Shard": 1 }, "baseTime": 3.0 },
         { "id": "Dull Shard", "machine": "Refiner", "inputs": { "Broken Shard": 2 }, "outputs": { "Dull Shard": 1 }, "baseTime": 3.0 },
@@ -500,6 +499,7 @@ window.ALCHEMY_DB = {
         { "id": "Adamant", "machine": "Refiner", "inputs": { "Polished Crystal": 2 }, "outputs": { "Adamant": 1 }, "baseTime": 3.0 },
         { "id": "Diamond", "machine": "Refiner", "inputs": { "Adamant": 2 }, "outputs": { "Diamond": 1 }, "baseTime": 3.0 },
         { "id": "Perfect Diamond", "machine": "Refiner", "inputs": { "Diamond": 2 }, "outputs": { "Perfect Diamond": 1 }, "baseTime": 3.0 },
+        { "id": "Refined Sand", "machine": "Refiner", "inputs": { "Sand": 128 }, outputs: { "Crude Shard": 1 }, "baseTime": 381 },
 
         // --- GEM PRODUCTS ---
         { "id": "Turquoise", "machine": "Assembler", "inputs": { "Healing Potion": 2, "Sand": 12 }, "outputs": { "Turquoise": 1 }, "baseTime": 12.0 },
