@@ -727,18 +727,36 @@ function openPlannerEdgeModal(edgeId) {
     const fromNode = plannerState.nodes[edge.fromNode];
     const toNode = plannerState.nodes[edge.toNode];
 
-    function getNodeTitle(node) {
+    function _getNodeTitle(node) {
         if (!node) return ``;
         if (node.recipeId) {
             const recipe = getRecipeById(node.recipeId);
             const main = plannerMainOutput(node.recipeId);
-            return recipe ? `${t(recipe.machine, 'machines')} (${main ?? '?'})` : `?`;
+            return recipe && recipe.machine ? `<img src='img/machines/${recipe.machine.toLowerCase().replaceAll(' ', '-')}.png' width="18" height="18"> ${t(recipe.machine, 'machines')} (${main ?? '?'})` : `?`;
         }
         if (node.moduleId) {
             const plan = plannerLibrary.plans[node.moduleId];
             return plan ? plan.name : t('Missing Reference', 'ui');
         }
         return '?';
+    }
+
+    /** 渲染單一方向 (out=供給端優先序 / in=需求端優先序) 的顺位列；沒有兄弟 edge (siblings<=1) 時回傳空字串 */
+    function _buildPlannerEdgePriorityRowHtml(edgeId, nodeId, item, dir, label) {
+        const siblings = plannerGetSiblingEdges(nodeId, item, dir);
+        if (siblings.length <= 1) return '';
+        const idx = siblings.findIndex(e => e.id === edgeId);
+        const rank = idx + 1;
+        const total = siblings.length;
+        return `
+            <span style="margin-left:auto"></span>
+            <span style="align-items:center; gap:8px; margin-left:auto">
+                <span>${label}: ${rank} / ${total}</span>
+                <button class="swap-btn" ${idx === 0 ? 'disabled' : ''}
+                    onclick="plannerMoveEdgePriority('${edgeId}','${dir}',-1)">▲</button>
+                <button class="swap-btn" ${idx === total - 1 ? 'disabled' : ''}
+                    onclick="plannerMoveEdgePriority('${edgeId}','${dir}',1)">▼</button>
+            </span>`;
     }
 
     document.getElementById('planner-edge-modal-title').innerHTML =
@@ -748,11 +766,16 @@ function openPlannerEdgeModal(edgeId) {
         t('Link mode ON: also scales upstream/downstream nodes', 'ui') :
         t('Link mode OFF: only affects source and target nodes', 'ui');
 
+    const priorityRowsHtml = [
+        _buildPlannerEdgePriorityRowHtml(edgeId, edge.fromNode, edge.item, 'out', t('Source Priority', 'ui')),
+        _buildPlannerEdgePriorityRowHtml(edgeId, edge.toNode, edge.item, 'in', t('Target Priority', 'ui'))
+    ].filter(Boolean).join('');
+
     document.getElementById('planner-edge-modal-body').innerHTML = `
         <div style="padding:12px; display:flex; flex-direction:column; gap:8px; font-size:0.9em;">
-            <div><strong>${t('Source', 'ui')}:</strong> ${getNodeTitle(fromNode)}</div>
-            <div><strong>${t('Target', 'ui')}:</strong> ${getNodeTitle(toNode)}</div>
-            <div><strong>${t('Current Flow', 'ui')}:</strong> <span id="planner-edge-modal-current-flow">${formatVal(flow)}</span>/min</div>
+            <div style="display:flex; gap:4px;"><strong>${t('Source', 'ui')}: </strong> ${_getNodeTitle(fromNode)} ${_buildPlannerEdgePriorityRowHtml(edgeId, edge.fromNode, edge.item, 'out', t('Priority', 'ui'))}</div>
+            <div style="display:flex; gap:4px;"><strong>${t('Target', 'ui')}: </strong> ${_getNodeTitle(toNode)} ${_buildPlannerEdgePriorityRowHtml(edgeId, edge.toNode, edge.item, 'in', t('Priority', 'ui'))}</div>
+            <div style="margin-top:8px;"><strong>${t('Current Flow', 'ui')}:</strong> <span id="planner-edge-modal-current-flow">${formatVal(flow)}</span>/min</div>
             <div style="display:flex; align-items:center; gap:8px;">
                 <span>${t('Set Flow', 'ui')}:</span>
                 <input type="number" min="0" step="any" id="planner-edge-flow-input"

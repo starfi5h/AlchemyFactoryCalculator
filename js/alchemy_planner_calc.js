@@ -446,6 +446,39 @@ function plannerGetAvailableRateAtPort(nodeId, item, dir) {
     return flows.portRemaining[key] ?? (flows.portTheoretical[key] ?? 0);
 }
 
+/**
+ * 取得某個 port (nodeId + item + dir) 上所有 edges，依 createdAt 排序 (越小越優先)。
+ * dir === 'out'：找 fromNode === nodeId 的邊 (該節點作為供給源時的優先序)
+ * dir === 'in' ：找 toNode   === nodeId 的邊 (該節點作為需求端時的優先序)
+ */
+function plannerGetSiblingEdges(nodeId, item, dir) {
+    return Object.values(plannerState.edges)
+        .filter(e => e.item === item && (dir === 'out' ? e.fromNode === nodeId : e.toNode === nodeId))
+        .sort((a, b) => a.createdAt - b.createdAt);
+}
+
+/**
+ * 將 edgeId 在其所屬 port (fromNode-out 或 toNode-in) 的優先序中，與相鄰的一條 edge 互換 createdAt，
+ * 藉此調整先到先得的流量分配順位。delta: -1 (上移/更優先) 或 +1 (下移/更不優先)。
+ */
+function plannerMoveEdgePriority(edgeId, dir, delta) {
+    const edge = plannerState.edges[edgeId];
+    if (!edge) return;
+    const nodeId = dir === 'out' ? edge.fromNode : edge.toNode;
+    const siblings = plannerGetSiblingEdges(nodeId, edge.item, dir);
+    const idx = siblings.findIndex(e => e.id === edgeId);
+    const swapIdx = idx + delta;
+    if (idx === -1 || swapIdx < 0 || swapIdx >= siblings.length) return;
+
+    const other = siblings[swapIdx];
+    const tmp = edge.createdAt;
+    edge.createdAt = other.createdAt;
+    other.createdAt = tmp;
+
+    recomputeAndRefreshPlanner();
+    savePlannerState();
+    openPlannerEdgeModal(edgeId); // 重新渲染 modal 以刷新順位/流量顯示
+}
 
 /* ==========================================================================
    SECTION: GRAPH NODE BFS

@@ -366,6 +366,35 @@ function clearPlannerSelection() {
     document.querySelectorAll('.planner-node.selected').forEach(el => el.classList.remove('selected'));
 }
 
+/** Shared implementation: drag out a selection rectangle starting at (startX, startY) client coords. */
+function _plannerRunBoxSelectDrag(canvas, startX, startY, pointerId) {
+    const rect = canvas.getBoundingClientRect();
+    const box = document.createElement('div');
+    box.className = 'planner-select-box';
+    canvas.appendChild(box);
+
+    const updateBox = (x2, y2) => {
+        const left = Math.min(startX, x2), top = Math.min(startY, y2);
+        const w = Math.abs(x2 - startX), h = Math.abs(y2 - startY);
+        box.style.left = (left - rect.left) + 'px';
+        box.style.top = (top - rect.top) + 'px';
+        box.style.width = w + 'px';
+        box.style.height = h + 'px';
+        return { left, top, right: left + w, bottom: top + h };
+    };
+    let lastBounds = updateBox(startX, startY);
+
+    const onMove = (ev) => { lastBounds = updateBox(ev.clientX, ev.clientY); };
+    const onUp = () => {
+        canvas.removeEventListener('pointermove', onMove);
+        canvas.removeEventListener('pointerup', onUp);
+        box.remove();
+        applyPlannerBoxSelection(lastBounds);
+    };
+    canvas.addEventListener('pointermove', onMove);
+    canvas.addEventListener('pointerup', onUp);
+}
+
 function attachPlannerBoxSelect() {
     const canvas = document.getElementById('planner-canvas');
     if (!canvas || canvas.dataset.boxSelectBound) return;
@@ -380,33 +409,7 @@ function attachPlannerBoxSelect() {
 
         e.preventDefault();
         canvas.setPointerCapture(e.pointerId);
-        const rect = canvas.getBoundingClientRect();
-        const startX = e.clientX, startY = e.clientY;
-
-        const box = document.createElement('div');
-        box.className = 'planner-select-box';
-        canvas.appendChild(box);
-
-        const updateBox = (x2, y2) => {
-            const left = Math.min(startX, x2), top = Math.min(startY, y2);
-            const w = Math.abs(x2 - startX), h = Math.abs(y2 - startY);
-            box.style.left = (left - rect.left) + 'px';
-            box.style.top = (top - rect.top) + 'px';
-            box.style.width = w + 'px';
-            box.style.height = h + 'px';
-            return { left, top, right: left + w, bottom: top + h };
-        };
-        let lastBounds = updateBox(startX, startY);
-
-        const onMove = (ev) => { lastBounds = updateBox(ev.clientX, ev.clientY); };
-        const onUp = () => {
-            canvas.removeEventListener('pointermove', onMove);
-            canvas.removeEventListener('pointerup', onUp);
-            box.remove();
-            applyPlannerBoxSelection(lastBounds);
-        };
-        canvas.addEventListener('pointermove', onMove);
-        canvas.addEventListener('pointerup', onUp);
+        _plannerRunBoxSelectDrag(canvas, e.clientX, e.clientY, e.pointerId);
         hidePlannerRateTooltip();
     });
 }
@@ -454,6 +457,16 @@ function attachPlannerCanvasPan() {
         if (e.target.closest('.planner-view-controls')) return;
         if (e.target.closest('.planner-summary-panel')) return;
         if (e.button !== 0) return;
+
+        // --- Shift + drag on empty canvas = temporary box-select ---
+        if (e.shiftKey) {
+            e.preventDefault();
+            canvas.setPointerCapture(e.pointerId);
+            _plannerRunBoxSelectDrag(canvas, e.clientX, e.clientY, e.pointerId);
+            hidePlannerRateTooltip();
+            return;
+        }
+
         canvas.setPointerCapture(e.pointerId);
         canvas.classList.add('panning');
         const startX = e.clientX, startY = e.clientY;
@@ -572,6 +585,16 @@ function attachPlannerKeyboardShortcuts() {
         else if ((e.key === 'Delete' || e.key === 'Backspace') && _plannerSelectedNodeIds.size > 0) {
             e.preventDefault();
             deletePlannerSelectedNodes();
+        }
+        else if ((e.ctrlKey || e.metaKey) && e.key.toLowerCase() === 'a') {
+            // --- Ctrl/Cmd + A selects all nodes ---        
+            e.preventDefault();
+            _plannerSelectedNodeIds.clear();
+            Object.keys(plannerState.nodes).forEach(id => _plannerSelectedNodeIds.add(id));
+            document.querySelectorAll('.planner-node').forEach(el => {
+                const id = el.id.replace('planner-node-', '');
+                el.classList.toggle('selected', _plannerSelectedNodeIds.has(id));
+            });
         }
     });
 }
@@ -1234,6 +1257,21 @@ function attachPlannerNodeDrag(wrap, node) {
     const header = wrap.querySelector('.planner-node-header');
     header.addEventListener('pointerdown', (e) => {
         if (e.target.closest('button, input, textarea')) return;
+
+        // --- Ctrl/Cmd + click toggles selection instead of dragging ---
+        if (e.ctrlKey || e.metaKey) {
+            e.preventDefault();
+            e.stopPropagation();
+            if (_plannerSelectedNodeIds.has(node.id)) {
+                _plannerSelectedNodeIds.delete(node.id);
+                wrap.classList.remove('selected');
+            } else {
+                _plannerSelectedNodeIds.add(node.id);
+                wrap.classList.add('selected');
+            }
+            return;
+        }
+
         e.preventDefault();
         header.setPointerCapture(e.pointerId);
         header.classList.add('dragging');
