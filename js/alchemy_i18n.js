@@ -22,6 +22,12 @@ function queryDualItemName(itemName) {
     return "";
 }
 
+function getCurrentItemName(originName) {
+    const i18n = window.ALCHEMY_I18N;
+    if (!i18n || !i18n.items || !i18n.enabled) return originName;
+    return i18n.items[originName] ?? originName;
+}
+
 function translateDatabase(db, forward) {
     const i18n = window.ALCHEMY_I18N;
     if (!db || !i18n || !i18n.items) return;

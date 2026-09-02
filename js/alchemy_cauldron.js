@@ -171,9 +171,17 @@ function buildItemBaseCost() {
         if (cost !== null) cache.set(name, cost);
     });
 
+    function _setBaseCost(originItemName, value) {
+        const itemName = getCurrentItemName(originItemName);
+        console.log(itemName);
+        if (DB.items[itemName] && !cache.has(itemName)) cache.set(itemName, value);
+    }
+
     // 特殊處理金锭
-    if (DB.items['Gold Ingot'] && !cache.has('Gold Ingot')) cache.set('Gold Ingot', 100000);
-    if (DB.items['金锭'] && !cache.has('金锭')) cache.set('金锭', 100000);
+    _setBaseCost('Crude Silver Powder', 1500);
+    _setBaseCost('Silver Ingot', 6000);
+    _setBaseCost('Crude Gold Dust', 12500);
+    _setBaseCost('Gold Ingot', 100000);
 
     // ---- 反覆擴散：找出「輸入皆已知、輸出唯一」的配方 ----
     for (;;) {
@@ -1004,7 +1012,7 @@ async function runMultiStepCauldronSimulation() {
                 if (rec.cost != getItemBaseCost(inp)) intermediateCount++;
             }
             if (intermediateCount > cauldronState.intermediateLimit) return; // 檢查中間產物的數量是否超出上限
-            
+
             const ingredientsCost = cost;
             const stats = getCauldronStats(DB.items[output].cauldronTarget);
             const heatCost = (stats.heat * stats.time) / heatPerCopper;
@@ -1172,7 +1180,7 @@ function renderMultiStepTable() {
             : '';
         const nameCell = `
             <td>
-                <div class="ms-item-name">
+                <div class="ms-item-name" title="${t('Cauldron Cost')}: ${Number(def.cauldronCost?.toFixed(2) ?? 0)}">
                     <img src="img/item${def.id ?? 0}.png" width="20" height="20" class="item-icon-small">
                     <span>${item}</span>
                 </div>

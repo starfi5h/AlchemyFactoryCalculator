@@ -1263,7 +1263,7 @@ function updateSummaryBox(
         loadHtml += `
             <span class="stat-value stat-flex-row" style="color:var(--fuel);">
                 <span>
-                    ${t('Heat')}: ${actualFuelNeed.toLocaleString()}
+                    ${t('Heat')}: ${formatValue(actualFuelNeed)}
                     ${getItemIcon(selectedFuel, 24, ` alt="${selectedFuel}"`)}
                     / min
                 </span>
@@ -1278,7 +1278,7 @@ function updateSummaryBox(
         loadHtml += `
             <span class="stat-value stat-flex-row" style="color:var(--bio);">
                 <span>
-                    ${t('Nutr')}: ${actualFertNeed.toLocaleString()}
+                    ${t('Nutr')}: ${formatValue(actualFertNeed)}
                     ${getItemIcon(selectedFert, 24, ` alt="${selectedFert}"`)}
                     / min
                 </span>
@@ -1385,7 +1385,7 @@ function updateSummaryBox(
             costHtml += `
                 <span class="stat-value stat-flex-row" style="color:var(--fuel);">
                     <span>
-                        ${t('Heat')}: ${heatPerItem.toLocaleString()}
+                        ${t('Heat')}: ${formatValue(actualFuelNeed/netRate)}
                         ${getItemIcon(selectedFuel, 24, ` alt="${selectedFuel}"`)}
                     </span>
                     <span class="stat-extra" style="color:var(--warn);">
@@ -1399,7 +1399,7 @@ function updateSummaryBox(
             costHtml += `
                 <span class="stat-value stat-flex-row" style="color:var(--bio);">
                     <span>
-                        ${t('Nutr')}: ${nutrPerItem.toLocaleString()}
+                        ${t('Nutr')}: ${formatValue(actualFertNeed/netRate)}
                         ${getItemIcon(selectedFert, 24, ` alt="${selectedFert}"`)}
                     </span>
                     <span class="stat-extra">
