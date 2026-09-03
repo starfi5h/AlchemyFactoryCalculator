@@ -371,7 +371,7 @@
         batchYield = applyAlchemyMult(recipe.machine, batchYield, params.alchemyMult);
 
         const recipeTime = getRecipeTiming(db, params, recipe);
-        const machineOutputRate = (60 / (recipeTime || 1)) * params.speedMult;
+        const machineOutputRate = (60 / (recipeTime || 1)) * (recipe.machine !== 'Seed Plot' ? params.speedMult : 1);
         let effectiveBatchesPerMin = machineOutputRate;
 
         if (!itemDef.liquid) {

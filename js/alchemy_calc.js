@@ -249,7 +249,7 @@ function getSingleMachineRate(recipe, itemName, opts = {}) {
         recipeTime = recipeNutrientCost / fertilitySpeed;
     }
 
-    let ratePerMachine = (60 / (recipeTime || 1)) * getSpeedMult(lvlSpeed) * batchYield;
+    let ratePerMachine = (60 / (recipeTime || 1)) * (recipe.machine !== 'Seed Plot' ? getSpeedMult(lvlSpeed) : 1) * batchYield;
 
     if (!itemDef.liquid) {
         let beltSpeed = getBeltSpeed(lvlBelt);

@@ -1,6 +1,6 @@
 window.ALCHEMY_DB = {
-    "version": 52,
-    "date": "2026.08.23",
+    "version": 53,
+    "date": "2026.09.02",
     "gameVersion": "0.5.4539",
     "items": {
         // --- RAW RESOURCES ---
@@ -256,6 +256,14 @@ window.ALCHEMY_DB = {
         { "id": "Gentian_Mixture", "machine": "Nursery", "buildCost": "Gentian Seeds", "inputs": {}, "outputs": { "Gentian Mixture": 2 }, "nutrientCost": 12000, "sharedOutputs": 2},
         { "id": "World Tree_Dual", "machine": "World Tree Nursery", "buildCost": "World Tree Seed", "inputs": {}, "outputs": { "World Tree Leaf": 99, "World Tree Core":1 }, "baseTime": 300.0, "nutrientCost": 5970000},
 
+        { "id": "Seed Plot (Flax)", "machine": "Seed Plot", "inputs": { "Flax Seeds": 1 }, "outputs": { "Flax": 200 }, "baseTime": 400 },
+        { "id": "Seed Plot (Sage)", "machine": "Seed Plot", "inputs": { "Sage Seeds": 1 }, "outputs": { "Sage": 180 }, "baseTime": 540 },
+        { "id": "Seed Plot (Redcurrant)", "machine": "Seed Plot", "inputs": { "Redcurrant Seeds": 1 }, "outputs": { "Redcurrant": 150 }, "baseTime": 720 },
+        { "id": "Seed Plot (Chamomile)", "machine": "Seed Plot", "inputs": { "Chamomile Seeds": 1 }, "outputs": { "Chamomile": 140 }, "baseTime": 1120 },
+        { "id": "Seed Plot (Lavender)", "machine": "Seed Plot", "inputs": { "Lavender Seeds": 1 }, "outputs": { "Lavender": 120 }, "baseTime": 1440 },
+        { "id": "Seed Plot (Gentian_Dual)", "machine": "Seed Plot", "inputs": { "Gentian Seeds": 1}, "outputs": { "Gentian": 80, "Gentian Nectar": 80 }, "baseTime": 2160 },
+        { "id": "Seed Plot (Gentian_Mixture)", "machine": "Seed Plot", "inputs": { "Gentian Seeds": 1}, "outputs": { "Gentian Mixture": 160 }, "baseTime": 2160 },        
+
         // --- CURRENCY ---
         { "id": "Bank_Copper", "machine": "Bank Portal", "inputs": {}, "outputs": { "Copper Coin": 50 }, "baseTime": 1.0 },
         { "id": "Bank_Silver", "machine": "Bank Portal", "inputs": {}, "outputs": { "Silver Coin": 50 }, "baseTime": 1.0 },
@@ -483,6 +491,8 @@ window.ALCHEMY_DB = {
         { "id": "Philosopherˈs Stone", "machine": "Cauldron", "inputs": { "Ruby": 1, "Sapphire": 1, "Emerald": 1 }, "outputs": { "Philosopherˈs Stone": 1 }, "baseTime": 60.0, "heatCost": 10000.0 },
 
         // --- Paradox Crucible ---
+        { "id": "Oblivion Essence (Limestone)", "machine": "Paradox Crucible", "inputs": { "Limestone": 1 }, "outputs": { "Oblivion Essence": 1 }, "baseTime": 3.333 },
+        { "id": "Oblivion Essence (Gentian)", "machine": "Paradox Crucible", "inputs": { "Gentian": 1 }, "outputs": { "Oblivion Essence": 1 }, "baseTime": 3.750 },
         { "id": "Oblivion Essence (Silver Coin x2)", "machine": "Paradox Crucible", "inputs": { "Silver Coin": 2 }, "outputs": { "Oblivion Essence": 1 }, "baseTime": 0.79 },
         // 自訂輸入配方：inputs 為空，實際內容由 DB.settings.recipeModifiers[id].customInput 動態決定
         { "id": "Oblivion Essence (Custom)", "machine": "Paradox Crucible", "inputs": {}, "outputs": { "Oblivion Essence": 1 }, "baseTime": 1, "customInputSlot": true },
