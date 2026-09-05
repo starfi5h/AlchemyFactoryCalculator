@@ -33,6 +33,7 @@ let _multiStepUpstreamFilter = null;
 let cauldronCandidates = new Set(); // 存储被勾选的物品名
 let cauldronCatFilter = "[All]";
 let cauldronFilterItems = [null, null, null];
+let cauldronTargetOutput = null;
 let _cauldronCostCache = new Map();   // item name -> number | null
 
 function isVaildCandidate(itemName) {
@@ -50,6 +51,7 @@ function initCauldron() {
     translateText();
     pickFilterItem(1,true);
     pickFilterItem(2,true);
+    updateCauldronTargetOutputUI();
     switchCauldronType(cauldronState.activeType, false);
     switchCauldronProfile(cauldronState.activeProfile, false);
     switchCauldronStepMode(cauldronState.stepMode, false);
@@ -173,7 +175,6 @@ function buildItemBaseCost() {
 
     function _setBaseCost(originItemName, value) {
         const itemName = getCurrentItemName(originItemName);
-        console.log(itemName);
         if (DB.items[itemName] && !cache.has(itemName)) cache.set(itemName, value);
     }
 
@@ -682,6 +683,38 @@ function shiftFilterItem(slotIdx, delta) {
     runCauldronSimulation();
 }
 
+function pickCauldronTargetOutput(clear = false) {
+    if (clear) {
+        cauldronTargetOutput = null;
+        updateCauldronTargetOutputUI();
+        runCauldronSimulation();
+        return;
+    }
+    const originalSelectItem = window.selectItem;
+    window.selectItem = (name) => {
+        window.selectItem = originalSelectItem;
+        if (DB.items[name]?.cauldronTarget === undefined) {
+            alert(t('Selected item is not a valid cauldron target.', 'ui'));
+            return;
+        }
+        cauldronTargetOutput = name;
+        closeModal('picker-modal');
+        updateCauldronTargetOutputUI();
+        runCauldronSimulation();
+    };    
+    currentPickerProps.add('cauldronTarget');
+    openItemPicker();
+}
+
+function updateCauldronTargetOutputUI() {
+    const btn = document.getElementById('cauldron-target-output-btn');
+    const clearBtn = document.getElementById('cauldron-target-output-clear');
+    if (!btn) return;
+    btn.innerText = cauldronTargetOutput ? cauldronTargetOutput : t('Set Target Output', 'ui');
+    btn.classList.toggle('active', !!cauldronTargetOutput);
+    if (clearBtn) clearBtn.style.display = cauldronTargetOutput ? '' : 'none';
+}
+
 function onMultiStepIntermediateLimitChange(value) {
     // 強制轉成 1~3 的整數
     let limit = parseInt(value, 10);
@@ -886,7 +919,7 @@ async function runCauldronSimulationType0() {
 
     renderCauldronResults(resultsByOutput);
     checkUnattainableItems(new Set(Object.keys(resultsByOutput)));
-    progText.innerText = `${t('Number of matching recipes')}: (${recipeCount}) `;
+    progText.innerText = `${t('Total count of recipes')}: (${recipeCount}) `;
 }
 
 async function runCauldronSimulationType1() {
@@ -1169,7 +1202,7 @@ function renderMultiStepTable() {
     }
 
     if (rows.length === 0) {
-        tbody.innerHTML = `<tr><td style="color:#666; padding:20px; text-align:center;">${t('No items found.', 'ui')}</td></tr>`;
+        tbody.innerHTML = `<tr><td style="color:#666; padding:20px; text-align:center;">${t('No recipes meet the criteria.', 'ui')}</td></tr>`;
         return;
     }
 
@@ -1251,9 +1284,14 @@ function renderCauldronResults(data) {
     const container = document.getElementById('cauldron-results');
     container.innerHTML = '';
 
-    const sortedOutputs = Object.keys(data).sort((a, b) => 
-        (DB.items[a].cauldronTarget || 0) - (DB.items[b].cauldronTarget || 0)
-    );
+    const sortedOutputs = cauldronTargetOutput ?
+        Object.keys(data).filter(key => key === cauldronTargetOutput) :
+        Object.keys(data).sort((a, b) => (DB.items[a].cauldronTarget || 0) - (DB.items[b].cauldronTarget || 0));
+
+    if (sortedOutputs.length === 0) {
+        container.innerHTML = `<div style="color:#666; padding:24px; text-align:center; font-style:italic;">${t('No recipes meet the criteria.', 'ui')}</div>`;
+        return;
+    }
 
     sortedOutputs.forEach(outName => {
         const outputItem = DB.items[outName];

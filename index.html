@@ -29,7 +29,7 @@
             <span style="margin-left: 10px;">
                 <span id="ui-lang-toggle" style="cursor:pointer; margin-right: 10px;" onclick="toggleLanguage()" title="EN/中文">🌐EN/中文</span>
                 <a href="https://github.com/starfi5h/AlchemyFactoryCalculator" target="_blank" class="repo-link">GitHub Repo</a>
-                <span id="last-updated-time-text">2026.09.01</span>
+                <span id="last-updated-time-text">2026.09.04</span>
             </span>
         </div>
         <div class="tabs" id="page-tab-container">
@@ -535,6 +535,8 @@
                         <div style="display:flex; justify-content:space-between; align-items:center; border-bottom:1px solid #444; padding-bottom:10px; margin-bottom:10px;">
                             <div style="display:flex; align-items:baseline; gap:10px;">
                                 <h3 style="border:none; margin:0; cursor:help;" title="Shows all available recipes based on your candidates and filters.">Result Area</h3>
+                                <div class="mini-picker" id="cauldron-target-output-btn" onclick="pickCauldronTargetOutput()" title="Only show recipes producing this item">Set Target Output</div>
+                                <button class="swap-btn" id="cauldron-target-output-clear" style="display:none;" onclick="pickCauldronTargetOutput(true)" title="clear">×</button>
                                 <span id="cauldron-progress" style="color:var(--accent); font-size:0.9em; font-weight:bold;"></span>
                             </div>
 
