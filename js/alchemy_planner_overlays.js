@@ -489,6 +489,26 @@ function _buildPlannerNodeModifierHtml(node, rawRecipe) {
                     <span>${selectedItem ? selectedItem : t('Select Input Item')}</span>
                 </span>
             </div>`;
+    } else if (rawRecipe.machine === 'Thermal Extractor') {
+        const height = DB.settings.thermalExtractorHeight ?? 255;
+        const ratio = AlchemyCalcEngine.getThermalExtractorRatio(height);
+        controlsHtml = `
+            <div class="thermal-height-row">
+                <label>${t('Thermal Extractor Height')}</label>
+                <div class="thermal-height-input-row">
+                    <input type="range" min="0" max="255" step="1" value="${height}"
+                        oninput="onPlannerThermalHeightInput(this.value, true)"
+                        onchange="onPlannerThermalHeightChange(this.value)">
+                    <input type="number" min="0" max="255" step="1" value="${height}" id="planner-thermal-height-numinput"
+                        class="thermal-height-numbox"
+                        oninput="onPlannerThermalHeightInput(this.value, false)"
+                        onchange="onPlannerThermalHeightChange(this.value)">
+                </div>
+                <div class="thermal-height-info">
+                    <span>${t('Height')}: <span id="planner-thermal-height-val">${height}</span></span>
+                    <span>${t('Bonus')}: <span id="planner-thermal-height-bonus">${((ratio-1)*100).toFixed(1)}</span>% (<span id="planner-thermal-height-mult">${ratio.toFixed(2)}</span>x ${t('output')})</span>
+                </div>
+            </div>`;
     }
 
     return `
@@ -579,6 +599,33 @@ function plannerPickCustomInput(nodeId) {
         _plannerNodeModalRefresh(nodeId);
     };
     openItemPicker();
+}
+
+function onPlannerThermalHeightInput(val, fromSlider) {
+    let height = parseInt(val);
+    if (isNaN(height)) height = 0;
+    height = Math.max(0, Math.min(255, height));
+
+    const slider = document.querySelector('.thermal-height-row input[type=range]');
+    const numbox = document.getElementById('planner-thermal-height-numinput');
+    if (fromSlider) { if (numbox) numbox.value = height; }
+    else { if (slider) slider.value = height; }
+
+    const ratio = AlchemyCalcEngine.getThermalExtractorRatio(height);
+    document.getElementById('planner-thermal-height-val').innerText = height;
+    document.getElementById('planner-thermal-height-bonus').innerText = ((ratio - 1) * 100).toFixed(1);
+    document.getElementById('planner-thermal-height-mult').innerText = ratio.toFixed(2);
+}
+
+function onPlannerThermalHeightChange(val) {
+    let height = parseInt(val);
+    if (isNaN(height)) height = 0;
+    height = Math.max(0, Math.min(255, height));
+    DB.settings.thermalExtractorHeight = height;
+    persist();
+    recomputeAndRefreshPlanner();
+    savePlannerState();
+    calculate();
 }
 
 /** 切換節點的配方 (依舊配方 mainOut 分組挑選)；因催化劑/自訂輸入是綁定特定配方 id 的，

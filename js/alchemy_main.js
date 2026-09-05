@@ -77,6 +77,7 @@ function init() {
     if(!DB.settings.activeRecyclers) DB.settings.activeRecyclers = {};
     if(!DB.settings.customCosts) DB.settings.customCosts = {};
     if(!DB.settings.expandCatalystInputs) DB.settings.expandCatalystInputs = { unstable: false, fertile: false, resonant: false, eternal: false };
+    if(DB.settings.thermalExtractorHeight === undefined) DB.settings.thermalExtractorHeight = 255;
 
     translateDatabase(DB, true); // Translate DB item key
 

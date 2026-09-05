@@ -701,6 +701,31 @@ function toggleCatalyst(recipeId, catalystId, item, btn) {
     openRecipeModal(item, _recipeModalPathKey);
 }
 
+function onThermalHeightInput(val, fromSlider) {
+    let height = parseInt(val);
+    if (isNaN(height)) height = 0;
+    height = Math.max(0, Math.min(255, height));
+
+    const slider = document.querySelector('.thermal-height-row input[type=range]');
+    const numbox = document.getElementById('thermal-height-numinput');
+    if (fromSlider) { if (numbox) numbox.value = height; }
+    else { if (slider) slider.value = height; }
+
+    const ratio = AlchemyCalcEngine.getThermalExtractorRatio(height);
+    document.getElementById('thermal-height-val').innerText = height;
+    document.getElementById('thermal-height-bonus').innerText = ((ratio - 1) * 100).toFixed(1);
+    document.getElementById('thermal-height-mult').innerText = ratio.toFixed(2);
+}
+
+function onThermalHeightChange(val) {
+    let height = parseInt(val);
+    if (isNaN(height)) height = 0;
+    height = Math.max(0, Math.min(255, height));
+    DB.settings.thermalExtractorHeight = height;
+    persist();
+    calculate();
+}
+
 /* ==========================================================================
    SECTION: RECIPE MODAL
    ========================================================================== */
@@ -878,7 +903,7 @@ function _renderRecipeModalList() {
         `;
 
         div.onclick = (e) => {
-            if (e.target.closest('.catalyst-row')) return;
+            if (e.target.closest('.catalyst-row') || e.target.closest('.thermal-height-row')) return;
             applyRecipe();
         };
 
@@ -889,6 +914,29 @@ function _renderRecipeModalList() {
                 return `<button class="catalyst-btn${isActive ? ' active' : ''}" onclick="toggleCatalyst('${r.id}', '${c.id}', '${item}', this)" title="${t('Charges')}: ${c.charges}">${t(c.label)}</button>`;
             }).join('');
             content += `<div class="catalyst-row">${t('Catalysts')} (${t('Charge Cost')}:${r.ChargeCost}) ${btns}</div>`;
+        }
+        else if (r.machine === 'Thermal Extractor') {
+            const height = DB.settings.thermalExtractorHeight ?? 255;
+            const ratio = AlchemyCalcEngine.getThermalExtractorRatio(height);
+            content += `
+                <div class="thermal-height-row">
+                    <label>${t('Thermal Extractor Height')}</label>
+                    <div class="thermal-height-input-row">
+                        <input type="range" min="0" max="255" step="1" value="${height}"
+                            onclick="event.stopPropagation()"
+                            oninput="event.stopPropagation(); onThermalHeightInput(this.value, true)"
+                            onchange="event.stopPropagation(); onThermalHeightChange(this.value)">
+                        <input type="number" min="0" max="255" step="1" value="${height}" id="thermal-height-numinput"
+                            class="thermal-height-numbox"
+                            onclick="event.stopPropagation()"
+                            oninput="event.stopPropagation(); onThermalHeightInput(this.value, false)"
+                            onchange="event.stopPropagation(); onThermalHeightChange(this.value)">
+                    </div>
+                    <div class="thermal-height-info">
+                        <span>${t('Height')}: <span id="thermal-height-val">${height}</span></span>
+                        <span>${t('Bonus')}: <span id="thermal-height-bonus">${((ratio-1)*100).toFixed(1)}</span>% (<span id="thermal-height-mult">${ratio.toFixed(2)}</span>x ${t('output')})</span>
+                    </div>
+                </div>`;
         }
 
         div.innerHTML = content;

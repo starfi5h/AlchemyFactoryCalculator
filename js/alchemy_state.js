@@ -79,7 +79,8 @@ const DEFAULT_SETTINGS = {
     recipeModifiers: {},
     activeRecyclers: {},
     customCosts: {},
-    expandCatalystInputs: { unstable: false, fertile: false, resonant: false, eternal: false }
+    expandCatalystInputs: { unstable: false, fertile: false, resonant: false, eternal: false },
+    thermalExtractorHeight: 255,
 };
 
 /* ==========================================================================

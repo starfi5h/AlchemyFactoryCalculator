@@ -235,17 +235,24 @@
         return applyRecipeModifiers(db, state?.recipeModifiers?.[recipe.id], recipe);
     }
 
-    // 新增：直接依 recipe.id 取得配方並套用 modifiers，不依賴 item/preferred
+    // 直接依 recipe.id 取得配方並套用 modifiers，不依賴 item/preferred
     function getRecipeById(db, modifiers, recipeId) {
         const recipe = (db.recipes || []).find(r => r.id === recipeId);
         if (!recipe) return null;
         return applyRecipeModifiers(db, modifiers, recipe);
     }
 
+    function getThermalExtractorRatio(height) {
+        const h = Math.max(0, Math.min(255, height ?? 255));
+        return 1.0 + (h / 255) * 2.0; // 0 -> 1.0x, 255 -> 3.0x
+    }
+
     function applyAlchemyMult(machineName, batchYield, alchemyMult) {
         if (YIELD_MULTIPLIER_MACHINES.includes(machineName)) {
             batchYield *= alchemyMult;
-            if (machineName === "Thermal Extractor") batchYield *= 3;
+            if (machineName === "Thermal Extractor") {
+                batchYield *= getThermalExtractorRatio(DB?.settings?.thermalExtractorHeight);
+            }
         }
         return batchYield;
     }
@@ -569,7 +576,7 @@
             node.recipeTooltipData = buildTooltipData(recipe, recipeInfo.recipeTime, params.speedMult, recipeInfo.effectiveBatchesPerMin * recipeInfo.batchYield);
 
             if (YIELD_MULTIPLIER_MACHINES.includes(recipe.machine)) {
-                const yieldMultiplier = recipe.machine === "Thermal Extractor" ? params.alchemyMult * 3 : params.alchemyMult;
+                const yieldMultiplier = recipe.machine === "Thermal Extractor" ? params.alchemyMult * getThermalExtractorRatio(DB?.settings?.thermalExtractorHeight) : params.alchemyMult;
                 node.yieldMultiplier = yieldMultiplier;
                 if (!effectiveGhost) node.tags.output = { multiplier: yieldMultiplier };
             }
@@ -1145,6 +1152,7 @@
         getActiveRecipe,
         getRecipeById,
         applyAlchemyMult,
+        getThermalExtractorRatio,
         getProductionHeatCost,
         getProductionFertCost,
         computeParadoxTime

@@ -356,6 +356,10 @@ window.ALCHEMY_I18N = {
         "🌿 Fertile": "🌿 丰饶",
         "✨ Resonant": "✨ 共振",
         "♾️ Eternal": "♾️ 永恒",
+        "Thermal Extractor Height": "热能萃取机高度",
+        "Height": "高度",
+        "Bonus": "加成",
+        "output": "产出",
 
         "Select Input Item": "选择输入物品",
         "Please select an input item first.": "请先选择一个输入物品。",
