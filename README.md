@@ -29,10 +29,10 @@ Precisely calculates raw material consumption, machine counts, heat/nutrient loa
 
 ## 🚀 Getting Started
 
-### Online
+#### Online
 Open [https://starfi5h.github.io/AlchemyFactoryCalculator](https://starfi5h.github.io/AlchemyFactoryCalculator) in any modern browser. No installation required.
 
-### Local
+#### Local
 1. Download or clone this repository.
 2. Open `index.html` directly in your browser.
 3. No server, build step, or dependencies required.
@@ -43,7 +43,7 @@ Open [https://starfi5h.github.io/AlchemyFactoryCalculator](https://starfi5h.gith
 
 ### Setting a Target
 
-Type an item name into the search box (supports partial match) or click **☰** to open the **Item Picker**, which lets you browse by category.
+Type an item name into the search box (supports partial match) or click **☰** to open the **Item Picker**. The picker supports category browsing, a Tier slider, and attribute filters for Sell Price, Wholesale Price, and Cauldron Target.
 
 **Single-target mode** (default):
 - Use the **Belt Load Fraction** slider to set the target as a fraction of belt capacity (1/12 to Full).
@@ -55,6 +55,7 @@ Type an item name into the search box (supports partial match) or click **☰** 
 - Use **💾 Save List / 📂 Load List** to persist multi-target sets in the browser.
 - Enable **Self-Fuel** or **Self-Fert** to automatically deduct factory consumption from the net output of the fuel/fertilizer item itself. The engine iterates to a stable equilibrium.
 - **⚡ Fuel/Fert 1-Machine Quick Set** instantly fills the list with two rows (the selected fuel and fertilizer items), each set to a single fully-loaded machine's rate.
+- If Self-Fuel or Self-Fert cannot converge because supply is too low or the calculation diverges, an equilibrium warning is shown above the production tree.
 
 ### Upgrades
 
@@ -69,7 +70,7 @@ Enter your current research levels in the **Upgrades** panel on the right:
 | **Fert Efficiency** | Increases the nutrient value of fertilizer |
 | **Sales Ability** | Increases sell price used in profitability calculations |
 
-Click **Save Upgrades** to persist settings to the browser.
+Upgrade levels and logistics settings are saved automatically whenever they change; no manual save button is required.
 
 ### Logistics
 
@@ -84,6 +85,7 @@ Click **Save Upgrades** to persist settings to the browser.
 | **Show Machine Usage** | Display fuel/fertilizer consumption on each node |
 | **Show Machine Max Cap** | Show maximum capacity of the ceiled machine count |
 | **Show Machine Heat & Nutr** | Show per-machine heat (P/s) and nutrient (V/s) on each node |
+| **Show Raw Machine Count** | Show fractional machine counts (up to two decimals) instead of rounded-up counts |
 
 ### Reading the Production Tree
 
@@ -94,6 +96,8 @@ Each node shows:
 - **Byproducts** in purple
 - **Heat** and **Nutrient** costs in their respective colors
 - **Gold cost** for purchased raw materials
+- Catalyst nodes may show a toggle to expand or collapse their catalyst input subtree.
+- Click an item name to open a drill-down in a new tab with that item and rate as URL parameters.
 
 Rate numbers shown in **red** mean belt capacity is exceeded.
 
@@ -138,7 +142,7 @@ The bar above the tree shows four blocks:
 
 ### Construction List
 
-The right panel lists every machine type and count required. Click a machine name to expand and see the **total raw materials** needed to build all machines of that type. The **Total Materials Required** section at the bottom also shows estimated **inventory slot** counts based on max stack sizes.
+The right panel lists every machine type and count required. Click a machine name to expand and see the **total raw materials** needed to build all machines of that type. The **Total Materials Required** section at the bottom also shows estimated **inventory slot** counts based on max stack sizes, plus total machine count and flat/compact footprint tile counts.
 
 ### Send to Planner
 
@@ -156,6 +160,7 @@ The Planner can hold multiple independent **plans**, each with its own set of no
 
 - The dropdown in the toolbar switches between plans; **📁 Manage Plans** opens a modal listing every plan.
 - In the manager you can **drag to reorder**, **rename in place** (double-click the name field that appears), **duplicate**, **delete**, or **export** a single plan as a `.json` file. **New Plan** creates a blank plan, and **⭱ Import** loads a previously exported `.json`.
+- **📦 Import as Module** inserts a selected existing plan directly as a module node in the current canvas.
 - Every plan keeps its own **undo/redo history** and remembers the **viewport** (pan/zoom) you last left it at for the current browser session.
 
 ### Canvas Basics
@@ -163,6 +168,7 @@ The Planner can hold multiple independent **plans**, each with its own set of no
 - **+ Add Node** or **right-click** an empty area of the canvas opens the Item Picker; picking an item with a recipe drops a new node there.
 - **Drag a node's header** to move it; drag empty canvas to pan the view.
 - **▭ Select Mode** switches the canvas into box-select: drag a rectangle to select multiple nodes, then drag any selected node's header to move the whole group together, or press **Delete/Backspace** to remove them all at once.
+- **Ctrl/Cmd+click** toggles a single node selection outside Select Mode. **Shift+drag** on empty canvas temporarily box-selects without changing modes.
 - **Zoom** with the mouse wheel, pinch-to-zoom on touch devices, or the **+ / −** buttons; **⤢ Fit to View** (or the **F** key) frames all nodes.
 - The **⊞ Grid Snap** button cycles node-dragging snap between three grid sizes and off.
 - **↺ Undo / ↻ Redo** (or **Ctrl+Z / Ctrl+Y**) step through that plan's edit history.
@@ -175,6 +181,7 @@ Each node represents one recipe at a chosen **machine count** (which can be frac
 - Hovering a node's header shows a tooltip with that recipe's full input/output/fuel/fertilizer rates **per single machine**.
 - Drag from a port's dot to another compatible port (same item, opposite direction) to connect them; dragging onto empty canvas instead opens a small recipe picker (filtered to recipes that produce/consume that item) and creates a new connected node in one step.
 - Clicking a connection's flow-rate label opens an **Edge Modal** showing source/target, current flow, and lets you type an exact target flow (which resizes the machine counts on both ends to match) or delete the connection.
+- The Edge Modal lets you reorder multiple connections on the same port with source/target priority ▲/▼ controls, and set or reset an edge color.
 
 ### Node Settings (⚙)
 
@@ -195,6 +202,14 @@ The chain-link button next to a node's machine-count input toggles **Link Mode**
 ### Module Nodes
 
 A node can also reference an entire other plan as a **module**: it exposes that plan's *net* unconnected inputs/outputs as its own ports (i.e. whatever that plan doesn't already produce/consume internally), plus its total fuel/fertilizer draw. Its Node Settings modal shows a **📦 Load Module** button that switches the Planner to that referenced plan. The tool detects circular module references and flags them as an error on the node instead of resolving them.
+
+Select a group of nodes and click **📦 Encapsulate** to create a new plan from the selection and replace it with a module node. The internal connections are retained inside the new module.
+
+Use **🔀 Optimize Port Order** in the lower-right canvas controls to optimize all port orders; dropping a node also performs a single-node port-order optimization.
+
+### Portal Nodes
+
+The **+ 🌀 Portal** tool adds a portal node for external item movement. Set its item by clicking its title and use **⇄** to switch the visual input/output direction.
 
 ### Summary Panel
 
@@ -234,11 +249,11 @@ Sort the pool by cauldron cost with **Sort by Value** and toggle ascending/desce
 
 ### Slot Filters & Search
 
-Lock up to three **Set Input** slots to restrict the search to combinations containing a specific item at a fixed position. Use the **+/−** arrows below each slot to cycle through items in cost order.
+Lock up to three **Set Input** slots to restrict the search to combinations containing a specific item at a fixed position. Use the **+/−** arrows below each slot to cycle through items in cost order. **Set Target Output** can restrict results to one selected product.
 
 Filter by ratio type with the checkboxes: **2 Diff, 3 Diff, 2 Same, 3 Same**.
 
-Enable **Real-time** to recalculate automatically when anything changes, or click **Calculate All** manually for large pools.
+Results recalculate immediately whenever a filter or slot condition changes.
 
 ### Results & Favorites
 
@@ -248,6 +263,7 @@ Click **★** on any recipe row to save it to **Saved Recipes** (right panel). F
 - **Export** — save all favorites as a `.txt` file (format: `Item1 + Item2 (+ Item3) = Product`)
 - **Import** — load a `.txt` file to bulk-import recipes
 - **Sync DB** — inject all saved cauldron recipes into the main production database so the Calculator can include cauldron steps in full production chains
+- **Show Estimated Cost** displays estimated costs in single-step results, and **Order by Est. Cost** sorts them by that estimate.
 
 ### Cauldron Recipe Modal
 
@@ -267,20 +283,21 @@ Switch to **Multiple Steps** (next to **Single Step** at the top of the Cauldron
 - Click **★** on any cell to save that step's recipe to **Saved Recipes**, same as the Single Step results.
 - Hover the cost number for a per-item **Ingredients Cost** / **Heat Cost** breakdown (in coins), and hover an ingredient icon to see its name and the cost value used in that calculation.
 - **⚙ Cost Settings** lets you set the Heat-to-coin and Nutrient-to-coin conversion rates used to estimate costs throughout the Cauldron tab (also shown as an editable, searchable list of every item's estimated base cost).
+- **Max Intermediate Items** (1–3) limits the number of intermediate products retained in multi-step optimization chains.
 
 ---
 
 ## 📖 Wiki Tab
 
-Three sub-views accessible from the top navigation:
+Four sub-views accessible from the top navigation:
 
 | View | Description |
 |---|---|
-| **Guides** | Written documentation for all Calculator and Cauldron features |
 | **Items** | Searchable icon grid of all items, with chip-based filters (Category, Tier, Sell Price, Wholesale Price, Cauldron Target); click any item for stats, production recipes, and usage |
 | **Machines** | Searchable machine list; click any machine for properties, build cost, and all associated recipes |
+| **Full Documentation** | Embedded README viewer with the complete documentation, rendered by the built-in Markdown renderer |
 
-In the Items view, click **★** next to any recipe to set it as the preferred recipe for that item (synced with the Calculator).
+Both Items and Machines views provide chip filters; Machines can be filtered by Tier and Heat Cost. In the Items view, click **★** next to any recipe to set it as the preferred recipe for that item (synced with the Calculator).
 Click any item in a recipe row to navigate directly to its detail page.
 
 ---
@@ -329,7 +346,6 @@ The URL reflects the current state and can be bookmarked or shared:
 
 | Button | Effect |
 |---|---|
-| **Save Upgrades** | Persist current upgrade levels and logistics settings |
 | **Reset Recipes** | Clear the local database, restoring the bundled version (backup saved automatically) |
 | **Reset Translations** | Clear local translation overrides (backup saved automatically) |
 | **All Data Reset** | Clear all `localStorage` entries and reload with defaults |

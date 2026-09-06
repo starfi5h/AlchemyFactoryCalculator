@@ -36,10 +36,10 @@ Precisely calculates raw material consumption, machine counts, heat/nutrient loa
 
 ## 🚀 Getting Started
 
-### Online
+#### Online
 Open [https://starfi5h.github.io/AlchemyFactoryCalculator](https://starfi5h.github.io/AlchemyFactoryCalculator) in any modern browser. No installation required.
 
-### Local
+#### Local
 1. Download or clone this repository.
 2. Open \`index.html\` directly in your browser.
 3. No server, build step, or dependencies required.
@@ -50,18 +50,19 @@ Open [https://starfi5h.github.io/AlchemyFactoryCalculator](https://starfi5h.gith
 
 ### Setting a Target
 
-Type an item name into the search box (supports partial match) or click **☰** to open the **Item Picker**, which lets you browse by category.
+Type an item name into the search box (supports partial match) or click **☰** to open the **Item Picker**. The picker supports category browsing, a Tier slider, and attribute filters for Sell Price, Wholesale Price, and Cauldron Target.
 
-**Single-target mode** (default):
+**Single-target mode**:
 - Use the **Belt Load Fraction** slider to set the target as a fraction of belt capacity (1/12 to Full).
 - Or enter a precise **Rate (Items/Min)** directly.
 - Toggle **Set by Machine Count** to reverse the calculation — enter a number of machines and the rate is computed for you.
 
-**Multi-target mode** (enable via the **MULTI** toggle):
+**Multi-target mode**:
 - Add as many target rows as needed; each is independent, and rows can be reordered by dragging the handle.
 - Use **💾 Save List / 📂 Load List** to persist multi-target sets in the browser.
 - Enable **Self-Fuel** or **Self-Fert** to automatically deduct factory consumption from the net output of the fuel/fertilizer item itself. The engine iterates to a stable equilibrium.
 - **⚡ Fuel/Fert 1-Machine Quick Set** instantly fills the list with two rows (the selected fuel and fertilizer items), each set to a single fully-loaded machine's rate.
+- If Self-Fuel or Self-Fert cannot converge because supply is too low or the calculation diverges, an equilibrium warning is shown above the production tree.
 
 ### Upgrades
 
@@ -76,7 +77,7 @@ Enter your current research levels in the **Upgrades** panel on the right:
 | **Fert Efficiency** | Increases the nutrient value of fertilizer |
 | **Sales Ability** | Increases sell price used in profitability calculations |
 
-Click **Save Upgrades** to persist settings to the browser.
+Upgrade levels and logistics settings are saved automatically whenever they change; no manual save button is required.
 
 ### Logistics
 
@@ -91,6 +92,7 @@ Click **Save Upgrades** to persist settings to the browser.
 | **Show Machine Usage** | Display fuel/fertilizer consumption on each node |
 | **Show Machine Max Cap** | Show maximum capacity of the ceiled machine count |
 | **Show Machine Heat & Nutr** | Show per-machine heat (P/s) and nutrient (V/s) on each node |
+| **Show Raw Machine Count** | Show fractional machine counts (up to two decimals) instead of rounded-up counts |
 
 ### Reading the Production Tree
 
@@ -101,6 +103,8 @@ Each node shows:
 - **Byproducts** in purple
 - **Heat** and **Nutrient** costs in their respective colors
 - **Gold cost** for purchased raw materials
+- Catalyst nodes may show a toggle to expand or collapse their catalyst input subtree.
+- Click an item name to open a drill-down in a new tab with that item and rate as URL parameters.
 
 Rate numbers shown in **red** mean belt capacity is exceeded.
 
@@ -145,7 +149,7 @@ The bar above the tree shows four blocks:
 
 ### Construction List
 
-The right panel lists every machine type and count required. Click a machine name to expand and see the **total raw materials** needed to build all machines of that type. The **Total Materials Required** section at the bottom also shows estimated **inventory slot** counts based on max stack sizes.
+The right panel lists every machine type and count required. Click a machine name to expand and see the **total raw materials** needed to build all machines of that type. The **Total Materials Required** section at the bottom also shows estimated **inventory slot** counts based on max stack sizes, plus total machine count and flat/compact footprint tile counts.
 
 ### Send to Planner
 
@@ -164,12 +168,14 @@ The Planner can hold multiple independent **plans**, each with its own set of no
 - The dropdown in the toolbar switches between plans; **📁 Manage Plans** opens a modal listing every plan.
 - In the manager you can **drag to reorder**, **rename in place** (double-click the name field that appears), **duplicate**, **delete**, or **export** a single plan as a \`.json\` file. **New Plan** creates a blank plan, and **⭱ Import** loads a previously exported \`.json\`.
 - Every plan keeps its own **undo/redo history** and remembers the **viewport** (pan/zoom) you last left it at for the current browser session.
+- **📦 Import as Module** inserts a selected existing plan directly as a module node in the current canvas.
 
 ### Canvas Basics
 
 - **+ Add Node** or **right-click** an empty area of the canvas opens the Item Picker; picking an item with a recipe drops a new node there.
 - **Drag a node's header** to move it; drag empty canvas to pan the view.
 - **▭ Select Mode** switches the canvas into box-select: drag a rectangle to select multiple nodes, then drag any selected node's header to move the whole group together, or press **Delete/Backspace** to remove them all at once.
+- **Ctrl/Cmd+click** toggles a single node selection outside Select Mode. **Shift+drag** on empty canvas temporarily box-selects without changing modes.
 - **Zoom** with the mouse wheel, pinch-to-zoom on touch devices, or the **+ / −** buttons; **⤢ Fit to View** (or the **F** key) frames all nodes.
 - The **⊞ Grid Snap** button cycles node-dragging snap between three grid sizes and off.
 - **↺ Undo / ↻ Redo** (or **Ctrl+Z / Ctrl+Y**) step through that plan's edit history.
@@ -182,6 +188,7 @@ Each node represents one recipe at a chosen **machine count** (which can be frac
 - Hovering a node's header shows a tooltip with that recipe's full input/output/fuel/fertilizer rates **per single machine**.
 - Drag from a port's dot to another compatible port (same item, opposite direction) to connect them; dragging onto empty canvas instead opens a small recipe picker (filtered to recipes that produce/consume that item) and creates a new connected node in one step.
 - Clicking a connection's flow-rate label opens an **Edge Modal** showing source/target, current flow, and lets you type an exact target flow (which resizes the machine counts on both ends to match) or delete the connection.
+- The Edge Modal lets you reorder multiple connections on the same port with source/target priority ▲/▼ controls, and set or reset an edge color.
 
 ### Node Settings (⚙)
 
@@ -202,6 +209,14 @@ The chain-link button next to a node's machine-count input toggles **Link Mode**
 ### Module Nodes
 
 A node can also reference an entire other plan as a **module**: it exposes that plan's *net* unconnected inputs/outputs as its own ports (i.e. whatever that plan doesn't already produce/consume internally), plus its total fuel/fertilizer draw. Its Node Settings modal shows a **📦 Load Module** button that switches the Planner to that referenced plan. The tool detects circular module references and flags them as an error on the node instead of resolving them.
+
+Select a group of nodes and click **📦 Encapsulate** to create a new plan from the selection and replace it with a module node. The internal connections are retained inside the new module.
+
+Use **🔀 Optimize Port Order** in the lower-right canvas controls to optimize all port orders; dropping a node also performs a single-node port-order optimization.
+
+### Portal Nodes
+
+The **+ 🌀 Portal** tool adds a portal node for external item movement. Set its item by clicking its title and use **⇄** to switch the visual input/output direction.
 
 ### Summary Panel
 
@@ -241,11 +256,11 @@ Sort the pool by cauldron cost with **Sort by Value** and toggle ascending/desce
 
 ### Slot Filters & Search
 
-Lock up to three **Set Input** slots to restrict the search to combinations containing a specific item at a fixed position. Use the **+/−** arrows below each slot to cycle through items in cost order.
+Lock up to three **Set Input** slots to restrict the search to combinations containing a specific item at a fixed position. Use the **+/−** arrows below each slot to cycle through items in cost order. **Set Target Output** can restrict results to one selected product.
 
 Filter by ratio type with the checkboxes: **2 Diff, 3 Diff, 2 Same, 3 Same**.
 
-Enable **Real-time** to recalculate automatically when anything changes, or click **Calculate All** manually for large pools.
+Results recalculate immediately whenever a filter or slot condition changes.
 
 ### Results & Favorites
 
@@ -255,6 +270,7 @@ Click **★** on any recipe row to save it to **Saved Recipes** (right panel). F
 - **Export** — save all favorites as a \`.txt\` file (format: \`Item1 + Item2 (+ Item3) = Product\`)
 - **Import** — load a \`.txt\` file to bulk-import recipes
 - **Sync DB** — inject all saved cauldron recipes into the main production database so the Calculator can include cauldron steps in full production chains
+- **Show Estimated Cost** displays estimated costs in single-step results, and **Order by Est. Cost** sorts them by that estimate.
 
 ### Cauldron Recipe Modal
 
@@ -274,20 +290,21 @@ Switch to **Multiple Steps** (next to **Single Step** at the top of the Cauldron
 - Click **★** on any cell to save that step's recipe to **Saved Recipes**, same as the Single Step results.
 - Hover the cost number for a per-item **Ingredients Cost** / **Heat Cost** breakdown (in coins), and hover an ingredient icon to see its name and the cost value used in that calculation.
 - **⚙ Cost Settings** lets you set the Heat-to-coin and Nutrient-to-coin conversion rates used to estimate costs throughout the Cauldron tab (also shown as an editable, searchable list of every item's estimated base cost).
+- **Max Intermediate Items** (1–3) limits the number of intermediate products retained in multi-step optimization chains.
 
 ---
 
 ## 📖 Wiki Tab
 
-Three sub-views accessible from the top navigation:
+Four sub-views accessible from the top navigation:
 
 | View | Description |
 |---|---|
-| **Guides** | Written documentation for all Calculator and Cauldron features |
 | **Items** | Searchable icon grid of all items, with chip-based filters (Category, Tier, Sell Price, Wholesale Price, Cauldron Target); click any item for stats, production recipes, and usage |
 | **Machines** | Searchable machine list; click any machine for properties, build cost, and all associated recipes |
+| **Full Documentation** | Embedded README viewer with the complete documentation, rendered by the built-in Markdown renderer |
 
-In the Items view, click **★** next to any recipe to set it as the preferred recipe for that item (synced with the Calculator).
+Both Items and Machines views provide chip filters; Machines can be filtered by Tier and Heat Cost. In the Items view, click **★** next to any recipe to set it as the preferred recipe for that item (synced with the Calculator).
 Click any item in a recipe row to navigate directly to its detail page.
 
 ---
@@ -336,7 +353,6 @@ The URL reflects the current state and can be bookmarked or shared:
 
 | Button | Effect |
 |---|---|
-| **Save Upgrades** | Persist current upgrade levels and logistics settings |
 | **Reset Recipes** | Clear the local database, restoring the bundled version (backup saved automatically) |
 | **Reset Translations** | Clear local translation overrides (backup saved automatically) |
 | **All Data Reset** | Clear all \`localStorage\` entries and reload with defaults |
@@ -411,10 +427,10 @@ zh: `[English](README.md) | [简体中文](README.zh-CN.md)
 
 ## 🚀 快速开始
 
-### 在线使用
+#### 在线使用
 在任意现代浏览器中打开 [https://starfi5h.github.io/AlchemyFactoryCalculator](https://starfi5h.github.io/AlchemyFactoryCalculator)，无需安装。
 
-### 本地使用
+#### 本地使用
 1. 下载或克隆本仓库。
 2. 直接用浏览器打开 \`index.html\`。
 3. 无需服务器、构建步骤或任何依赖。
@@ -425,7 +441,7 @@ zh: `[English](README.md) | [简体中文](README.zh-CN.md)
 
 ### 设定生产目标物品与速率
 
-在**搜索框**输入物品名称（支持模糊匹配），或点击 **☰** 打开**物品选择器**（可按分类浏览）。
+在**搜索框**输入物品名称（支持模糊匹配），或点击 **☰** 打开**物品选择器**。选择器支持按分类浏览以及属性过滤。
 
 **单目标模式**（默认）：
 - 拖动**传送带负载比例**滑块，设定为传送带运力的某个分数（1/12 至 Full）。
@@ -437,6 +453,7 @@ zh: `[English](README.md) | [简体中文](README.zh-CN.md)
 - 使用 **💾 保存列表 / 📂 加载列表** 将多目标方案持久化到浏览器。
 - 开启**自供燃料**或**自供肥料**后，引擎会自动迭代至稳定平衡，将工厂自身消耗从净产出中扣除。
 - **⚡ 快速设定燃料/肥料(单机器)** 会立即建立两行目标（所选燃料与肥料物品），速率各自设为单台满载机器的产量。
+- 当自供燃料或自供肥料因供应不足或发散而无法收敛时，生产树上方会显示平衡警告。
 
 ### 升级等级
 
@@ -451,7 +468,7 @@ zh: `[English](README.md) | [简体中文](README.zh-CN.md)
 | **肥料效率** | 提升肥料的营养值 |
 | **销售能力** | 提升上架商品卖出价格 |
 
-点击**保存设置**将科技等级保存。
+升级等级和物流设置会在变更时自动保存，无需手动保存。
 
 ### 物流设置
 
@@ -466,6 +483,7 @@ zh: `[English](README.md) | [简体中文](README.zh-CN.md)
 | **显示机器消耗用量** | 在每个节点显示燃料/肥料消耗量 |
 | **显示机器产能上限** | 显示取整后机器数的最大产能 |
 | **显示机器热值&肥力用量** | 在每个节点显示每台机器的热值（P/s）和肥力（V/s）消耗 |
+| **显示原始机器数量** | 显示最多两位小数的机器数量，而不是向上取整后的数量 |
 
 ### 解读生产树
 
@@ -476,6 +494,8 @@ zh: `[English](README.md) | [简体中文](README.zh-CN.md)
 - 紫色的**副产品**
 - 对应颜色的**热值**和**肥力**消耗
 - 购买原材料的**金币成本**
+- 催化剂节点可显示开关，用于展开或收起催化剂输入子树。
+- 点击物品名称可在新分页打开该物品与速率的钻取页面。
 
 速率数字显示为**红色**表示已超过传送带上限。
 
@@ -545,9 +565,11 @@ zh: `[English](README.md) | [简体中文](README.zh-CN.md)
 - **+ 新增节点**，或在画布空白处**按右键**，会打开物品选择器；选取一个有配方的物品即可在该处建立新节点。
 - **拖曳节点的标题列**可移动节点；拖曳空白画布可平移视角。
 - **▭ 选取模式** 会将画布切换为框选状态：拖曳出一个矩形即可选取多个节点，之后拖曳任一已选节点的标题列可整组一起移动，或按 **Delete/Backspace** 一次性全部删除。
+- 在非选择模式下使用 **Ctrl/Cmd+点击** 可切换单个节点选取；在空白画布上 **Shift+拖曳** 可临时框选。
 - 用滑鼠滚轮、触控装置的双指手势，或 **+ / −** 按钮进行**缩放**；**⤢ 缩放至全部可见**（或按 **F** 键）会自动将所有节点纳入视野。
 - **⊞ 网格吸附** 按钮会在三种网格大小与关闭之间循环切换节点拖曳时的吸附行为。
 - **↺ 复原 / ↻ 重做**（或 **Ctrl+Z / Ctrl+Y**）可在该方案的编辑历史中前后移动。
+- **📦 导入为模块**可将选中的既有方案直接作为模块节点插入当前画布。
 
 ### 节点与接口（Ports）
 
@@ -557,6 +579,7 @@ zh: `[English](README.md) | [简体中文](README.zh-CN.md)
 - 将鼠标悬停在节点标题列上，会显示该配方**单台机器**的完整输入/输出/燃料/肥料速率提示框。
 - 从某个接口的圆点拖曳到另一个方向相反、物品相同的合法接口即可建立连线；若拖放到空白画布，则会打开一个依「生产/消耗该物品」过滤好的配方选单，选取后会一次建立新节点并自动连线。
 - 点击连线上的流量标签会打开**连线弹窗（Edge Modal）**，显示来源/目标节点、目前流量，并可直接输入精确的目标流量（会连动调整两端节点的机器数量），或删除该连线。
+- 连线窗口可用来源/目标优先级 ▲/▼ 调整同一端口上的多条连线顺序，并可设置或重置连线颜色。
 
 ### 节点设置（⚙）
 
@@ -577,6 +600,14 @@ zh: `[English](README.md) | [简体中文](README.zh-CN.md)
 ### 模块节点（Module Nodes）
 
 节点也可以整个引用另一个方案作为**模块**：它会把该方案「净」未被内部消耗/产生的输入/输出（即该方案自己无法内部自给自足的部分）暴露成自己的接口，并累计其总燃料/肥料用量。该节点的节点设置弹窗中会显示 **📦 载入模块** 按钮，点击即可将规划器切换到所引用的方案。若侦测到模块间存在循环引用，工具会直接在节点上标示错误，而不会尝试解算。
+
+选取一组节点并点击 **📦 封装**，可从选取内容建立新方案，并在原处替换为模块节点；内部连线会保留在新模块中。
+
+使用画布右下角的 **🔀 优化端口顺序** 可优化全部端口顺序；拖放节点后也会自动执行单节点优化。
+
+### 传送门节点
+
+**+ 🌀 传送门**工具可新增用于外部物品运输的传送门节点。点击标题设置物品，使用 **⇄** 切换视觉上的输入/输出方向。
 
 ### 摘要面板（Summary Panel）
 
@@ -601,26 +632,26 @@ zh: `[English](README.md) | [简体中文](README.zh-CN.md)
 
 在顶部的**炼金锅 / 高级炼金锅**切换按钮之间切换类型。
 
-### 候选池与 Profile
+### 原料候选池
 
 左侧面板列出所有可作为炼金原料的物品（必须有 \`cauldronCost\` 且非液体）。勾选/取消勾选物品以决定是否纳入搜索。
 
-三个独立的 **Profile** 可储存不同的候选集合：
-- **Profile 1** — 全部有效原料（默认）
-- **Profile 2** — 草药链物品（从草药生产链自动生成）
-- **Profile 3** — 金币/货币基底物品
+三个独立的 **原料池** 可储存不同的候选集合：
+- **原料池 1** — 全部有效原料（默认）
+- **原料池 2** — 草药链物品（从草药生产链自动生成）
+- **原料池 3** — 金币/货币基底物品
 
 使用**全选 / 取消全选**批量配置。**🌿** 按钮将候选池重置为草药导向预设，**💰** 按钮则重置为金币/货币导向预设。
 
 开启**以炼金价值排序**，用 **🔼/🔽** 切换升序/降序。
 
-### 格位过滤与搜索
+### 过滤条件与搜索
 
-锁定最多三个**指定原料**格位，将搜索限定为特定物品在固定位置的组合。每个格位旁的 **+/−** 箭头按成本顺序循环切换物品。
+锁定最多三个**指定原料**格位，将搜索限定为特定物品在固定位置的组合。每个格位旁的 **+/−** 箭头按成本顺序循环切换物品。**设定目标产物**可将结果限制为单一选定产物。
 
 用复选框按配方类型过滤：**2件不同、3件不同、2件相同、3件相同**。
 
-开启**实时**可在任何变动时自动重算，或对大型候选池点击**计算全部**手动触发。
+任何筛选条件或格位条件变更时，结果都会即时重新计算。
 
 ### 结果与收藏
 
@@ -630,6 +661,7 @@ zh: `[English](README.md) | [简体中文](README.zh-CN.md)
 - **导出** — 将全部收藏保存为 \`.txt\` 文件（格式：\`物品1 + 物品2 (+ 物品3) = 产物\`）
 - **导入** — 加载 \`.txt\` 文件批量导入配方
 - **同步数据库** — 将所有收藏的炼金锅配方注入主生产数据库，计算器即可规划包含炼金锅工序的完整生产链
+- **显示预计成本**会在单步结果中显示预计成本，**按预计成本排序**可依该成本排序。
 
 ### 炼金锅配方快捷编辑窗
 
@@ -649,20 +681,21 @@ zh: `[English](README.md) | [简体中文](README.zh-CN.md)
 - 点击任意格子的 **★** 可将该阶段的配方保存到 **已保存配方**，行为与单步搜索结果的收藏功能相同。
 - 将鼠标悬停在成本数字上，可查看该格的 **原料成本** / **热耗成本** 明细（以铜币计）；悬停在原料图示上则会显示该原料名称及本次计算采用的成本值。
 - **⚙ 成本设定** 可调整热值与肥力换算为铜币的比率，用于整个炼金锅分页的成本估算（同时也会列出每个物品估算基础成本的可搜索清单，供直接编辑）。
+- **最大中间产物数量**（1–3）限制多步优化链中保留的中间产物数量。
 
 ---
 
 ## 📖 百科页面
 
-顶部导航提供三个子视图：
+顶部导航提供四个子视图：
 
 | 视图 | 说明 |
 |---|---|
-| **指南** | 计算器与炼金锅全功能的文字说明文档 |
 | **物品** | 可搜索的物品图标网格，支持分类、等级、卖出价格、批发价格、炼金目标等筛选标签；点击任意物品查看属性、生产配方和使用情况 |
 | **机器** | 可搜索的机器列表；点击任意机器查看属性、建造材料和所有相关配方 |
+| **完整说明** | 内置 README 检视器，使用内建 Markdown 渲染器显示完整文件说明 |
 
-在物品视图中，点击配方旁的 **★** 可将其设为该物品的首选配方（与计算器同步）。
+物品和机器视图都提供 chip 筛选栏；机器视图可按 Tier 与 Heat Cost 筛选。在物品视图中，点击配方旁的 **★** 可将其设为该物品的首选配方（与计算器同步）。
 点击配方行中的任意物品，可直接跳转到该物品的详情页。
 
 ---
@@ -711,7 +744,6 @@ URL 反映当前状态，可收藏或分享：
 
 | 按钮 | 效果 |
 |---|---|
-| **保存设置** | 持久化当前升级等级和物流设置 |
 | **重置配方数据** | 清除本地数据库，还原为内置版本（自动备份当前版本） |
 | **重置翻译** | 清除本地翻译覆写（自动备份当前版本） |
 | **全部重置** | 清除所有 \`localStorage\` 数据并以默认值重新加载 |
