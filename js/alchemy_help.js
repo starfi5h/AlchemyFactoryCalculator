@@ -235,7 +235,53 @@ function _injectHelpStyles() {
         }
 
         /* ── README / 完整說明 ── */
-        .wiki-readme-area { flex: 1; min-height: 0; overflow-y: auto; }
+        .wiki-readme-area-wrap { flex: 1; min-height: 0; overflow: hidden; }
+        .wiki-readme-layout { display: flex; flex-direction: row; height: 100%; width: 100%; overflow: hidden; position: relative; }
+        .wiki-readme-area { flex: 1; min-width: 0; overflow-y: auto; }
+        .wiki-toc-sidebar {
+            flex: 0 0 220px; width: 220px; overflow-y: auto;
+            border-left: 1px solid var(--border, #333);
+            padding: 16px 14px; box-sizing: border-box; background: var(--bg, #161616);
+        }
+        .wiki-toc-title {
+            font-size: 0.72em; font-weight: 700; letter-spacing: 0.08em; text-transform: uppercase;
+            color: var(--text-muted, #777); margin-bottom: 8px;
+        }
+        .wiki-toc-list { display: flex; flex-direction: column; gap: 2px; }
+        .wiki-toc-link {
+            display: block; padding: 4px 8px; border-radius: 4px;
+            font-size: 0.82em; color: var(--text-muted, #999); text-decoration: none;
+            border-left: 2px solid transparent; line-height: 1.4;
+        }
+        .wiki-toc-link:hover { color: var(--text, #eee); background: var(--hover-bg, #1e2a3a); }
+        .wiki-toc-link.active { color: var(--accent, #4caf50); border-left-color: var(--accent, #4caf50); background: rgba(76,175,80,0.08); font-weight: 600; }
+        .wiki-toc-level-3 { padding-left: 20px; font-size: 0.78em; }
+
+        .wiki-toc-mobile-btn { display: none; }
+        .wiki-toc-overlay { display: none; }
+
+        @media (max-width: 720px) {
+            .wiki-toc-sidebar {
+                position: absolute; top: 0; right: 0; bottom: 0; z-index: 400;
+                width: 240px; flex: none;
+                box-shadow: -4px 0 14px rgba(0,0,0,0.4);
+                transform: translateX(100%); transition: transform 0.25s ease;
+            }
+            .wiki-toc-sidebar.open { transform: translateX(0); }
+            .wiki-toc-mobile-btn {
+                display: flex; align-items: center; justify-content: center;
+                position: absolute; right: 14px; bottom: 14px; z-index: 401;
+                width: 42px; height: 42px; border-radius: 50%;
+                background: var(--accent, #4caf50); color: #fff; border: none;
+                font-size: 1.1em; cursor: pointer; box-shadow: 0 3px 10px rgba(0,0,0,0.4);
+            }
+            .wiki-toc-overlay {
+                display: block; position: absolute; inset: 0; z-index: 399;
+                background: rgba(0,0,0,0.5); opacity: 0; pointer-events: none; transition: opacity 0.2s;
+            }
+            .wiki-toc-overlay.open { opacity: 1; pointer-events: auto; }
+        }
+
         .md-container { max-width: 900px; margin: 0 auto; padding: 20px 24px 60px; font-size: 0.86em; line-height: 1.7; color: var(--text, #ddd); }
         .md-container h1, .md-container h2, .md-container h3, .md-container h4 {
             color: var(--text, #eee); margin: 26px 0 12px; font-weight: 700;
@@ -977,6 +1023,8 @@ function _renderMachineDetail(machineName) {
 
 /* ─── 12b. README / 完整說明 ───────────────────────────────────────────────── */
 var _readmeCache = { en: null, zh: null };
+var _readmeScrollContainer = null;
+var _readmeScrollHandler = null;
 
 function _currentReadmeLang() {
     return (window.ALCHEMY_I18N && window.ALCHEMY_I18N.enabled === false) ? 'en' : 'zh';
@@ -987,51 +1035,155 @@ function _readmeUrlForLang(lang) {
 }
 
 function _buildReadmeAreaHTML() {
-    return '<div class="wiki-readme-area" id="wiki-readme-area">'
-        + '<div class="md-loading">' + _tn('Loading...') + '</div>'
+    return '<div class="wiki-readme-layout" id="wiki-readme-layout">'
+        + '<div class="wiki-readme-area" id="wiki-readme-area">'
+        + '<div class="md-container" id="wiki-readme-content"><div class="md-loading">' + _tn('Loading...') + '</div></div>'
+        + '</div>'
+        + '<div class="wiki-toc-sidebar" id="wiki-toc-sidebar">'
+        + '<div class="wiki-toc-title">' + _tn('Table of Contents') + '</div>'
+        + '<div class="wiki-toc-list" id="wiki-toc-list"></div>'
+        + '</div>'
+        + '<button class="wiki-toc-mobile-btn" id="wiki-toc-mobile-btn" onclick="_toggleReadmeTocDrawer()" title="' + _tn('Table of Contents') + '">☰</button>'
+        + '<div class="wiki-toc-overlay" id="wiki-toc-overlay" onclick="_toggleReadmeTocDrawer(false)"></div>'
         + '</div>';
 }
 
 function _loadReadmeView() {
     var lang = _currentReadmeLang();
-    var area = document.getElementById('wiki-readme-area');
-    if (!area) return;
+    var contentEl = document.getElementById('wiki-readme-content');
+    if (!contentEl) return;
 
-    if (_readmeCache[lang] !== null) {
-        area.innerHTML = '<div class="md-container">' + _readmeCache[lang] + '</div>';
+    if (_readmeCache[lang]) {
+        _renderReadmeContent(_readmeCache[lang]);
         return;
     }
 
     // 優先使用內嵌的 README 內容 (js/alchemy_readme.js)，這樣本地 file:// 開啟也能正常顯示
     var embedded = window.ALCHEMY_README && window.ALCHEMY_README[lang];
     if (embedded) {
-        var html = _mdToHtml(embedded);
-        _readmeCache[lang] = html;
-        area.innerHTML = '<div class="md-container">' + html + '</div>';
+        var result = _mdToHtml(embedded);
+        _readmeCache[lang] = result;
+        _renderReadmeContent(result);
         return;
     }
 
     // Fallback：內嵌內容不存在時才嘗試 fetch (例如未載入 alchemy_readme.js)
-    area.innerHTML = '<div class="md-loading">' + _tn('Loading...') + '</div>';
+    contentEl.innerHTML = '<div class="md-loading">' + _tn('Loading...') + '</div>';
     fetch(_readmeUrlForLang(lang))
         .then(function(res) {
             if (!res.ok) throw new Error('HTTP ' + res.status);
             return res.text();
         })
         .then(function(text) {
-            var html = _mdToHtml(text);
-            _readmeCache[lang] = html;
-            var liveArea = document.getElementById('wiki-readme-area');
-            if (liveArea) liveArea.innerHTML = '<div class="md-container">' + html + '</div>';
+            var result = _mdToHtml(text);
+            _readmeCache[lang] = result;
+            _renderReadmeContent(result);
         })
         .catch(function(err) {
-            var liveArea = document.getElementById('wiki-readme-area');
-            if (liveArea) {
-                liveArea.innerHTML = '<div class="md-error">Failed to load ' + _readmeUrlForLang(lang)
+            var liveEl = document.getElementById('wiki-readme-content');
+            if (liveEl) {
+                liveEl.innerHTML = '<div class="md-error">Failed to load ' + _readmeUrlForLang(lang)
                     + ' (' + err.message + ').<br>If you opened this file directly (file://), '
                     + 'your browser may block local fetches — try running it via a local server or the hosted version.</div>';
             }
         });
+}
+
+/** 將轉換結果 {html, toc} 灌入內容區與側邊欄，並重新綁定 scroll-spy */
+function _renderReadmeContent(result) {
+    var contentEl = document.getElementById('wiki-readme-content');
+    if (contentEl) contentEl.innerHTML = result.html;
+    _renderReadmeToc(result.toc);
+    _attachReadmeScrollSpy();
+}
+
+/* ─── README TOC: render / scroll-spy / mobile drawer ─── */
+
+function _renderReadmeToc(toc) {
+    var listEl = document.getElementById('wiki-toc-list');
+    if (!listEl) return;
+    if (!toc || toc.length === 0) { listEl.innerHTML = ''; return; }
+    listEl.innerHTML = toc.map(function(item) {
+        return '<a href="#" class="wiki-toc-link wiki-toc-level-' + item.level + '" data-target="' + item.id + '" '
+            + 'onclick="_onReadmeTocClick(event, \'' + item.id + '\')">' + _mdInline(item.text) + '</a>';
+    }).join('');
+}
+
+function _onReadmeTocClick(e, id) {
+    e.preventDefault();
+    var target = document.getElementById(id);
+    var container = document.getElementById('wiki-readme-area');
+    if (target && container) {
+        container.scrollTo({ top: target.offsetTop - 10, behavior: 'smooth' });
+    }
+    _setActiveTocLink(id);
+    _toggleReadmeTocDrawer(false); // 桌面版本呼叫此函式為 no-op (沒有 .open class 可移除)
+}
+
+function _setActiveTocLink(id) {
+    document.querySelectorAll('.wiki-toc-link').forEach(function(el) {
+        el.classList.toggle('active', el.dataset.target === id);
+    });
+}
+
+/** 用 scrollTop 與各標題 offsetTop 比對，滾動時高亮「目前捲動位置對應的最後一個標題」 */
+function _attachReadmeScrollSpy() {
+    if (_readmeScrollContainer && _readmeScrollHandler) {
+        _readmeScrollContainer.removeEventListener('scroll', _readmeScrollHandler);
+    }
+    _readmeScrollContainer = null;
+    _readmeScrollHandler = null;
+
+    var container = document.getElementById('wiki-readme-area');
+    var content = document.getElementById('wiki-readme-content');
+    if (!container || !content) return;
+
+    var headings = Array.prototype.slice.call(content.querySelectorAll('h2[id], h3[id]'));
+    if (headings.length === 0) return;
+
+    var TOC_SCROLL_BUFFER = 20; // 與 _onReadmeTocClick 的捲動偏移量 (-10) 搭配，避免剛好卡在邊界誤判
+
+    function updateActive() {
+        var scrollTop = container.scrollTop;
+        var activeId = headings[0].id;
+        for (var i = 0; i < headings.length; i++) {
+            if (headings[i].offsetTop - TOC_SCROLL_BUFFER <= scrollTop) {
+                activeId = headings[i].id;
+            } else {
+                break;
+            }
+        }
+        _setActiveTocLink(activeId);
+    }
+
+    _readmeScrollContainer = container;
+    _readmeScrollHandler = updateActive;
+    container.addEventListener('scroll', _readmeScrollHandler, { passive: true });
+    updateActive(); // 立即計算一次初始狀態
+}
+
+/** 手機版抽屜開關；force 為 true/false 時強制設定狀態，省略則切換目前狀態 */
+function _toggleReadmeTocDrawer(force) {
+    var sidebar = document.getElementById('wiki-toc-sidebar');
+    var overlay = document.getElementById('wiki-toc-overlay');
+    if (!sidebar || !overlay) return;
+    var show = (typeof force === 'boolean') ? force : !sidebar.classList.contains('open');
+    sidebar.classList.toggle('open', show);
+    overlay.classList.toggle('open', show);
+}
+
+/* ─── Slugify heading text → stable, deduped anchor id ─── */
+var _readmeSlugCounts = {};
+function _slugify(rawText) {
+    var s = rawText
+        .replace(/[`*[\]()]/g, '')
+        .trim().toLowerCase()
+        .replace(/[^\w\u4e00-\u9fff]+/g, '-')
+        .replace(/^-+|-+$/g, '');
+    if (!s) s = 'section';
+    var count = _readmeSlugCounts[s] || 0;
+    _readmeSlugCounts[s] = count + 1;
+    return count > 0 ? (s + '-' + count) : s;
 }
 
 /* ─── Simple hand-written Markdown → HTML converter (subset, tuned for this repo's README) ─── */
@@ -1053,6 +1205,8 @@ function _mdInline(text) {
 function _mdToHtml(md) {
     var lines = md.replace(/\r\n/g, '\n').split('\n');
     var html = [];
+    var toc = [];
+    _readmeSlugCounts = {}; // 每次重新轉換都重置，避免跨語言/重載時 id 累加
     var i = 0;
     var inList = null; // 'ul' | 'ol' | null
     var inCode = false;
@@ -1091,7 +1245,13 @@ function _mdToHtml(md) {
         if (hMatch) {
             closeList();
             var level = hMatch[1].length;
-            html.push('<h' + level + '>' + _mdInline(hMatch[2].trim()) + '</h' + level + '>');
+            var rawText = hMatch[2].trim();
+            var headingId = null;
+            if (level === 2 || level === 3) {
+                headingId = _slugify(rawText);
+                toc.push({ level: level, text: rawText, id: headingId });
+            }
+            html.push('<h' + level + (headingId ? ' id="' + headingId + '"' : '') + '>' + _mdInline(rawText) + '</h' + level + '>');
             i++;
             continue;
         }
@@ -1158,13 +1318,18 @@ function _mdToHtml(md) {
         html.push('<p>' + paraLines.map(_mdInline).join('<br>') + '</p>');
     }
     closeList();
-    return html.join('\n');
+    return { html: html.join('\n'), toc: toc };
 }
 
 /* ─── 13. GUIDES INNER HTML ───────────────────────────────────────────────── */
 
 /* ─── 14. SUB-NAV SWITCHER ────────────────────────────────────────────────── */
 function wikiSwitchView(view) {
+    if (_readmeScrollContainer && _readmeScrollHandler) {
+        _readmeScrollContainer.removeEventListener('scroll', _readmeScrollHandler);
+        _readmeScrollContainer = null;
+        _readmeScrollHandler = null;
+    }
     _currentWikiView = view;
     document.querySelectorAll('.wiki-tab-btn').forEach(function(btn) {
         btn.classList.toggle('active', btn.dataset.view === view);
