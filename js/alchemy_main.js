@@ -146,6 +146,13 @@ function init() {
     if (urlTab) switchTab(urlTab, false);
 
     document.getElementById('db-gameversion-text').innerText = t("Game version : ") + DB.gameVersion ?? 0;
+    
+    const metaDesc = document.querySelector('meta[name="description"]');
+    if (metaDesc) {
+        metaDesc.content = window.ALCHEMY_I18N.enabled ?
+            "游戏《炼金工厂》(Alchemy Factory) 的生产规划计算器。支持多目标生产树、炼金锅配方搜索、节点图编辑器，内置百科与数据库编辑，中英双语。" :
+            "A production planning tool for the game Alchemy Factory. Supports cauldron recipes, multi-targets production trees, node graph editor, built-in wiki, and database editing";
+    }
 }
 
 function loadSettingsToUI() {
@@ -292,11 +299,12 @@ function toggleLanguage() {
     const itemParam = url.searchParams.get('item');
     if (itemParam) {
         url.searchParams.set('item', queryDualItemName(itemParam));
-    }    
+    }
+    DB.settings.targetItem  = queryDualItemName(DB.settings.targetItem);
     DB.settings.defaultFuel = queryDualItemName(DB.settings.defaultFuel);
     DB.settings.defaultFert = queryDualItemName(DB.settings.defaultFert);
     saveSettings();
-
+    
     window.location.href = url.toString();
 }
 
