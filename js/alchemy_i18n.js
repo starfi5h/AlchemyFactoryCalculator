@@ -501,7 +501,7 @@ window.ALCHEMY_I18N = {
         "⭱ Import": "⭱ 匯入"
     },
     "items": {
-        // Game version: 0.4.3.4071
+        // Game version: 1.0.4917
         // Group by meaning
 
         // --- RAW RESOURCES ---
@@ -599,9 +599,11 @@ window.ALCHEMY_I18N = {
         "Small Wooden Gear": "木制小齿轮",
         "Iron Nails": "铁钉",
         "Wooden Pulley": "木滑轮",
+        "Cart": "货车",
         "Steel Gear": "钢齿轮",
         "Copper Bearing": "铜轴承",
-        "Bronze Rivet": "青铜铆钉",
+        "Bronze Rivet": "青铜铆钉",        
+        "Marble": "大理石",
 
         // --- GOODS & CURRENCY ---
         "Mortar": "研钵",
@@ -631,6 +633,13 @@ window.ALCHEMY_I18N = {
         "Fairy Tear": "精灵之泪",
         "Moon Tear": "月之泪",
         "Steam": "蒸气",
+
+        // --- BEVERAGE ---
+        "Whispering Fields": "田野低语",
+        "Strange Tide": "奇异潮汐",
+        "Lavender Dream": "薰衣草之梦",
+        "World Tree Vintage": "世界树秘酿",
+        "Alchemistˈs Sigh": "炼金术士的叹息",
 
         // --- POTIONS ---
         "Healing Potion": "治疗药水",
@@ -680,6 +689,7 @@ window.ALCHEMY_I18N = {
 
         // --- SPECIAL ---
         "Portal Sigil": "传送门印章",
+        "Grand Portal Sigil": "大传送门印章",
         "Gelatinous Gridlock": "格姆胶",
         "Automatic Cashier": "自动收银机"
     },
@@ -717,8 +727,10 @@ window.ALCHEMY_I18N = {
         "Advanced Shaper": "高级雕刻机",
         "Arcane Shaper": "奥术雕刻机",
         "Nursery": "育苗圃",
+        "Miniature World Tree": "微缩世界树",
         "World Tree Nursery": "世界树育苗圃",
         "Knowledge Altar": "知识祭坛",
+        "Brew Barrel": "酿造桶",
         "Purchasing Portal": "进货传送门",
         "Dispatch Portal": "发货传送门",
         "Bank Portal": "银行传送门"

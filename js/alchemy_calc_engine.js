@@ -649,7 +649,7 @@
             }
 
             let fertRate = 0;
-            if (recipe.machine === "Nursery" || recipe.machine === "World Tree Nursery") {
+            if (recipe.nutrientCost) {
                 const totalNutrientsNeeded =
                     netRate * (recipe.nutrientCost || 0) / recipeInfo.batchYield;
                 const itemsNeeded = totalNutrientsNeeded / grossFertVal;

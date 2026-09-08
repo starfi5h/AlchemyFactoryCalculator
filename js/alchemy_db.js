@@ -1,7 +1,7 @@
 window.ALCHEMY_DB = {
-    "version": 53,
-    "date": "2026.09.02",
-    "gameVersion": "0.5.4539",
+    "version": 54,
+    "date": "2026.09.09",
+    "gameVersion": "1.0.4917",
     "items": {
         // --- RAW RESOURCES ---
         "Logs": { "id": 1, "category": "Raw Materials", "buyPrice": 200, "maxStack": -200, "heat": 2000, "baseCost": 1, "cauldronCost": 0.8, "paradoxTime": 9.375, "tier": 1 },
@@ -41,6 +41,7 @@ window.ALCHEMY_DB = {
         "Linen Thread": { "id": 205, "category": "Bio-Based", "maxStack": 200, "cauldronCost": 9, "tier": 2 },
         "Linen Rope": { "id": 206, "category": "Bio-Based", "sellPrice": 36, "maxStack": 200, "cauldronCost": 13, "tier": 2 },        
         "Linen": { "id": 307, "category": "Bio-Based", "sellPrice": 165, "cauldronCost": 60, "tier": 3 },
+        "Bandage": { "id": 308, "category": "Bio-Based", "sellPrice": 350, "wholesalePrice": 240, "cauldronCost": 120, "tier": 3 },
         "Plant Ash": { "id": 304, "category": "Bio-Based", "cauldronCost": 4, "tier": 3 },
         "Sage Powder": { "id": 305, "category": "Bio-Based", "cauldronCost": 3.5, "tier": 3 },
         "Soap": { "id": 413, "category": "Bio-Based", "sellPrice": 60, "cauldronCost": 23, "tier": 4 },
@@ -92,9 +93,11 @@ window.ALCHEMY_DB = {
         "Brick": { "id": 408, "category": "Component", "maxStack": 200, "sellPrice": 70, "cauldronCost": 25, "tier": 4 },
         "Glass": { "id": 412, "category": "Component", "sellPrice": 75, "maxStack": 200, "cauldronCost": 27, "tier": 4 },
         "Wooden Pulley": { "id": 405, "category": "Component", "sellPrice": 44, "maxStack": 50, "cauldronCost": 14, "tier": 4 },
+        "Cart": { "id": 418, "category": "Component", "maxStack": 10, "cauldronCost": 75, "tier": 4 },
         "Steel Gear": { "id": 506, "category": "Component", "sellPrice": 450, "maxStack": 200, "cauldronCost": 170, "tier": 5 },
         "Copper Bearing": { "id": 612, "category": "Component", "sellPrice": 300, "maxStack": 200, "cauldronCost": 136.5, "tier": 6 },
-        "Bronze Rivet": { "id": 613, "category": "Component", "sellPrice": 120, "maxStack": 200, "cauldronCost": 51, "tier": 6 },
+        "Bronze Rivet": { "id": 613, "category": "Component", "sellPrice": 120, "maxStack": 200, "cauldronCost": 51, "tier": 6 },        
+        "Marble": { "id": 818, "category": "Component", "maxStack": 50, "cauldronCost": 5404, "tier": 8 },
 
         // --- METAL ---
         "Iron Ingot": { "id": 301, "category": "Metal", "maxStack": 200, "cauldronCost": 15, "tier": 3 },
@@ -115,7 +118,12 @@ window.ALCHEMY_DB = {
         "Pure Gold Dust": { "id": 904, "category": "Metal", "cauldronCost": 85673.6, "cauldronMulti": 1, "cauldronTarget": 100673.6, "tier": 9 },
 
         // --- LIQUIDS ---
-        "Linseed Oil": { "id": 409, "category": "Liquid", "liquid": true, "cauldronCost": 0.04, "tier": 4 },
+        "Whispering Fields": { "id": 417, "category": "Liquid", "virtual": true, "liquid": true, "sellPrice": 420, "cauldronCost": 100, "tier": 4 },
+        "Strange Tide": { "id": 637, "category": "Liquid", "virtual": true, "liquid": true, "sellPrice": 1806, "cauldronCost": 429, "tier": 6 },
+        "Lavender Dream": { "id": 711, "category": "Liquid", "virtual": true, "liquid": true, "sellPrice": 8000, "cauldronCost": 2027.4, "tier": 7 },
+        "World Tree Vintage": { "id": 817, "category": "Liquid", "virtual": true, "liquid": true, "sellPrice": 36000, "cauldronCost": 9642, "tier": 8 },
+        "Alchemistˈs Sigh": { "id": 915, "category": "Liquid", "virtual": true, "liquid": true, "sellPrice": 400000, "cauldronCost": 106014.8, "tier": 9 },
+        "Linseed Oil": { "id": 409, "category": "Liquid", "liquid": true, "cauldronCost": 0.1, "tier": 4 },
         "Fruit Wine": { "id": 410, "category": "Liquid", "liquid": true, "cauldronCost": 1.2, "tier": 4 },
         "Limewater": { "id": 411, "category": "Liquid", "liquid": true, "cauldronCost": 0.2, "tier": 4 },
         "Brine": { "id": 606, "category": "Liquid", "liquid": true, "cauldronCost": 3.25, "tier": 6 },
@@ -165,14 +173,13 @@ window.ALCHEMY_DB = {
         "Sapphire": { "id": 31, "category": "Jewelry", "sellPrice": 480000, "cauldronCost": 400000, "cauldronMulti": 1, "cauldronTarget": 400000, "tier": 9 },
         "Emerald": { "id": 32, "category": "Jewelry", "sellPrice": 700000, "cauldronCost": 600000, "cauldronMulti": 1, "cauldronTarget": 600000, "tier": 9 },
         "Turquoise": { "id": 501, "category": "Jewelry", "sellPrice": 290, "cauldronCost": 108, "cauldronMulti": 1, "cauldronTarget": 108, "tier": 5 },
-        "Pocket Watch": { "id": 617, "category": "Jewelry", "sellPrice": 1950, "wholesalePrice": 1300, "cauldronCost": 789, "tier": 6 },
-        "Malachite": { "id": 618, "category": "Jewelry", "sellPrice": 1020, "cauldronCost": 367, "cauldronMulti": 1, "cauldronTarget": 427, "tier": 6 },
-        "Clockwork Bird": { "id": 621, "category": "Jewelry", "sellPrice": 5000, "cauldronCost": 2022, "tier": 6 },
+        "Pocket Watch": { "id": 617, "category": "Jewelry", "sellPrice": 2000, "wholesalePrice": 1300, "cauldronCost": 789, "tier": 6 },
+        "Malachite": { "id": 618, "category": "Jewelry", "sellPrice": 1020, "cauldronCost": 367, "cauldronMulti": 1, "cauldronTarget": 427, "tier": 6 },        
         "Topaz": { "id": 704, "category": "Jewelry", "sellPrice": 2800, "cauldronCost": 1205.9, "cauldronMulti": 1, "cauldronTarget": 1705.9, "tier": 7 },
         "Obsidian": { "id": 806, "category": "Jewelry", "sellPrice": 11000, "cauldronCost": 5404.0, "cauldronMulti": 1, "cauldronTarget": 6404.0, "tier": 8 },
         "Silver Amulet": { "id": 810, "category": "Jewelry", "sellPrice": 51000, "wholesalePrice": 34000, "cauldronCost": 24656, "tier": 8 },
         "Lapis Lazuli": { "id": 813, "category": "Jewelry", "sellPrice": 32000, "maxStack": 50, "cauldronCost": 15624, "cauldronMulti": 1, "cauldronTarget": 40624, "tier": 8 },
-        "Crown": { "id": 907, "category": "Jewelry", "sellPrice": 1600000, "cauldronCost": 854167.8, "tier": 9 },
+        "Crown": { "id": 907, "category": "Jewelry", "sellPrice": 1700000, "cauldronCost": 854167.8, "tier": 9 },
 
         // --- RELICS ---
         "Jupiter": { "id": 502, "category": "Relic", "exp": 10, "sellPrice": 30000, "maxStack": -300, "cauldronCost": 34, "tier": 5 },
@@ -180,15 +187,16 @@ window.ALCHEMY_DB = {
         "Mars": { "id": 620, "category": "Relic", "exp": 126, "sellPrice": 280000, "maxStack": -75, "cauldronCost": 1678, "tier": 6 },
         "Venus": { "id": 710, "category": "Relic", "exp": 510, "sellPrice": 1000000, "maxStack": -200, "cauldronCost": 2549.6, "tier": 7 },
         "Mercury": { "id": 814, "category": "Relic", "exp": 2693, "sellPrice": 5200000, "maxStack": -100, "cauldronCost": 26783.3, "tier": 8 },
-        "Luna": { "id": 914, "category": "Relic", "exp": 9537.5, "sellPrice": 18500000, "maxStack": -75, "cauldronCost": 187482.6, "tier": 9 },
-        "Sol": { "id": 1001, "category": "Relic", "exp": 24439, "sellPrice": 42000000, "maxStack": -5, "cauldronCost": 5591400.6, "tier": 9 },
+        "Luna": { "id": 914, "category": "Relic", "exp": 9537.5, "sellPrice": 20600000, "maxStack": -75, "cauldronCost": 187482.6, "tier": 9 },
+        "Sol": { "id": 1001, "category": "Relic", "exp": 24439, "sellPrice": 44500000, "maxStack": -5, "cauldronCost": 5591400.6, "tier": 9 },
 
         // --- OTHER ---        
         "Portal Sigil": { "id": 2001, "category": "Other", "buyPrice": 1500, "baseCost": 1500, "cauldronCost": 750, "paradoxTime": 2, "tier": 4 },
         "Gelatinous Gridlock": { "id": 2002, "category": "Other", "buyPrice": 100, "baseCost": 100, "cauldronCost": 100, "paradoxTime": 15, "tier": 1 },
         "Automatic Cashier": { "id": 2003, "category": "Other", "virtual": true, "buyPrice": 3000, "cauldronCost": 1400, "tier": 4 },
+        "Grand Portal Sigil": { "id": 2004, "category": "Other", "buyPrice": 16000, "cauldronCost": 5000, "tier": 5 },
         "Mortar": { "id": 203, "category": "Other", "sellPrice": 48, "cauldronCost": 18, "tier": 2 },
-        "Bandage": { "id": 308, "category": "Other", "sellPrice": 350, "wholesalePrice": 240, "cauldronCost": 120, "tier": 3 },        
+        "Clockwork Bird": { "id": 621, "category": "Other", "cauldronCost": 2022, "tier": 6 },
         "Moonlit Soap": { "id": 913, "category": "Other", "sellPrice": 995280, "wholesalePrice": 600000, "cauldronCost": 485822.8, "tier": 9 },
     },
     
@@ -228,9 +236,9 @@ window.ALCHEMY_DB = {
         "Arcane Processor": { "buildCost": { "Steel Ingot": 6, "Steel Gear": 12, "Lapis Lazuli": 2 }, "tier": 9, L:9,W:9,H:10 },
 
         // --- Heating ---
-        "Stone Furnace": { "heatSelf": 1, "slots": 9, "isGenerator": true, "buildCost": { "Stone": 20 }, "tier": 3, L:3,W:3,H:3 }, 
-        "Blast Furnace": { "heatSelf": 4, "slots": 42, "isGenerator": true, "buildCost": { "Brick": 30 }, "tier": 4, L:7,W:6,H:3 }, 
-        "Steam Heating Pad": { "heatSelf": 12, "slots": 9, "isGenerator": true, "buildCost": { "Steel Ingot": 3, "Copper Ingot": 3 }, "tier": 6, L:3,W:3,H:1 }, 
+        "Stone Furnace": { "heatSelf": 0, "slots": 9, "isGenerator": true, "buildCost": { "Stone": 20 }, "tier": 3, L:3,W:3,H:3 }, 
+        "Blast Furnace": { "heatSelf": 0, "slots": 42, "isGenerator": true, "buildCost": { "Brick": 30 }, "tier": 4, L:7,W:6,H:3 }, 
+        "Steam Heating Pad": { "heatSelf": 0, "slots": 9, "isGenerator": true, "buildCost": { "Steel Ingot": 3, "Copper Ingot": 3 }, "tier": 6, L:3,W:3,H:1 }, 
 
         // --- Raw Material Production ---
         "Table Saw": { "buildCost": { "Plank": 5 }, "tier": 1, L:4,W:3,H:3 },
@@ -238,8 +246,10 @@ window.ALCHEMY_DB = {
         "Seed Plot": { "buildCost": { "Stone": 8 }, "tier": 2, L:4,W:4,H:2 },
         "Iron Smelter": { "heatCost": 9.0, "slotsRequired": 9, "buildCost": { "Stone": 15 }, "tier": 3, L:3,W:3,H:3 },
         "Nursery": { "fertility": true, "buildCost": { "Iron Ingot": 8, "Clay": 4 }, "tier": 4, L:3,W:3,H:4 },
+        "Miniature World Tree": { "fertility": true, "buildCost": { "World Tree Seed": 1, "Iron Ingot": 8, "Clay": 4 }, "tier": 8, L:3,W:3,H:4 },
+        "World Tree Nursery": { "fertility": true, "buildCost": { "World Tree Seed": 1, "Iron Ingot": 100, "Clay": 100  }, "tier": 8, L:9,W:9,H:10 },
 
-        "World Tree Nursery": { "fertility": true, "buildCost": { "Iron Ingot": 100, "Clay": 100  }, "tier": 8, L:9,W:9,H:10 },
+        "Brew Barrel": { "buildCost": { "Iron Ingot": 10, "Plank": 30 }, "tier": 4, L:7,W:4,H:8 },        
         "Purchasing Portal": { "buildCost": { "Portal Sigil": 1, "Plank": 5 }, "tier": 4, L:3,W:2,H:2 },
         "Bank Portal": { "buildCost": { "Portal Sigil": 1, "Iron Ingot": 5 }, "tier": 4, L:3,W:2,H:2 },
         "Dispatch Portal": { "buildCost": { "Portal Sigil": 1, "Iron Ingot": 5 }, "tier": 4, L:3,W:2,H:2 }
@@ -254,7 +264,8 @@ window.ALCHEMY_DB = {
         { "id": "Lavender", "machine": "Nursery", "buildCost": "Lavender Seeds", "inputs": {}, "outputs": { "Lavender": 1 }, "nutrientCost": 2160},
         { "id": "Gentian_Dual", "machine": "Nursery", "buildCost": "Gentian Seeds", "inputs": {}, "outputs": { "Gentian": 1, "Gentian Nectar": 1 }, "nutrientCost": 12000, "sharedOutputs": 2},
         { "id": "Gentian_Mixture", "machine": "Nursery", "buildCost": "Gentian Seeds", "inputs": {}, "outputs": { "Gentian Mixture": 2 }, "nutrientCost": 12000, "sharedOutputs": 2},
-        { "id": "World Tree_Dual", "machine": "World Tree Nursery", "buildCost": "World Tree Seed", "inputs": {}, "outputs": { "World Tree Leaf": 99, "World Tree Core":1 }, "baseTime": 300.0, "nutrientCost": 5970000},
+        { "id": "World Tree_Mini", "machine": "Miniature World Tree", "inputs": {}, "outputs": { "World Tree Leaf": 1 }, "baseTime": 3, "nutrientCost": 30000 },
+        { "id": "World Tree_Dual", "machine": "World Tree Nursery", "inputs": {}, "outputs": { "World Tree Leaf": 99, "World Tree Core":1 }, "baseTime": 300.0, "nutrientCost": 5970000},        
 
         { "id": "Seed Plot (Flax)", "machine": "Seed Plot", "inputs": { "Flax Seeds": 1 }, "outputs": { "Flax": 200 }, "baseTime": 400 },
         { "id": "Seed Plot (Sage)", "machine": "Seed Plot", "inputs": { "Sage Seeds": 1 }, "outputs": { "Sage": 180 }, "baseTime": 540 },
@@ -291,6 +302,7 @@ window.ALCHEMY_DB = {
         { "id": "Gentian Seeds", "machine": "Purchasing Portal", "inputs": {}, "outputs": { "Gentian Seeds": 1 }, "baseTime": 1 },
         { "id": "World Tree Seed", "machine": "Purchasing Portal", "inputs": {}, "outputs": { "World Tree Seed": 1 }, "baseTime": 1 },
         { "id": "Portal Sigil", "machine": "Purchasing Portal", "inputs": {}, "outputs": { "Portal Sigil": 1 }, "baseTime": 1 },
+        { "id": "Grand Portal Sigil", "machine": "Purchasing Portal", "inputs": {}, "outputs": { "Grand Portal Sigil": 1 }, "baseTime": 1 },
         { "id": "Gelatinous Gridlock", "machine": "Purchasing Portal", "inputs": {}, "outputs": { "Gelatinous Gridlock": 1 }, "baseTime": 1 },
 
         // --- BASICS ---
@@ -311,10 +323,7 @@ window.ALCHEMY_DB = {
         { "id": "Plant Ash", "machine": "Crucible", "inputs": { "Sage": 1 }, "outputs": { "Plant Ash": 1 }, "baseTime": 3.0 },
         { "id": "Chamomile Powder", "machine": "Grinder", "inputs": { "Chamomile": 1 }, "outputs": { "Chamomile Powder": 1 }, "baseTime": 3.0 },
         { "id": "Gentian Powder", "machine": "Grinder", "inputs": { "Gentian": 1 }, "outputs": { "Gentian Powder": 1 }, "baseTime": 3.0 },
-        { "id": "Linseed Oil", "machine": "Extractor", "inputs": { "Flax": 1 }, "outputs": { "Linseed Oil": 50 }, "baseTime": 2.0 },
-        { "id": "Fruit Wine", "machine": "Extractor", "inputs": { "Redcurrant": 1 }, "outputs": { "Fruit Wine": 10 }, "baseTime": 6.0 },
-        { "id": "Limewater", "machine": "Extractor", "inputs": { "Quicklime Powder": 1 }, "outputs": { "Limewater": 30 }, "baseTime": 3.0 },
-        { "id": "Soap", "machine": "Blender", "inputs": { "Plant Ash": 3, "Linseed Oil": 200 }, "outputs": { "Soap": 1 }, "baseTime": 3.0 },
+        { "id": "Soap", "machine": "Blender", "inputs": { "Plant Ash": 3, "Linseed Oil": 80 }, "outputs": { "Soap": 1 }, "baseTime": 3.0 },
         { "id": "Soap Powder", "machine": "Grinder", "inputs": { "Soap": 1 }, "outputs": { "Soap Powder": 1 }, "baseTime": 6.0 },
         { "id": "Perfumed Soap", "machine": "Blender", "inputs": { "Soap Powder": 4, "Lavender Essential Oil": 30 }, "outputs": { "Perfumed Soap": 1 }, "baseTime": 8.0 },
         { "id": "Perfumed Soap Powder", "machine": "Grinder", "inputs": { "Perfumed Soap": 1 }, "outputs": { "Perfumed Soap Powder": 1 }, "baseTime": 8.0 },
@@ -329,16 +338,17 @@ window.ALCHEMY_DB = {
         { "id": "Small Wooden Gear", "machine": "Processor", "inputs": { "Large Wooden Gear": 1 }, "outputs": { "Small Wooden Gear": 3 }, "baseTime": 12.0 },
         { "id": "Wooden Pulley", "machine": "Assembler", "inputs": { "Plank": 2, "Linen Rope": 1 }, "outputs": { "Wooden Pulley": 1 }, "baseTime": 4.0 },
         { "id": "Iron Nails", "machine": "Processor", "inputs": { "Iron Ingot": 1 }, "outputs": { "Iron Nails": 3 }, "baseTime": 12.0 },
+        { "id": "Cart", "machine": "Processor", "inputs": { "Iron Ingot": 5 }, "outputs": { "Cart": 1 }, "baseTime": 30.0 },
         { "id": "Steel Gear", "machine": "Processor", "inputs": { "Steel Ingot": 1 }, "outputs": { "Steel Gear": 1 }, "baseTime": 16.0 },
         { "id": "Copper Bearing", "machine": "Processor", "inputs": { "Copper Ingot": 1 }, "outputs": { "Copper Bearing": 2 }, "baseTime": 12.0 },
         { "id": "Bronze Rivet", "machine": "Processor", "inputs": { "Bronze Ingot": 1 }, "outputs": { "Bronze Rivet": 3 }, "baseTime": 12.0 },
+        { "id": "Clockwork Bird", "machine": "Advanced Assembler", "inputs": { "Steel Ingot": 6, "Steel Gear": 2, "Malachite": 2 }, "outputs": { "Clockwork Bird": 1 }, "baseTime": 12.0 },
 
         // --- GOODS ---
         { "id": "Linen", "machine": "Assembler", "inputs": { "Linen Thread": 10 }, "outputs": { "Linen": 1 }, "baseTime": 5.0 },
         { "id": "Bandage", "machine": "Assembler", "inputs": { "Linen": 1, "Healing Potion": 2 }, "outputs": { "Bandage": 1 }, "baseTime": 10.0 },
         { "id": "Silver Amulet", "machine": "Assembler", "inputs": { "Silver Ingot": 2, "Lapis Lazuli": 1 }, "outputs": { "Silver Amulet": 1 }, "baseTime": 10.0 },
-        { "id": "Pocket Watch", "machine": "Advanced Assembler", "inputs": { "Steel Gear": 2, "Copper Bearing": 2, "Glass": 6 }, "outputs": { "Pocket Watch": 1 }, "baseTime": 12.0 },
-        { "id": "Clockwork Bird", "machine": "Advanced Assembler", "inputs": { "Steel Ingot": 6, "Steel Gear": 2, "Malachite": 2 }, "outputs": { "Clockwork Bird": 1 }, "baseTime": 12.0 },
+        { "id": "Pocket Watch", "machine": "Advanced Assembler", "inputs": { "Steel Gear": 2, "Copper Bearing": 2, "Glass": 6 }, "outputs": { "Pocket Watch": 1 }, "baseTime": 12.0 },        
         { "id": "Moonlit Soap", "machine": "Advanced Blender", "inputs": { "Perfumed Soap Powder": 2, "Moon Tear": 5 }, "outputs": { "Moonlit Soap": 1 }, "baseTime": 10.0 },
         { "id": "Crown", "machine": "Advanced Assembler", "inputs": { "Gold Ingot": 3, "Ruby": 1, "Sapphire": 1 }, "outputs": { "Crown": 1 }, "baseTime": 15.0 },
 
@@ -463,14 +473,24 @@ window.ALCHEMY_DB = {
         },
 
         // --- LIQUIDS ---
+        { "id": "Linseed Oil", "machine": "Extractor", "inputs": { "Flax": 1 }, "outputs": { "Linseed Oil": 20 }, "baseTime": 2.0 },
+        { "id": "Fruit Wine", "machine": "Extractor", "inputs": { "Redcurrant": 1 }, "outputs": { "Fruit Wine": 10 }, "baseTime": 6.0 },
+        { "id": "Limewater", "machine": "Extractor", "inputs": { "Quicklime Powder": 1 }, "outputs": { "Limewater": 30 }, "baseTime": 3.0 },
         { "id": "Brine", "machine": "Extractor", "inputs": { "Salt": 1 }, "outputs": { "Brine": 20 }, "baseTime": 4.0 },
-        { "id": "Lavender Essential Oil", "machine": "Alembic", "inputs": { "Lavender": 3, "Linseed Oil": 300 }, "outputs": { "Lavender Essential Oil": 15 }, "baseTime": 3.0 },
+        { "id": "Lavender Essential Oil", "machine": "Alembic", "inputs": { "Lavender": 3, "Linseed Oil": 120 }, "outputs": { "Lavender Essential Oil": 15 }, "baseTime": 3.0 },
         { "id": "Brandy", "machine": "Alembic", "inputs": { "Coke Powder": 5, "Fruit Wine": 100 }, "outputs": { "Brandy": 40 }, "baseTime": 5.0 },
         { "id": "Sulfuric Acid", "machine": "Alembic", "inputs": { "Sulfur Powder": 1, "Brine": 60 }, "outputs": { "Sulfuric Acid": 20 }, "baseTime": 4.0 },
         { "id": "Quicksilver", "machine": "Advanced Alembic", "inputs": { "Crude Silver Powder": 1, "Vitality Essence": 1, "Sulfuric Acid": 80 }, "outputs": { "Quicksilver": 10 }, "baseTime": 8.0 },
         { "id": "Aqua Vitae", "machine": "Advanced Alembic", "inputs": { "Gentian Nectar": 1, "World Tree Leaf": 1, "Brandy": 200 }, "outputs": { "Aqua Vitae": 10 }, "baseTime": 8.0 },
         { "id": "Fairy Tear", "machine": "Extractor", "inputs": { "Fairy Dust": 1 }, "outputs": { "Fairy Tear": 1 }, "baseTime": 4.0 },
         { "id": "Moon Tear", "machine": "Advanced Alembic", "inputs": { "Star Dust": 1, "Fairy Tear": 18 }, "outputs": { "Moon Tear": 1 }, "baseTime": 8.0 },
+
+        // --- BEVERAGE ---
+        { "id": "Whispering Fields", "machine": "Brew Barrel", "inputs": { "Linseed Oil": 40, "Fruit Wine": 80 }, "outputs": { "Whispering Fields": 1 }, "baseTime": 10.0 },
+        { "id": "Strange Tide", "machine": "Brew Barrel", "inputs": { "Brine": 60, "Limewater": 90, "Fruit Wine": 180 }, "outputs": { "Strange Tide": 1 }, "baseTime": 15.0 },
+        { "id": "Lavender Dream", "machine": "Brew Barrel", "inputs": { "Lavender Essential Oil": 30, "Brandy": 120 }, "outputs": { "Lavender Dream": 1 }, "baseTime": 18.0 },
+        { "id": "World Tree Vintage", "machine": "Brew Barrel", "inputs": { "Aqua Vitae": 20, "Fruit Wine": 380 }, "outputs": { "World Tree Vintage": 1 }, "baseTime": 24.0 },
+        { "id": "Alchemistˈs Sigh", "machine": "Brew Barrel", "inputs": { "Moon Tear": 1, "Quicksilver": 20, "Brandy": 160 }, "outputs": { "Alchemistˈs Sigh": 1 }, "baseTime": 32.0 },
 
         // --- POTIONS ---
         { "id": "Healing Potion", "machine": "Assembler", "inputs": { "Sage Powder": 6, "Flax Fiber": 6 }, "outputs": { "Healing Potion": 1 }, "baseTime": 6.0 },
@@ -543,9 +563,9 @@ window.ALCHEMY_DB = {
         { 
             "id": "Obsidian", "machine": "Advanced Athanor", "ChargeCost": 840,
             "inputs": { "Oblivion Essence": 4, "Shattered Crystal": 2 }, 
-            "outputs": { "Obsidian": 1, "Volcanic Ash": 1 },
-            "unstableOutputs": { "Volcanic Ash": 2 },
-            "resonantOutputs": { "Obsidian": 2, "Volcanic Ash": 2 },
+            "outputs": { "Obsidian": 1, "Marble": 1 },
+            "unstableOutputs": { "Obsidian": 2 },
+            "resonantOutputs": { "Obsidian": 2, "Marble": 2 },
             "baseTime": 12.0, "heatCost": 360
         },
         { "id": "Ruby", "machine": "Cauldron", "inputs": { "Diamond": 1, "Gold Dust": 1, "Resonant Catalyst": 1 }, "outputs": { "Ruby": 1 }, "baseTime": 30.9, "heatCost": 3131.3 },
@@ -637,7 +657,7 @@ window.ALCHEMY_DB = {
 
         // --- THERMAL EXTRACTOR ALTERNATE RECIPES ---
         // (Production Bonus + 200% when build on height >256)
-        { "id": "Linseed Oil_Thermal", "machine": "Thermal Extractor", "inputs": { "Flax": 1 }, "outputs": { "Linseed Oil": 50 }, "baseTime": 2.0 },
+        { "id": "Linseed Oil_Thermal", "machine": "Thermal Extractor", "inputs": { "Flax": 1 }, "outputs": { "Linseed Oil": 20 }, "baseTime": 2.0 },
         { "id": "Fruit Wine_Thermal", "machine": "Thermal Extractor", "inputs": { "Redcurrant": 1 }, "outputs": { "Fruit Wine": 10 }, "baseTime": 6.0 },
         { "id": "Limewater_Thermal", "machine": "Thermal Extractor", "inputs": { "Quicklime Powder": 1 }, "outputs": { "Limewater": 30 }, "baseTime": 3.0 },
         { "id": "Brine_Thermal", "machine": "Thermal Extractor", "inputs": { "Salt": 1 }, "outputs": { "Brine": 20 }, "baseTime": 4.0 },
