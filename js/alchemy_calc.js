@@ -315,6 +315,7 @@ function gatherInputs() {
     const lvlAlchemy = parseInt(document.getElementById('lvlAlchemy').value) || 0;
     const lvlFert = parseInt(document.getElementById('lvlFert').value) || 0;
     const lvlSell = parseInt(document.getElementById('lvlSell').value) || 0;
+    const lvlContract = parseInt(document.getElementById('lvlContract').value) || 0;
             
     const isMachineMode = document.getElementById('machineModeToggle').checked;
     const recipe = getActiveRecipe(targetItem, ">" + targetItem);
@@ -350,6 +351,7 @@ function gatherInputs() {
         speedMult: getSpeedMult(lvlSpeed),
         alchemyMult: getAlchemyMult(lvlAlchemy),        
         sellMult: AlchemyCalcEngine.getSellMult(lvlSell),
+        wholesaleMult: AlchemyCalcEngine.getSellMult(lvlContract),
         fuelMult: 1 + (lvlFuel * 0.10),
         fertMult: 1 + (lvlFert * 0.10)
     };
@@ -362,7 +364,8 @@ function updateLabels(params) {
         document.getElementById('lvlAlchemy-title').innerText = `${t('Alchemy Skill')} (${(params.alchemyMult*100).toFixed(0)}%)`;
         document.getElementById('lvlFuel-title').innerText = `${t('Fuel Efficiency')} (${(params.fuelMult*100).toFixed(0)}%)`;
         document.getElementById('lvlFert-title').innerText = `${t('Fert Efficiency')} (${(params.fertMult*100).toFixed(0)}%)`;
-        document.getElementById('lvlSell-title').innerText = `${t('Sales Ability')} (${((params.sellMult) * 100).toFixed(0)}%)`;
+        document.getElementById('lvlSell-title').innerText = `${t('Selling Price')} (${((params.sellMult) * 100).toFixed(0)}%)`;
+        document.getElementById('lvlContract-title').innerText = `${t('Wholesale Price')} (${((params.wholesaleMult) * 100).toFixed(0)}%)`;
     } catch(e) { console.error(e); }
 }
 
@@ -1109,15 +1112,18 @@ function updateSummaryBox(
             : targetItemDef.sellPrice
         : null;
 
+    const effectiveWholesale = targetItemDef.wholesalePrice
+        ? Math.round(targetItemDef.wholesalePrice * p.wholesaleMult) : null;
+
     const retailMargin =
         effectiveSell != null && convertedCost > 0
             ? effectiveSell / convertedCost - 1
-            : 0;
+            : null;
 
     const wholesaleMargin =
-        targetItemDef.wholesalePrice && convertedCost > 0
-            ? targetItemDef.wholesalePrice / convertedCost - 1
-            : 0;
+        effectiveWholesale && convertedCost > 0
+            ? effectiveWholesale / convertedCost - 1
+            : null;
 
     // =========================================================
     // Helpers
@@ -1156,7 +1162,7 @@ function updateSummaryBox(
               });
 
     const getMarginHtml = (margin) => {
-        if (margin <= -1) return '';
+        if (margin == null || margin <= -1) return '';
 
         return margin > 0
             ? `<span class="stat-pos">(+${(margin * 100).toFixed(0)}%)</span>`
@@ -1471,18 +1477,18 @@ function updateSummaryBox(
         valueHtml += `
             <span>
                 <span class="stat-value gold-profit">
-                    ${t('Retail Price   ')}: ${effectiveSell.toLocaleString()}
+                    ${t('Selling Price  ')}: ${effectiveSell.toLocaleString()}
                 </span>
                 ${getMarginHtml(retailMargin)}
             </span>
         `;
     }
 
-    if (targetItemDef.wholesalePrice) {
+    if (effectiveWholesale != null) {
         valueHtml += `
             <span>
                 <span class="stat-value gold-profit">
-                    ${t('Wholesale Price')}: ${targetItemDef.wholesalePrice.toLocaleString()}
+                    ${t('Wholesale Price')}: ${effectiveWholesale.toLocaleString()}
                 </span>
                 ${getMarginHtml(wholesaleMargin)}
             </span>

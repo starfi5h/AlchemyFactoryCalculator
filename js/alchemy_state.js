@@ -52,6 +52,8 @@ const DEFAULT_SETTINGS = {
     lvlAlchemy: 0,
     lvlFuel: 0,
     lvlFert: 0,
+    lvlSell: 0,
+    lvlContract: 0,
     defaultFuel: "Blast Potion",
     defaultFert: "Fertile Catalyst",
     selectedHeatingDevice: "Stone Furnace",

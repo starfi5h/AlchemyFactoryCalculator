@@ -75,7 +75,6 @@ Enter your current research levels in the **Upgrades** panel on the right:
 | **Alchemy Skill** | Increases yield on Extractors, Alembics, and Thermal Extractors |
 | **Fuel Efficiency** | Increases the heat value of fuel |
 | **Fert Efficiency** | Increases the nutrient value of fertilizer |
-| **Sales Ability** | Increases sell price used in profitability calculations |
 
 Upgrade levels and logistics settings are saved automatically whenever they change; no manual save button is required.
 
@@ -466,7 +465,6 @@ zh: `[English](README.md) | [简体中文](README.zh-CN.md)
 | **炼金技术** | 提升萃取机、蒸馏器和热能萃取机的产量 |
 | **燃料效率** | 提升燃料的热值 |
 | **肥料效率** | 提升肥料的营养值 |
-| **销售能力** | 提升上架商品卖出价格 |
 
 升级等级和物流设置会在变更时自动保存，无需手动保存。
 

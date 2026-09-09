@@ -68,7 +68,7 @@
             <span style="margin-left: 10px;">
                 <span id="ui-lang-toggle" style="cursor:pointer; margin-right: 10px;" onclick="toggleLanguage()" title="EN/中文">🌐EN/中文</span>
                 <a href="https://github.com/starfi5h/AlchemyFactoryCalculator" target="_blank" class="repo-link">GitHub Repo</a>
-                <span id="last-updated-time-text">2026.09.05</span>
+                <span id="last-updated-time-text">2026.09.08</span>
             </span>
         </div>
         <div class="tabs" id="page-tab-container">
@@ -500,12 +500,21 @@
                                     <button class="spinner-btn right last" onclick="adjustInput('lvlFert', 1); calculate();">+</button>
                                 </div>
                             </div>
+                            <div style="border-top: 1px solid #555; margin: 20px 0 10px 0;"></div>
                             <div class="input-group">
-                                <label id="lvlSell-title" for="lvlSell">Sales Ability</label>
+                                <label id="lvlSell-title" for="lvlSell">Selling Price</label>
                                 <div class="spinner-wrapper">
                                     <button class="spinner-btn left first" onclick="adjustInput('lvlSell', -1); calculate();">-</button>
                                     <input type="number" id="lvlSell" value="0" min="0" oninput="calculate()" onchange="saveSettings()">
                                     <button class="spinner-btn right last" onclick="adjustInput('lvlSell', 1); calculate();">+</button>
+                                </div>
+                            </div>
+                            <div class="input-group">
+                                <label id="lvlContract-title" for="lvlContract">Wholesale Price</label>
+                                <div class="spinner-wrapper">
+                                    <button class="spinner-btn left first" onclick="adjustInput('lvlContract', -1); calculate();">-</button>
+                                    <input type="number" id="lvlContract" value="0" min="0" oninput="calculate()" onchange="saveSettings()">
+                                    <button class="spinner-btn right last" onclick="adjustInput('lvlContract', 1); calculate();">+</button>
                                 </div>
                             </div>
                         </div>

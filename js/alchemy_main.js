@@ -127,7 +127,6 @@ function init() {
             DB.settings.lvlAlchemy = upgrades[3];
             DB.settings.lvlFuel = upgrades[4];
             DB.settings.lvlFert = upgrades[5];
-            DB.settings.lvlSell = upgrades[6];
             loadSettingsToUI();
             persist();
         }
@@ -150,14 +149,14 @@ function init() {
     const metaDesc = document.querySelector('meta[name="description"]');
     if (metaDesc) {
         metaDesc.content = window.ALCHEMY_I18N.enabled ?
-            "游戏《炼金工厂》(Alchemy Factory) 的生产规划计算器。支持多目标生产树、炼金锅配方搜索、节点图编辑器，内置百科与数据库编辑，中英双语。" :
-            "A production planning tool for the game Alchemy Factory. Supports cauldron recipes, multi-targets production trees, node graph editor, built-in wiki, and database editing";
+            "游戏《炼金工厂》(Alchemy Factory) 1.0 的生产规划计算器。支持多目标生产树、炼金锅配方搜索、节点图编辑器，百科与数据库编辑。" :
+            "A production planning tool for the game Alchemy Factory 1.0 version. Supports cauldron recipes, multi-targets production trees, node graph editor, wiki, and database editing";
     }
 }
 
 function loadSettingsToUI() {
     if (DB.settings) {
-        ['lvlBelt','lvlSpeed','lvlAlchemy','lvlFuel','lvlFert', 'lvlSell'].forEach(k => { if(DB.settings[k] !== undefined) document.getElementById(k).value = DB.settings[k]; });
+        ['lvlBelt','lvlSpeed','lvlAlchemy','lvlFuel','lvlFert', 'lvlSell', 'lvlContract'].forEach(k => { if(DB.settings[k] !== undefined) document.getElementById(k).value = DB.settings[k]; });
         if(DB.settings.defaultFuel) document.getElementById('fuelSelect').value = DB.settings.defaultFuel; 
         if(DB.settings.defaultFert) document.getElementById('fertSelect').value = DB.settings.defaultFert;
         const heatingSel = document.getElementById('heatingDeviceSelect');

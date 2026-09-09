@@ -210,7 +210,8 @@ window.ALCHEMY_I18N = {
         "Nutr": "肥力",
         "Net Output": "净产出",
         "Conversion Cost": "总成本",
-        "Retail Price   ": "零售价",
+        "Selling Price": "零售价",
+        "Selling Price  ": "零售价",
         "Wholesale Price": "批发价",
         "Cost Per Exp   ": "每经验成本",
         "Fuel Value": "燃料换算价值",
@@ -273,7 +274,8 @@ window.ALCHEMY_I18N = {
         "Alchemy Skill": "炼金技术",
         "Fuel Efficiency": "燃料效率",
         "Fert Efficiency": "肥料效率",
-        "Sales Ability": "销售能力",
+        "Sale Price": "销售价格",
+        "Contract Price": "合约价格",
 
         // --- 6. Save/Reset ---
         "Send to Planner": "传至规划器",
@@ -385,7 +387,7 @@ window.ALCHEMY_I18N = {
         "Quick select (exact)": "快速选择",
         "Buy Price": "买入价格",
         "Sell Price": "卖出价格",
-        "Wholesale Price": "批发价格",
+        "Wholesale Price": "批发价",
         "Heat Value": "热值",
         "Nutrient Cost": "营养值消耗",
         "Nutrient Value": "营养值",

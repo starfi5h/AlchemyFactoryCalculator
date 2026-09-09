@@ -151,12 +151,7 @@
 
     function getSellMult(lvl) {
         if (lvl <= 0) return 1.0;
-        const perLevel = [3, 3, 4, 4, 5, 5, 6, 6, 7, 7, 10, 10]; // 1~12級
-        let percent = 0;
-        for (let i = 1; i <= lvl; i++) {
-            percent += i <= perLevel.length ? perLevel[i - 1] : 10;
-        }
-        return 1.0 + (percent / 100);
+        return 1.0 + lvl * 0.01;
     }
 
     function getRecipesFor(db, item) {
