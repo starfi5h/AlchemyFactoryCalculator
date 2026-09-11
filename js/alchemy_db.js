@@ -1,7 +1,7 @@
 window.ALCHEMY_DB = {
     "version": 55,
-    "date": "2026.09.10",
-    "gameVersion": "1.0.4917",
+    "date": "2026.09.12",
+    "gameVersion": "1.0.4950",
     "items": {
         // --- RAW RESOURCES ---
         "Logs": { "id": 1, "category": "Raw Materials", "buyPrice": 200, "maxStack": -200, "heat": 2000, "baseCost": 1, "cauldronCost": 0.8, "paradoxTime": 9.375, "tier": 1 },
@@ -144,7 +144,7 @@ window.ALCHEMY_DB = {
         "Gloom Spores": { "id": 510, "category": "Mash", "baseCost": 180, "cauldronCost": 220, "wholesalePrice": 360, "cauldronMulti": 1, "cauldronTarget": 280, "tier": 5 },
         "Salt": { "id": 605, "category": "Mash", "sellPrice": 100, "baseCost": 65, "cauldronCost": 65, "cauldronMulti": 1, "cauldronTarget": 65, "tier": 6 },
         "Sulfur": { "id": 602, "category": "Mash", "baseCost": 246, "cauldronCost": 166, "cauldronMulti": 1, "cauldronTarget": 246, "tier": 6 },
-        "Sulfur Powder": { "id": 603, "category": "Mash", "cauldronCost": 200, "tier": 6 },        
+        "Sulfur Powder": { "id": 603, "category": "Mash", "baseCost": 246, "cauldronCost": 200, "tier": 6 },        
         "Volcanic Ash": { "id": 807, "category": "Mash", "baseCost": 5404, "cauldronCost": 5404, "tier": 8 },
 
         // --- CATALYSTS ---		

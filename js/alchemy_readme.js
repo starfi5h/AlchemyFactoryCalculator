@@ -301,10 +301,21 @@ Four sub-views accessible from the top navigation:
 |---|---|
 | **Items** | Searchable icon grid of all items, with chip-based filters (Category, Tier, Sell Price, Wholesale Price, Cauldron Target); click any item for stats, production recipes, and usage |
 | **Machines** | Searchable machine list; click any machine for properties, build cost, and all associated recipes |
+| **Contracts** | Contract reward and production limits calculator with configurable daily work time and upgrade boosts |
 | **Full Documentation** | Embedded README viewer with the complete documentation, rendered by the built-in Markdown renderer |
 
 Both Items and Machines views provide chip filters; Machines can be filtered by Tier and Heat Cost. In the Items view, click **★** next to any recipe to set it as the preferred recipe for that item (synced with the Calculator).
 Click any item in a recipe row to navigate directly to its detail page.
+
+### Contracts View
+
+The **Contracts** view lists the available contract items and calculates their daily limits and revenue. It provides three saved parameters:
+
+- **Working Hours / Day** — the number of hours available for contract work (1 hour in-game = 1 minute real time). this controls **Units/min**.
+- **Contract Amount Boost (%)** — increases the base daily contract limit.
+- **Contract Profit Boost (%)** — increases each contract's base reward. The resulting reward is rounded down to a whole number before revenue is calculated.
+
+The table shows the item, units per contract, reward coin type, daily maximum, units per minute, maximum daily revenue, required level, and dispatch requirement. Click any **Units/min** value to send that item and rate to the Calculator tab as the current target.
 
 ---
 
@@ -392,7 +403,8 @@ No build tools, bundlers, or external dependencies. Pure HTML + CSS + vanilla Ja
 
 ---
 
-*This calculator is a fork of the original [AlchemyFactoryCalculator](https://joejoesgit.github.io/AlchemyFactoryCalculator/) by JoeJoesGit, with added Chinese localization, the Cauldron Calculator, the Wiki, the Planner, incremental database update notifications, and various UI enhancements.*
+*This calculator is a fork of the original [AlchemyFactoryCalculator](https://joejoesgit.github.io/AlchemyFactoryCalculator/) by JoeJoesGit, with added Chinese localization, the Cauldron Calculator, the Wiki, the Planner, incremental database update notifications, and various UI enhancements.*  
+*The data is from [AlchemyFactoryData](https://github.com/faultyd3v/AlchemyFactoryData) by faultyd3v.*  
 `,
 
 zh: `[English](README.md) | [简体中文](README.zh-CN.md)
@@ -691,10 +703,21 @@ zh: `[English](README.md) | [简体中文](README.zh-CN.md)
 |---|---|
 | **物品** | 可搜索的物品图标网格，支持分类、等级、卖出价格、批发价格、炼金目标等筛选标签；点击任意物品查看属性、生产配方和使用情况 |
 | **机器** | 可搜索的机器列表；点击任意机器查看属性、建造材料和所有相关配方 |
+| **合约** | 合约奖励与产量上限计算器，可设置每日工作时间及升级加成 |
 | **完整说明** | 内置 README 检视器，使用内建 Markdown 渲染器显示完整文件说明 |
 
 物品和机器视图都提供 chip 筛选栏；机器视图可按 Tier 与 Heat Cost 筛选。在物品视图中，点击配方旁的 **★** 可将其设为该物品的首选配方（与计算器同步）。
 点击配方行中的任意物品，可直接跳转到该物品的详情页。
+
+### 合约页面
+
+**合约**页面会列出可用的合约物品，并计算每日上限与最大收益。页面提供三个会保存的参数：
+
+- **每日工作小时数** — 每日可用于合约工作的游戏小时数(游戏1小时=现实时间1分钟)，并用于计算 **单位/分钟**。
+- **合约数量加成 (%)** — 提高每日基础合约数量上限。
+- **合约收益加成 (%)** — 提高每份合约的基础奖励；计算后的奖励会先无条件舍去小数，再计算最大收益。
+
+表格会显示物品、每合约单位数、奖励货币类型、每日上限、单位/分钟、每日最大收益、所需等级与派遣要求。点击任意 **单位/分钟** 数值，即可将该物品与速率设为计算器当前目标，并跳转到计算器页面。
 
 ---
 
@@ -783,6 +806,7 @@ AlchemyFactoryCalculator/
 ---
 
 *本计算器 Fork 自原作者 JoeJoesGit 的 [AlchemyFactoryCalculator](https://joejoesgit.github.io/AlchemyFactoryCalculator/)，新增了中文本地化、炼金锅计算器、百科、规划器、数据库版本更新提醒以及多项界面改进。*
+*数据来源于 faultyd3v 的 [AlchemyFactoryData](https://github.com/faultyd3v/AlchemyFactoryData)。*  
 `
 
 };

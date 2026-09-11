@@ -45,12 +45,12 @@ Open [https://starfi5h.github.io/AlchemyFactoryCalculator](https://starfi5h.gith
 
 Type an item name into the search box (supports partial match) or click **☰** to open the **Item Picker**. The picker supports category browsing, a Tier slider, and attribute filters for Sell Price, Wholesale Price, and Cauldron Target.
 
-**Single-target mode** (default):
+**Single-target mode**:
 - Use the **Belt Load Fraction** slider to set the target as a fraction of belt capacity (1/12 to Full).
 - Or enter a precise **Rate (Items/Min)** directly.
 - Toggle **Set by Machine Count** to reverse the calculation — enter a number of machines and the rate is computed for you.
 
-**Multi-target mode** (enable via the **MULTI** toggle):
+**Multi-target mode**:
 - Add as many target rows as needed; each is independent, and rows can be reordered by dragging the handle.
 - Use **💾 Save List / 📂 Load List** to persist multi-target sets in the browser.
 - Enable **Self-Fuel** or **Self-Fert** to automatically deduct factory consumption from the net output of the fuel/fertilizer item itself. The engine iterates to a stable equilibrium.
@@ -68,7 +68,6 @@ Enter your current research levels in the **Upgrades** panel on the right:
 | **Alchemy Skill** | Increases yield on Extractors, Alembics, and Thermal Extractors |
 | **Fuel Efficiency** | Increases the heat value of fuel |
 | **Fert Efficiency** | Increases the nutrient value of fertilizer |
-| **Sales Ability** | Increases sell price used in profitability calculations |
 
 Upgrade levels and logistics settings are saved automatically whenever they change; no manual save button is required.
 
@@ -295,10 +294,21 @@ Four sub-views accessible from the top navigation:
 |---|---|
 | **Items** | Searchable icon grid of all items, with chip-based filters (Category, Tier, Sell Price, Wholesale Price, Cauldron Target); click any item for stats, production recipes, and usage |
 | **Machines** | Searchable machine list; click any machine for properties, build cost, and all associated recipes |
+| **Contracts** | Contract reward and production limits calculator with configurable daily work time and upgrade boosts |
 | **Full Documentation** | Embedded README viewer with the complete documentation, rendered by the built-in Markdown renderer |
 
 Both Items and Machines views provide chip filters; Machines can be filtered by Tier and Heat Cost. In the Items view, click **★** next to any recipe to set it as the preferred recipe for that item (synced with the Calculator).
 Click any item in a recipe row to navigate directly to its detail page.
+
+### Contracts View
+
+The **Contracts** view lists the available contract items and calculates their daily limits and revenue. It provides three saved parameters:
+
+- **Working Hours / Day** — the number of hours available for contract work (1 hour in-game = 1 minute real time). this controls **Units/min**.
+- **Contract Amount Boost (%)** — increases the base daily contract limit.
+- **Contract Profit Boost (%)** — increases each contract's base reward. The resulting reward is rounded down to a whole number before revenue is calculated.
+
+The table shows the item, units per contract, reward coin type, daily maximum, units per minute, maximum daily revenue, required level, and dispatch requirement. Click any **Units/min** value to send that item and rate to the Calculator tab as the current target.
 
 ---
 
@@ -388,4 +398,4 @@ No build tools, bundlers, or external dependencies. Pure HTML + CSS + vanilla Ja
 
 ---
 
-*This calculator is a fork of the original [AlchemyFactoryCalculator](https://joejoesgit.github.io/AlchemyFactoryCalculator/) by JoeJoesGit, with added Chinese localization, the Cauldron Calculator, the Wiki, the Planner, incremental database update notifications, and various UI enhancements.*
+*This calculator is a fork of the original [AlchemyFactoryCalculator](https://joejoesgit.github.io/AlchemyFactoryCalculator/) by JoeJoesGit, with added Chinese localization, the Cauldron Calculator, the Wiki, the Planner, incremental database update notifications, and various UI enhancements.*  
