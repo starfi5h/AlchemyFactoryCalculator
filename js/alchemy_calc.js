@@ -364,7 +364,7 @@ function updateLabels(params) {
         document.getElementById('lvlAlchemy-title').innerText = `${t('Alchemy Skill')} (${(params.alchemyMult*100).toFixed(0)}%)`;
         document.getElementById('lvlFuel-title').innerText = `${t('Fuel Efficiency')} (${(params.fuelMult*100).toFixed(0)}%)`;
         document.getElementById('lvlFert-title').innerText = `${t('Fert Efficiency')} (${(params.fertMult*100).toFixed(0)}%)`;
-        document.getElementById('lvlSell-title').innerText = `${t('Selling Price')} (${((params.sellMult) * 100).toFixed(0)}%)`;
+        document.getElementById('lvlSell-title').innerText = `${t('Retail Price')} (${((params.sellMult) * 100).toFixed(0)}%)`;
         document.getElementById('lvlContract-title').innerText = `${t('Wholesale Price')} (${((params.wholesaleMult) * 100).toFixed(0)}%)`;
     } catch(e) { console.error(e); }
 }
@@ -1109,12 +1109,10 @@ function updateSummaryBox(
     const nutrPerMin = nutrPerSec * 60;
     const nutrPerItem = nutrPerMin / netRate;
 
-    const convertedCost =
-        (
-            goldPerMin +
-            (selfFuel ? 0 : fuelCost * actualFuelNeed) +
-            (selfFert ? 0 : fertCost * actualFertNeed)
-        ) / netRate;
+    const fuelCostPerMin = selfFuel ? 0 : fuelCost * actualFuelNeed;
+    const fertCostPerMin = selfFert ? 0 : fertCost * actualFertNeed;
+    const convertedCost = (goldPerMin + fuelCostPerMin + fertCostPerMin) / netRate;
+    const isFullConverted = (actualFuelNeed == 0 || selfFuel || fuelCost > 0) && (actualFertNeed == 0 || selfFert || fertCost > 0);
 
     const effectiveSell = targetItemDef.sellPrice
         ? targetItemDef.category !== 'Currency'
@@ -1305,6 +1303,23 @@ function updateSummaryBox(
         `;
     }
 
+    if (isFullConverted) {
+        loadHtml += `<span class="stat-label">${t('Gross Profit')}</span>`;
+        if (effectiveSell > 0) {
+            const grossSell = (effectiveSell - convertedCost) * netRate;
+            const sign = grossSell > 0 ? '+' : '-';
+            loadHtml += `<span class="stat-value" style="color:var(--profit);" title="${Math.ceil(grossSell).toLocaleString()}/min">
+                ${t('Retail')}: ${sign}${formatCoinIcons(grossSell)}/ min</span>`;
+        }
+       if (effectiveWholesale > 0) {
+            const grossWholesale = (effectiveWholesale - convertedCost) * netRate;
+            const sign = grossWholesale > 0 ? '+' : '-';
+            const colorStyle = grossWholesale > 0 ? "color:var(--profit);" : "color:var(--warn);";
+            loadHtml += `<span class="stat-value" style="${colorStyle}" title="${Math.ceil(grossWholesale).toLocaleString()}/min">
+                ${t('Wholesale')}: ${sign}${formatCoinIcons(Math.abs(grossWholesale))}/ min</span>`;
+        }
+    }
+
     loadHtml += `</div>`;
 
     // =========================================================
@@ -1479,7 +1494,7 @@ function updateSummaryBox(
             </span>
 
             <span class="stat-value gold-profit">
-                ${t('Conversion Cost')}: ${Math.ceil(convertedCost).toLocaleString()}
+                ${t('Converted Cost')}: ${Math.ceil(convertedCost).toLocaleString()}
             </span>
     `;
 
@@ -1487,7 +1502,7 @@ function updateSummaryBox(
         valueHtml += `
             <span>
                 <span class="stat-value gold-profit">
-                    ${t('Selling Price  ')}: ${effectiveSell.toLocaleString()}
+                    ${t('Retail Price  ')}: ${effectiveSell.toLocaleString()}
                 </span>
                 ${getMarginHtml(retailMargin)}
             </span>

@@ -2,6 +2,17 @@
    ALCHEMY HELP PAGE  (Items · Machines · Full Documentation)
    ========================================================================== */
 
+/* Contract data: image/source values verified against the current DB image
+   set (alchemy_db.js / item icon assets, version 2026-09). */
+const CONTRACT_DATA = [
+    { item: "Bandage",          unitsPerContract: 50, rewardBase: 12,  rewardType: "silver", dailyMaxBase: 800,  level: 4, dispatchReq: null },
+    { item: "Gloom Spores",     unitsPerContract: 50, rewardBase: 18,  rewardType: "silver", dailyMaxBase: 1600, level: 5, dispatchReq: { item: "Bandage", qty: 2000 } },
+    { item: "Pocket Watch",     unitsPerContract: 20, rewardBase: 26,  rewardType: "silver", dailyMaxBase: 960,  level: 6, dispatchReq: { item: "Gloom Spores", qty: 5000 } },
+    { item: "Fertile Catalyst", unitsPerContract: 20, rewardBase: 60,  rewardType: "silver", dailyMaxBase: 1200, level: 7, dispatchReq: { item: "Pocket Watch", qty: 3000 } },
+    { item: "Silver Amulet",    unitsPerContract: 10, rewardBase: 340, rewardType: "silver", dailyMaxBase: 480,  level: 8, dispatchReq: { item: "Fertile Catalyst", qty: 4000 } },
+    { item: "Moonlit Soap",     unitsPerContract: 10, rewardBase: 60,  rewardType: "gold",   dailyMaxBase: 80,   level: 9, dispatchReq: { item: "Silver Amulet", qty: 2000 } },
+];
+
 function _tn(name, category = 'ui') { /* translate item/machine name via existing t() if available */
     return (typeof t === 'function') ? t(name, category) : name;
 }
@@ -1328,7 +1339,124 @@ function _mdToHtml(md) {
 
 /* ─── 13. GUIDES INNER HTML ───────────────────────────────────────────────── */
 
-/* ─── 14. SUB-NAV SWITCHER ────────────────────────────────────────────────── */
+/* ─── 14. CONTRACTS PAGE ──────────────────────────────────────────────────── */
+function _computeContractRow(entry, params) {
+    var workMinutes = params.workMinutes;
+    var amountBoost = params.amountBoost;
+    var profitBoost = params.profitBoost;
+    var dailyMax = entry.dailyMaxBase * (1 + amountBoost / 100);
+    var reward = Math.floor(entry.rewardBase * (1 + profitBoost / 100));
+    var maxRevenue = dailyMax / entry.unitsPerContract * reward;
+    var unitsPerMin = workMinutes > 0 ? dailyMax / workMinutes : 0;
+    return { dailyMax: dailyMax, reward: reward, maxRevenue: maxRevenue, unitsPerMin: unitsPerMin };
+}
+
+function _contractNumber(value) {
+    return Number(value).toLocaleString(undefined, { maximumFractionDigits: 2 });
+}
+
+function _contractIcon(itemId, title) {
+    return '<img src="img/item' + (itemId || 0) + '.png" class="item-icon-small" title="'
+        + (title || '') + '" onerror="this.style.opacity=\'0.15\'">';
+}
+
+function _contractItemIcon(itemName) {
+    var rawDB = (typeof DB !== 'undefined') ? DB : {};
+    var displayName = _tn(itemName, 'items');
+    var def = rawDB.items && (rawDB.items[itemName] || rawDB.items[displayName]);
+    return _contractIcon(def ? def.id : 0, displayName);
+}
+
+function _contractRewardIcon(rewardType) {
+    return _contractIcon(rewardType === 'gold' ? 906 : 809,
+        rewardType === 'gold' ? 'Gold Coin' : 'Silver Coin');
+}
+
+function _openContractInCalculator(itemName, rate) {
+    var targetItem = _tn(itemName, 'items');
+    var targetRate = Number(rate) || 0;
+    DB.settings.targetItem = targetItem;
+    DB.settings.targetRate = targetRate;
+    DB.settings.machineModeToggle = false;
+    persist();
+
+    switchTab('calc');
+    var itemInput = document.getElementById('targetItemInput');
+    var rateInput = document.getElementById('targetRate');
+    var machineMode = document.getElementById('machineModeToggle');
+    if (itemInput) itemInput.value = targetItem;
+    if (rateInput) {
+        rateInput.disabled = false;
+        rateInput.value = targetRate;
+    }
+    if (machineMode) machineMode.checked = false;
+    if (typeof updateComboIcon === 'function') updateComboIcon();
+    if (typeof toggleControlMode === 'function') toggleControlMode(false);
+    if (typeof calculate === 'function') calculate();
+}
+
+function _contractRateLink(entry, rate) {
+    var encodedItem = encodeURIComponent(entry.item);
+    return '<a href="#" style="color:var(--accent);" onclick="_openContractInCalculator(decodeURIComponent(\''
+        + encodedItem + '\'),' + rate + '); return false;">' + _contractNumber(rate) + '</a>';
+}
+
+function _renderContractsTable() {
+    var tbody = document.getElementById('contracts-tbody');
+    if (!tbody) return;
+    var settings = DB.settings || {};
+    var params = {
+        workMinutes: Number(settings.contractWorkMinutes) || 0,
+        amountBoost: Number(settings.contractAmountBoost) || 0,
+        profitBoost: Number(settings.contractProfitBoost) || 0
+    };
+    tbody.innerHTML = CONTRACT_DATA.map(function(entry) {
+        var row = _computeContractRow(entry, params);
+        var dispatch = entry.dispatchReq
+            ? _contractNumber(entry.dispatchReq.qty) + ' ' + _contractItemIcon(entry.dispatchReq.item) + _tn(entry.dispatchReq.item, 'items')
+            : '—';
+        return '<tr>'
+            + '<td>' + _contractItemIcon(entry.item) + _tn(entry.item, 'items') + '</td>'
+            + '<td>' + _contractNumber(entry.unitsPerContract) + '</td>'
+            + '<td>' + _contractNumber(row.reward) + ' ' + _contractRewardIcon(entry.rewardType) + '</td>'
+            + '<td>' + _contractNumber(row.dailyMax) + '</td>'
+            + '<td>' + _contractRateLink(entry, row.unitsPerMin) + '</td>'
+            + '<td>' + _contractNumber(row.maxRevenue) + ' ' + _contractRewardIcon(entry.rewardType) + '</td>'
+            + '<td>' + entry.level + '</td>'
+            + '<td>' + dispatch + '</td>'
+            + '</tr>';
+    }).join('');
+}
+
+function _buildContractsAreaHTML() {
+    var settings = DB.settings || {};
+    return '<div class="md-container" style="max-width:1100px; width:100%; box-sizing:border-box;">'
+        + '<div style="display:flex; gap:20px; flex-wrap:wrap; margin-bottom:16px; background:#252525; padding:12px; border-radius:6px;">'
+        + '<div class="input-group" style="flex:1; min-width:180px;">'
+        + '<label>' + _tn('Working Hours / Day') + '</label>'
+        + '<input type="number" class="small-num-input" style="width:100%;" value="' + (settings.contractWorkMinutes ?? 16) + '" min="16" max="24" onchange="onContractParamChange(\'contractWorkMinutes\', this.value)">'
+        + '</div>'
+        + '<div class="input-group" style="flex:1; min-width:180px;">'
+        + '<label>' + _tn('Contract Amount Boost (%)') + '</label>'
+        + '<input type="number" class="small-num-input" style="width:100%;" value="' + (settings.contractAmountBoost ?? 0) + '" onchange="onContractParamChange(\'contractAmountBoost\', this.value)">'
+        + '</div>'
+        + '<div class="input-group" style="flex:1; min-width:180px;">'
+        + '<label>' + _tn('Contract Profit Boost (%)') + '</label>'
+        + '<input type="number" class="small-num-input" style="width:100%;" value="' + (settings.contractProfitBoost ?? 0) + '" onchange="onContractParamChange(\'contractProfitBoost\', this.value)">'
+        + '</div></div>'
+        + '<div style="overflow-x:auto;"><table class="recipe-table" id="contracts-table">'
+        + '<thead><tr><th>' + _tn('Item') + '</th><th>' + _tn('Units/Contract') + '</th><th>' + _tn('Reward') + '</th><th>' + _tn('Daily Max') + '</th><th>' + _tn('Units/min') + '</th><th>' + _tn('Max Revenue/Day') + '</th><th>' + _tn('Tier') + '</th><th>' + _tn('Dispatch Requirement') + '</th></tr></thead>'
+        + '<tbody id="contracts-tbody"></tbody></table></div></div>';
+}
+
+function onContractParamChange(key, val) {
+    if (!DB || !DB.settings) return;
+    DB.settings[key] = parseFloat(val) || 0;
+    persist();
+    _renderContractsTable();
+}
+
+/* ─── 15. SUB-NAV SWITCHER ────────────────────────────────────────────────── */
 function wikiSwitchView(view) {
     if (_readmeScrollContainer && _readmeScrollHandler) {
         _readmeScrollContainer.removeEventListener('scroll', _readmeScrollHandler);
@@ -1360,6 +1488,10 @@ function wikiSwitchView(view) {
         area.className = 'wiki-readme-area-wrap';
         area.innerHTML = _buildReadmeAreaHTML();
         _loadReadmeView();
+    } else if (view === 'contracts') {
+        area.className = 'wiki-readme-area-wrap';
+        area.innerHTML = _buildContractsAreaHTML();
+        _renderContractsTable();
     }
     _updateLayoutState();
 }
@@ -1378,6 +1510,7 @@ function renderHelpPage() {
         + '<div class="wiki-subnav">'        
         + '<button class="wiki-tab-btn" data-view="items"    ' + _oc('wikiSwitchView', 'items')    + '>' + _tn('Items')    + '</button>'
         + '<button class="wiki-tab-btn" data-view="machines" ' + _oc('wikiSwitchView', 'machines') + '>' + _tn('Machines') + '</button>'
+        + '<button class="wiki-tab-btn" data-view="contracts" ' + _oc('wikiSwitchView', 'contracts') + '>' + _tn('Contracts') + '</button>'
         + '<button class="wiki-tab-btn" data-view="readme"   ' + _oc('wikiSwitchView', 'readme')   + '>' + _tn('Full Documentation') + '</button>'
         + '</div>'
         + '<div id="wiki-area"></div>'
