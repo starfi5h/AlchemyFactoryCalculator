@@ -264,6 +264,18 @@
         return (baseTime > 0 && isFinite(baseTime)) ? baseTime : null;
     }
 
+    function computeDecomposeTime(db, itemName) {
+        const itemDef = db.items[itemName];
+        if (!itemDef || !itemDef.baseCost) return null;
+        return Math.pow(itemDef.baseCost, 0.518) * 0.1676;
+    }
+    
+    function computeDecomposeExp(db, itemName) {
+        const itemDef = db.items[itemName];
+        if (!itemDef || !itemDef.baseCost) return null;
+        return itemDef.baseCost * 0.0002;
+    }
+
     function getCustomCost(state, item) {
         const val = state?.customCosts?.[item];
         return (typeof val === 'number' && val > 0) ? val : null;
@@ -1150,6 +1162,8 @@
         getThermalExtractorRatio,
         getProductionHeatCost,
         getProductionFertCost,
-        computeParadoxTime
+        computeParadoxTime,
+        computeDecomposeTime,
+        computeDecomposeExp
     };
 })(window);

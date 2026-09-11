@@ -394,6 +394,8 @@ window.ALCHEMY_I18N = {
         "Max Fertility": "最大肥力",
         "Cauldron Cost": "炼金价值",
         "Cauldron Target": "炼金目标",
+        "Decompose Exp": "分解经验",
+        "Decompose Time": "分解时间",
         "Charges": "充能数",
         "Max Stack": "最大堆叠",
         "Exp": "经验",

@@ -396,7 +396,7 @@ function renderCalculationResult(params, result) {
     });
 
     renderExternalInputsSection(treeContainer, params, result.externalInputs);
-    renderByproductsSection(treeContainer, result.byproducts);
+    renderByproductsSection(treeContainer, params, result.byproducts);
     renderCommonNodesSection(treeContainer, params, result.commonNodes);
 
     updateConstructionList(
@@ -710,7 +710,7 @@ function renderExternalInputsSection(treeContainer, params, externalInputs) {
     });
 }
 
-function renderByproductsSection(treeContainer, byproducts) {
+function renderByproductsSection(treeContainer, params, byproducts) {
     treeContainer.appendChild(createSectionHeader('--- BYPRODUCTS ---'));
 
     if (byproducts.length === 0) {
@@ -743,12 +743,22 @@ function renderByproductsSection(treeContainer, byproducts) {
             `;
         });
 
+        const itemDef = DB.items[entry.item];
+        const decomposeTime = AlchemyCalcEngine.computeDecomposeTime(DB, entry.item);
+        let machineLabel = ``;
+        if (decomposeTime && entry.remaining > 0) {            
+            const machineCount = entry.remaining / (params.speedMult * 60 / decomposeTime);
+            const machineNumber = Number(machineCount.toFixed(2));
+            machineLabel = `<span class="machine-tag">${machineNumber} ${t('Knowledge Altar', 'machines')}</span>`;
+        }
+
         div.innerHTML = `
             <div class="node-content" style="background: rgba(213, 109, 231, 0.03); border-left: 3px solid var(--byproduct);">
                 <span class="tree-arrow" onclick="toggleNode(this, '${pathKey}')">▼</span>
                 <span class="qty" style="color:var(--byproduct)">${formatVal(entry.remaining)}/m</span>
-                <img src="img/item${DB.items[entry.item]?.id ?? 0}.png" class="item-icon">
+                <img src="img/item${itemDef.id ?? 0}.png" class="item-icon">
                 <strong>${entry.item}</strong>
+                ${machineLabel}
                 ${recycledNote}
             </div>
             <div class="node-children" style="margin-left: 20px; border-left: 1px solid #444;">${childrenHtml}</div>

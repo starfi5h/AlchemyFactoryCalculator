@@ -792,18 +792,23 @@ function _renderItemDetail(itemName) {
     /* Stats */
     var stats = [];
     if (def.tier           != null) stats.push([_tn('Tier'),            def.tier]);
-    if (def.buyPrice       != null) stats.push([_tn('Buy Price'),       def.buyPrice.toLocaleString()       + ' \xa2']);
-    if (def.sellPrice      != null) stats.push([_tn('Sell Price'),      def.sellPrice.toLocaleString()      + ' \xa2']);
-    if (def.wholesalePrice != null) stats.push([_tn('Wholesale Price'), def.wholesalePrice.toLocaleString() + ' \xa2']);
+    if (def.maxStack       != null) stats.push([_tn('Max Stack'),       def.maxStack]);
+    if (def.buyPrice       != null) stats.push([_tn('Buy Price'),       def.buyPrice.toLocaleString()       + ' c']);
+    if (def.sellPrice      != null) stats.push([_tn('Sell Price'),      def.sellPrice.toLocaleString()      + ' c']);
+    if (def.wholesalePrice != null) stats.push([_tn('Wholesale Price'), def.wholesalePrice.toLocaleString() + ' c']);
     if (def.heat           != null) stats.push([_tn('Heat Value'),      def.heat          + ' P']);
     if (def.nutrientCost   != null) stats.push([_tn('Nutrient Cost'),   def.nutrientCost  + ' V/min']);
     if (def.nutrientValue  != null) stats.push([_tn('Nutrient Value'),  def.nutrientValue + ' V']);
     if (def.maxFertility   != null) stats.push([_tn('Max Fertility'),   def.maxFertility]);
     if (def.cauldronCost   != null) stats.push([_tn('Cauldron Cost'),   def.cauldronCost]);
     if (def.cauldronTarget != null) stats.push([_tn('Cauldron Target'), def.cauldronTarget]);
+    var exp = def.exp || AlchemyCalcEngine.computeDecomposeExp(rawDB, itemName);
+    if (exp && !def.exp && def.maxStack < 0) exp *= -def.maxStack;
+    if (exp != null) stats.push([_tn('Decompose Exp'), Number(exp.toFixed(4))]);
+    var decomposeTime = AlchemyCalcEngine.computeDecomposeTime(rawDB, itemName);
+    if (decomposeTime && def.maxStack < 0) decomposeTime *= -def.maxStack;
+    if (decomposeTime != null) stats.push([_tn('Decompose Time'), decomposeTime.toFixed(2) + ' s']);    
     if (def.charges        != null) stats.push([_tn('Charges'),         def.charges]);
-    if (def.maxStack       != null) stats.push([_tn('Max Stack'),       def.maxStack]);
-    if (def.exp            != null) stats.push([_tn('Exp'),             def.exp]);
 
     var statsHTML = stats.length
         ? '<div class="wiki-stats-grid">' + stats.map(function(s) {
