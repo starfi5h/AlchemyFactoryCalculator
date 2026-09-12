@@ -26,7 +26,7 @@ let plannerLibrary = {
 let plannerState = null;
 
 /* ==========================================================================
-   SECTION: DATA STRUCTURE REFERENCE (for future maintainers)
+   SECTION: DATA STRUCTURE REFERENCE
    ==========================================================================
 
    plannerState (== plannerLibrary.plans[activePlanId].data):
@@ -62,9 +62,8 @@ let plannerState = null;
    { recipe, inputs: [{item, rate}], outputs: [{item, rate}], heatItemsPerMin, fertItemsPerMin }
 
    note 節點另有 text/color/w/h；portal 節點另有 portalItem/machineCount。
-   node 沒有 width/height 欄位；卡片實際尺寸由 CSS 決定 (.planner-node 寬度固定
-   200px，高度依 port 數量、是否有 heat/fert row 等內容而變動)，需要時得從
-   document.getElementById('planner-node-' + id) 讀取 offsetWidth/offsetHeight。
+   node 沒有 width/height 欄位；卡片實際尺寸由 CSS 決定 (.planner-node 寬度固定200px，高度依 port 數量、是否有 heat/fert row 等內容而變動)，
+   需要時得從document.getElementById('planner-node-' + id) 讀取 offsetWidth/offsetHeight。
    
    ========================================================================== */
 

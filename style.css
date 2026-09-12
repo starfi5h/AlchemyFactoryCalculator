@@ -182,19 +182,16 @@ input[type=range]::-webkit-slider-thumb {
 }
 
 input[type=range]::-moz-range-thumb {
-    /* 使用 border 技巧绘制倒三角形（向下指） */
+    /* Using the border technique to draw an inverted triangle (pointing downwards) */
     width: 0;
     height: 0;
     border: 0 solid transparent;
-    border-left: calc(var(--thumb-size) / 2) solid transparent;   /* 7px */
-    border-right: calc(var(--thumb-size) / 2) solid transparent;  /* 7px */
-    border-top: var(--thumb-size) solid var(--accent);            /* 14px 绿色底边 = 三角形 */
-    
-    background: transparent;   /* 必须清空背景，否则会盖住边框三角形 */
-    border-radius: 0;          /* 确保不是圆形 */
+    border-left: calc(var(--thumb-size) / 2) solid transparent;
+    border-right: calc(var(--thumb-size) / 2) solid transparent;
+    border-top: var(--thumb-size) solid var(--accent);    
+    background: transparent;
+    border-radius: 0;
     cursor: pointer;
-    
-    /* 微调垂直居中（轨道高 6px，三角形高 14px，偏移约 (14-6)/2 = 4px） */
     margin-top: -4px; 
 }
 
@@ -278,7 +275,7 @@ input:disabled { opacity: 0.5; cursor: not-allowed; background: #2a2a2a; color: 
 .checkbox-row { display: flex; align-items: center; font-size: 0.9em; color: #ccc; }
 .checkbox-row input { margin-right: 8px; }
 
-/* 按鈕閃爍動畫：從綠色漸變回原本顏色 */
+/* Button flashing animation: Gradient transition from green back to the original color. */
 @keyframes btn-flash-glow {
     0% { background-color: var(--accent); color: white; border-color: white; }
     100% { background-color: #333; }
@@ -492,9 +489,8 @@ input:checked + .slider-switch:before { transform: translateX(16px); }
 /* Item Picker Styles 分類過濾列 */
 
 .picker-modal-content {
-    /* 1. 決定大小 */
     width: 640px;
-    height: 80vh;   /* 固定高度為螢幕高度的 80% */
+    height: 80vh;   /* Fixed height set to 80% of the screen height. */
     overflow-y: scroll; scrollbar-gutter: stable;
 }
 .picker-filter-bar { display: flex; flex-wrap: wrap; gap: 8px; padding: 10px 0; border-bottom: 1px solid #444; margin-bottom: 10px; }
@@ -628,44 +624,23 @@ button.reset-btn:hover { background: var(--danger); color: white; }
     ========================================================================== */
 
 .recipe-table { width: 100%; border-collapse: collapse; background: #1e1e1e; color: #ddd; }
-
 .recipe-table th { position: sticky; top: 0; background: #252525; padding: 12px 8px; text-align: left; border-bottom: 2px solid var(--border); z-index: 10; }
-
 .recipe-table td { padding: 10px 8px; border-bottom: 1px solid #333; white-space: nowrap; }
-
 .recipe-table tr:hover { background: #2a2a2a; }
-
 .sticky-filter-bar { position: sticky; top: 0; z-index: 20; background: var(--panel); border-bottom: 1px solid var(--border); }
-
 .column-toggle-dropdown { position: relative; display: inline-block; }
-
 .dropdown-content { display: none; position: absolute; right: 0; background-color: #2d2d2d; min-width: 180px; box-shadow: 0px 8px 16px 0px rgba(0,0,0,0.5); z-index: 100; border: 1px solid #444; border-radius: 4px; }
-
 .dropdown-content.show { display: block; }
-
 .recipe-flow-cell { display: flex; align-items: center; gap: 3px; background: #111; padding: 4px; border-radius: 4px; }
-
 .arrow-divider { color: var(--accent); font-weight: bold; margin: 0 4px; }
-
-/* 讓表格單元格內容垂直居中，並支援 Flex 佈局 */
 .recipe-table td { vertical-align: middle; }
-
-/* 確保 Recipe Flow 的容器不會因為內部組件換行 */
 .recipe-flow-cell { white-space: nowrap; }
-
-/* 讓排序標題有視覺反饋 */
 .recipe-table th:hover { background: #333; color: var(--accent); }
-
 .recipe-container { display: flex; flex-direction: column; height: 100%; }
-
 .recipe-top-bar { display: flex; align-items: center; gap: 20px; padding: 10px; flex-wrap: wrap; }
-
 .recipe-upgrades-row { display: flex; gap: 15px; }
-
 .recipe-upgrade-item { width: 140px; }
-
 .recipe-table-wrapper { flex: 1; overflow-y: auto; border: 1px solid var(--border); }
-
 .recipe-table thead th { position: sticky; top: 0; background: #252525; z-index: 10; box-shadow: 0 2px 2px -1px rgba(0,0,0,0.4); }
 
 /* ==========================================================================
@@ -802,7 +777,7 @@ button.reset-btn:hover { background: var(--danger); color: white; }
     background-image: radial-gradient(#2a2a2a 1px, transparent 1px);
     background-size: 24px 24px;
     cursor: grab;
-    touch-action: none;   /* 行動裝置：避免瀏覽器原生滾動/縮放與畫布手勢衝突 */
+    touch-action: none;   /* Mobile devices: Prevent conflicts between native browser scrolling/zooming and canvas gestures. */
 }
 
 .planner-canvas.panning { cursor: grabbing; }
@@ -936,7 +911,7 @@ button.reset-btn:hover { background: var(--danger); color: white; }
 @keyframes planner-mc-flash { 0% { background: rgba(76,175,80,0.5); } 100% { background: #333; } }
 .planner-machine-count-row input.mc-flash { animation: planner-mc-flash 1s ease-out; }
 
-/* 卡片內的燃料/肥料用量：不佔用版面空間，直接溢出顯示在卡片下方外側 */
+/* overflows and displays directly outside, beneath the card. */
 .planner-node .planner-heatfert-row {
     position: absolute; left: 8px; right: 8px; top: 100%; margin-top: 4px;
 }
@@ -948,7 +923,7 @@ button.reset-btn:hover { background: var(--danger); color: white; }
 .planner-note-resize-handle { position:absolute; right:2px; bottom:2px; width:14px; height:14px; cursor:nwse-resize; opacity:.4; }
 .planner-note-color-swatch { width:14px; height:14px; padding:0; border-radius:50%; cursor:pointer; border:1px solid rgba(255,255,255,.3); }
 
-/* ---- Edges (Phase 2/3) ---- */
+/* ---- Edges ---- */
 .planner-svg-layer .planner-edge-hit {
     stroke: transparent; stroke-width: 14px; fill: none;
     cursor: pointer; pointer-events: stroke;

@@ -4,14 +4,17 @@
 
 /* --------------------------------------------------------------------------
    GLOBAL_CALC_STATE is in-memory only (NOT persisted to localStorage) —
-   resets on page reload. All three Sets are keyed by pathKey (see
-   alchemy_calc_engine.js's pathKey docs), scoped to the Calculator tab's
-   current tree:
+   resets on page reload. All three Sets are keyed by pathKey, scoped to the Calculator tab's current tree:
      activeRecyclers : pathKeys where byproduct recycling is toggled ON
      forcedExternals : pathKeys manually checked as "External Input"
      collapsedNode   : pathKeys (plus synthetic keys like 'ext_fuel',
                        'byp_<item>', 'common_<item>_<machine>') whose subtree
                        is currently collapsed in the UI
+                       
+   --- pathKey ---
+   pathKey = `${ancestors.join(">")}>${item}`
+   ancestors is the array of item names from the root down to this node.
+   A child's pathKey therefore looks like ">Steel Ingot>Iron Ingot".
    -------------------------------------------------------------------------- */
 
 const GLOBAL_CALC_STATE = {

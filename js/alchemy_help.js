@@ -17,7 +17,7 @@ function _tn(name, category = 'ui') { /* translate item/machine name via existin
     return (typeof t === 'function') ? t(name, category) : name;
 }
 
-/* ─── 4. STYLE INJECTION ──────────────────────────────────────────────────── */
+/* ─── STYLE INJECTION ─── */
 function _injectHelpStyles() {
     if (document.getElementById('help-styles')) return;
     var s = document.createElement('style');
@@ -321,7 +321,7 @@ function _injectHelpStyles() {
     document.head.appendChild(s);
 }
 
-/* ─── 5. WIKI STATE ───────────────────────────────────────────────────────── */
+/* ─── WIKI STATE ─── */
 var _currentWikiView = 'items';
 var _selectedItem    = null;
 var _selectedMachine = null;
@@ -329,7 +329,7 @@ var _itemFilter      = '';
 var _machineFilter   = '';
 var _wikiIndex       = null;
 
-/* ─── 5b. CHIP FILTER STATE ──────────────────────────────────────────────── */
+/* ─── CHIP FILTER STATE ─── */
 var _itemChipFilters = {
     category:      null,    
     tier:          { active: false, min: '', max: '' },
@@ -344,7 +344,7 @@ var _machineChipFilters = {
 };
 var _activeMachineChip = null; // 'tier' | 'heatCost' | null
 
-/* ─── 6. WIKI INDEX ───────────────────────────────────────────────────────── */
+/* ─── WIKI INDEX ─── */
 function _getWikiIndex() {
     if (_wikiIndex) return _wikiIndex;
     var rawDB = (typeof DB !== 'undefined') ? DB : {};
@@ -372,7 +372,7 @@ function _getWikiIndex() {
     return _wikiIndex;
 }
 
-/* ─── 7. PREFERRED RECIPE ─────────────────────────────────────────────────── */
+/* ─── PREFERRED RECIPE ─── */
 function _getPreferred(itemName) {
     try {
         var db = (typeof DB !== 'undefined') ? DB : ALCHEMY_DB;
@@ -395,7 +395,7 @@ function _togglePreferred(itemName, recipeId) {
     _renderItemDetail(itemName);
 }
 
-/* ─── 8. FORMAT HELPERS ───────────────────────────────────────────────────── */
+/* ─── FORMAT HELPERS ─── */
 function _itemIcon(id, size) {
     size = size || 32;
     return '<img src="img/item' + (id || 0) + '.png" width="' + size + '" height="' + size
@@ -424,7 +424,7 @@ function _oc2(fn, a, b) {
         + '\'),decodeURIComponent(\'' + encodeURIComponent(b) + '\'))"';
 }
 
-/* ─── 9. CROSS-NAV ────────────────────────────────────────────────────────── */
+/* ─── CROSS-NAV ─── */
 function wikiSwitchToItem(name) {
     _selectedItem = name;
     _itemFilter   = '';
@@ -441,7 +441,7 @@ function wikiSwitchToMachine(name) {
     wikiSwitchView('machines');
 }
 
-/* ─── 10. ITEM PAGE ───────────────────────────────────────────────────────── */
+/* ─── ITEM PAGE ─── */
 
 function _buildItemSplitHTML() {
     return '<div class="wiki-left-pane">'
@@ -504,7 +504,7 @@ function _refreshItemGrid() {
     if (grid) grid.innerHTML = _buildItemGridHTML();
 }
 
-/* ─── CHIP FILTER FUNCTIONS ─────────────────────────────────────────────── */
+/* ─── CHIP FILTER FUNCTIONS ─── */
 
 function _chipFiltersFor(target) { return target === 'machine' ? _machineChipFilters : _itemChipFilters; }
 function _activeChipFor(target)  { return target === 'machine' ? _activeMachineChip : _activeChip; }
@@ -758,7 +758,7 @@ function _clearAllChips(target) {
     event.stopPropagation();
 }
 
-/* ─── 11. ITEM DETAIL ─────────────────────────────────────────────────────── */
+/* ─── ITEM DETAIL ─── */
 function wikiSelectItem(name) {
     if (name === _selectedItem) {
         // 點擊相同項目 → 取消選取
@@ -882,7 +882,7 @@ function _renderItemDetail(itemName) {
         + '<div class="wiki-section"><div class="wiki-section-title">' + _tn('Used In') + ' (' + consumers.length + ')</div>' + consumersHTML + '</div>';
 }
 
-/* ─── 12. MACHINE PAGE ────────────────────────────────────────────────────── */
+/* ─── MACHINE PAGE ─── */
 function _buildMachineListHTML() {
     var rawDB    = (typeof DB !== 'undefined') ? DB : {};
     var machines = rawDB.machines || {};
@@ -1037,7 +1037,7 @@ function _renderMachineDetail(machineName) {
         + '<div class="wiki-section"><div class="wiki-section-title">' + _tn('Production Recipes') + ' (' + recipes.length + ')</div>' + recipesHTML + '</div>';
 }
 
-/* ─── 12b. README / 完整說明 ───────────────────────────────────────────────── */
+/* ─── README / 完整說明 ─── */
 var _readmeCache = { en: null, zh: null };
 var _readmeScrollContainer = null;
 var _readmeScrollHandler = null;
@@ -1337,9 +1337,7 @@ function _mdToHtml(md) {
     return { html: html.join('\n'), toc: toc };
 }
 
-/* ─── 13. GUIDES INNER HTML ───────────────────────────────────────────────── */
-
-/* ─── 14. CONTRACTS PAGE ──────────────────────────────────────────────────── */
+/* ─── CONTRACTS PAGE ─── */
 function _computeContractRow(entry, params) {
     var workMinutes = params.workMinutes;
     var amountBoost = params.amountBoost;
@@ -1456,7 +1454,7 @@ function onContractParamChange(key, val) {
     _renderContractsTable();
 }
 
-/* ─── 15. SUB-NAV SWITCHER ────────────────────────────────────────────────── */
+/* ─── SUB-NAV SWITCHER ─── */
 function wikiSwitchView(view) {
     if (_readmeScrollContainer && _readmeScrollHandler) {
         _readmeScrollContainer.removeEventListener('scroll', _readmeScrollHandler);
@@ -1496,7 +1494,7 @@ function wikiSwitchView(view) {
     _updateLayoutState();
 }
 
-/* ─── 15. ENTRY POINTS ────────────────────────────────────────────────────── */
+/* ─── ENTRY POINTS ─── */
 function initHelpPage() {
     _injectHelpStyles();
     renderHelpPage();
