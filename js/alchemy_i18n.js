@@ -368,7 +368,7 @@ window.ALCHEMY_I18N = {
 
         "Select Input Item": "选择输入物品",
         "Please select an input item first.": "请先选择一个输入物品。",
-        "Selected item is missing baseCost data.": "该物品缺少 baseCost 数据，暂无法使用。",
+        "Selected item is missing paradoxTime data.": "该物品缺少 paradoxTime 数据，暂无法使用。",
         "Cannot select the output item itself as input.": "不能选择产物本身作为输入。",
 
         "⚙ Manage Custom Costs": "⚙ 管理自订成本",

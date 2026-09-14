@@ -847,7 +847,7 @@ function _renderRecipeModalList() {
             if (!selectedItem) {
                 warnHtml = `<div class="loop-warning">${t('Please select an input item first.')}</div>`;
             } else if (previewTime === null) {
-                warnHtml = `<div class="loop-warning">${t('Selected item is missing baseCost data.')}</div>`;
+                warnHtml = `<div class="loop-warning">${t('Selected item is missing paradoxTime data.')}</div>`;
             }
 
             div.innerHTML = `

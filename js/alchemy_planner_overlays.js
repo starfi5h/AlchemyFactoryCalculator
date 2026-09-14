@@ -481,6 +481,13 @@ function _buildPlannerNodeModifierHtml(node, rawRecipe) {
     } else if (rawRecipe.machine === 'Paradox Crucible' && rawRecipe.customInputSlot) {
         const selectedItem = node.recipeModifiers?.customInput;
         const inputDef = selectedItem ? DB.items[selectedItem] : null;
+        const previewTime = selectedItem ? AlchemyCalcEngine.computeParadoxTime(DB, selectedItem) : null;
+        let warnHtml = '';
+        if (!selectedItem) {
+            warnHtml = `<div class="loop-warning">${t('Please select an input item first.')}</div>`;
+        } else if (previewTime === null) {
+            warnHtml = `<div class="loop-warning">${t('Selected item is missing paradoxTime data.')}</div>`;
+        }
         controlsHtml = `
             <div style="margin-top:10px; padding-top:8px; border-top:1px dashed var(--border); display:flex; align-items:center; gap:8px;">
                 <span style="font-size:0.82em; color:#aaa;">${t('Input')}:</span>
@@ -488,7 +495,7 @@ function _buildPlannerNodeModifierHtml(node, rawRecipe) {
                     ${inputDef ? `<img src="img/item${inputDef.id ?? 0}.png" width="18" height="18">` : ''}
                     <span>${selectedItem ? selectedItem : t('Select Input Item')}</span>
                 </span>
-            </div>`;
+            </div>${warnHtml}`;
     } else if (rawRecipe.machine === 'Thermal Extractor') {
         const height = DB.settings.thermalExtractorHeight ?? 255;
         const ratio = AlchemyCalcEngine.getThermalExtractorRatio(height);
@@ -549,6 +556,7 @@ function _buildPlannerNodeRecipeSwitchHtml(node, mainOut) {
             const d = DB.items[name] || {};
             return `<img src="img/item${d.id ?? 0}.png" width="18" height="18" title="${name}">`;
         }).join('');
+        const inputs = r.customInputSlot ? '<span style="width:18px; height:18px; text-align: center;">?</span>' : inputIcons;
         const outDef = DB.items[mainOut] || {};
         const machineIconSrc = `img/machines/${r.machine.toLowerCase().replaceAll(' ', '-')}.png`;
         const activeStyle = isActive
@@ -557,7 +565,7 @@ function _buildPlannerNodeRecipeSwitchHtml(node, mainOut) {
         return `
             <div class="planner-picker-row" style="${activeStyle}" onclick="plannerSwitchNodeRecipe('${node.id}','${r.id}')">
                 <div class="planner-picker-flow">
-                    ${inputIcons}<span class="planner-picker-arrow">→</span><img src="img/item${outDef.id ?? 0}.png" width="20" height="20">
+                    ${inputs}<span class="planner-picker-arrow">→</span><img src="img/item${outDef.id ?? 0}.png" width="20" height="20">
                 </div>
                 <span class="planner-picker-machine">
                     <img src="${machineIconSrc}" width="18" height="18" onerror="this.style.opacity='0'">${t(r.machine, 'machines')}
@@ -1056,12 +1064,13 @@ function renderPlannerRecipePickerList(filterText) {
             const d = DB.items[name] || {};
             return `<img src="img/item${d.id ?? 0}.png" width="18" height="18" title="${name}">`;
         }).join('');
+        const inputs = c.recipe.customInputSlot ? '<span style="width:18px; height:18px; text-align: center;">?</span>' : inputIcons;
         const outDef = DB.items[c.mainOut] || {};
         const machineIconSrc = `img/machines/${c.machineKey.toLowerCase().replaceAll(' ', '-')}.png`;
         return `
             <div class="planner-picker-row" onclick="choosePlannerRecipeFromPicker(${idx})">
                 <div class="planner-picker-flow">
-                    ${inputIcons}<span class="planner-picker-arrow">→</span><img src="img/item${outDef.id ?? 0}.png" width="20" height="20">
+                    ${inputs}<span class="planner-picker-arrow">→</span><img src="img/item${outDef.id ?? 0}.png" width="20" height="20">
                 </div>
                 <span class="planner-picker-name">${c.mainOutName}</span>
                 <span class="planner-picker-machine">
