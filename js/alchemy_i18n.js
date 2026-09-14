@@ -415,6 +415,7 @@ window.ALCHEMY_I18N = {
 
         "Production Recipes": "生产配方",
         "Used In": "使用于",
+        "Used in Machine Construction": "用于建造机器",
         "Build Cost": "建造材料",
         "Heat Cost": "热值消耗",
         "Slots Required": "占地(格子)",
@@ -448,7 +449,7 @@ window.ALCHEMY_I18N = {
         "+ 🌀 Portal": "+ 🌀 传送门",
         "↺ Undo": "↺ 撤销",
         "↻ Redo": "↻ 重做",
-        
+        "Clear All": "全部清除",        
 
         // --- Planner: Node ---        
         "Node Settings": "节点设置",

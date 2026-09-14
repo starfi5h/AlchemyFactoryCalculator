@@ -1306,21 +1306,23 @@ function updateSummaryBox(
         `;
     }
 
-    if (isFullConverted) {
-        loadHtml += `<span class="stat-label">${t('Gross Profit')}</span>`;
+    if (isFullConverted && p.targets.length === 1) {
+        let grossProfitHtml = "";
         if (effectiveSell > 0) {
             const grossSell = (effectiveSell - convertedCost) * netRate;
             const sign = grossSell > 0 ? '+' : '-';
-            loadHtml += `<span class="stat-value" style="color:var(--profit);" title="${Math.ceil(grossSell).toLocaleString()}/min">
-                ${t('Retail')}: ${sign}${formatCoinIcons(grossSell)}/ min</span>`;
+            const colorStyle = grossSell > 0 ? "color:var(--profit);" : "color:var(--warn);";
+            grossProfitHtml += `<span class="stat-value" style="${colorStyle}" title="${Math.ceil(grossSell).toLocaleString()}/min">
+                ${t('Retail')}: ${sign}${formatCoinIcons(Math.abs(grossSell))}/ min</span>`;
         }
        if (effectiveWholesale > 0) {
             const grossWholesale = (effectiveWholesale - convertedCost) * netRate;
             const sign = grossWholesale > 0 ? '+' : '-';
             const colorStyle = grossWholesale > 0 ? "color:var(--profit);" : "color:var(--warn);";
-            loadHtml += `<span class="stat-value" style="${colorStyle}" title="${Math.ceil(grossWholesale).toLocaleString()}/min">
+            grossProfitHtml += `<span class="stat-value" style="${colorStyle}" title="${Math.ceil(grossWholesale).toLocaleString()}/min">
                 ${t('Wholesale')}: ${sign}${formatCoinIcons(Math.abs(grossWholesale))}/ min</span>`;
         }
+        if (grossProfitHtml !== "") loadHtml += `<span class="stat-label">${t('Gross Profit')}</span>` + grossProfitHtml;
     }
 
     loadHtml += `</div>`;

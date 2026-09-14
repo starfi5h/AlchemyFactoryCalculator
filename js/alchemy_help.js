@@ -410,7 +410,7 @@ function _fmtItems(obj) {
         var label = name.replace(/"/g, '&quot;');
         return '<span class="wiki-recipe-item" title="' + label + ' \xd7' + qty + '"' + _oc('wikiSwitchToItem', name) + '>'
             + _itemIcon(def ? def.id : 0, 22)
-            + '<span class="wiki-item-qty">\xd7' + qty + '</span>'
+            + '<span class="wiki-item-qty">\xd7' + Number(qty.toFixed(3)) + '</span>'
             + '</span>';
     }).join('');
 }
@@ -832,14 +832,10 @@ function _renderItemDetail(itemName) {
         ? '<p class="wiki-empty">' + _tn('No production recipes') + '</p>'
         : producers.map(function(recipe) {
             var isPreferred = preferred === recipe.id;
-            var starHTML = '<button class="wiki-star' + (isPreferred ? ' active' : '') + '" title="'
-                         + (isPreferred ? _tn('Remove Preferred') : _tn('Set as Preferred')) + '" '
-                         + _oc2('_togglePreferred', itemName, recipe.id) + '>' + (isPreferred ? '★' : '☆') + '</button>';
             var hasIn   = Object.keys(recipe.inputs  || {}).length > 0;
             var inHTML  = hasIn ? _fmtItems(recipe.inputs) : '<em style="font-size:0.78em;color:#666">—</em>';
             var outHTML = _fmtItems(recipe.outputs || {});
             return '<div class="wiki-recipe-row' + (isPreferred ? ' preferred' : '') + '">'
-                + starHTML
                 + '<div class="wiki-recipe-formula">'
                 + '<span class="wiki-items">' + inHTML  + '</span>'
                 + '<span class="wiki-arrow">→</span>'
@@ -858,7 +854,6 @@ function _renderItemDetail(itemName) {
             var inHTML  = _fmtItems(recipe.inputs  || {});
             var outHTML = _fmtItems(recipe.outputs || {});
             return '<div class="wiki-recipe-row">'
-                + '<span class="wiki-star-ph"></span>'
                 + '<div class="wiki-recipe-formula">'
                 + '<span class="wiki-items">' + inHTML  + '</span>'
                 + '<span class="wiki-arrow">→</span>'
@@ -867,6 +862,32 @@ function _renderItemDetail(itemName) {
                 + '<div class="wiki-recipe-right">'
                 + '<span class="wiki-recipe-machine" ' + _oc('wikiSwitchToMachine', recipe.machine) + '>' + _tn(recipe.machine, 'machines') + '</span>'
                 + (recipe.baseTime != null ? '<span>' + recipe.baseTime + 's</span>' : '')
+                + '</div></div>';
+          }).join('');
+
+    /* Used in Machine Construction */
+    var rawMachines = rawDB.machines || {};
+    var usedInMachines = Object.entries(rawMachines).filter(function(e) {
+        return e[1].buildCost && e[1].buildCost[itemName] != null;
+    });
+    var machineConstructionHTML = usedInMachines.length === 0
+        ? '<p class="wiki-empty">' + _tn('Not used in any machine') + '</p>'
+        : usedInMachines.map(function(e) {
+            var machineName = e[0], machineDef = e[1];
+            var inHTML = _fmtItems(machineDef.buildCost || {});
+            var machineIconSrc = 'img/machines/' + machineName.toLowerCase().replaceAll(' ', '-') + '.png';
+            var outHTML = '<span class="wiki-recipe-item" title="' + _tn(machineName, 'machines').replace(/"/g, '&quot;') + ' \xd71" '
+                + _oc('wikiSwitchToMachine', machineName) + '>'
+                + '<img src="' + machineIconSrc + '" width="22" height="22" loading="lazy" onerror="this.style.opacity=\'0.15\'">'
+                + '<span class="wiki-item-qty">\xd71</span></span>';
+            return '<div class="wiki-recipe-row">'
+                + '<div class="wiki-recipe-formula">'
+                + '<span class="wiki-items">' + inHTML  + '</span>'
+                + '<span class="wiki-arrow">→</span>'
+                + '<span class="wiki-items">' + outHTML + '</span>'
+                + '</div>'
+                + '<div class="wiki-recipe-right">'
+                + '<span class="wiki-recipe-machine" ' + _oc('wikiSwitchToMachine', machineName) + '>' + _tn(machineName, 'machines') + '</span>'
                 + '</div></div>';
           }).join('');
 
@@ -879,7 +900,8 @@ function _renderItemDetail(itemName) {
         + '</div></div>'
         + (statsHTML ? '<div class="wiki-section"><div class="wiki-section-title">' + _tn('Properties') + '</div>' + statsHTML + '</div>' : '')
         + '<div class="wiki-section"><div class="wiki-section-title">' + _tn('Production Recipes') + ' (' + producers.length + ')</div>' + producersHTML + '</div>'
-        + '<div class="wiki-section"><div class="wiki-section-title">' + _tn('Used In') + ' (' + consumers.length + ')</div>' + consumersHTML + '</div>';
+        + '<div class="wiki-section"><div class="wiki-section-title">' + _tn('Used In') + ' (' + consumers.length + ')</div>' + consumersHTML + '</div>'
+        + (usedInMachines.length === 0 ? '' : ('<div class="wiki-section"><div class="wiki-section-title">' + _tn('Used in Machine Construction') + ' (' + usedInMachines.length + ')</div>' + machineConstructionHTML + '</div>'));
 }
 
 /* ─── MACHINE PAGE ─── */
@@ -1015,7 +1037,6 @@ function _renderMachineDetail(machineName) {
                 : '<em style="font-size:0.78em;color:#666">—</em>';
             var outHTML = _fmtItems(recipe.outputs || {});
             return '<div class="wiki-recipe-row">'
-                + '<span class="wiki-star-ph"></span>'
                 + '<div class="wiki-recipe-formula">'
                 + '<span class="wiki-items">' + inHTML  + '</span>'
                 + '<span class="wiki-arrow">→</span>'

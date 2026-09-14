@@ -769,6 +769,26 @@ function removePlannerNode(nodeId) {
     hidePlannerRateTooltip();
 }
 
+function onPlannerClearAllClick() {
+    if (!plannerState) return;
+
+    const nodeCount = Object.keys(plannerState.nodes).length;
+    const edgeCount = Object.keys(plannerState.edges).length;
+    if (nodeCount === 0 && edgeCount === 0) return;
+
+    plannerState.nodes = {};
+    plannerState.edges = {};
+    plannerState._nodeSeq = 0;
+    plannerState._edgeSeq = 0;
+
+    _plannerSelectedNodeIds.clear();
+    _plannerLastFlows = null;
+
+    renderPlanner();
+    savePlannerState();
+    hidePlannerRateTooltip();
+}
+
 /* ---------------- FULL RENDER ---------------- */
 
 function renderPlanner() {
