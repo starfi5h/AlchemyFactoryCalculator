@@ -1193,6 +1193,68 @@ function hidePlannerRateTooltip() {
 }
 
 /* ==========================================================================
+   SECTION: Edge Hover Tooltip (Item / Rate / Belt)
+   ========================================================================== */
+
+let _plannerEdgeTooltipSize = null; // 快取 {width, height}，避免每次 mousemove 都 reflow
+
+/** 組出 edge hover tooltip 的 HTML 內容：物品名稱、目前流量、傳送帶需求數(可選) */
+function buildPlannerEdgeTooltipHtml(itemName, flow, beltCount) {
+    const def = DB.items[itemName] || {};
+    let html = `<div class="planner-rate-tooltip-row">
+        <img src="img/item${def.id ?? 0}.png">
+        <span class="planner-rate-tooltip-name">${itemName}</span>
+    </div>`;
+    html += `<div class="planner-rate-tooltip-row">
+        <span class="planner-rate-tooltip-qty" style="color:var(--profit)">${formatVal(flow)}</span>
+        <span class="planner-rate-tooltip-name">/min</span>
+    </div>`;
+    if (beltCount !== null && beltCount !== undefined) {
+        html += `<div class="planner-rate-tooltip-row">
+            <span class="planner-rate-tooltip-qty" style="color:var(--belt-count)">${beltCount.toFixed(2)}</span>
+            <span class="planner-rate-tooltip-name">${t('Belt', 'ui')}</span>
+        </div>`;
+    }
+    return html;
+}
+
+/** 顯示 edge hover tooltip，位置跟隨游標 (與 showPlannerRateTooltip 共用同一個 CSS class，但用滑鼠座標定位) */
+function showPlannerEdgeTooltip(evt, itemName, flow, beltCount) {
+    hidePlannerRateTooltip();
+    const tip = document.createElement('div');
+    tip.id = 'planner-rate-tooltip';
+    tip.className = 'planner-rate-tooltip';
+    tip.innerHTML = buildPlannerEdgeTooltipHtml(itemName, flow, beltCount);
+    document.body.appendChild(tip);
+    _plannerEdgeTooltipSize = { width: tip.offsetWidth, height: tip.offsetHeight }; // 只測量這一次
+    _positionPlannerEdgeTooltip(evt);
+}
+
+/** 滑鼠在 edge 上移動時，讓 tooltip 跟隨游標 */
+function movePlannerEdgeTooltip(evt) {
+    if (!document.getElementById('planner-rate-tooltip')) return;
+    _positionPlannerEdgeTooltip(evt);
+}
+
+function _positionPlannerEdgeTooltip(evt) {
+    const tip = document.getElementById('planner-rate-tooltip');
+    if (!tip || !_plannerEdgeTooltipSize) return;
+    const offset = 14;
+    const { width, height } = _plannerEdgeTooltipSize;
+    let left = evt.clientX + offset;
+    let top = evt.clientY + offset;
+    if (left + width > window.innerWidth) left = evt.clientX - width - offset;
+    if (top + height > window.innerHeight) top = evt.clientY - height - offset;
+    tip.style.left = Math.max(4, left) + 'px';
+    tip.style.top = Math.max(4, top) + 'px';
+}
+
+/** edge 離開 hover 時，直接複用既有的 hidePlannerRateTooltip() 移除容器 */
+function hidePlannerEdgeTooltip() {
+    hidePlannerRateTooltip();
+}
+
+/* ==========================================================================
    SECTION: SUMMARY PANEL (top-left overlay)
    ========================================================================== */
 

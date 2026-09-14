@@ -1393,9 +1393,11 @@ function renderPlannerEdges(flows) {
         const beltCount = !itemDef.liquid ? (flow / beltSpeed) : null;
         const lineStyle = edge.color ? ` style="stroke:${edge.color};"` : '';
         const labelStyle = edge.color ? ` style="border-left:3px solid ${edge.color};"` : '';
+        const beltArg = beltCount !== null ? beltCount : 'null';
+        const hoverAttrs = `onmouseenter="showPlannerEdgeTooltip(event, '${edge.item.replace(/'/g, "\\'")}', ${flow}, ${beltArg})" onmousemove="movePlannerEdgeTooltip(event)" onmouseleave="hidePlannerEdgeTooltip()"`;
 
         html += `
-            <g class="planner-edge-group" data-edge-id="${edge.id}">
+            <g class="planner-edge-group" data-edge-id="${edge.id}" ${hoverAttrs}>
                 <path class="planner-edge-hit" d="${d}" onclick="openPlannerEdgeModal('${edge.id}')"></path>
                 <path class="planner-edge-line" d="${d}"${lineStyle}></path>
                 <foreignObject x="${mid.x - 60}" y="${mid.y - 15}" width="120" height="32" style="overflow:visible;">
