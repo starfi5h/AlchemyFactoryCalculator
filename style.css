@@ -930,11 +930,34 @@ button.reset-btn:hover { background: var(--danger); color: white; }
 }
 .planner-svg-layer foreignObject { pointer-events: auto; }
 
+/* 外層 group 提供預設色；若有 edge.color 會被 inline style 覆蓋。
+   dash / chevron 兩種線都靠 currentColor 繼承顏色。 */
+.planner-edge-group { color: var(--accent); }
+
+/* 原版動態虛線（預設） */
 .planner-edge-line {
-    fill: none; stroke: var(--accent); stroke-width: 2.5;
+    fill: none; stroke: currentColor; stroke-width: 2.5;
     stroke-dasharray: 6 5; animation: planner-flow-dash 0.6s linear infinite;
 }
-.planner-edge-preview { stroke: #fff; stroke-dasharray: 4 4; opacity: 0.85; animation: none; }
+
+/* 靜態箭頭 chevron（edgeStyle = 1） */
+.planner-edge-chevrons {
+    fill: none;
+    stroke: currentColor;
+    stroke-width: 1.2;
+    stroke-linecap: round;
+    stroke-linejoin: round;
+    pointer-events: none;
+}
+
+.planner-edge-preview {
+    fill: none;
+    stroke: #fff;
+    stroke-width: 2.5;
+    stroke-dasharray: 4 4;
+    opacity: 0.85;
+}
+
 @keyframes planner-flow-dash { to { stroke-dashoffset: -22; } }
 
 .planner-edge-label {

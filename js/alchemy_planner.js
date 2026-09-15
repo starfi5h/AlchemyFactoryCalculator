@@ -77,6 +77,7 @@ let plannerState = null;
 let _plannerSettings = {
     viewport: { x: 0, y: 0, zoom: 1 },
     gridSize: 40,
+    edgeStyle: 0,   // 0 = animated dash (default), 1 = static chevron
     summaryCollapsed: false,
     summarySectionCollapsed: {
         cost: false,
@@ -124,7 +125,8 @@ function initPlannerPage() {
     attachPlannerPinchZoom();
     attachPlannerKeyboardShortcuts();
     updatePlannerGridButton();
-    updatePlannerGridBackground();
+    updatePlannerGridBackground();    
+    updatePlannerEdgeStyleButton();
     updatePlannerUndoRedoButtons();
 }
 
@@ -140,6 +142,7 @@ function loadPlannerSettings() {
         };
 
         _plannerSettings.gridSize = saved.gridSize ?? 0;
+        _plannerSettings.edgeStyle = saved.edgeStyle ?? 0;
 
         // 读取摘要折叠状态
         _plannerSettings.summaryCollapsed = saved.summaryCollapsed ?? false;
@@ -153,6 +156,7 @@ function loadPlannerSettings() {
         _plannerSettings = {
             viewport: { x: 0, y: 0, zoom: 1 },
             gridSize: 0,
+            edgeStyle: 0,
             summaryCollapsed: false,
             summarySectionCollapsed: {
                 cost: false,
@@ -636,6 +640,23 @@ function updatePlannerGridBackground() {
         canvas.style.backgroundSize = `${size}px ${size}px`;
     }
     canvas.style.backgroundPosition = `${_plannerSettings.viewport.x}px ${_plannerSettings.viewport.y}px`;
+}
+
+function togglePlannerEdgeStyle() {
+    _plannerSettings.edgeStyle = _plannerSettings.edgeStyle ? 0 : 1;
+    updatePlannerEdgeStyleButton();
+    renderPlannerEdges(_plannerLastFlows || plannerResolveFlows());
+    savePlannerSettings();
+}
+
+function updatePlannerEdgeStyleButton() {
+    const btn = document.getElementById('planner-edge-style-btn');
+    if (!btn) return;
+    const isChevron = _plannerSettings.edgeStyle === 1;
+    btn.textContent = isChevron ? '⋙' : '⇢';
+    btn.title = isChevron
+        ? 'Edge Style: Arrow (static)'
+        : 'Edge Style: Dashed (animated)';
 }
 
 function plannerFitToView(nodeIds = []) {
@@ -1361,7 +1382,7 @@ function buildPlannerEdgePath(p1, p2, sign1 = 1, sign2 = -1) {
         x: p1.x * 0.125 + c1.x * 0.375 + c2.x * 0.375 + p2.x * 0.125,
         y: p1.y * 0.125 + c1.y * 0.375 + c2.y * 0.375 + p2.y * 0.125
     };
-    return { d, mid };
+    return { d, mid, c1, c2 };
 }
 
 function buildPlannerEdgePathD(p1, p2, sign1 = 1, sign2 = -1) {
@@ -1369,10 +1390,78 @@ function buildPlannerEdgePathD(p1, p2, sign1 = 1, sign2 = -1) {
     return `M ${p1.x} ${p1.y} C ${p1.x + dx * sign1} ${p1.y}, ${p2.x + dx * sign2} ${p2.y}, ${p2.x} ${p2.y}`;
 }
 
+/**
+ * 沿三次貝茲曲線以固定弧長間距生成一串 ">" chevron 的 path d 字串。
+ * @param {number} spacing 每個 chevron 中心之間的弧長間距 (px)
+ * @param {number} size    chevron 尺寸 (縱深與垂直寬度皆為 size)
+ */
+function _plannerBuildChevronPath(p1, c1, c2, p2, spacing = 9, size = 5) {
+    const SAMPLES = 200;
+    const xs = new Float64Array(SAMPLES + 1);
+    const ys = new Float64Array(SAMPLES + 1);
+    const txs = new Float64Array(SAMPLES + 1);
+    const tys = new Float64Array(SAMPLES + 1);
+    const cum = new Float64Array(SAMPLES + 1);
+
+    for (let i = 0; i <= SAMPLES; i++) {
+        const t = i / SAMPLES;
+        const mt = 1 - t;
+        const a = mt * mt * mt;
+        const b = 3 * mt * mt * t;
+        const c = 3 * mt * t * t;
+        const d = t * t * t;
+        xs[i] = a * p1.x + b * c1.x + c * c2.x + d * p2.x;
+        ys[i] = a * p1.y + b * c1.y + c * c2.y + d * p2.y;
+
+        const a2 = 3 * mt * mt;
+        const b2 = 6 * mt * t;
+        const c2t = 3 * t * t;
+        txs[i] = a2 * (c1.x - p1.x) + b2 * (c2.x - c1.x) + c2t * (p2.x - c2.x);
+        tys[i] = a2 * (c1.y - p1.y) + b2 * (c2.y - c1.y) + c2t * (p2.y - c2.y);
+    }
+
+    cum[0] = 0;
+    for (let i = 1; i <= SAMPLES; i++) {
+        cum[i] = cum[i - 1] + Math.hypot(xs[i] - xs[i - 1], ys[i] - ys[i - 1]);
+    }
+    const total = cum[SAMPLES];
+    if (total < spacing) return '';
+
+    const half = size / 2;
+    let d = '';
+    let seg = 0;
+
+    for (let s = spacing * 0.5; s < total; s += spacing) {
+        while (seg < SAMPLES - 1 && cum[seg + 1] < s) seg++;
+        const segLen = cum[seg + 1] - cum[seg];
+        const frac = segLen > 0 ? (s - cum[seg]) / segLen : 0;
+
+        const x = xs[seg] + (xs[seg + 1] - xs[seg]) * frac;
+        const y = ys[seg] + (ys[seg + 1] - ys[seg]) * frac;
+        const dx = txs[seg] + (txs[seg + 1] - txs[seg]) * frac;
+        const dy = tys[seg] + (tys[seg + 1] - tys[seg]) * frac;
+
+        const len = Math.hypot(dx, dy) || 1;
+        const ux = dx / len, uy = dy / len;
+        const px = -uy, py = ux;
+
+        const tipX = x + ux * half;
+        const tipY = y + uy * half;
+        const blX = x - ux * half + px * half;
+        const blY = y - uy * half + py * half;
+        const brX = x - ux * half - px * half;
+        const brY = y - uy * half - py * half;
+
+        d += `M${blX.toFixed(1)} ${blY.toFixed(1)}L${tipX.toFixed(1)} ${tipY.toFixed(1)}L${brX.toFixed(1)} ${brY.toFixed(1)}`;
+    }
+    return d;
+}
+
 function renderPlannerEdges(flows) {
     const svg = document.getElementById('planner-svg-layer');
     if (!svg) return;
     const beltSpeed = getBeltSpeed(DB.settings.lvlBelt || 0);
+    const useChevron = _plannerSettings.edgeStyle === 1;
     let html = '';
 
     Object.values(plannerState.edges).forEach(edge => {
@@ -1387,17 +1476,24 @@ function renderPlannerEdges(flows) {
 
         const flow = flows.edgeFlow[edge.id] || 0;
         const itemDef = DB.items[edge.item] || {};
-        const { d, mid } = buildPlannerEdgePath(p1, p2, sign1, sign2);
+        const { d, mid, c1, c2 } = buildPlannerEdgePath(p1, p2, sign1, sign2);
+
+        // 依目前模式，產生對應的線條 path
+        const linePathHtml = useChevron
+            ? `<path class="planner-edge-chevrons" d="${_plannerBuildChevronPath(p1, c1, c2, p2, 9, 5)}"></path>`
+            : `<path class="planner-edge-line" d="${d}"></path>`;
+
         const beltCount = !itemDef.liquid ? (flow / beltSpeed) : null;
-        const lineStyle = edge.color ? ` style="stroke:${edge.color};"` : '';
+        // edge.color 現在放在 group 的 color 上，由 stroke: currentColor 吃色
+        const colorStyle = edge.color ? ` style="color:${edge.color};"` : '';
         const labelStyle = edge.color ? ` style="border-left:3px solid ${edge.color};"` : '';
         const beltArg = beltCount !== null ? beltCount : 'null';
         const hoverAttrs = `onmouseenter="showPlannerEdgeTooltip(event, '${edge.item.replace(/'/g, "\\'")}', ${flow}, ${beltArg})" onmousemove="movePlannerEdgeTooltip(event)" onmouseleave="hidePlannerEdgeTooltip()"`;
 
         html += `
-            <g class="planner-edge-group" data-edge-id="${edge.id}" ${hoverAttrs}>
+            <g class="planner-edge-group" data-edge-id="${edge.id}" ${hoverAttrs}${colorStyle}>
                 <path class="planner-edge-hit" d="${d}" onclick="openPlannerEdgeModal('${edge.id}')"></path>
-                <path class="planner-edge-line" d="${d}"${lineStyle}></path>
+                ${linePathHtml}
                 <foreignObject x="${mid.x - 60}" y="${mid.y - 15}" width="120" height="32" style="overflow:visible;">
                     <div xmlns="http://www.w3.org/1999/xhtml" class="planner-edge-label" onclick="openPlannerEdgeModal('${edge.id}')"${labelStyle}>
                         <img src="img/item${itemDef.id ?? 0}.png" width="16" height="16">
@@ -1453,7 +1549,7 @@ function startPlannerConnectionDrag(dotEl, e) {
         const d = dir === 'out' ? buildPlannerEdgePathD(startPos, endPos) : buildPlannerEdgePathD(endPos, startPos);
         if (!previewEl) {
             previewEl = document.createElementNS('http://www.w3.org/2000/svg', 'path');
-            previewEl.setAttribute('class', 'planner-edge-line planner-edge-preview');
+            previewEl.setAttribute('class', 'planner-edge-preview');
             svg.appendChild(previewEl);
         }
         previewEl.setAttribute('d', d);
