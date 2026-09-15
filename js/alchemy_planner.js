@@ -477,7 +477,6 @@ function attachPlannerCanvasPan() {
             _plannerSettings.viewport.x = originX + (ev.clientX - startX);
             _plannerSettings.viewport.y = originY + (ev.clientY - startY);
             applyPlannerViewportTransform();
-            if (_plannerLastFlows) renderPlannerEdges(_plannerLastFlows);
         };
         const onUp = () => {
             canvas.removeEventListener('pointermove', onMove);
@@ -511,7 +510,6 @@ function plannerSetZoom(newZoom, anchorClientX, anchorClientY) {
     _plannerSettings.viewport.y = (ay - rect.top) - graphY * newZoom;
 
     applyPlannerViewportTransform();
-    if (_plannerLastFlows) renderPlannerEdges(_plannerLastFlows);
     savePlannerSettings();
 }
 

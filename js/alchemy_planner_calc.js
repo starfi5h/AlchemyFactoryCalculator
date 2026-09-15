@@ -108,8 +108,7 @@ function plannerGetRecipeRates(recipeId, recipeModifiers) {
 
     const recipeTime = plannerGetRecipeTime(recipe);    
     const mainOut = Object.keys(recipe.outputs)[0];
-    const nutrientCost = recipe.nutrientCost || 0;
-    const isNursery = recipe.machine === "Nursery" || recipe.machine === "World Tree Nursery";    
+    const nutrientCost = recipe.nutrientCost || 0;  
 
     let batchesPerMinPerMachine = (60 / (recipeTime || 1)) * speedMult;
     const inputsPerMachine = Object.entries(recipe.inputs || {}).map(([item, qty]) => ({
@@ -162,7 +161,7 @@ function plannerGetRecipeRates(recipeId, recipeModifiers) {
 
     // 肥料消耗 (Nursery, 每台機器)
     let fertItemsPerMachine = 0;
-    if (isNursery) {
+    if (nutrientCost > 0) {
         const totalNutrientsPerMinPerMachine = batchesPerMinPerMachine * nutrientCost;
         const fertDef = DB.items[DB.settings.defaultFert] || { nutrientValue: 144 };
         const grossFertVal = fertDef.nutrientValue * (1 + lvlFert * 0.10);
