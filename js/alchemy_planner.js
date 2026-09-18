@@ -824,6 +824,7 @@ function renderPlanner() {
     renderPlannerEdges(flows);
     updateAllPlannerLinkButtons();
     renderPlannerSummary(flows);
+    renderPlannerEmptyHint();
 }
 
 /** 輕量刷新：重算流量後只 patch 既有節點卡片內容與邊線，不重建節點 DOM (保留拖曳/輸入焦點狀態) */
@@ -1628,4 +1629,60 @@ function tryCreatePlannerEdgeFromDots(sourceNodeId, item, sourceDir, targetDotEl
         }
     }
     savePlannerState();
+}
+
+
+/* ==========================================================================
+   SECTION: EMPTY CANVAS HINT (shown when the active plan has no nodes)
+   ========================================================================== */
+
+/** 依目前語言，組出提示視窗的內容清單 [key組合文字, 說明文字] */
+function _plannerEmptyHintEntries() {
+    return [
+        [t('Right-click canvas / + Add Node', 'ui'), t('Add a new recipe node', 'ui')],
+        [t('Drag empty canvas', 'ui'), t('Pan the view', 'ui')],        
+        [t('▭ Select Mode + drag', 'ui'), t('Box-select multiple nodes', 'ui')],
+        [t('Shift + drag empty canvas', 'ui'), t('Temporary box-select', 'ui')],
+        [t('Ctrl/Cmd + click node', 'ui'), t('Toggle single node selection', 'ui')],
+        [t('Ctrl/Cmd + A', 'ui'), t('Select all nodes', 'ui')],
+        [t('Delete / Backspace', 'ui'), t('Delete selected nodes', 'ui')],
+        [t('Mouse wheel / Pinch', 'ui'), t('Zoom in/out', 'ui')],
+        [t('+ / − / F key', 'ui'), t('Zoom / Fit all nodes to view', 'ui')],
+        [t('Ctrl/Cmd + Z / Y', 'ui'), t('Undo / Redo', 'ui')],
+        [t('Drag port dot to another port', 'ui'), t('Connect two ports', 'ui')],
+        [t('Drag port dot to empty canvas', 'ui'), t('Create a new connected node', 'ui')]
+    ];
+}
+
+/** 依目前 plan 是否為空，顯示或移除中央的操作提示 */
+function renderPlannerEmptyHint() {
+    const canvas = document.getElementById('planner-canvas');
+    if (!canvas) return;
+    let hintEl = document.getElementById('planner-empty-hint');
+
+    const isEmpty = Object.keys(plannerState.nodes).length === 0;
+    if (!isEmpty) {
+        if (hintEl) hintEl.remove();
+        return;
+    }
+
+    if (!hintEl) {
+        hintEl = document.createElement('div');
+        hintEl.id = 'planner-empty-hint';
+        hintEl.className = 'planner-empty-hint';
+        canvas.appendChild(hintEl);
+    }
+
+    const rows = _plannerEmptyHintEntries()
+        .map(([key, desc]) => `
+            <div class="planner-empty-hint-row">
+                <span class="planner-empty-hint-key">${key}</span>
+                <span class="planner-empty-hint-desc">${desc}</span>
+            </div>`)
+        .join('');
+
+    hintEl.innerHTML = `
+        <div class="planner-empty-hint-title">${t('Planner Controls', 'ui')}</div>
+        ${rows}
+    `;
 }

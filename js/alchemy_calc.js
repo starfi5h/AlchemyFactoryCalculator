@@ -387,8 +387,8 @@ function renderCalculationResult(params, result) {
             <span class="section-header">--- ${t('Production Chain')} (${entry.target.item}) ---
             </span>
             <span style="margin-left:auto; cursor:pointer;">
-                <button class="recycle-btn" onclick="setAllRecycling(true)" title="Recycle all byproducts">${t('Recycle All')}</button>
-                <button class="recycle-btn" onclick="setAllRecycling(false)" titile="Don't recycle any byproducts">${t('Un-recycle All')}</button>
+                <button class="recycle-btn" onclick="setAllRecycling(true)" title="Recycle all byproducts">${t('Reuse All Byproduct')}</button>
+                <button class="recycle-btn" onclick="setAllRecycling(false)" titile="Don't recycle any byproduct">${t('Reset All')}</button>
                 <span class="section-header" onclick="toggleFirstLevel()" title="Toggle First Level" style="margin-right:10px;">💠</span>
             </span>
             ${fuelTag}

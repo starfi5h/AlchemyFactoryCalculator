@@ -792,6 +792,37 @@ button.reset-btn:hover { background: var(--danger); color: white; }
 }
 .planner-nodes-layer { position: absolute; top: 0; left: 0; }
 
+/* Hiny */
+
+.planner-empty-hint {
+    position: absolute; top: 50%; left: 50%;
+    transform: translate(-50%, -50%);
+    z-index: 5; pointer-events: none;
+    background: rgba(20,20,20,0.55);
+    border: 1px dashed var(--border, #444);
+    border-radius: 10px;
+    padding: 18px 26px;
+    max-width: 420px;
+    color: #888;
+    font-size: 0.85em;
+    line-height: 1.7;
+    text-align: left;
+    user-select: none;
+}
+.planner-empty-hint-title {
+    color: #aaa; font-weight: bold; text-transform: uppercase;
+    letter-spacing: 0.05em; font-size: 0.85em;
+    margin-bottom: 10px; text-align: center;
+}
+.planner-empty-hint-row {
+    display: flex; align-items: baseline; gap: 8px;
+    padding: 2px 0;
+}
+.planner-empty-hint-key {
+    flex-shrink: 0; min-width: 150px;
+    color: #6fcf97; font-family: monospace; font-size: 0.95em;
+}
+.planner-empty-hint-desc { color: #999; }
 
 /* Select Mode */
 .planner-canvas.select-mode { cursor: crosshair; }

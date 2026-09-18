@@ -223,8 +223,8 @@ window.ALCHEMY_I18N = {
         "Cost per Nutr": "单位肥力成本",
 
         "Production Chain": "生产链",
-        "Recycle All": "全部回收",
-        "Un-recycle All": "全部不回收",
+        "Reuse All Byproduct": "回收所有副产物",
+        "Reset All": "重置全部",
         "Swap Recipe": "替换配方",
         "Input": "输入",
         "Output": "输出",
@@ -516,7 +516,34 @@ window.ALCHEMY_I18N = {
         "New Plan": "新方案",
         "🗑 Delete": "🗑 刪除",
         "⭳ Export": "⭳ 匯出",
-        "⭱ Import": "⭱ 匯入"
+        "⭱ Import": "⭱ 匯入",
+
+        // --- Planner: Empty Canvas Hint ---
+        "Planner Controls": "规划器操作说明",
+        "Right-click canvas / + Add Node": "右键画布 / + 新增节点",
+        "Add a new recipe node": "新增一个配方节点",
+        "Drag empty canvas": "拖曳空白画布",
+        "Pan the view": "平移视角",
+        "▭ Select Mode + drag": "▭ 选取模式 + 拖曳",
+        "Box-select multiple nodes": "框选多个节点",
+        "Shift + drag empty canvas": "Shift + 拖曳空白画布",
+        "Temporary box-select": "临时框选",
+        "Ctrl/Cmd + click node": "Ctrl/Cmd + 点击节点",
+        "Toggle single node selection": "切换单一节点的选取状态",
+        "Ctrl/Cmd + A": "Ctrl/Cmd + A",
+        "Select all nodes": "全选所有节点",
+        "Delete / Backspace": "Delete / Backspace",
+        "Delete selected nodes": "删除选取的节点",
+        "Mouse wheel / Pinch": "滑鼠滚轮 / 双指缩放",
+        "Zoom in/out": "缩放画布",
+        "+ / − / F key": "+ / − / F 键",
+        "Zoom / Fit all nodes to view": "缩放 / 缩放至全部可见",
+        "Ctrl/Cmd + Z / Y": "Ctrl/Cmd + Z / Y",
+        "Undo / Redo": "复原 / 重做",
+        "Drag port dot to another port": "拖曳接口圆点到另一个接口",
+        "Connect two ports": "连接两个接口",
+        "Drag port dot to empty canvas": "拖曳接口圆点到空白画布",
+        "Create a new connected node": "建立一个新的已连线节点"
     },
     "items": {
         // Game version: 1.0.4917
