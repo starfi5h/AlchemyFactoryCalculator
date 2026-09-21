@@ -320,6 +320,7 @@ window.ALCHEMY_I18N = {
         "3 Diff": "3件不同",
         "2 Same": "2件相同",
         "3 Same": "3件相同",
+        "Click: cycle all items\nCtrl+Click: cycle within checked candidates only": "点击：在全部物品中切换\nCtrl+点击：仅在已勾选原料中切换",
         "Unattainable Targets": "无法达成的目标",
         "Single Step Search": "单步搜索",
         "Multiple Steps Search": "多步搜索",

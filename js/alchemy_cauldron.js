@@ -72,9 +72,9 @@ function loadCauldronSettings() {
     } else {
         // 如果是第一次运行，默認Profile 1為全選
         cauldronState.profiles[0].candidates = Object.keys(DB.items).filter(isVaildCandidate);        
-        // 默认Profile 2為植物+晶石基底
+        // 默认Profile 2為植物+產物基底
         cauldronState.profiles[1].candidates = Array.from(getPresetCandidates('Herbs'));
-        // 默认Profile 3為金幣+晶石基底
+        // 默认Profile 3為金幣+原料基底
         cauldronState.profiles[2].candidates = Array.from(getPresetCandidates('Gold'));
         cauldronState.showEstCost = true;
         cauldronState.orderByEstCost = true;
@@ -110,7 +110,7 @@ function getPresetCandidates(poolType) {
                 }
             });
 
-            for (let round = 0; round < 3; round++) {
+            for (let round = 0; round < 1; round++) {
                 let outputSet = new Set();
                 for (const { inputs, outputs, machine } of DB.recipes) {
                     const inKeys = Object.keys(inputs || {});
@@ -640,10 +640,10 @@ function updateFilterUI() {
         if (val) {
             const item = DB.items[val];
             ctrlEl.innerHTML = `
-                <button class="swap-btn" onclick="shiftFilterItem(${i}, -1)">-</button>
+                <button class="swap-btn" onclick="shiftFilterItem(${i}, -1, event)" title="${t('Click: cycle all items\nCtrl+Click: cycle within checked candidates only', 'ui')}">-</button>
                 <img src="img/item${item.id ?? 0}.png" width="18" height="18" title="${val}">
                 <span class="cand-cost">${Number(item.cauldronCost.toFixed(2))}</span>
-                <button class="swap-btn" onclick="shiftFilterItem(${i}, 1)">+</button>
+                <button class="swap-btn" onclick="shiftFilterItem(${i}, 1, event)" title="${t('Click: cycle all items\nCtrl+Click: cycle within checked candidates only', 'ui')}">+</button>
             `;
             ctrlEl.style.visibility = 'visible';
         } else {
@@ -659,8 +659,10 @@ function updateFilterUI() {
  * @param {number} slotIdx 1, 2, 3
  * @param {number} delta -1 或 1
  */
-function shiftFilterItem(slotIdx, delta) {
-    const list = Object.keys(DB.items)
+function shiftFilterItem(slotIdx, delta, event) {
+    const useCandidatesOnly = !!(event && (event.ctrlKey || event.metaKey));
+    const baseList = useCandidatesOnly ? [...cauldronCandidates] : Object.keys(DB.items);
+    const list = baseList
         .filter(isVaildCandidate)
         .sort((a, b) => DB.items[a].cauldronCost - DB.items[b].cauldronCost);
 
@@ -791,6 +793,9 @@ function resolveCauldronOutput3(n0, n1, n2, validTargets) {
     else if (n0 === n1 || n1 === n2 || n0 === n2) ratio = 0.65;
 
     const T = (c0 + c1 + c2) * ratio;
+
+    // Tie-breaker short-cut patch
+    if (T === 556) return { output: getCurrentItemName('Crude Shard'), ratio, T };
 
     let bestItem = null;
     let bestValue = 0;

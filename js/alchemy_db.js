@@ -567,7 +567,7 @@ window.ALCHEMY_DB = {
         },
         { "id": "Ruby", "machine": "Cauldron", "inputs": { "Diamond": 1, "Gold Dust": 1, "Resonant Catalyst": 1 }, "outputs": { "Ruby": 1 }, "baseTime": 30.9, "heatCost": 3131.3 },
         { "id": "Sapphire", "machine": "Cauldron", "inputs": { "Perfect Diamond": 1, "World Tree Core": 1, "Unstable Catalyst": 1 }, "outputs": { "Sapphire": 1 }, "baseTime": 38.2, "heatCost": 4848.5  },
-        { "id": "Emerald", "machine": "Cauldron", "inputs": { "Moonlit Soap": 1, "Lapis Lazuli": 1, "Resonant Catalyst": 1 }, "outputs": { "Emerald": 1 }, "baseTime": 45.5, "heatCost": 6565.7 },
+        { "id": "Emerald", "machine": "Cauldron", "inputs": { "Moonlit Soap": 1, "Lapis Lazuli": 1, "Fertile Catalyst": 1 }, "outputs": { "Emerald": 1 }, "baseTime": 45.5, "heatCost": 6565.7 },
 
         // --- METEORITE MEGA-RECIPE ---
         { 
