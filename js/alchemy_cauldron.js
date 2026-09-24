@@ -692,19 +692,19 @@ function pickCauldronTargetOutput(clear = false) {
         runCauldronSimulation();
         return;
     }
-    const originalSelectItem = window.selectItem;
+    const hadProp = currentPickerProps.has('cauldronTarget');   // 記住原狀態
     window.selectItem = (name) => {
-        window.selectItem = originalSelectItem;
         if (DB.items[name]?.cauldronTarget === undefined) {
             alert(t('Selected item is not a valid cauldron target.', 'ui'));
-            return;
+            return;   // 不需再手動還原 selectItem,由 closeModal 統一處理
         }
         cauldronTargetOutput = name;
-        closeModal('picker-modal');
+        closeModal('picker-modal');   // 會觸發 _runPickerCleanup
         updateCauldronTargetOutputUI();
         runCauldronSimulation();
-    };    
+    };
     currentPickerProps.add('cauldronTarget');
+    _pickerOnClose = () => { if (!hadProp) currentPickerProps.delete('cauldronTarget'); };
     openItemPicker();
 }
 

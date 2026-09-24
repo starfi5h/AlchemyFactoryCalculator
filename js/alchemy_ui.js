@@ -5,9 +5,13 @@ let allItemsList = [];
 let currentFocus = -1;
 
 // ITEM PICKER GLOBALS
+
 let currentPickerCategory = "[All]";
 let currentPickerTier = 0; // 0 = 不篩選
 let currentPickerProps = new Set(); // 'sellPrice' | 'wholesalePrice' | 'cauldronTarget'
+let _pickerOnClose = null;                    // picker 關閉時執行一次的清理回呼
+const DEFAULT_SELECT_ITEM = selectItem;       // 預設的 selectItem(function 宣告會被 hoist,這裡可直接取用)
+
 const PICKER_PROP_DEFS = [
     { key: 'sellPrice',      label: 'Sell Price' },
     { key: 'wholesalePrice', label: 'Wholesale Price' },
@@ -586,7 +590,30 @@ document.addEventListener('click', (e) => {
     }
 }, true);
 
-function closeModal(id) { document.getElementById(id).style.display = 'none'; }
+function closeModal(id) {
+    document.getElementById(id).style.display = 'none';
+    if (id === 'picker-modal') _runPickerCleanup();
+}
+
+function _runPickerCleanup() {
+    window.selectItem = DEFAULT_SELECT_ITEM;  // 還原任何被 picker 呼叫者覆寫的 selectItem
+    const cb = _pickerOnClose;
+    _pickerOnClose = null;
+    if (cb) cb();
+}
+
+function updatePickerSearchClear() {
+    const input = document.getElementById('itemPickerSearch');
+    const btn = document.getElementById('picker-search-clear');
+    if (input && btn) btn.style.display = input.value ? '' : 'none';
+}
+
+function clearPickerSearch() {
+    const input = document.getElementById('itemPickerSearch');
+    input.value = '';
+    renderItemPicker();
+    input.focus();
+}
 
 /**
  * Opens the item picker modal and populates it with categorized items.
@@ -598,6 +625,17 @@ function openItemPicker() {
     renderPickerPropsBar();
     renderItemPicker();
     document.getElementById('picker-modal').style.display = 'flex';
+
+    const searchInput = document.getElementById('itemPickerSearch');
+    if (searchInput) {
+        // 使用 requestAnimationFrame 確保瀏覽器完成 Modal 的渲染排版
+        requestAnimationFrame(() => {
+            searchInput.focus();
+            if (searchInput.value) {
+                searchInput.select(); // 若有文字，則自動全選
+            }
+        });
+    }
 }
 
 // 渲染頂部的分類按鈕
@@ -663,6 +701,7 @@ function togglePickerProp(key) {
 function renderItemPicker() {    
     const grid = document.getElementById('picker-items-grid');
     const filterText = document.getElementById('itemPickerSearch').value.toLowerCase();
+    updatePickerSearchClear();
     grid.innerHTML = '';
 
     // 將 DB.items 轉換為數組以保持順序（或按 ID 排序）

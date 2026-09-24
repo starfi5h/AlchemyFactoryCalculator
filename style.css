@@ -506,8 +506,9 @@ input:checked + .slider-switch:before { transform: translateX(16px); }
 
 
 /* 搜尋框容器 */
-.picker-search-container { margin-bottom: 15px; }
-#itemPickerSearch { width: 100%; background: #252525; border: 1px solid #444; color: white; padding: 10px; border-radius: 4px; }
+.picker-search-container { margin-bottom: 15px; position: relative; }
+#itemPickerSearch { width: 100%; background: #252525; border: 1px solid #444; color: white; padding: 10px 32px 10px 10px; border-radius: 4px; }
+.picker-search-clear { position: absolute; right: 0; top: 50%; transform: translateY(-50%); }
 
 .picker-scroll-area {
     flex: 1;           /* 重要：這會讓此區域自動填滿 Modal 剩餘的所有高度 */
