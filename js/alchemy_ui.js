@@ -567,6 +567,25 @@ function adjustInput(id, delta) { const el = document.getElementById(id); let va
    SECTION: MODAL LOGIC
    ========================================================================== */
 
+// 防止「在 modal 內容區按下、拖到外面放開」誤觸發遮罩的關閉行為。
+// 瀏覽器會把 click 派發給 mousedown/mouseup 目標的共同祖先 (即 .modal-overlay)，
+// 導致 overlay 上的 inline onclick 被執行。
+// 做法：記錄 pointerdown 的起點，若 click 落在 overlay 本身但起點不是 overlay，
+// 就在 capture 階段攔截掉，讓 overlay 的 inline onclick 不會被呼叫。
+let _modalPointerDownTarget = null;
+
+document.addEventListener('pointerdown', (e) => {
+    _modalPointerDownTarget = e.target;
+}, true);
+
+document.addEventListener('click', (e) => {
+    const t = e.target;
+    if (!t.classList || !t.classList.contains('modal-overlay')) return;
+    if (_modalPointerDownTarget !== t) {
+        e.stopPropagation();
+    }
+}, true);
+
 function closeModal(id) { document.getElementById(id).style.display = 'none'; }
 
 /**
