@@ -880,7 +880,7 @@ ${t('Sum Volume')}: ${getMachineVolume(machineDef) * machineCount}
         
         let label = (countMax === countMin) ? `${countMax}` : 
                     isMaxMode ? `<span>${countMax}</span>` : 
-                    `<span style="color:var(--accent)">${countMin}</span>`;
+                    `<span>${countMin}</span>`;
 
         const li = document.createElement('li'); li.className = 'build-group';
         const machineDef = DB.machines[m] || {};
