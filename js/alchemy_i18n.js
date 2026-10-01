@@ -415,6 +415,8 @@ window.ALCHEMY_I18N = {
         "Exp": "经验",
 
         "Production Recipes": "生产配方",
+        "Per-Minute Rate": "每分钟生产速率",
+        "Apply Upgrades": "应用科技升级",
         "Used In": "使用于",
         "Used in Machine Construction": "用于建造机器",
         "Build Cost": "建造材料",

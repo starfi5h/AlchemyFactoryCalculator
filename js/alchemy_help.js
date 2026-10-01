@@ -126,7 +126,7 @@ function _injectHelpStyles() {
         .machine-tile { flex-direction: row; justify-content: flex-start; text-align: left; font-size: 0.8em; padding: 7px 10px; }
 
         /* ── Detail ── */
-        .wiki-detail-header { display: flex; align-items: center; gap: 12px; margin-bottom: 14px; padding-bottom: 12px; border-bottom: 1px solid var(--border, #333); }
+        .wiki-detail-header { display: flex; align-items: center; gap: 12px; margin-bottom: 14px; padding-bottom: 12px; }
         .wiki-detail-title-area { flex: 1; }
         .wiki-detail-name { margin: 0 0 5px; font-size: 1.05em; font-weight: 700; color: var(--text, #eee); }
         .wiki-detail-meta { display: flex; align-items: center; flex-wrap: wrap; gap: 5px; }
@@ -344,6 +344,126 @@ var _machineChipFilters = {
 };
 var _activeMachineChip = null; // 'tier' | 'heatCost' | null
 
+/* ─── RECIPE DISPLAY MODE (per-minute / apply upgrades) ─── */
+var _wikiPerMinuteMode = false;
+var _wikiApplyUpgrades = false;
+
+function _wikiGetRecipeTime(recipe) {
+    var recipeTime = recipe.baseTime || 1;
+    var nutrientCost = recipe.nutrientCost || 0;
+    if (nutrientCost > 0 && recipe.machine === "Nursery") {
+        var fertDef = DB.items[DB.settings.defaultFert];
+        var fertSpeed = (fertDef && fertDef.maxFertility) || 1;
+        recipeTime = nutrientCost / fertSpeed;
+    }
+    return recipeTime;
+}
+
+/**
+ * 依 _wikiPerMinuteMode / _wikiApplyUpgrades 計算配方顯示用的 inputs/outputs/時間標籤。
+ * 不修改原始 recipe 物件。回傳 { inputs, outputs, timeLabel }
+ * - timeLabel 為 null 表示不顯示（每分鐘模式下隱藏）
+ * - 有 nutrientCost 的配方，會把目前 DB.settings.defaultFert 的消耗量併入 inputs 最前面
+ */
+function _wikiRecipeIO(recipe) {
+    var settings = (DB && DB.settings) || {};
+    var lvlSpeed   = settings.lvlSpeed   || 0;
+    var lvlAlchemy = settings.lvlAlchemy || 0;
+    var lvlFert    = settings.lvlFert    || 0;
+    var lvlBelt    = settings.lvlBelt    || 0;
+
+    var baseTime = _wikiGetRecipeTime(recipe);
+    var speedMult = _wikiApplyUpgrades ? getSpeedMult(lvlSpeed) : 1;
+    var alchemyMult = _wikiApplyUpgrades ? getAlchemyMult(lvlAlchemy) : 1;
+
+    var effTime = baseTime;
+    if (_wikiApplyUpgrades && recipe.machine !== 'Seed Plot' && speedMult > 0) {
+        effTime = baseTime / speedMult;
+    }
+
+    var ratio, timeLabel;
+    if (_wikiPerMinuteMode) {
+        ratio = effTime > 0 ? (60 / effTime) : 0;
+        timeLabel = null;
+    } else {
+        ratio = 1;
+        timeLabel = Number(effTime.toFixed(3)) + ' s';
+    }
+
+    var outputs = {};
+    Object.keys(recipe.outputs || {}).forEach(function(item) {
+        var qty = recipe.outputs[item];
+        var effQty = _wikiApplyUpgrades ? applyAlchemyMult(recipe.machine, qty, alchemyMult) : qty;
+        outputs[item] = effQty * ratio;
+    });
+
+    // 傳送帶上限：僅在「每分鐘模式」+「套用升級」同時開啟時才有意義
+    if (_wikiPerMinuteMode) {
+        var beltSpeed = _wikiApplyUpgrades ? getBeltSpeed(lvlBelt) : 60;
+        var cap = 1;
+        Object.keys(outputs).forEach(function(item) {
+            var itemDef = DB.items[item] || {};
+            if (itemDef.liquid) return;
+            var effBelt = beltSpeed;
+            if (itemDef.category === 'Currency') effBelt *= 50;
+            else if (recipe.sharedOutputs) effBelt /= recipe.sharedOutputs;
+            if (effBelt > 0 && outputs[item] > effBelt) {
+                cap = Math.min(cap, effBelt / outputs[item]);
+            }
+        });
+        if (cap < 1) {
+            Object.keys(outputs).forEach(function(item) { outputs[item] *= cap; });
+            ratio *= cap;
+        }
+    }
+
+    var inputs = {};
+    Object.keys(recipe.inputs || {}).forEach(function(item) {
+        inputs[item] = recipe.inputs[item] * ratio;
+    });
+
+    var nutrientCost = recipe.nutrientCost || 0;
+    if (nutrientCost > 0) {
+        var fertItem = settings.defaultFert;
+        var fertDef = fertItem && DB.items[fertItem];
+        if (fertDef) {
+            var fertMult = _wikiApplyUpgrades ? (1 + lvlFert * 0.10) : 1;
+            var grossFertVal = (fertDef.nutrientValue || 144) * fertMult;
+            var fertQty = (nutrientCost / grossFertVal) * ratio;
+            var merged = {};
+            merged[fertItem] = fertQty;
+            Object.keys(inputs).forEach(function(k) {
+                merged[k] = (merged[k] || 0) + inputs[k];
+            });
+            inputs = merged;
+        }
+    }
+
+    return { inputs: inputs, outputs: outputs, timeLabel: timeLabel };
+}
+
+function _buildWikiRecipeModeToggleHtml() {
+    return '<div style="display:flex; gap:6px; margin-top:16px; padding-top:16px; border-top: 1px dashed var(--border, #333);">'
+        + '<button class="wiki-filter-chip' + (_wikiPerMinuteMode ? ' active' : '') + '" onclick="_toggleWikiPerMinuteMode()">'
+        + '⏱ ' + _tn('Per-Minute Rate') + '</button>'
+        + '<button class="wiki-filter-chip' + (_wikiApplyUpgrades ? ' active' : '') + '" onclick="_toggleWikiApplyUpgrades()">'
+        + '⬆ ' + _tn('Apply Upgrades') + '</button>'
+        + '</div>';
+}
+
+function _toggleWikiPerMinuteMode() {
+    _wikiPerMinuteMode = !_wikiPerMinuteMode;
+    _wikiRefreshCurrentDetail();
+}
+function _toggleWikiApplyUpgrades() {
+    _wikiApplyUpgrades = !_wikiApplyUpgrades;
+    _wikiRefreshCurrentDetail();
+}
+function _wikiRefreshCurrentDetail() {
+    if (_currentWikiView === 'items' && _selectedItem) _renderItemDetail(_selectedItem);
+    else if (_currentWikiView === 'machines' && _selectedMachine) _renderMachineDetail(_selectedMachine);
+}
+
 /* ─── WIKI INDEX ─── */
 function _getWikiIndex() {
     if (_wikiIndex) return _wikiIndex;
@@ -410,7 +530,7 @@ function _fmtItems(obj) {
         var label = name.replace(/"/g, '&quot;');
         return '<span class="wiki-recipe-item" title="' + label + ' \xd7' + qty + '"' + _oc('wikiSwitchToItem', name) + '>'
             + _itemIcon(def ? def.id : 0, 22)
-            + '<span class="wiki-item-qty">\xd7' + Number(qty.toFixed(3)) + '</span>'
+            + '<span class="wiki-item-qty">\xd7' + Number(qty.toFixed(2)) + '</span>'
             + '</span>';
     }).join('');
 }
@@ -809,9 +929,9 @@ function _renderItemDetail(itemName) {
     if (def.sellPrice      != null) stats.push([_tn('Sell Price'),      def.sellPrice.toLocaleString()      + ' c']);
     if (def.wholesalePrice != null) stats.push([_tn('Wholesale Price'), def.wholesalePrice.toLocaleString() + ' c']);
     if (def.heat           != null) stats.push([_tn('Heat Value'),      def.heat          + ' P']);
-    if (def.nutrientCost   != null) stats.push([_tn('Nutrient Cost'),   def.nutrientCost  + ' V/min']);
+    if (def.nutrientCost   != null) stats.push([_tn('Nutrient Cost'),   def.nutrientCost + ' V']);
     if (def.nutrientValue  != null) stats.push([_tn('Nutrient Value'),  def.nutrientValue + ' V']);
-    if (def.maxFertility   != null) stats.push([_tn('Max Fertility'),   def.maxFertility]);    
+    if (def.maxFertility   != null) stats.push([_tn('Max Fertility'),   def.maxFertility + ' V/min']);
     if (def.cauldronCost   != null) stats.push([_tn('Cauldron Cost'),   def.cauldronCost]);
     if (def.cauldronTarget != null) stats.push([_tn('Cauldron Target'), def.cauldronTarget]);
     var exp = def.exp || AlchemyCalcEngine.computeDecomposeExp(rawDB, itemName);
@@ -832,9 +952,10 @@ function _renderItemDetail(itemName) {
         ? '<p class="wiki-empty">' + _tn('No production recipes') + '</p>'
         : producers.map(function(recipe) {
             var isPreferred = preferred === recipe.id;
-            var hasIn   = Object.keys(recipe.inputs  || {}).length > 0;
-            var inHTML  = hasIn ? _fmtItems(recipe.inputs) : '<em style="font-size:0.78em;color:#666">—</em>';
-            var outHTML = _fmtItems(recipe.outputs || {});
+            var disp = _wikiRecipeIO(recipe);
+            var hasIn   = Object.keys(disp.inputs).length > 0;
+            var inHTML  = hasIn ? _fmtItems(disp.inputs) : '<em style="font-size:0.78em;color:#666">—</em>';
+            var outHTML = _fmtItems(disp.outputs);
             return '<div class="wiki-recipe-row' + (isPreferred ? ' preferred' : '') + '">'
                 + '<div class="wiki-recipe-formula">'
                 + '<span class="wiki-items">' + inHTML  + '</span>'
@@ -843,7 +964,7 @@ function _renderItemDetail(itemName) {
                 + '</div>'
                 + '<div class="wiki-recipe-right">'
                 + '<span class="wiki-recipe-machine" ' + _oc('wikiSwitchToMachine', recipe.machine) + '>' + _tn(recipe.machine, 'machines') + '</span>'
-                + (recipe.baseTime != null ? '<span>' + recipe.baseTime + 's</span>' : '')
+                + (disp.timeLabel != null ? '<span>' + disp.timeLabel + '</span>' : '')
                 + '</div></div>';
           }).join('');
 
@@ -851,8 +972,9 @@ function _renderItemDetail(itemName) {
     var consumersHTML = consumers.length === 0
         ? '<p class="wiki-empty">' + _tn('Not used in any recipe') + '</p>'
         : consumers.map(function(recipe) {
-            var inHTML  = _fmtItems(recipe.inputs  || {});
-            var outHTML = _fmtItems(recipe.outputs || {});
+            var disp = _wikiRecipeIO(recipe);
+            var inHTML  = _fmtItems(disp.inputs);
+            var outHTML = _fmtItems(disp.outputs);
             return '<div class="wiki-recipe-row">'
                 + '<div class="wiki-recipe-formula">'
                 + '<span class="wiki-items">' + inHTML  + '</span>'
@@ -861,7 +983,7 @@ function _renderItemDetail(itemName) {
                 + '</div>'
                 + '<div class="wiki-recipe-right">'
                 + '<span class="wiki-recipe-machine" ' + _oc('wikiSwitchToMachine', recipe.machine) + '>' + _tn(recipe.machine, 'machines') + '</span>'
-                + (recipe.baseTime != null ? '<span>' + recipe.baseTime + 's</span>' : '')
+                + (disp.timeLabel != null ? '<span>' + disp.timeLabel + '</span>' : '')
                 + '</div></div>';
           }).join('');
 
@@ -899,6 +1021,7 @@ function _renderItemDetail(itemName) {
         + '<div class="wiki-detail-meta"><span class="wiki-badge category">' + (_tn(def.category, 'categories') || '—') + '</span></div>'
         + '</div></div>'
         + (statsHTML ? '<div class="wiki-section"><div class="wiki-section-title">' + _tn('Properties') + '</div>' + statsHTML + '</div>' : '')
+        + _buildWikiRecipeModeToggleHtml()
         + '<div class="wiki-section"><div class="wiki-section-title">' + _tn('Production Recipes') + ' (' + producers.length + ')</div>' + producersHTML + '</div>'
         + '<div class="wiki-section"><div class="wiki-section-title">' + _tn('Used In') + ' (' + consumers.length + ')</div>' + consumersHTML + '</div>'
         + (usedInMachines.length === 0 ? '' : ('<div class="wiki-section"><div class="wiki-section-title">' + _tn('Used in Machine Construction') + ' (' + usedInMachines.length + ')</div>' + machineConstructionHTML + '</div>'));
@@ -1032,10 +1155,11 @@ function _renderMachineDetail(machineName) {
     var recipesHTML = recipes.length === 0
         ? '<p class="wiki-empty">' + _tn('No recipes') + '</p>'
         : recipes.map(function(recipe) {
-            var inHTML = Object.keys(recipe.inputs || {}).length > 0
-                ? _fmtItems(recipe.inputs)
+            var disp = _wikiRecipeIO(recipe);
+            var inHTML = Object.keys(disp.inputs).length > 0
+                ? _fmtItems(disp.inputs)
                 : '<em style="font-size:0.78em;color:#666">—</em>';
-            var outHTML = _fmtItems(recipe.outputs || {});
+            var outHTML = _fmtItems(disp.outputs);
             return '<div class="wiki-recipe-row">'
                 + '<div class="wiki-recipe-formula">'
                 + '<span class="wiki-items">' + inHTML  + '</span>'
@@ -1043,7 +1167,7 @@ function _renderMachineDetail(machineName) {
                 + '<span class="wiki-items">' + outHTML + '</span>'
                 + '</div>'
                 + '<div class="wiki-recipe-right">'
-                + (recipe.baseTime != null ? '<span>' + recipe.baseTime + 's</span>' : '')
+                + (disp.timeLabel != null ? '<span>' + disp.timeLabel + '</span>' : '')
                 + '</div></div>';
           }).join('');
 
@@ -1053,8 +1177,9 @@ function _renderMachineDetail(machineName) {
         + '<div class="wiki-detail-title-area">'
         + '<h2 class="wiki-detail-name">' + _tn(machineName, 'machines') + '</h2>'
         + '</div></div>'
-        + (propsHTML ? '<div class="wiki-section"><div class="wiki-section-title">' + _tn('Properties') + '</div>' + propsHTML + '</div>' : '')
+        + (propsHTML ? '<div class="wiki-section"><div class="wiki-section-title">' + _tn('Properties') + '</div>' + propsHTML + '</div>' : '')        
         + '<div class="wiki-section"><div class="wiki-section-title">' + _tn('Build Cost') + '</div>' + buildCostHTML + '</div>'
+        + _buildWikiRecipeModeToggleHtml()
         + '<div class="wiki-section"><div class="wiki-section-title">' + _tn('Production Recipes') + ' (' + recipes.length + ')</div>' + recipesHTML + '</div>';
 }
 
