@@ -404,6 +404,12 @@ function renderPlannerNodeModalBody(nodeId) {
         titleEl.innerText = t('Node Settings', 'ui') + (mainOut ? ' — ' + mainOut : '');
     }
     
+    const hasCauldronTarget = !!mainOut && DB.items[mainOut]?.cauldronTarget !== undefined;
+    const cauldronBtnHtml = hasCauldronTarget
+        ? `<button class="swap-btn" style="width:auto; padding:2px 6px; border-radius:4px; font-size:0.8em;"
+                onclick="plannerOpenCauldronRecipe('${node.id}')">${t('+ Add Cauldron Recipe', 'ui')}</button>`
+        : '';
+
     const recipeSectionHtml = rawRecipe ?
     `
         <div class="planner-modifier-section">
@@ -411,8 +417,9 @@ function renderPlannerNodeModalBody(nodeId) {
         </div>
         <div style="height:1px; background:var(--border); margin:12px 0;"></div>
                 <div class="planner-recipe-switch-section">
-            <div style="font-size:0.78em; color:#888; text-transform:uppercase; letter-spacing:0.05em; margin-bottom:6px;">
-                ${t('Select Recipe', 'ui')}
+            <div style="display:flex; align-items:center; justify-content:space-between; margin-bottom:6px;">
+                <span style="font-size:0.78em; color:#888; text-transform:uppercase; letter-spacing:0.05em;">${t('Select Recipe', 'ui')}</span>
+                ${cauldronBtnHtml}
             </div>
             <div class="planner-picker-list" style="max-height:240px; overflow-y:auto; padding:0;">
                 ${mainOut ? _buildPlannerNodeRecipeSwitchHtml(node, mainOut) : `<div class="planner-picker-empty">${t('No recipe selected', 'ui')}</div>`}
@@ -646,6 +653,21 @@ function plannerSwitchNodeRecipe(nodeId, recipeId) {
     renderPlannerNodeModalBody(nodeId);
     renderPlanner();
     savePlannerState();
+}
+
+/** 從 Node Settings 開啟 Cauldron Recipe Modal;Apply 後只切換該節點的配方 */
+function plannerOpenCauldronRecipe(nodeId) {
+    const node = plannerState.nodes[nodeId];
+    const rawRecipe = node && plannerGetRawRecipe(node.recipeId);
+    if (!rawRecipe) return;
+    const mainOut = Object.keys(rawRecipe.outputs)[0];
+
+    openCauldronRecipeModal(mainOut, (recipeId) => {
+        plannerSwitchNodeRecipe(nodeId, recipeId);
+        // 若 recipeId 與目前相同,switch 會提前 return;
+        // 這裡再刷新一次,讓清單顯示剛 sync 進來的 AUTO_GENERATED 配方
+        renderPlannerNodeModalBody(nodeId);
+    });
 }
 
 /**

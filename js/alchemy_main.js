@@ -321,6 +321,17 @@ function switchTab(tabName, updateUrl = true) {
         case 'db': btnIndex = 4; break;
         default: return;
     }
+
+    // 在移除 active 之前，找出目前顯示中的 view 元素
+    const currentActiveEl = document.querySelector('.view.active');
+    // 從 id ("view-cauldron") 擷取出 tab 名稱 ("cauldron")
+    const previousTab = currentActiveEl ? currentActiveEl.id.replace('view-', '') : null;
+
+    // 2. 當上一個 tab 是 'cauldron' 且離開該頁面時觸發同步
+    if (previousTab === 'cauldron' && tabName !== 'cauldron' && typeof syncCauldronToMainDB === 'function') {
+        syncCauldronToMainDB();
+    }
+
     document.querySelectorAll('.view').forEach(el => el.classList.remove('active'));
     document.getElementById('view-' + tabName).classList.add('active');
 
@@ -340,9 +351,6 @@ function switchTab(tabName, updateUrl = true) {
     }
     if (tabName === 'planner' && typeof initPlannerPage === 'function') {
         initPlannerPage();
-    }
-    if (tabName === 'calc') {
-        syncCauldronToMainDB(); // 回到計算器頁面時, 嘗試同步煉金鍋配方
     }
 }
 

@@ -1808,12 +1808,15 @@ let _cauldronModalState = {
     targetItem: null,
     cauldronType: 0,    // 0=普通(3格), 1=高級(2格)
     slots: [null, null, null],
+    onApplied: null, // Apply 後的自訂處理 (recipeId) => void
 };
 
-function openCauldronRecipeModal(targetItem) {
+function openCauldronRecipeModal(targetItem, onApplied = null) {
+    if (cauldronCandidates.size === 0) syncCandidatesFromProfile();    
     _cauldronModalState.targetItem = targetItem;
     _cauldronModalState.cauldronType = 0;
     _cauldronModalState.slots = [null, null, null];
+    _cauldronModalState.onApplied = onApplied;
 
     const favs = cauldronState.favorites || [];
     const existing = favs.find(f => f.output === targetItem && f.inputs.length === 3);
@@ -2118,17 +2121,25 @@ function _applyCauldronModalRecipe() {
     // 2. 同步到主 DB 並套用對應 recipe
     syncCauldronToMainDB();
 
-    const matchedRecipe = (DB.recipes || []).find(r => {
-        if (!r.id?.startsWith('AUTO_GENERATED_CAULDRON')) return false;
-        if (!r.outputs?.[targetItem]) return false;
-        return Object.keys(r.inputs).sort().join(',') === [...inputs].sort().join(',');
-    });
+    // 找到對應的收藏項 (sync 是依收藏內 inputs 的順序產生 id,所以必須用它的順序)
+    const favEntry = favs.find(f => f.output === targetItem && [...f.inputs].sort().join('|') === key);
+    const expectedId = 'AUTO_GENERATED_CAULDRON' + (favEntry ? favEntry.inputs : inputs)
+        .map(name => `_${DB.items[name]?.id ?? 0}`).join('');
+    const matchedRecipe = (DB.recipes || []).find(r => r.id === expectedId);
+
+    // 3. Planner 等外部呼叫端:交給 callback 處理,不動全域 preferredRecipes
+    const onApplied = _cauldronModalState.onApplied;
+    if (onApplied) {
+        closeModal('cauldron-recipe-modal');
+        if (matchedRecipe) onApplied(matchedRecipe.id);
+        return;
+    }
+
+    // 4. Calculator 原本行為 (維持不變)
     if (matchedRecipe) {
         DB.settings.preferredRecipes[targetItem] = matchedRecipe.id;
         persist();
     }
-
-    // 3. 關閉兩個 modal 並重算
     closeModal('cauldron-recipe-modal');
     closeModal('recipe-modal');
     calculate();
