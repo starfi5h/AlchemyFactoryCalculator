@@ -1,6 +1,6 @@
 window.ALCHEMY_DB = {
-    "version": 56,
-    "date": "2026.09.14",
+    "version": 57,
+    "date": "2026.09.30",
     "gameVersion": "1.0.4952",
     "items": {
         // --- RAW RESOURCES ---
@@ -260,7 +260,7 @@ window.ALCHEMY_DB = {
         { "id": "Chamomile", "machine": "Nursery", "buildCost": "Chamomile Seeds", "inputs": {}, "outputs": { "Chamomile": 1 }, "nutrientCost": 720 },
         { "id": "Lavender", "machine": "Nursery", "buildCost": "Lavender Seeds", "inputs": {}, "outputs": { "Lavender": 1 }, "nutrientCost": 2160},
         { "id": "Gentian_Dual", "machine": "Nursery", "buildCost": "Gentian Seeds", "inputs": {}, "outputs": { "Gentian": 1, "Gentian Nectar": 1 }, "nutrientCost": 12000, "sharedOutputs": 2},
-        { "id": "Gentian_Mixture", "machine": "Nursery", "buildCost": "Gentian Seeds", "inputs": {}, "outputs": { "Gentian Mixture": 2 }, "nutrientCost": 12000, "sharedOutputs": 2},        
+        { "id": "Gentian_Mixture", "machine": "Nursery", "buildCost": "Gentian Seeds", "inputs": {}, "outputs": { "Gentian Mixture": 2 }, "nutrientCost": 12000},        
         { "id": "World Tree_Dual", "machine": "World Tree Nursery", "inputs": {}, "outputs": { "World Tree Leaf": 99, "World Tree Core":1 }, "baseTime": 300.0, "nutrientCost": 5970000},
         { "id": "World Tree_Mini", "machine": "Miniature World Tree", "inputs": {}, "outputs": { "World Tree Leaf": 1 }, "baseTime": 3, "nutrientCost": 30000 },
 
