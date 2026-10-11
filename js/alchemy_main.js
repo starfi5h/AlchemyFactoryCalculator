@@ -80,6 +80,7 @@ function init() {
     if(DB.settings.thermalExtractorHeight === undefined) DB.settings.thermalExtractorHeight = 255;
 
     translateDatabase(DB, true); // Translate DB item key
+    injectAltarRecipes(); // Dynamic inject recipes
 
     prepareComboboxData();
     populateSelects(); 
@@ -226,6 +227,33 @@ function populateSelects() {
         });
     heatingSel.value = DB.settings.selectedHeatingDevice || "Stone Furnace";
     if(!heatingSel.value) heatingSel.value = heatingSel.options[0]?.value || "";
+}
+
+/**
+ * 為每個可分解物品注入「知識祭壇」分解配方 (執行期生成，不寫入 alchemy_db.js)
+ * id: AUTO_GENERATED_ALTAR_{itemId}，outputs 留空。
+ * 必須在 translateDatabase(DB, true) 之後呼叫，inputs 的 key 才與目前語言一致。
+ */
+function injectAltarRecipes() {
+    const PREFIX = "AUTO_GENERATED_ALTAR_";
+    DB.recipes = (DB.recipes || []).filter(r => !r.id?.startsWith(PREFIX));
+
+    Object.entries(DB.items).forEach(([name, def]) => {
+        if (!(def.baseCost > 0) || def.liquid || def.virtual || def.id === undefined) return;
+        const decomposeTime = AlchemyCalcEngine.computeDecomposeTime(DB, name);
+        if (!decomposeTime) return;
+
+        // maxStack < 0 (原料/聖物)：每次只消耗一小部分，與煉金鍋同步邏輯一致
+        const inputQty = (def.maxStack < 0) ? 1 / (-def.maxStack) : 1;
+
+        DB.recipes.push({
+            id: PREFIX + def.id,
+            machine: "Knowledge Altar",
+            inputs: { [name]: inputQty },
+            outputs: {},
+            baseTime: decomposeTime
+        });
+    });
 }
 
 /* ==========================================================================

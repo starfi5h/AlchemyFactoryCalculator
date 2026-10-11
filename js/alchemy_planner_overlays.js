@@ -1011,7 +1011,7 @@ function openPlannerRecipePickerMenu(ctx) {
     const candidates = consuming ? getRecipesConsuming(ctx.item) : getRecipesFor(ctx.item);
 
     _plannerPickerCandidates = candidates.map(r => {
-        const mainOut = Object.keys(r.outputs)[0];
+        const mainOut = Object.keys(r.outputs)[0] ?? Object.keys(r.inputs)[0]; // 分解配方無輸出，退而顯示輸入物品
         const mainOutName = mainOut;
         const machineName = t(r.machine, 'machines');
         return {

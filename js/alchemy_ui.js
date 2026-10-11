@@ -1024,7 +1024,8 @@ function pickCustomRecipeInput(recipeId, forItem) {
 }
 
 function openDrillDown(item, rate) {
-    const url = `index.html?item=${encodeURIComponent(item)}&rate=${rate.toFixed(2)}`;
+    const langParam = (window.ALCHEMY_I18N?.enabled === false) ? '&lang=en' : '';
+    const url = `index.html?item=${encodeURIComponent(item)}&rate=${Number(rate)}${langParam}`;
     window.open(url, '_blank');
 }
 
