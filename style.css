@@ -728,6 +728,8 @@ button.reset-btn:hover { background: var(--danger); color: white; }
 
 .planner-plan-actions-row { display:flex; gap:6px; margin-top:10px; flex-wrap:wrap; }
 .planner-plan-actions-row button:disabled { opacity:0.4; cursor:not-allowed; }
+.planner-plan-actions-row button:disabled,
+.planner-plan-bottom-row button:disabled { opacity:0.4; cursor:not-allowed; }
 .planner-plan-bottom-row { display:flex; gap:8px; margin-top:14px; padding-top:10px; border-top:1px dashed #444; }
 
 /* rate tooltip */

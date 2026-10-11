@@ -68,7 +68,7 @@
             <span style="margin-left: 10px;">
                 <span id="ui-lang-toggle" style="cursor:pointer; margin-right: 10px;" onclick="toggleLanguage()" title="EN/中文">🌐EN/中文</span>
                 <a href="https://github.com/starfi5h/AlchemyFactoryCalculator" target="_blank" class="repo-link">GitHub Repo</a>
-                <span id="last-updated-time-text">2026.09.30</span>
+                <span id="last-updated-time-text">2026.10.11</span>
             </span>
         </div>
         <div class="tabs" id="page-tab-container">
@@ -112,17 +112,18 @@
                     <button class="close-modal" onclick="closeModal('planner-manage-modal')">&times;</button>
                 </div>
                 <div id="planner-plan-list" class="planner-plan-list"></div>
+                <div class="planner-plan-meta" id="planner-manage-selected-count" style="margin-top:6px;"></div>
                 <div class="planner-plan-actions-row" id="planner-plan-actions-row">
                     <button class="split-btn" onclick="managePlannerLoadSelected()">▶ Load</button>
                     <button class="split-btn" onclick="managePlannerRenameSelected()">✎ Rename</button>
-                    <button class="split-btn" onclick="managePlannerDuplicateSelected()">⧉ Duplicate</button>                                   
+                    <button class="split-btn" onclick="managePlannerDuplicateSelected()">⧉ Duplicate</button>
                     <button class="split-btn" onclick="managePlannerImportAsModule()">📦 Import as Module</button>
                 </div>
                 <div class="planner-plan-bottom-row">
                     <button class="save-btn" style="width:24%; margin:0;" onclick="managePlannerCreateNew()">New Plan</button>
                     <button class="split-btn" onclick="managePlannerImport()">⭱ Import</button>
-                    <button class="split-btn" onclick="managePlannerExportSelected()">⭳ Export</button>
-                    <button class="split-btn" style="color:var(--danger); border-color:var(--danger);" onclick="managePlannerDeleteSelected()">🗑 Delete</button>
+                    <button id="planner-manage-export-btn" class="split-btn" onclick="managePlannerExportSelected()">⭳ Export</button>
+                    <button id="planner-manage-delete-btn" class="split-btn" style="color:var(--danger); border-color:var(--danger);" onclick="managePlannerDeleteSelected()">🗑 Delete</button>
                 </div>
             </div>
         </div>

@@ -65,11 +65,39 @@ function _formatPlannerTime(ts) {
    SECTION: PLAN LIBRARY UI - Manage Plans Modal
    ========================================================================== */
 
-let _plannerManageSelectedId = null; // 「方案管理」Modal 內目前選中(highlight)的 plan id
+let _plannerManageSelectedIds = new Set(); // 「方案管理」Modal 內目前選中的 plan id 集合
+let _plannerManageAnchorId = null;         // Shift+Click 範圍選取的錨點
+
+/** 依 planOrder 順序回傳目前選取的 id 陣列 */
+function _plannerManageGetSelectedOrdered() {
+    return plannerLibrary.planOrder.filter(id => plannerLibrary.plans[id] && _plannerManageSelectedIds.has(id));
+}
+
+/** 選取數 = 1 時回傳該 id，否則回傳 null */
+function _plannerManageGetSingleId() {
+    const ids = _plannerManageGetSelectedOrdered();
+    return ids.length === 1 ? ids[0] : null;
+}
+
+/** 剔除已不存在的 id；錨點失效時重設 */
+function _plannerManagePruneSelection() {
+    _plannerManageSelectedIds = new Set(
+        [..._plannerManageSelectedIds].filter(id => plannerLibrary.plans[id])
+    );
+    if (!_plannerManageAnchorId || !plannerLibrary.plans[_plannerManageAnchorId]) {
+        _plannerManageAnchorId = _plannerManageSelectedIds.size > 0 ? [..._plannerManageSelectedIds][0] : null;
+    }
+}
+
+/** 直接設定選取集合 (單選) */
+function _plannerManageSelectOnly(id) {
+    _plannerManageSelectedIds = new Set(id ? [id] : []);
+    _plannerManageAnchorId = id || null;
+}
 
 /** 開啟「方案管理」Modal，預設選中目前作用中的方案 */
 function openPlannerManageModal() {
-    _plannerManageSelectedId = plannerLibrary.activePlanId;
+    _plannerManageSelectOnly(plannerLibrary.activePlanId);
     renderPlannerManageList();
     document.getElementById('planner-manage-modal').style.display = 'flex';
 }
@@ -79,20 +107,23 @@ function renderPlannerManageList() {
     const container = document.getElementById('planner-plan-list');
     if (!container) return;
 
-    // 預先計算目前選中 plan 的依賴 / 被依賴集合，供其他列 highlight 使用
+    _plannerManagePruneSelection();
+
+    // 依賴高亮只在單選時啟用
+    const singleId = _plannerManageGetSingleId();
     let selectedDeps = new Set();
     let selectedDependents = new Set();
-    if (_plannerManageSelectedId && plannerLibrary.plans[_plannerManageSelectedId]) {
-        const dep = getPlannerModulesUsedBy(_plannerManageSelectedId);
-        selectedDeps = new Set(dep.modules.filter(id => id !== _plannerManageSelectedId));
-        selectedDependents = new Set(getPlannerModulesUsingPlan(_plannerManageSelectedId).filter(id => id !== _plannerManageSelectedId));
+    if (singleId) {
+        const dep = getPlannerModulesUsedBy(singleId);
+        selectedDeps = new Set(dep.modules.filter(id => id !== singleId));
+        selectedDependents = new Set(getPlannerModulesUsingPlan(singleId).filter(id => id !== singleId));
     }
 
     container.innerHTML = plannerLibrary.planOrder
         .filter(id => plannerLibrary.plans[id])
         .map(id => {
             const plan = plannerLibrary.plans[id];
-            const isSelected = id === _plannerManageSelectedId;
+            const isSelected = _plannerManageSelectedIds.has(id);
             const isActive = id === plannerLibrary.activePlanId;
 
             const depInfo = getPlannerModulesUsedBy(id);
@@ -118,7 +149,9 @@ function renderPlannerManageList() {
                 ? `<span class="planner-plan-tag-cycle" title="${t('Circular module reference', 'ui')}">⚠ ${t('Cycle', 'ui')}</span>` : '';
 
             return `
-                <div class="${classes.join(' ')}" data-plan-id="${id}" onclick="selectPlannerManageRow('${id}')">
+                <div class="${classes.join(' ')}" data-plan-id="${id}"
+                     onmousedown="if (event.shiftKey && event.target.tagName !== 'INPUT') event.preventDefault();"
+                     onclick="selectPlannerManageRow(event, '${id}')">
                     <span class="planner-plan-drag-handle" title="Drag to reorder">⠿</span>
                     <span class="planner-plan-name">${_escapeHtml(plan.name)}</span>
                     ${isActive ? `<span class="planner-plan-active-tag">${t('Active', 'ui')}</span>` : ''}
@@ -136,16 +169,40 @@ function renderPlannerManageList() {
     _updatePlannerManageActionsState();
 }
 
-/** 選中/未選中時，啟用或停用「載入/重新命名/複製/刪除/匯出」這排操作按鈕 */
+/** 依選取數量啟用/停用按鈕：actions-row 需 =1；Export/Delete 需 >0 */
 function _updatePlannerManageActionsState() {
+    const size = _plannerManageGetSelectedOrdered().length;
+
     const row = document.getElementById('planner-plan-actions-row');
-    if (!row) return;
-    const disabled = !_plannerManageSelectedId;
-    row.querySelectorAll('button').forEach(btn => btn.disabled = disabled);
+    if (row) row.querySelectorAll('button').forEach(btn => btn.disabled = (size !== 1));
+
+    ['planner-manage-export-btn', 'planner-manage-delete-btn'].forEach(id => {
+        const btn = document.getElementById(id);
+        if (btn) btn.disabled = (size === 0);
+    });
+
+    const countEl = document.getElementById('planner-manage-selected-count');
+    if (countEl) countEl.innerText = `${t('Selected', 'ui')}: ${size}`;
 }
 
-function selectPlannerManageRow(id) {
-    _plannerManageSelectedId = id;
+/** 列點擊：一般=單選、Ctrl/Cmd=切換、Shift=從錨點延伸範圍 */
+function selectPlannerManageRow(e, id) {
+    const order = plannerLibrary.planOrder.filter(pid => plannerLibrary.plans[pid]);
+
+    if (e && e.shiftKey) {
+        let anchor = _plannerManageAnchorId;
+        if (!anchor || !order.includes(anchor)) anchor = id;
+        const a = order.indexOf(anchor), b = order.indexOf(id);
+        const lo = Math.min(a, b), hi = Math.max(a, b);
+        _plannerManageSelectedIds = new Set(order.slice(lo, hi + 1));
+        _plannerManageAnchorId = anchor; // 錨點不變
+    } else if (e && (e.ctrlKey || e.metaKey)) {
+        if (_plannerManageSelectedIds.has(id)) _plannerManageSelectedIds.delete(id);
+        else _plannerManageSelectedIds.add(id);
+        _plannerManageAnchorId = _plannerManageSelectedIds.size > 0 ? id : null;
+    } else {
+        _plannerManageSelectOnly(id);
+    }
     renderPlannerManageList();
 }
 
@@ -200,16 +257,17 @@ function _initPlannerPlanDragHandle(handle, row) {
 
 /* ---- Modal 操作按鈕：載入 / 重新命名 / 複製 / 刪除 / 匯出 ---- */
 
-/** 把 Modal 內選中的方案設為作用中方案，並關閉 Modal */
+/** 把 Modal 內選中的方案設為作用中方案，並關閉 Modal (僅單選) */
 function managePlannerLoadSelected() {
-    if (!_plannerManageSelectedId) return;
-    switchPlannerPlan(_plannerManageSelectedId);
+    const id = _plannerManageGetSingleId();
+    if (!id) return;
+    switchPlannerPlan(id);
     closeModal('planner-manage-modal');
 }
 
-/** 就地將選中列的名稱換成輸入框，方便重新命名 */
+/** 就地將選中列的名稱換成輸入框，方便重新命名 (僅單選) */
 function managePlannerRenameSelected() {
-    const id = _plannerManageSelectedId;
+    const id = _plannerManageGetSingleId();
     if (!id) return;
     const nameEl = document.querySelector(`.planner-plan-row[data-plan-id="${id}"] .planner-plan-name`);
     if (!nameEl) return;
@@ -235,9 +293,9 @@ function managePlannerRenameSelected() {
     });
 }
 
-/** 複製選中的方案 (含全部節點/連線)，插入在原方案之後 */
+/** 複製選中的方案 (含全部節點/連線)，插入在原方案之後 (僅單選) */
 function managePlannerDuplicateSelected() {
-    const id = _plannerManageSelectedId;
+    const id = _plannerManageGetSingleId();
     if (!id) return;
     const src = plannerLibrary.plans[id];
     const copy = _createPlan(src.name + ' ' + t('(Copy)', 'ui'));
@@ -247,21 +305,28 @@ function managePlannerDuplicateSelected() {
     plannerLibrary.plans[copy.id] = copy;
     plannerLibrary.planOrder.splice(idx + 1, 0, copy.id);
 
-    _plannerManageSelectedId = copy.id;
+    _plannerManageSelectOnly(copy.id);
     savePlannerLibraryMeta();
     renderPlannerToolbarSelect();
     renderPlannerManageList();
 }
 
-/** 刪除選中的方案；若刪掉的是目前作用中方案，自動切換到清單第一筆；不可刪到 0 個方案 */
+/** 刪除所有選取的方案；若包含目前作用中方案，自動切換到清單第一筆；不可刪到 0 個方案 */
 function managePlannerDeleteSelected() {
-    const id = _plannerManageSelectedId;
-    if (!id) return;
-    if (!confirm(t('Delete this plan?', 'ui'))) return;
+    const ids = _plannerManageGetSelectedOrdered();
+    if (ids.length === 0) return;
 
-    delete plannerLibrary.plans[id];
-    plannerLibrary.planOrder = plannerLibrary.planOrder.filter(pid => pid !== id);
-    delete plannerHistory[id]; // 該 plan 的 undo/redo 歷史一併清除
+    const msg = ids.length === 1
+        ? t('Delete this plan?', 'ui')
+        : `${t('Delete selected plans?', 'ui')} (${ids.length})`;
+    if (!confirm(msg)) return;
+
+    const idSet = new Set(ids);
+    ids.forEach(id => {
+        delete plannerLibrary.plans[id];
+        delete plannerHistory[id]; // 該 plan 的 undo/redo 歷史一併清除
+    });
+    plannerLibrary.planOrder = plannerLibrary.planOrder.filter(pid => !idSet.has(pid));
 
     if (plannerLibrary.planOrder.length === 0) {
         const plan = _createPlan(t('Default Plan', 'ui'));
@@ -269,7 +334,7 @@ function managePlannerDeleteSelected() {
         plannerLibrary.planOrder = [plan.id];
     }
 
-    if (plannerLibrary.activePlanId === id) {
+    if (!plannerLibrary.plans[plannerLibrary.activePlanId]) {
         plannerLibrary.activePlanId = plannerLibrary.planOrder[0];
         _activatePlanData(plannerLibrary.activePlanId);
         renderPlanner();
@@ -279,31 +344,82 @@ function managePlannerDeleteSelected() {
         updatePlannerUndoRedoButtons();
     }
 
-    _plannerManageSelectedId = plannerLibrary.activePlanId;
+    _plannerManageSelectOnly(plannerLibrary.activePlanId);
     savePlannerLibraryMeta();
     renderPlannerToolbarSelect();
     renderPlannerManageList();
 }
 
-/** 將選中方案匯出成單一 .json 檔 (含 name + data，方便匯入時直接還原名稱) */
-function managePlannerExportSelected() {
-    const id = _plannerManageSelectedId;
-    if (!id) return;
-    const plan = plannerLibrary.plans[id];
-    const exportObj = { name: plan.name, data: plan.data };
-    const blob = new Blob([JSON.stringify(exportObj, null, 2)], { type: "application/json" });
+/** 組出匯出清單：檔名 (同名加序號去重) + 內容 */
+function _plannerBuildExportItems(ids) {
+    const used = new Map();
+    return ids.map(id => {
+        const plan = plannerLibrary.plans[id];
+        const base = 'planner_' + plan.name.replace(/[^\w\-\u4e00-\u9fff]+/g, '_');
+        const n = (used.get(base) || 0) + 1;
+        used.set(base, n);
+        return {
+            filename: (n === 1 ? base : `${base}_${n}`) + '.json',
+            text: JSON.stringify({ name: plan.name, data: plan.data }, null, 2)
+        };
+    });
+}
+
+function _plannerDownloadText(filename, text) {
+    const blob = new Blob([text], { type: "application/json" });
     const url = URL.createObjectURL(blob);
     const a = document.createElement('a');
     a.href = url;
-    a.download = `planner_${plan.name.replace(/[^\w\-]+/g, '_')}.json`;
+    a.download = filename;
     document.body.appendChild(a);
     a.click();
     document.body.removeChild(a);
-    URL.revokeObjectURL(url);
+    setTimeout(() => URL.revokeObjectURL(url), 1000);
+}
+
+/** fallback：逐一下載，每檔間隔 250ms，避免被瀏覽器合併/攔截 */
+function _plannerDownloadSequentially(items) {
+    items.forEach((it, i) => {
+        setTimeout(() => _plannerDownloadText(it.filename, it.text), i * 250);
+    });
+}
+
+/** 匯出選取的方案：1 個 → 單檔下載；多個 → 資料夾寫入，不支援時逐一下載 */
+function managePlannerExportSelected() {
+    const ids = _plannerManageGetSelectedOrdered();
+    if (ids.length === 0) return;
+    const items = _plannerBuildExportItems(ids);
+
+    if (items.length === 1) {
+        _plannerDownloadText(items[0].filename, items[0].text);
+        return;
+    }
+
+    if (typeof window.showDirectoryPicker !== 'function') {
+        _plannerDownloadSequentially(items);
+        return;
+    }
+
+    // 注意：showDirectoryPicker 必須在 click 的同步流程中直接呼叫 (之前不可有 await)
+    window.showDirectoryPicker({ mode: 'readwrite' })
+        .then(async (dirHandle) => {
+            for (const it of items) {
+                const fileHandle = await dirHandle.getFileHandle(it.filename, { create: true });
+                const writable = await fileHandle.createWritable();
+                await writable.write(it.text);
+                await writable.close();
+            }
+        })
+        .catch((err) => {
+            if (err && err.name === 'AbortError') return; // 使用者取消
+            if (err && err.name === 'SecurityError') { _plannerDownloadSequentially(items); return; }
+            console.error(err);
+            alert(t('Failed to export plans: ', 'ui') + (err && err.message ? err.message : err));
+        });
 }
 
 function managePlannerImportAsModule() {
-    const moduleId = _plannerManageSelectedId;
+    const moduleId = _plannerManageGetSingleId();
     if (!moduleId) return;
 
     const canvas = document.getElementById('planner-canvas');
@@ -318,6 +434,7 @@ function managePlannerImportAsModule() {
     const id = 'pnode_' + plannerState._nodeSeq;
     plannerState.nodes[id] = {
         id,
+        kind: 'module',
         recipeId: null,
         moduleId,
         machineCount: 1,
@@ -336,47 +453,61 @@ function managePlannerCreateNew() {
     const plan = _createPlan(t('New Plan', 'ui'));
     plannerLibrary.plans[plan.id] = plan;
     plannerLibrary.planOrder.push(plan.id);
-    _plannerManageSelectedId = plan.id;
+    _plannerManageSelectOnly(plan.id);
     savePlannerLibraryMeta();
     renderPlannerToolbarSelect();
     renderPlannerManageList();
     managePlannerRenameSelected();
 }
 
-/** 從檔案匯入一個方案 (新增一筆到清單，不覆蓋既有方案) */
+/** 從檔案匯入方案 (可多選檔案；新增到清單，不覆蓋既有方案) */
 function managePlannerImport() {
     const input = document.createElement('input');
     input.type = 'file';
     input.accept = '.json';
-    input.onchange = (e) => {
-        const file = e.target.files[0];
-        if (!file) return;
-        const reader = new FileReader();
-        reader.onload = (readerEvent) => {
+    input.multiple = true;
+    input.onchange = async (e) => {
+        const files = [...e.target.files];
+        if (files.length === 0) return;
+
+        const readFile = (file) => new Promise((resolve, reject) => {
+            const reader = new FileReader();
+            reader.onload = () => resolve(reader.result);
+            reader.onerror = () => reject(reader.error || new Error('Read failed'));
+            reader.readAsText(file);
+        });
+
+        const newIds = [];
+        const errors = [];
+        for (const file of files) { // 依選檔順序逐一處理
             try {
-                const parsed = JSON.parse(readerEvent.target.result);
+                const parsed = JSON.parse(await readFile(file));
                 if (!parsed || typeof parsed !== 'object' || !parsed.data || !parsed.data.nodes) {
                     throw new Error("Invalid plan file format.");
                 }
                 const plan = _createPlan(parsed.name || t('Imported Plan', 'ui'));
                 plan.data = Object.assign(_createEmptyPlanData(), parsed.data);
-
                 plannerLibrary.plans[plan.id] = plan;
                 plannerLibrary.planOrder.push(plan.id);
-                _plannerManageSelectedId = plan.id;
-
-                savePlannerLibraryMeta();
-                renderPlannerToolbarSelect();
-                renderPlannerManageList();
+                newIds.push(plan.id);
             } catch (err) {
-                alert(t('Failed to import plan: ', 'ui') + err.message);
+                errors.push(`${file.name}: ${err.message}`);
             }
-        };
-        reader.readAsText(file);
+        }
+
+        if (newIds.length > 0) {
+            _plannerManageSelectedIds = new Set(newIds);
+            _plannerManageAnchorId = newIds[newIds.length - 1];
+            savePlannerLibraryMeta();
+            renderPlannerToolbarSelect();
+            renderPlannerManageList();
+        }
+        if (errors.length > 0) {
+            alert(t('Failed to import plan: ', 'ui') + '\n' + errors.join('\n'));
+        }
     };
     input.click();
 }
-
 
 /* ==========================================================================
    SECTION: NODE SETTINGS MODAL - recipe modifiers (catalysts / custom input)
