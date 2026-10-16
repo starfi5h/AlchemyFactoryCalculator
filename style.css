@@ -556,6 +556,11 @@ button.reset-btn:hover { background: var(--danger); color: white; }
 .cauldron-tabs-row { display: flex; gap: 2px; background: #222; padding: 2px; border-radius: 4px; margin-bottom: 10px; }
 .mini-tab { flex: 1; padding: 4px 2px !important; text-align: center; border: none !important; }
 .mini-tab.active { background: var(--accent) !important; color: white !important; }
+.profile-tab { min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.profile-tab input {
+    width: 100%; min-width: 0; padding: 0 2px; font: inherit; text-align: center;
+    background: #1a1a1a; color: #fff; border: 1px solid var(--accent);
+}
 
 .cauldron-filter-bar { display: flex; gap: 15px; align-items: center; background: #252525; padding: 8px; border-radius: 4px; margin-bottom: 10px; flex-wrap: wrap; }
 .filter-group { display: flex; gap: 10px; align-items: center; }

@@ -298,6 +298,7 @@ window.ALCHEMY_I18N = {
         "Profile 1": "原料池1",
         "Profile 2": "原料池2",
         "Profile 3": "原料池3",
+        "Double click to edit the profile name": "双击以编辑名称",
         "Filter Category": "筛选分类",
         "Select All": "全选",
         "Deselect All": "取消全选",

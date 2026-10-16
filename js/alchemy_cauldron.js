@@ -3,6 +3,7 @@
    ========================================================================== */
 
 const CAULDRON_STORAGE_KEY = "alchemy_cauldron_v1";
+const CAULDRON_PROFILE_NAME_MAX = 12;
 
 let cauldronState = {
     activeType: 0, // 0:煉金鍋 1:高級煉金鍋
@@ -15,9 +16,9 @@ let cauldronState = {
     stepMode: 0,   // 0: 单次步骤, 1: 多次步骤
     intermediateLimit: 3,   // 多次步驟的中間產物數量上限
     profiles: [
-        { candidates: [] }, // Profile 1
-        { candidates: [] }, // Profile 2
-        { candidates: [] }  // Profile 3
+        { name: "", candidates: [] }, // Profile 1
+        { name: "", candidates: [] }, // Profile 2
+        { name: "", candidates: [] }  // Profile 3
     ]
 };
 
@@ -49,6 +50,7 @@ function initCauldron() {
     renderCandidatePool();
     renderCauldronFavorites();
     translateText();
+    updateCauldronProfileTabNames();
     pickFilterItem(1,true);
     pickFilterItem(2,true);
     updateCauldronTargetOutputUI();
@@ -83,6 +85,7 @@ function loadCauldronSettings() {
     if (!(cauldronState.nutrPerCopper > 0)) cauldronState.nutrPerCopper = 12;
     if (cauldronState.stepMode === undefined) cauldronState.stepMode = 0;
     if (cauldronState.intermediateLimit === undefined) cauldronState.intermediateLimit = 3;
+    cauldronState.profiles.forEach(p => { if (typeof p.name !== 'string') p.name = ""; });
 }
 
 function saveCauldronSettings() {
@@ -552,6 +555,57 @@ function switchCauldronStepMode(mode, triggerCalc = true) {
                 runMultiStepCauldronSimulation();
         }
     }            
+}
+
+/** 自訂名稱為空字串時，回退到預設名稱 (隨語言切換) */
+function getCauldronProfileName(i) {
+    const custom = (cauldronState.profiles[i]?.name ?? "").trim();
+    return custom || t('Profile ' + (i + 1), 'ui');
+}
+
+/** 刷新 3 個 profile tab 的文字 */
+function updateCauldronProfileTabNames() {
+    for (let i = 0; i < 3; i++) {
+        const btn = document.getElementById(`cauldron-tab-${i}`);        
+        if (!btn) continue;
+        btn.textContent = getCauldronProfileName(i);        
+        btn.title = t('Double click to edit the profile name');
+    }
+}
+
+/** 雙擊 tab 就地改名：Enter/blur 提交，Esc 取消，清空 = 恢復預設 */
+function editCauldronProfileName(i) {
+    const btn = document.getElementById(`cauldron-tab-${i}`);
+    if (!btn || btn.querySelector('input')) return;
+    const old = cauldronState.profiles[i].name || "";
+
+    const input = document.createElement('input');
+    input.type = 'text';
+    input.value = old;
+    input.maxLength = CAULDRON_PROFILE_NAME_MAX;
+    input.placeholder = getCauldronProfileName(i);
+    btn.textContent = '';
+    btn.appendChild(input);
+
+    let done = false;
+    const commit = (save) => {
+        if (done) return;
+        done = true;
+        if (save) {
+            const v = input.value.trim().slice(0, CAULDRON_PROFILE_NAME_MAX);
+            if (v !== old) {
+                cauldronState.profiles[i].name = v;
+                saveCauldronSettings();
+            }
+        }
+        updateCauldronProfileTabNames();
+    };
+    ['click', 'dblclick'].forEach(ev => input.addEventListener(ev, e => e.stopPropagation()));
+    input.addEventListener('blur', () => commit(true));
+    input.addEventListener('keydown', (e) => {
+        if (e.key === 'Enter') input.blur();
+        else if (e.key === 'Escape') commit(false);
+    });
 }
 
 /**

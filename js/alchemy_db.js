@@ -1,7 +1,7 @@
 window.ALCHEMY_DB = {
     "version": 58,
-    "date": "2026.10.11",
-    "gameVersion": "1.0.4952",
+    "date": "2026.10.16",
+    "gameVersion": "1.1.5024",
     "items": {
         // --- RAW RESOURCES ---
         "Logs": { "id": 1, "category": "Raw Materials", "buyPrice": 200, "maxStack": -200, "heat": 2000, "baseCost": 1, "cauldronCost": 0.8, "paradoxTime": 9.375, "tier": 1 },
