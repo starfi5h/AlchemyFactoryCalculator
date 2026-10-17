@@ -72,11 +72,11 @@
             </span>
         </div>
         <div class="tabs" id="page-tab-container">
-            <div class="tab-btn active" onclick="switchTab('calc')">Calculator</div>
-            <div class="tab-btn" onclick="switchTab('cauldron')">Cauldron</div>
-            <div class="tab-btn" onclick="switchTab('planner')">Planner</div>
-            <div class="tab-btn" onclick="switchTab('help')">Wiki</div>
-            <div class="tab-btn" onclick="switchTab('db')">Database Editor</div>
+            <a class="tab-btn active" href="?"            data-tab="calc"     onclick="onTabLinkClick(event,'calc')">Calculator</a>
+            <a class="tab-btn"        href="?tab=cauldron" data-tab="cauldron" onclick="onTabLinkClick(event,'cauldron')">Cauldron</a>
+            <a class="tab-btn"        href="?tab=planner"  data-tab="planner"  onclick="onTabLinkClick(event,'planner')">Planner</a>
+            <a class="tab-btn"        href="?tab=help"     data-tab="help"     onclick="onTabLinkClick(event,'help')">Wiki</a>
+            <a class="tab-btn"        href="?tab=db"       data-tab="db"       onclick="onTabLinkClick(event,'db')">Database Editor</a>
         </div>
     </header>
 

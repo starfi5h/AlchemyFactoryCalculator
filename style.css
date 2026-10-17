@@ -45,6 +45,8 @@ h1 { color: var(--accent); margin: 0; font-size: 1.1em; }
     border-radius: 4px; font-size: 0.9em; 
     overflow-x: auto;
     white-space: nowrap;
+    text-decoration: none;
+    display: inline-block;
     -webkit-overflow-scrolling: touch;
 }
 .tab-btn:hover { background: #333; color: #fff; }

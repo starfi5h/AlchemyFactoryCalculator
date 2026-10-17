@@ -153,6 +153,8 @@ function init() {
             "游戏《炼金工厂》(Alchemy Factory) 1.0 的生产规划计算器。支持多目标生产树、炼金锅配方搜索、节点图编辑器，百科与数据库编辑。" :
             "A production planning tool for the game Alchemy Factory 1.0 version. Supports cauldron recipes, multi-targets production trees, node graph editor, wiki, and database editing";
     }
+
+    refreshTabLinks();
 }
 
 function loadSettingsToUI() {
@@ -383,21 +385,35 @@ function switchTab(tabName, updateUrl = true) {
 }
 
 function updateURL(tabName = '') {
-    const isEn = window.ALCHEMY_I18N.enabled === false;    
-    const params = new URLSearchParams();
-    if (isEn) params.set('lang', 'en');
-
-    if (tabName !== '' && tabName !== 'calc') {
-        params.set('tab', tabName);        
-    }
-
-    const newUrl = window.location.pathname + '?' + params.toString();
+    const newUrl = buildTabUrl(tabName);
     if (isHandlingPopstate) {        
         window.history.replaceState(null, '', newUrl);
     }
     else {
         window.history.pushState(null, '', newUrl);
     }
+}
+
+// Build the URL for a tab. Shared by updateURL() and the tab link hrefs.
+function buildTabUrl(tabName = '') {
+    const params = new URLSearchParams();
+    if (window.ALCHEMY_I18N.enabled === false) params.set('lang', 'en');
+    if (tabName !== '' && tabName !== 'calc') params.set('tab', tabName);
+    return window.location.pathname + '?' + params.toString();
+}
+
+// Set real hrefs on the tab links so middle-click / Ctrl+click open a new tab.
+function refreshTabLinks() {
+    document.querySelectorAll('#page-tab-container a.tab-btn[data-tab]').forEach(a => {
+        a.href = buildTabUrl(a.dataset.tab);
+    });
+}
+
+// Plain left-click: SPA switch. Any modified click: let the browser handle it.
+function onTabLinkClick(e, tabName) {
+    if (e.button !== 0 || e.ctrlKey || e.metaKey || e.shiftKey || e.altKey) return;
+    e.preventDefault();
+    switchTab(tabName);
 }
 
 window.addEventListener('popstate', function(event) {
