@@ -1,6 +1,6 @@
 window.ALCHEMY_DB = {
-    "version": 58,
-    "date": "2026.10.16",
+    "version": 59,
+    "date": "2026.10.17",
     "gameVersion": "1.1.5024",
     "items": {
         // --- RAW RESOURCES ---
@@ -651,6 +651,17 @@ window.ALCHEMY_DB = {
         { "id": "Pure Gold Dust 2 (Enhanced)", "machine": "Enhanced Grinder", "inputs": { "Gold Ingot": 1 }, "outputs": { "Pure Gold Dust": 1 }, "baseTime": 20.0 },
         { "id": "Volcanic Ash (Enhanced)", "machine": "Enhanced Grinder", "inputs": { "Obsidian": 1 }, "outputs": { "Volcanic Ash": 1 }, "baseTime": 12.0 },
 
+        // --- STACKABLE CRUCIBLE ALTERNATE RECIPES ---
+        // (Heat cost goes from 4 P/s to 6 P/s)
+        { "id": "Quicklime (Stack)", "machine": "Stackable Crucible", "inputs": { "Stone": 1 }, "outputs": { "Quicklime": 1 }, "baseTime": 9.0 },
+        { "id": "Plant Ash (Stack)", "machine": "Stackable Crucible", "inputs": { "Sage": 1 }, "outputs": { "Plant Ash": 1 }, "baseTime": 3.0 },
+        { "id": "Charcoal (Stack)", "machine": "Stackable Crucible", "inputs": { "Plank": 1 }, "outputs": { "Charcoal": 1 }, "baseTime": 4.0 },
+        { "id": "Coke_Alt (Stack)", "machine": "Stackable Crucible", "inputs": { "Coal": 1 }, "outputs": { "Coke": 1 },  "baseTime": 6.0 },
+        { "id": "Iron Ingot 2 (Stack)", "machine": "Stackable Crucible", "inputs": { "Iron Sand": 1 }, "outputs": { "Iron Ingot": 1 }, "baseTime": 6.0 },
+        { "id": "Copper Ingot (Stack)", "machine": "Stackable Crucible", "inputs": { "Copper Powder": 1 }, "outputs": { "Copper Ingot": 1 }, "baseTime": 12.0 },
+        { "id": "Bronze Ingot (Stack)", "machine": "Stackable Crucible", "inputs": { "Impure Copper Powder": 1 }, "outputs": { "Bronze Ingot": 1 }, "baseTime": 12.0 },
+        { "id": "Silver Ingot (Stack)", "machine": "Stackable Crucible", "inputs": { "Silver Powder": 1 }, "outputs": { "Silver Ingot": 1 }, "baseTime": 16.0 },
+        { "id": "Gold Ingot (Stack)", "machine": "Stackable Crucible", "inputs": { "Pure Gold Dust": 1 }, "outputs": { "Gold Ingot": 1 }, "baseTime": 40.0 },
 
         // --- THERMAL EXTRACTOR ALTERNATE RECIPES ---
         // (Production Bonus + 200% when build on height >256)
@@ -662,6 +673,8 @@ window.ALCHEMY_DB = {
 
         // --- VIRTUAL RECIPES ---
         { "id": "Unstable Catalyst (Gentian Mixture)", "machine": "Cauldron", "inputs": { "Gentian Mixture": 1, "Gentian Nectar": 1, "Gentian": 1 }, "outputs": { "Unstable Catalyst": 1 }, "baseTime": 10.3, "heatCost": 148.0 },
-        { "id": "Steam Boiler (High)", "machine": "Steam Boiler", "outputs": { "Steam": 300 }, "baseTime": 2, "heatCost": 3000 }
+        { "id": "Steam Boiler (High)", "machine": "Steam Boiler", "inputs": {}, "outputs": { "Steam": 300 }, "baseTime": 2, "heatCost": 3000 },
+        { "id": "Steam Boiler (Mid)", "machine": "Steam Boiler", "inputs": {}, "outputs": { "Steam": 100 }, "baseTime": 4, "heatCost": 500 },
+        { "id": "Steam Boiler (Low)", "machine": "Steam Boiler", "inputs": {}, "outputs": { "Steam": 30 }, "baseTime": 6, "heatCost": 100 }
     ]
 };
